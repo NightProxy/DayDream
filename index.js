@@ -36,34 +36,29 @@ app.use("/baremux/", express.static(baremuxPath));
 
 app.use("/", routes);
 
-
 server.on("request", (req, res) => {
-    if (bareServer.shouldRoute(req)) {
-        bareServer.routeRequest(req, res)
-    } else {
-        app(req, res);
-    }
+  if (bareServer.shouldRoute(req)) {
+    bareServer.routeRequest(req, res);
+  } else {
+    app(req, res);
+  }
 });
 
 server.on("upgrade", (req, socket, head) => {
-    if (bareServer.shouldRoute(req)) {
-        bareServer.routeUpgrade(req, socket, head)
-    }
+  if (bareServer.shouldRoute(req)) {
+    bareServer.routeUpgrade(req, socket, head);
+  }
 
-    if (req.url.endsWith("/wisp/")) {
-        wisp.routeRequest(req, socket, head);
-    }
+  if (req.url.endsWith("/wisp/")) {
+    wisp.routeRequest(req, socket, head);
+  }
 });
 /*
 privateBareServer(server, sysConfig.bare);
 privateWispServer(server, sysConfig.wisp.paths);
 */
 server.on("listening", () => {
-    console.log(
-        chalk.green(
-            `Server is running on http://${hostname()}:${PORT}`
-        )
-    );
+  console.log(chalk.green(`Server is running on http://${hostname()}:${PORT}`));
 });
 
 server.listen({ port: PORT });
@@ -74,11 +69,11 @@ process.on("SIGTERM", shutdown);
 server.setMaxListeners(0);
 
 function shutdown() {
-    console.log("SIGTERM signal received: closing HTTP server");
-    server.close(() => {
-        console.log("HTTP server closed");
-        server.close();
-        bareServer.close()
-        process.exit(1);
-    });
+  console.log("SIGTERM signal received: closing HTTP server");
+  server.close(() => {
+    console.log("HTTP server closed");
+    server.close();
+    bareServer.close();
+    process.exit(0);
+  });
 }

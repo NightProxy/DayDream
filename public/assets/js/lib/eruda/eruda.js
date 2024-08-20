@@ -10989,22 +10989,20 @@
                     e._$el.find(Pe(".select")).toggleClass(Pe("active")),
                       (e._selectElement = !e._selectElement),
                       e._selectElement
-                        ? (ln
-                            .domain("Overlay")
-                            .setInspectMode({
-                              mode: "searchForNode",
-                              highlightConfig: {
-                                showInfo: !kn()(),
-                                showRulers: !1,
-                                showAccessibilityInfo: !kn()(),
-                                showExtensionLines: !1,
-                                contrastAlgorithm: "aa",
-                                contentColor: "rgba(111, 168, 220, .66)",
-                                paddingColor: "rgba(147, 196, 125, .55)",
-                                borderColor: "rgba(255, 229, 153, .66)",
-                                marginColor: "rgba(246, 178, 107, .66)",
-                              },
-                            }),
+                        ? (ln.domain("Overlay").setInspectMode({
+                            mode: "searchForNode",
+                            highlightConfig: {
+                              showInfo: !kn()(),
+                              showRulers: !1,
+                              showAccessibilityInfo: !kn()(),
+                              showExtensionLines: !1,
+                              contrastAlgorithm: "aa",
+                              contentColor: "rgba(111, 168, 220, .66)",
+                              paddingColor: "rgba(147, 196, 125, .55)",
+                              borderColor: "rgba(255, 229, 153, .66)",
+                              marginColor: "rgba(246, 178, 107, .66)",
+                            },
+                          }),
                           e._container.hide())
                         : (ln
                             .domain("Overlay")

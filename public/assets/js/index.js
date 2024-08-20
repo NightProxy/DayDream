@@ -16,7 +16,7 @@ const api = new Api(
 
 const proxySetting = localStorage.getItem("proxy") ?? "uv";
 const swConfig = {
-  uv: { file: "/@/sw.js", config: __uv$config }
+  uv: { file: "/@/sw.js", config: __uv$config },
 };
 
 const { file: swFile, config: swConfigSettings } = swConfig[proxySetting] ?? {
@@ -40,7 +40,7 @@ const uvSearchBar = api.browser.addressBar;
 
 uvSearchBar.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    console.log("Searching...")
+    console.log("Searching...");
     e.preventDefault();
     if (uvSearchBar.value.startsWith("tabs://")) {
       api.browser.navigate(uvSearchBar.value);
@@ -63,3 +63,10 @@ uvSearchBar.addEventListener("keydown", (e) => {
 });
 
 loadInitialTab();
+
+window.addEventListener("keydown", (event) => {
+  if (event.altKey && event.key === "t") {
+    console.log("Creating new Tab");
+    api.browser.createTab("tabs://newtab");
+  }
+});
