@@ -1,5 +1,5 @@
 self.__uv$config = {
-  prefix: "/@/elysium/",
+  prefix: "/@/tabs/",
   encodeUrl: Ultraviolet.codec.xor.encode,
   decodeUrl: Ultraviolet.codec.xor.decode,
   handler: "/@/uv.handler.js",

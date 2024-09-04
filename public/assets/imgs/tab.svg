@@ -1,0 +1,30 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="tab-geometry-left" viewBox="0 0 214 36">
+      <!-- Path adjusted for cut-off corners and unified border -->
+      <path d="M12 0 L24 10 H197 V36 H0 V-2 C4.5 0 9 -3.5 9 -8 V8 C0 -4.5 3.5 -8 12 0 Z" />
+    </symbol>
+    <symbol id="tab-geometry-right" viewBox="0 0 214 36">
+      <path d="M17 0 H197 C202.5 0 207 3.5 207 8 V28 C207 32.5 202.5 36 197 36 H0 V0 Z" />
+    </symbol>
+
+    <clipPath id="crop">
+      <rect class="mask" width="100%" height="100%" x="0" />
+    </clipPath>
+  </defs>
+
+  <!-- Main container to hold the left and right parts together -->
+  <g style="stroke: var(--tab-border-color); stroke-width: 2px; fill: none;">
+    <!-- Left side of the tab -->
+    <svg width="52%" height="100%">
+      <use xlink:href="#tab-geometry-left" width="214" height="36" class="tab-geometry" />
+    </svg>
+
+    <!-- Right side of the tab mirrored -->
+    <g transform="scale(-1, 1)">
+      <svg width="52%" height="100%" x="-100%" y="0">
+        <use xlink:href="#tab-geometry-right" width="214" height="36" class="tab-geometry" />
+      </svg>
+    </g>
+  </g>
+</svg>

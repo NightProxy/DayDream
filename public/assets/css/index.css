@@ -1,7 +1,7 @@
 :root {
     --bg-color: #1e1e1e;
     --tab-bg-color: #2c2c2c;
-    --tab-active-bg-color: #424242;
+    --tab-active-bg-color: #ffffff;
     --tab-border-color: #555;
     --text-color: #ddd;
     --tab-content-margin: 9px;
@@ -20,6 +20,61 @@
     font-family: Arial, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
+  }
+
+  .surface {
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    min-height: 100%;
+    padding-bottom: 3em;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  @media (min-width: 800px) {
+  
+    .mock-browser {
+      width: 100%;
+      border-radius: 8px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+  
+    html .mock-browser {
+      background: #202123;
+    }
+  
+    .mock-browser-content {
+      position: relative;
+      z-index: 1;
+      padding: 3em .5em;
+      margin-top: -1px;
+    }
+  
+    .tabs-optional-shadow-below-bottom-bar {
+      z-index: 2;
+    }
+  
+    html .mock-browser-content {
+      background: #252729;
+    }
+  }
+  
+  
+  @media (max-width: 799px) {
+  
+    html {
+      background: #252729;
+    }
+  
+    .mock-browser-content {
+      padding: 1em .5em;
+    }
+  
+    .mock-browser .tabs {
+      border-radius: 0;
+    }
   }
   
   .tabs {
@@ -104,7 +159,7 @@
     height: 100%;
     overflow: hidden;
     pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><defs><symbol id='tab-geometry-left' viewBox='0 0 214 36'><path d='M17 0h197v36H0v-2c4.5 0 9-3.5 9-8V8c0-4.5 3.5-8 8-8z'/></symbol><symbol id='tab-geometry-right' viewBox='0 0 214 36'><use xlink:href='%23tab-geometry-left'/></symbol><clipPath id='crop'><rect class='mask' width='100%' height='100%' x='0'/></clipPath></defs><svg width='52%' height='100%'><use xlink:href='%23tab-geometry-left' width='214' height='36' class='tab-geometry'/></svg><g transform='scale(-1, 1)'><svg width='52%' height='100%' x='-100%' y='0'><use xlink:href='%23tab-geometry-right' width='214' height='36' class='tab-geometry'/></svg></g></svg>");
+    background-image: url("/assets/imgs/tab.svg");
   }
   
   .tab-background > svg {
@@ -116,9 +171,6 @@
     fill: #292b2e;
   }
   
-  .tab.active {
-    z-index: 5;
-  }
   
   .tab.active .tab-background > svg .tab-geometry {
     fill: var(--tab-active-bg-color);
