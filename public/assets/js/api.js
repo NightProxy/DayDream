@@ -1078,7 +1078,7 @@ class Browser {
         const currentIndex = tabEls.indexOf(tabEl)
 
         const currentTabPositionX = originalTabPositionX + moveVector.x
-        const destinationIndexTarget = closest(currentTabPositionX, tabPositions)
+        const destinationIndexTarget = this.closest(currentTabPositionX, tabPositions)
         const destinationIndex = Math.max(0, Math.min(tabEls.length, destinationIndexTarget))
 
         if (currentIndex !== destinationIndex) {
