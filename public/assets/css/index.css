@@ -159,7 +159,7 @@
     height: 100%;
     overflow: hidden;
     pointer-events: none;
-    background-image: url("/assets/imgs/tab.svg");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cdefs%3E%3Csymbol id='tab-geometry-left' viewBox='0 0 214 36'%3E%3Cpath d='M12 0 L24 10 H197 V36 H0 V-2 C4.5 0 9 -3.5 9 -8 V8 C0 -4.5 3.5 -8 12 0 Z' /%3E%3C/symbol%3E%3Csymbol id='tab-geometry-right' viewBox='0 0 214 36'%3E%3Cpath d='M17 0 H197 C202.5 0 207 3.5 207 8 V28 C207 32.5 202.5 36 197 36 H0 V0 Z' /%3E%3C/symbol%3E%3CclipPath id='crop'%3E%3Crect class='mask' width='100%25' height='100%25' x='0' /%3E%3C/clipPath%3E%3C/defs%3E%3Cg style='stroke: var(--tab-border-color); stroke-width: 2px; fill: none;'%3E%3Csvg width='52%25' height='100%25'%3E%3Cuse xlink:href='%23tab-geometry-left' width='214' height='36' class='tab-geometry' /%3E%3C/svg%3E%3Cg transform='scale(-1, 1)'%3E%3Csvg width='52%25' height='100%25' x='-100%25' y='0'%3E%3Cuse xlink:href='%23tab-geometry-right' width='214' height='36' class='tab-geometry' /%3E%3C/svg%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
   
   .tab-background > svg {
