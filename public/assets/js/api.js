@@ -719,7 +719,7 @@ class Browser {
 
     const tab = this.ui.createElement("div", { class: "tab" }, [
       this.ui.createElement("div", { class: "tab-dividers" }),
-      this.ui.createElement("div", { class: "tab-background" }, [
+      this.ui.createElement("div", { class: "tab-background" }, [/*
         this.ui.createElement("svg", { version: "1.1", xmlns: "http://www.w3.org/2000/svg" }, [
           this.ui.createElement("defs", {}, [
             this.ui.createElement("symbol", { id: "tab-geometry-left", viewBox: "0 0 214 36" }, [
@@ -742,7 +742,7 @@ class Browser {
               ])
             ])
           ])
-        ])
+        ])*/
       ]),
       this.ui.createElement("div", { class: "tab-content" }, [
         this.ui.createElement("div", { class: "tab-favicon" }),
