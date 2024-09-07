@@ -895,15 +895,6 @@
     text-align: center;
   }
   
-  .search-header__input:not(#gointospace2):hover,
-  .search-header__input:not(#gointospace2):focus {
-    box-shadow:
-      10px 5px 40px -10px #ae00ff,
-      -14px -4px 40px -10px #4400ff;
-    padding-left: calc(+50px) !important;
-    padding-right: calc(+50px) !important;
-  }
-  
   .search-header__input:focus {
     outline: none;
     background-color: #0a0a0af0;
