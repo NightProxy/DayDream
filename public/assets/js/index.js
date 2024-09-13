@@ -168,3 +168,81 @@ window.addEventListener("keydown", (event) => {
     api.browser.closeCurrentTab()
   }
 });
+
+const searchbar = uvSearchBar;
+
+const suggestionList = document.createElement("div");
+suggestionList.classList.add("suggestion-list");
+
+searchbar.addEventListener("keydown", async (event) => {
+  const query = event.target.value.trim(); // Trim to remove leading and trailing whitespace
+  if (query === "") {
+    // Clear suggestion list if query is empty
+    suggestionList.innerHTML = "";
+    return;
+  }
+
+  const response = await fetch(`/search=${query}`).then((res) =>
+    res.json()
+  );
+  const suggestions = response.map((item) => item.phrase);
+
+  // Clear previous suggestions
+  suggestionList.innerHTML = "";
+
+  // Populate the suggestion list
+  suggestions.forEach((suggestion) => {
+    const listItem = document.createElement("div");
+    listItem.textContent = suggestion;
+    listItem.addEventListener("click", () => {
+      searchbar.value = suggestion;
+      form.dispatchEvent(new Event("submit"));
+    });
+    suggestionList.appendChild(listItem);
+  });
+});
+
+// Clear suggestion list when search bar is emptied via backspace
+searchbar.addEventListener("keydown", (event) => {
+  if (event.key === "Backspace" && searchbar.value === "") {
+    suggestionList.innerHTML = "";
+  }
+});
+
+let selectedSuggestionIndex = -1;
+
+searchbar.addEventListener("keydown", (event) => {
+  const suggestionItems = suggestionList.querySelectorAll("div");
+  const numSuggestions = suggestionItems.length;
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    selectedSuggestionIndex =
+      (selectedSuggestionIndex + 1) % numSuggestions;
+    updateSelectedSuggestion();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    selectedSuggestionIndex =
+      (selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
+    updateSelectedSuggestion();
+  } else if (event.key === "Tab") {
+    if (selectedSuggestionIndex !== -1) {
+      event.preventDefault();
+      const selectedSuggestion =
+        suggestionItems[selectedSuggestionIndex].textContent;
+      searchbar.value = selectedSuggestion;
+    }
+  }
+});
+
+function updateSelectedSuggestion() {
+  const suggestionItems = suggestionList.querySelectorAll("div");
+  suggestionItems.forEach((item, index) => {
+    if (index === selectedSuggestionIndex) {
+      item.classList.add("selected");
+    } else {
+      item.classList.remove("selected");
+    }
+  });
+}
+document.body.appendChild(suggestionList)

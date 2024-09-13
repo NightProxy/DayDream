@@ -44,6 +44,8 @@
   --secondary-color: #7700ff;
   --third-color: #6a00ff;
 
+  --searchbar-width: calc(100% - calc(6 * 36px));
+
 }
 
 
@@ -683,7 +685,7 @@ body {
   color: var(--text-color);
   padding: 0.5rem 1rem;
   border-radius: 25px;
-  width: calc(100% - calc(6 * 36px));
+  width: var(--searchbar-width);
   height: 20px;
   transition: all ease-in-out 0.5s;
   margin-right: -2rem;
@@ -1215,4 +1217,47 @@ iframe.active {
 .banner .pfp {
   width: 120px;
   height: 120px;
+}
+
+.suggestion-list {
+  position: fixed;
+  z-index: 1111;
+  top: calc(100% - calc(45px + 3em));
+  left: 50%;
+  transform: translate(-50%, 0%);
+  background: var(--base-color);
+  color: var(--theme-color);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  width: var(--searchbar-width);
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestion-list div {
+  border-radius: 20px;
+  margin-left: 0.6vw;
+  margin-right: 0.6vw;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.suggestion-list div:hover {
+  box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
+  transition: 0.3s;
+  background-color: #000;
+}
+
+.suggestion-list .selected {
+  box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
+  transition: 0.3s;
+  background-color: #000;
 }
