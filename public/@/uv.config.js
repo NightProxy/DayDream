@@ -1,5 +1,5 @@
 self.__uv$config = {
-  prefix: "/@/tabs/",
+  prefix: "/@/daydream/",
   encodeUrl: Ultraviolet.codec.xor.encode,
   decodeUrl: Ultraviolet.codec.xor.decode,
   handler: "/@/uv.handler.js",

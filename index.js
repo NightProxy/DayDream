@@ -14,7 +14,6 @@ import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { privateWispServer } from "./src/misc/servers/wisp.js";*/
 import wisp from "wisp-server-node";
 import { createBareServer } from "@tomphttp/bare-server-node";
-import bodyParser from "body-parser";
 
 const server = http.createServer();
 const app = express();
@@ -27,7 +26,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
-app.use(bodyParser.json());
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/@/", express.static(uvPath));
 app.use("/libcurl/", express.static(libcurlPath));
@@ -72,8 +70,9 @@ function shutdown() {
   console.log("SIGTERM signal received: closing HTTP server");
   server.close(() => {
     console.log("HTTP server closed");
-    server.close();
-    bareServer.close();
-    process.exit(0);
+    bareServer.close(() => {
+      console.log("Bare server closed");
+      process.exit(0);
+    });
   });
 }
