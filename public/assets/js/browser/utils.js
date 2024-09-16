@@ -93,7 +93,7 @@ class Utils {
       url.startsWith("data:") ||
       url.startsWith("javascript:")
     ) {
-      return null;
+      return url;
     } else {
       return `daydream://${url}`;
     }

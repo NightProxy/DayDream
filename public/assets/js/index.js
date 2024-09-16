@@ -174,7 +174,7 @@ const searchbar = uvSearchBar;
 const suggestionList = document.createElement("div");
 suggestionList.classList.add("suggestion-list");
 
-searchbar.addEventListener("keydown", async (event) => {
+searchbar.addEventListener("input", async (event) => {
   const query = event.target.value.trim(); // Trim to remove leading and trailing whitespace
   if (query === "") {
     // Clear suggestion list if query is empty
@@ -196,7 +196,7 @@ searchbar.addEventListener("keydown", async (event) => {
     listItem.textContent = suggestion;
     listItem.addEventListener("click", () => {
       searchbar.value = suggestion;
-      form.dispatchEvent(new Event("submit"));
+      
     });
     suggestionList.appendChild(listItem);
   });

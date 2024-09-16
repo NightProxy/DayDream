@@ -12,6 +12,14 @@ router.get("/test", (req, res) => {
   res.sendFile(path.join(__dirname, "public/test.html"));
 });
 
+router.get("/search=:query", async (req, res) => {
+  const { query } = req.params;
+
+  const reply = await fetch(`http://api.duckduckgo.com/ac?q=${query}&format=json`).then((resp) => resp.json());
+
+  res.send(reply);
+});
+
 router.use("/internal/", express.static(path.join(__dirname, "public/internal/")));
 
 
