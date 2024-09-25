@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cors());
+// app.use(cors());
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/@/", express.static(uvPath));
 app.use("/libcurl/", express.static(libcurlPath));

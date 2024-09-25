@@ -1,5 +1,8 @@
 import express from "express";
 import path from "path";
+import axios from "axios";
+import { URL, parse } from 'url';
+import contentType from 'content-type';
 
 const router = express.Router();
 const __dirname = process.cwd();
@@ -21,6 +24,35 @@ router.get("/search=:query", async (req, res) => {
 });
 
 router.use("/internal/", express.static(path.join(__dirname, "public/internal/")));
+
+router.use('/internal/icons/:url(*)', async (req, res) => {
+  const { url } = req.params;
+  let decodedUrl, proxiedUrl;
+  try {
+      decodedUrl = decodeURIComponent(url);
+      proxiedUrl = decodedUrl;
+  } catch (err) {
+      console.error(`Failed to decode or decrypt URL: ${err}`);
+      return res.status(400).send("Invalid URL");
+  }
+
+  try {
+      const assetUrl = new URL(proxiedUrl);
+      const assetResponse = await axios.get(assetUrl.toString(), { responseType: 'arraybuffer' });
+
+      const contentTypeHeader = assetResponse.headers['content-type'];
+      const parsedContentType = contentTypeHeader ? contentType.parse(contentTypeHeader).type : '';
+
+      res.writeHead(assetResponse.status, {
+          "Content-Type": parsedContentType
+      });
+
+      res.end(Buffer.from(assetResponse.data));
+  } catch (err) {
+      console.error(`Failed to fetch proxied URL: ${err}`);
+      res.status(500).send("Failed to fetch proxied URL");
+  }
+});
 
 
 export default router;

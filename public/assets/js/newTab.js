@@ -65,20 +65,20 @@ class Utils {
     }
     async getFavicon(url) {
         try {
-            var googleFaviconUrl = `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(url)}`;
-            const response = await fetch(googleFaviconUrl);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
+          var googleFaviconUrl = `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}`;
+          const response = await fetch(googleFaviconUrl);
+          const blob = await response.blob();
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
         } catch (error) {
-            console.error("Error fetching favicon as data URL:", error);
-            return null;
+          console.error("Error fetching favicon as data URL:", error);
+          return null;
         }
-    }
+      }
 }
 const utils = new Utils()
 

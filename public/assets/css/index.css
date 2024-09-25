@@ -1226,16 +1226,14 @@ iframe.active {
   left: 50%;
   transform: translate(-50%, 0%);
   background: var(--background-color);
-  color: var(--tab-secondary-color);
+  color: var(--text-color);
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
   width: var(--searchbar-width);
-  max-height: 50vh;
+  height: fit-content;
   overflow-y: auto;
-  display: flex;
+  display: none;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   margin: 2px;
   border: 1px solid var(--tab-secondary-color);
   border-top: none;
@@ -1243,23 +1241,61 @@ iframe.active {
 
 .suggestion-list div {
   border-radius: 20px;
-  margin-left: 0.6vw;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
+  transition: 0.3s;
+}
+
+.suggestion-list .search-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion-list .search-section .search-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.suggestion-list .search-section .search-title .searchEngineIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 0 !important;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  margin-right: 2px;
+}
+
+.suggestion-list .search-section .search-title span {
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: bold;
+}
+
+.suggestion-list .search-section .search-results div {
+  border-radius: 20px;
+  display: flex;
   margin-right: 0.6vw;
   padding-top: 2px;
   padding-bottom: 2px;
   padding-left: 7px;
   padding-right: 7px;
   cursor: pointer;
+  gap: 5px;
   transition: 0.3s;
 }
 
-.suggestion-list div:hover {
+.suggestion-list .search-section .search-results div:hover {
   box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
   transition: 0.3s;
   background-color: #000;
 }
 
-.suggestion-list .selected {
+.suggestion-list .search-section .search-results .selected {
   box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
   transition: 0.3s;
   background-color: #000;

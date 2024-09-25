@@ -23,7 +23,8 @@
     "chalk": "^5.2.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "wisp-server-node": "^1.1.3"
+    "wisp-server-node": "^1.1.3",
+    "axios": "^1.7.2"
   },
   "devDependencies": {
     "prettier": "3.2.1"
