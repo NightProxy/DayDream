@@ -1182,7 +1182,7 @@ class Browser {
       js = url.replace("javascript:", "")
       document.querySelector("iframe.active").contentWindow.eval(js)
     } else {
-      return `/internal/${url}.html`;
+      return url;
     }
   }
 

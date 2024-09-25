@@ -31,7 +31,7 @@ api.proxy.registerSW(swFile, swConfigSettings).then(async () => {
 
 async function getFavicon(url) {
   try {
-    var googleFaviconUrl = `/internal/icons/https://icons.duckduckgo.com/ip3/${url}.ico`;
+    var googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
     return googleFaviconUrl;
   } catch (error) {
     console.error("Error fetching favicon as data URL:", error);
@@ -110,13 +110,13 @@ const searchbar = uvSearchBar;
 
 async function generatePredictedUrls(query) {
   try {
-    const response = await fetch(`/search=${query}`);
+    const response = await fetch(`/results/${query}`);
     if (!response.ok) throw new Error('Network response was not ok');
     const data = await response.json();
-    return data.map((item) => item.phrase); // Assuming 'phrase' is the property you're interested in
+    return data.map((item) => item.phrase);
   } catch (error) {
     console.error("Error fetching predicted URLs:", error);
-    return []; // Return an empty array on error
+    return [];
   }
 }
 
@@ -149,7 +149,6 @@ const createSection = (titleText) => {
   return { section, searchResults };
 }
 
-// Define the four sections
 const sections = {
   searchResults: createSection("Search Results"),
   otherPages: createSection("Other Pages"),
@@ -157,30 +156,29 @@ const sections = {
   games: createSection("Games")
 };
 
-// Append the sections to the suggestion list
 Object.values(sections).forEach(({ section }) => suggestionList.appendChild(section));
 
 const maxInitialResults = 4;
 const maxExpandedResults = 8;
 let currentSectionIndex = 0;
 
-let appsData = []; // Global variable for storing game data
+let appsData = [];
 
 searchbar.addEventListener("input", async (event) => {
   suggestionList.style.display = "flex";
   const query = event.target.value.trim();
-  if (query === "") {
+  if (query === "" && event.key == "Backspace") {
     clearSuggestions();
+    suggestionList.style.display = "none";
     return;
   }
 
   let cleanedQuery = query.replace(/^(daydream:\/\/|daydream:\/|daydream:)/, "");
-  const response = await fetch(`/search=${cleanedQuery}`).then((res) => res.json());
+  const response = await fetch(`/results/${cleanedQuery}`).then((res) => res.json());
   const suggestions = response.map((item) => item.phrase);
 
   clearSuggestions();
 
-  // Populate the suggestion list with the sections based on query
   await populateSections(suggestions);
 });
 
@@ -192,21 +190,16 @@ function clearSuggestions() {
 }
 
 async function populateSections(suggestions) {
-  // Populate Search Results
   const searchResultsSuggestions = suggestions.slice(0, maxExpandedResults);
   populateSearchResults(searchResultsSuggestions);
 
-  // Populate Other Pages
   await populateOtherPages(suggestions);
 
-  // Populate Settings
   await populateSettings(suggestions);
 
-  // Populate Games
   await populateGames(suggestions);
 }
 
-// Populate Search Results
 function populateSearchResults(suggestions) {
   const { searchResults, section } = sections.searchResults;
   if (suggestions.length > 0) {
@@ -218,7 +211,6 @@ function populateSearchResults(suggestions) {
   }
 }
 
-// Predict possible internal URLs and check their existence for "Other Pages"
 async function populateOtherPages(query) {
   const { searchResults, section } = sections.otherPages;
   let hasResults = false;
@@ -239,7 +231,6 @@ async function populateOtherPages(query) {
   section.style.display = hasResults ? "block" : "none";
 }
 
-// Predict possible internal URLs and check their existence for "Settings"
 async function populateSettings() {
   const { searchResults, section } = sections.settings;
   let hasResults = false;
@@ -262,7 +253,6 @@ async function populateSettings() {
   section.style.display = hasResults ? "block" : "none";
 }
 
-// Generate potential URLs for settings pages dynamically
 function generatePredictedSettingsUrls(query) {
   const basePaths = [
     "settings", "settings/about", "settings/profile", "settings/privacy", "settings/security", "settings/notifications"
@@ -271,20 +261,17 @@ function generatePredictedSettingsUrls(query) {
   return basePaths.map(base => `${base}${query ? `/${query}` : ''}`);
 }
 
-// Populate Games section based on the query
 async function populateGames(query) {
   const { searchResults, section } = sections.games;
   let hasResults = false;
 
-  // Fetch game data from JSON file if not already loaded
   if (appsData.length === 0) {
     await fetchAppData();
   }
 
-  // Filter games based on the query, ignoring case sensitivity
   const filteredGames = appsData.filter((app) =>
     app.name.toLowerCase().includes(query.toLowerCase())
-  ).slice(0, 10); // Show up to 10 results
+  ).slice(0, 10);
 
   if (filteredGames.length > 0) {
     section.style.display = "block";
@@ -298,7 +285,6 @@ async function populateGames(query) {
   section.style.display = hasResults ? "block" : "none";
 }
 
-// Function to fetch JSON data from the file
 async function fetchAppData() {
   try {
     const response = await fetch("/assets/json/a.json");
@@ -317,21 +303,27 @@ function createSuggestionItem(suggestion) {
   listItem.innerHTML += suggestion;
   listItem.addEventListener("click", () => {
     searchbar.value = suggestion;
-    api.browser.navigate(swConfigSettings.prefix + api.proxy.crypts.encode(api.proxy.search(suggestion)));
     clearSuggestions();
+    if (suggestion.startsWith("daydream")) {
+      const link = api.browser.processUrl(suggestion);
+      if (link.startsWith("/internal/")) {
+        api.browser.navigate(suggestion);
+      }
+    } else {
+      api.browser.navigate(swConfigSettings.prefix + api.proxy.crypts.encode(api.proxy.search(suggestion)));
+    }
     suggestionList.style.display = "none";
   });
   return listItem;
 }
 
-// Create game item with the game icon instead of material icon
 function createGameItem(game) {
   const listItem = document.createElement("div");
   listItem.classList.add("game-item");
 
   const listIcon = document.createElement("img");
   listIcon.classList.add("game-icon");
-  listIcon.src = game.image; // Use game icon from JSON data
+  listIcon.src = game.image;
   listItem.appendChild(listIcon);
 
   const gameName = document.createElement("span");
@@ -349,7 +341,7 @@ function createGameItem(game) {
 let selectedSuggestionIndex = -1;
 let currentMaxResults = maxInitialResults;
 
-searchbar.addEventListener("keydown", (event) => {
+window.addEventListener("keydown", (event) => {
   const suggestionItems = getCurrentSuggestionItems();
   const numSuggestions = suggestionItems.length;
   suggestionList.style.display = "flex";
@@ -383,11 +375,10 @@ searchbar.addEventListener("keydown", (event) => {
       event.preventDefault();
       moveToNextSection();
     }
-  } else if (event.key === "Backspace" && searchbar.value === "") {
-    clearSuggestions();
+  } else if (event.key == "Backspace") {
     suggestionList.style.display = "none";
+    clearSuggestions();
   }
-
 
   suggestionList.querySelectorAll(".searchEngineIcon")[0].style.display = 'block';
   switch (localStorage.getItem("search")) {

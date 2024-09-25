@@ -1292,11 +1292,11 @@ iframe.active {
 .suggestion-list .search-section .search-results div:hover {
   box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
   transition: 0.3s;
-  background-color: #000;
+  background-color: var(--tab-bg-color);
 }
 
 .suggestion-list .search-section .search-results .selected {
   box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
   transition: 0.3s;
-  background-color: #000;
+  background-color: var(--tab-active-bg-color);
 }
