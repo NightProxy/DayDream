@@ -10,9 +10,7 @@ import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { bareModulePath } from "@mercuryworkshop/bare-as-module3";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
-/* import { privateBareServer } from "./src/misc/servers/bare.js";
-import { privateWispServer } from "./src/misc/servers/wisp.js";*/
-import wisp from "wisp-server-node";
+import { server as wisp } from "@mercuryworkshop/wisp-js/server";
 import { createBareServer } from "@tomphttp/bare-server-node";
 
 const server = http.createServer();
@@ -33,6 +31,8 @@ app.use("/baremod/", express.static(bareModulePath));
 app.use("/baremux/", express.static(baremuxPath));
 
 app.use("/", routes);
+
+wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];
 
 server.on("request", (req, res) => {
   if (bareServer.shouldRoute(req)) {

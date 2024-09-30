@@ -1,8 +1,8 @@
 import express from "express";
 import path from "path";
 import axios from "axios";
-import { URL, parse } from 'url';
-import contentType from 'content-type';
+import { URL, parse } from "url";
+import contentType from "content-type";
 
 const router = express.Router();
 const __dirname = process.cwd();
@@ -18,14 +18,19 @@ router.get("/test", (req, res) => {
 router.get("/results/:query", async (req, res) => {
   const { query } = req.params;
 
-  const reply = await fetch(`http://api.duckduckgo.com/ac?q=${query}&format=json`).then((resp) => resp.json());
+  const reply = await fetch(
+    `http://api.duckduckgo.com/ac?q=${query}&format=json`,
+  ).then((resp) => resp.json());
 
   res.send(reply);
 });
 
-router.use("/internal/", express.static(path.join(__dirname, "public/internal/")));
+router.use(
+  "/internal/",
+  express.static(path.join(__dirname, "public/internal/")),
+);
 
-router.use('/internal/icons/:url(*)', async (req, res) => {
+router.use("/internal/icons/:url(*)", async (req, res) => {
   let { url } = req.params;
   url = url.replace("https:/", "");
   url = url.replace("http:/", "");
@@ -41,13 +46,17 @@ router.use('/internal/icons/:url(*)', async (req, res) => {
 
   try {
     const assetUrl = new URL(proxiedUrl);
-    const assetResponse = await axios.get(assetUrl.toString(), { responseType: 'arraybuffer' });
+    const assetResponse = await axios.get(assetUrl.toString(), {
+      responseType: "arraybuffer",
+    });
 
-    const contentTypeHeader = assetResponse.headers['content-type'];
-    const parsedContentType = contentTypeHeader ? contentType.parse(contentTypeHeader).type : '';
+    const contentTypeHeader = assetResponse.headers["content-type"];
+    const parsedContentType = contentTypeHeader
+      ? contentType.parse(contentTypeHeader).type
+      : "";
 
     res.writeHead(assetResponse.status, {
-      "Content-Type": parsedContentType
+      "Content-Type": parsedContentType,
     });
 
     res.end(Buffer.from(assetResponse.data));
@@ -56,6 +65,5 @@ router.use('/internal/icons/:url(*)', async (req, res) => {
     res.status(500).send("Failed to fetch proxied URL");
   }
 });
-
 
 export default router;

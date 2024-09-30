@@ -6,12 +6,13 @@ var defWisp =
 var wispUrl = localStorage.getItem("wisp") || defWisp;
 var bareUrl = localStorage.getItem("bare") || "/bare/";
 
-const api = new Api(
+const nightmare = new Nightmare();
+
+const proxy = new Proxy(
   localStorage.getItem("search") || "https://www.google.com/search?q=%s",
   localStorage.getItem("transports") || "epoxy",
   wispUrl,
-  bareUrl,
-  document.getElementById("browser-container"),
+  bareUrl
 );
 
 const proxySetting = localStorage.getItem("proxy") ?? "uv";
@@ -24,9 +25,16 @@ const { file: swFile, config: swConfigSettings } = swConfig[proxySetting] ?? {
   config: __uv$config,
 };
 
-api.proxy.registerSW(swFile, swConfigSettings).then(async () => {
-  await api.proxy.setTransports();
-  api.browser.createTab("daydream://newtab");
+const render = new Render(document.getElementById("browser-container"));
+const utils = new Utils();
+const items = new Items();
+const tabs = new Tabs(render, nightmare, utils, items);
+const functions = new Functions(items, tabs);
+const searchbar = new Search(utils, proxy, swConfigSettings.prefix);
+
+proxy.registerSW(swFile, swConfigSettings).then(async () => {
+  await proxy.setTransports();
+  tabs.createTab("daydream://newtab");
 });
 
 async function getFavicon(url) {
@@ -38,22 +46,20 @@ async function getFavicon(url) {
     return null;
   }
 }
-
-
-const uvSearchBar = api.browser.addressBar;
+const uvSearchBar = items.addressBar;
 
 uvSearchBar.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     console.log("Searching...");
     e.preventDefault();
     if (uvSearchBar.value.startsWith("daydream://")) {
-      api.browser.navigate(uvSearchBar.value);
+      utils.navigate(uvSearchBar.value);
     } else {
-      api.proxy.registerSW(swFile, swConfigSettings).then(async () => {
-        await api.proxy.setTransports();
+      proxy.registerSW(swFile, swConfigSettings).then(async () => {
+        await proxy.setTransports();
         let encodedUrl =
           swConfigSettings.prefix +
-          api.proxy.crypts.encode(api.proxy.search(uvSearchBar.value));
+          proxy.crypts.encode(proxy.search(uvSearchBar.value));
         const activeIframe = document.querySelector("iframe.active");
         if (activeIframe) {
           activeIframe.src = encodedUrl;
@@ -63,31 +69,32 @@ uvSearchBar.addEventListener("keydown", (e) => {
         }
       });
     }
-    uvSearchBar.querySelectorAll('.search-header__icon')[0].style.display = 'none';
+    uvSearchBar.querySelectorAll(".search-header__icon")[0].style.display =
+      "none";
 
-    let cleanedUrl = api.proxy.crypts.decode(
+    let cleanedUrl = proxy.crypts.decode(
       url.split(swConfigSettings.prefix).pop()
     );
 
-    let isSecure = cleanedUrl.startsWith('https://');
+    let isSecure = cleanedUrl.startsWith("https://");
 
-    cleanedUrl = cleanedUrl.replace(/^https?:\/\//, '');
+    cleanedUrl = cleanedUrl.replace(/^https?:\/\//, "");
 
-    if (cleanedUrl === 'a`owt8bnalk') {
-      address2.value = 'Loading...';
-    } else if (cleanedUrl.endsWith('/500')) {
-      address2.value = 'Internal Server Error! Did you load a broken link?';
+    if (cleanedUrl === "a`owt8bnalk") {
+      address2.value = "Loading...";
+    } else if (cleanedUrl.endsWith("/500")) {
+      address2.value = "Internal Server Error! Did you load a broken link?";
     } else {
       address2.value = cleanedUrl;
     }
 
-    let webSecurityIcon = document.querySelector('.webSecurityIcon');
+    let webSecurityIcon = document.querySelector(".webSecurityIcon");
     if (isSecure) {
-      webSecurityIcon.id = 'secure';
+      webSecurityIcon.id = "secure";
       webSecurityIcon.innerHTML =
         '<span class="material-icons" style="font-size: 20px !important; height: 16px !important; width: 16px !important; padding: 0 !important; background-color: transparent !important;">lock</span>';
     } else {
-      webSecurityIcon.id = 'notSecure';
+      webSecurityIcon.id = "notSecure";
       webSecurityIcon.innerHTML =
         '<span class="material-icons" style="font-size: 20px !important; height: 16px !important; width: 16px !important; padding: 0 !important; background-color: transparent !important;">lock_open</span>';
     }
@@ -97,354 +104,12 @@ uvSearchBar.addEventListener("keydown", (e) => {
 window.addEventListener("keydown", (event) => {
   if (event.altKey && event.key === "t") {
     console.log("Creating new Tab");
-    api.browser.createTab("daydream://newtab");
+    tabs.createTab("daydream://newtab");
   } else if (event.altKey && event.key === "w") {
-    api.browser.closeCurrentTab()
+    tabs.closeCurrentTab();
   }
 });
 
+functions.init();
 
-
-const searchbar = uvSearchBar;
-
-
-async function generatePredictedUrls(query) {
-  try {
-    const response = await fetch(`/results/${query}`);
-    if (!response.ok) throw new Error('Network response was not ok');
-    const data = await response.json();
-    return data.map((item) => item.phrase);
-  } catch (error) {
-    console.error("Error fetching predicted URLs:", error);
-    return [];
-  }
-}
-
-const suggestionList = document.createElement("div");
-suggestionList.classList.add("suggestion-list");
-
-const createSection = (titleText) => {
-  const section = document.createElement("div");
-  section.classList.add("search-section");
-
-  const searchTitle = document.createElement("div");
-  searchTitle.classList.add("search-title");
-
-  const icon = document.createElement("img");
-  icon.classList.add("searchEngineIcon");
-  icon.src = '/assets/imgs/logo.png';
-
-  const title = document.createElement("span");
-  title.textContent = titleText;
-
-  searchTitle.appendChild(icon);
-  searchTitle.appendChild(title);
-
-  const searchResults = document.createElement("div");
-  searchResults.classList.add("search-results");
-
-  section.appendChild(searchTitle);
-  section.appendChild(searchResults);
-
-  return { section, searchResults };
-}
-
-const sections = {
-  searchResults: createSection("Search Results"),
-  otherPages: createSection("Other Pages"),
-  settings: createSection("Settings"),
-  games: createSection("Games")
-};
-
-Object.values(sections).forEach(({ section }) => suggestionList.appendChild(section));
-
-const maxInitialResults = 4;
-const maxExpandedResults = 8;
-let currentSectionIndex = 0;
-
-let appsData = [];
-
-searchbar.addEventListener("input", async (event) => {
-  suggestionList.style.display = "flex";
-  const query = event.target.value.trim();
-  if (query === "" && event.key == "Backspace") {
-    clearSuggestions();
-    suggestionList.style.display = "none";
-    return;
-  }
-
-  let cleanedQuery = query.replace(/^(daydream:\/\/|daydream:\/|daydream:)/, "");
-  const response = await fetch(`/results/${cleanedQuery}`).then((res) => res.json());
-  const suggestions = response.map((item) => item.phrase);
-
-  clearSuggestions();
-
-  await populateSections(suggestions);
-});
-
-function clearSuggestions() {
-  Object.values(sections).forEach(({ searchResults }) => {
-    searchResults.innerHTML = "";
-    searchResults.parentElement.style.display = "none";
-  });
-}
-
-async function populateSections(suggestions) {
-  const searchResultsSuggestions = suggestions.slice(0, maxExpandedResults);
-  populateSearchResults(searchResultsSuggestions);
-
-  await populateOtherPages(suggestions);
-
-  await populateSettings(suggestions);
-
-  await populateGames(suggestions);
-}
-
-function populateSearchResults(suggestions) {
-  const { searchResults, section } = sections.searchResults;
-  if (suggestions.length > 0) {
-    section.style.display = "block";
-    suggestions.forEach((suggestion) => {
-      const listItem = createSuggestionItem(suggestion);
-      searchResults.appendChild(listItem);
-    });
-  }
-}
-
-async function populateOtherPages(query) {
-  const { searchResults, section } = sections.otherPages;
-  let hasResults = false;
-
-  console.log("Query:", query);
-  for (let url of query) {
-    url = url.replace(/ /g, '');
-    url = "daydream://" + url;
-    const internalUrl = api.browser.processUrl(url);
-    const response = await fetch(internalUrl, { method: 'HEAD' });
-
-    if (response.ok) {
-      const listItem = createSuggestionItem(url);
-      searchResults.appendChild(listItem);
-      hasResults = true;
-    }
-  }
-  section.style.display = hasResults ? "block" : "none";
-}
-
-async function populateSettings() {
-  const { searchResults, section } = sections.settings;
-  let hasResults = false;
-
-  let query = searchbar.value.trim();
-  query = query.replace(/^(daydream:\/\/|daydream:\/|daydream:)/, "");
-
-  // Generate possible settings URLs based on the query
-  const predictedUrls = generatePredictedSettingsUrls(query);
-  for (let url of predictedUrls) {
-    const response = await fetch(url, { method: 'HEAD' });
-
-    if (response.ok) { // Only include if the page exists
-      const listItem = createSuggestionItem(url);
-      searchResults.appendChild(listItem);
-      hasResults = true;
-    }
-  }
-
-  section.style.display = hasResults ? "block" : "none";
-}
-
-function generatePredictedSettingsUrls(query) {
-  const basePaths = [
-    "settings", "settings/about", "settings/profile", "settings/privacy", "settings/security", "settings/notifications"
-  ];
-  query = query.replace(/ /g, '');
-  return basePaths.map(base => `${base}${query ? `/${query}` : ''}`);
-}
-
-async function populateGames(query) {
-  const { searchResults, section } = sections.games;
-  let hasResults = false;
-
-  if (appsData.length === 0) {
-    await fetchAppData();
-  }
-
-  const filteredGames = appsData.filter((app) =>
-    app.name.toLowerCase().includes(query.toLowerCase())
-  ).slice(0, 10);
-
-  if (filteredGames.length > 0) {
-    section.style.display = "block";
-    filteredGames.forEach((game) => {
-      const listItem = createGameItem(game);
-      searchResults.appendChild(listItem);
-      hasResults = true;
-    });
-  }
-
-  section.style.display = hasResults ? "block" : "none";
-}
-
-async function fetchAppData() {
-  try {
-    const response = await fetch("/assets/json/a.json");
-    appsData = await response.json(); // Assign appsData to the global variable
-  } catch (error) {
-    console.error("Error fetching JSON data:", error);
-  }
-}
-
-function createSuggestionItem(suggestion) {
-  const listItem = document.createElement("div");
-  const listIcon = document.createElement("span");
-  listIcon.classList.add("material-symbols-outlined");
-  listIcon.textContent = "search";
-  listItem.appendChild(listIcon);
-  listItem.innerHTML += suggestion;
-  listItem.addEventListener("click", () => {
-    searchbar.value = suggestion;
-    clearSuggestions();
-    if (suggestion.startsWith("daydream")) {
-      const link = api.browser.processUrl(suggestion);
-      if (link.startsWith("/internal/")) {
-        api.browser.navigate(suggestion);
-      }
-    } else {
-      api.browser.navigate(swConfigSettings.prefix + api.proxy.crypts.encode(api.proxy.search(suggestion)));
-    }
-    suggestionList.style.display = "none";
-  });
-  return listItem;
-}
-
-function createGameItem(game) {
-  const listItem = document.createElement("div");
-  listItem.classList.add("game-item");
-
-  const listIcon = document.createElement("img");
-  listIcon.classList.add("game-icon");
-  listIcon.src = game.image;
-  listItem.appendChild(listIcon);
-
-  const gameName = document.createElement("span");
-  gameName.textContent = game.name;
-  listItem.appendChild(gameName);
-
-  listItem.addEventListener("click", () => {
-    searchbar.value = game.name;
-    api.browser.navigate(api.proxy.search(game.link));
-  });
-
-  return listItem;
-}
-
-let selectedSuggestionIndex = -1;
-let currentMaxResults = maxInitialResults;
-
-window.addEventListener("keydown", (event) => {
-  const suggestionItems = getCurrentSuggestionItems();
-  const numSuggestions = suggestionItems.length;
-  suggestionList.style.display = "flex";
-
-  if (event.key === "ArrowDown") {
-    event.preventDefault();
-    if (selectedSuggestionIndex + 1 >= currentMaxResults) {
-      currentMaxResults = Math.min(numSuggestions, maxExpandedResults);
-    } else {
-      selectedSuggestionIndex = (selectedSuggestionIndex + 1) % numSuggestions;
-    }
-    updateSelectedSuggestion();
-  } else if (event.key === "ArrowUp") {
-    event.preventDefault();
-    selectedSuggestionIndex = (selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
-    updateSelectedSuggestion();
-  } else if (event.key === "Tab") {
-    if (selectedSuggestionIndex !== -1) {
-      event.preventDefault();
-      const selectedSuggestion = suggestionItems[selectedSuggestionIndex].textContent;
-      searchbar.value = selectedSuggestion;
-    }
-  } else if (event.key === "ArrowRight") {
-    if (selectedSuggestionIndex !== -1) {
-      event.preventDefault();
-      const selectedSuggestion = suggestionItems[selectedSuggestionIndex].textContent;
-      searchbar.value = selectedSuggestion;
-    }
-  } else if (event.key === "ArrowLeft") {
-    if (currentMaxResults === maxExpandedResults) {
-      event.preventDefault();
-      moveToNextSection();
-    }
-  } else if (event.key == "Backspace") {
-    suggestionList.style.display = "none";
-    clearSuggestions();
-  }
-
-  suggestionList.querySelectorAll(".searchEngineIcon")[0].style.display = 'block';
-  switch (localStorage.getItem("search")) {
-    case 'https://duckduckgo.com/?q=%s':
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-        '/assets/imgs/b/ddg.webp';
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-        'scale(1.35)';
-      break;
-    case 'https://bing.com/search?q=%s':
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-        '/assets/imgs/b/bing.webp';
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-        'scale(1.65)';
-      break;
-    case 'https://www.google.com/search?q=%s':
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-        '/assets/imgs/b/google.webp';
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-        'scale(1.2)';
-      break;
-    case 'https://search.yahoo.com/search?p=%s':
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-        '/assets/imgs/b/yahoo.webp';
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-        'scale(1.5)';
-      break;
-    default:
-      getFavicon(localStorage.getItem("search")).then((dataUrl) => {
-        if (dataUrl == null || dataUrl.endsWith("null")) {
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            '/assets/imgs/b/google.webp';
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-            'scale(1.2)';
-        } else {
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            dataUrl;
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].style.transform =
-            'scale(1.2)';
-        }
-      })
-  }
-});
-function moveToNextSection() {
-  currentSectionIndex = (currentSectionIndex + 1) % Object.values(sections).length;
-  while (Object.values(sections)[currentSectionIndex].searchResults.children.length === 0) {
-    currentSectionIndex = (currentSectionIndex + 1) % Object.values(sections).length;
-  }
-  selectedSuggestionIndex = -1;
-  currentMaxResults = maxInitialResults;
-  updateSelectedSuggestion();
-}
-
-function getCurrentSuggestionItems() {
-  return Object.values(sections)[currentSectionIndex].searchResults.querySelectorAll("div");
-}
-
-function updateSelectedSuggestion() {
-  const suggestionItems = getCurrentSuggestionItems();
-  suggestionItems.forEach((item, index) => {
-    if (index === selectedSuggestionIndex) {
-      item.classList.add("selected");
-    } else {
-      item.classList.remove("selected");
-    }
-  });
-}
-
-document.body.appendChild(suggestionList);
+searchbar.init(items.addressBar);

@@ -16,9 +16,11 @@
   --shortcut-box-shadow: 0 0 20px 1px #fff;
   --image-outline-color: #4400ff;
   --button-background-color: #4400ff;
-  --button-gradient-color: linear-gradient(304deg,
-      rgb(204, 0, 245) 0%,
-      #4400ff 100%);
+  --button-gradient-color: linear-gradient(
+    304deg,
+    rgb(204, 0, 245) 0%,
+    #4400ff 100%
+  );
   --scrolltop-background-color: rgba(32, 32, 32, 0.37);
   --scrolltop-backdrop-filter: blur(10px);
   --random-btn-background-color: #0a0a0a;
@@ -45,9 +47,7 @@
   --third-color: #6a00ff;
 
   --searchbar-width: calc(100% - calc(6 * 36px));
-
 }
-
 
 #browser-container {
   display: flex;
@@ -74,7 +74,6 @@ body {
 }
 
 @media (min-width: 800px) {
-
   .mock-browser {
     width: 100%;
     border-radius: 8px;
@@ -89,7 +88,7 @@ body {
   .mock-browser-content {
     position: relative;
     z-index: 1;
-    padding: 3em .5em;
+    padding: 3em 0.5em;
     margin-top: -1px;
   }
 
@@ -102,15 +101,13 @@ body {
   }
 }
 
-
 @media (max-width: 799px) {
-
   html {
     background: #252729;
   }
 
   .mock-browser-content {
-    padding: 1em .5em;
+    padding: 1em 0.5em;
   }
 
   .mock-browser .tabs {
@@ -142,7 +139,8 @@ body {
 }
 
 .tab-content * {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .tab {
@@ -290,20 +288,30 @@ body {
   white-space: nowrap;
   margin-left: 4px;
   color: #5f6368;
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 24px), transparent);
-  mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 calc(100% - 24px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 calc(100% - 24px),
+    transparent
+  );
 }
 
 .tab-small .tab-title {
   margin-left: 0;
 }
 
-.tab-favicon+.tab-title,
-.tab-small .tab-favicon+.tab-title {
+.tab-favicon + .tab-title,
+.tab-small .tab-favicon + .tab-title {
   margin-left: 8px;
 }
 
-.tab-smaller .tab-favicon+.tab-title,
+.tab-smaller .tab-favicon + .tab-title,
 .tab-mini .tab-title {
   display: none;
 }
@@ -409,7 +417,6 @@ body {
   transition: transform 120ms ease-in-out;
 }
 
-
 .tab-groups {
   display: flex;
   flex-direction: row;
@@ -482,7 +489,6 @@ body {
     z-index: 2;
   }
   */
-
 
 .address-bar {
   padding: 10px;
@@ -622,7 +628,7 @@ body {
   list-style-type: none;
 }
 
-.dropdown-button.active+.dropdown-options {
+.dropdown-button.active + .dropdown-options {
   display: block;
 }
 
@@ -660,7 +666,6 @@ body {
   background-color: var(--dropdown-li-active);
 }
 
-
 #utilityactive {
   background-color: var(--header-active-background-color);
   border-radius: 7px;
@@ -678,7 +683,7 @@ body {
 }
 
 .utility .search-header__input {
-  font-family: 'DM Sans';
+  font-family: "DM Sans";
   font-size: 16px;
   background-color: var(--input-background-color);
   border: solid 0.5px var(--border-color);
@@ -727,7 +732,6 @@ body {
 .utility .right {
   position: fixed;
   right: 0;
-
 }
 
 .utility li {
@@ -751,7 +755,7 @@ body {
 }
 
 #uv-address {
-  font-family: 'DM Sans';
+  font-family: "DM Sans";
   font-size: 16px;
   transition: color ease-in-out 0.5s;
   color: var(--page-text-color);
@@ -917,7 +921,7 @@ body {
   padding-top: 5px;
   margin: 0;
   direction: ltr;
-  width: 2.0em;
+  width: 2em;
   height: calc(100% - 3em);
   background-color: var(--tab-bg-color);
   position: fixed;
@@ -943,7 +947,7 @@ body {
 }
 
 .search-header__input {
-  font-family: 'DM Sans';
+  font-family: "DM Sans";
   font-size: 16px;
   background-color: var(--input-background-color);
   border: solid 0.5px var(--border-color);
@@ -966,10 +970,10 @@ body {
 .search-header__input::-webkit-input-placeholder {
   font-weight: 200;
   color: #868686;
-  font-family: 'DM Sans';
+  font-family: "DM Sans";
 }
 
-.search-header__input:focus+.search-header__button {
+.search-header__input:focus + .search-header__button {
   background-color: transparent;
 }
 
@@ -1019,7 +1023,7 @@ body {
 }
 
 .iframe-container {
-  width: calc(100% - calc(2.0em + 10px));
+  width: calc(100% - calc(2em + 10px));
   height: 100%;
   right: 0;
   position: fixed;
@@ -1062,7 +1066,6 @@ iframe.active {
   width: 50%;
   height: 50%;
 }
-
 
 .aur_cont {
   margin: 35px auto 0;
@@ -1155,7 +1158,6 @@ iframe.active {
 }
 
 @keyframes topup {
-
   0%,
   100% {
     transform: translatey(0px);
@@ -1289,14 +1291,23 @@ iframe.active {
   transition: 0.3s;
 }
 
+.suggestion-list .search-section .search-results div img {
+  width: 20px;
+  height: 20px;
+}
+
 .suggestion-list .search-section .search-results div:hover {
-  box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
+  box-shadow:
+    0 0 15px 1px var(--shadow-color),
+    0 0 1px 1px var(--theme-color);
   transition: 0.3s;
   background-color: var(--tab-bg-color);
 }
 
 .suggestion-list .search-section .search-results .selected {
-  box-shadow: 0 0 15px 1px var(--shadow-color), 0 0 1px 1px var(--theme-color);
+  box-shadow:
+    0 0 15px 1px var(--shadow-color),
+    0 0 1px 1px var(--theme-color);
   transition: 0.3s;
   background-color: var(--tab-active-bg-color);
 }
