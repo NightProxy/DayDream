@@ -1017,7 +1017,7 @@ body {
 .viewport {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  height: calc(100% - calc(2em + 12px + 46px));
   width: 100%;
   overflow: hidden;
 }

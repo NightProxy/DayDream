@@ -29,6 +29,8 @@ app.use("/@/", express.static(uvPath));
 app.use("/libcurl/", express.static(libcurlPath));
 app.use("/baremod/", express.static(bareModulePath));
 app.use("/baremux/", express.static(baremuxPath));
+app.use("/rh/client/", express.static(path.join(process.cwd(), "node_modules", "@rubynetwork", "rammerhead-browser")));
+
 
 app.use("/", routes);
 

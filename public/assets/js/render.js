@@ -65,6 +65,7 @@ class Render {
 						class="search-header__input"
 						id="uv-address"
 						type="text"
+						autocomplete="off"
 					/>
 					<div class="webSecurityIcon"></div>
 					<button

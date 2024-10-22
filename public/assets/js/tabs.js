@@ -405,7 +405,7 @@ class Tabs {
         const currentIndex = tabEls.indexOf(tabEl);
 
         const currentTabPositionX = originalTabPositionX + moveVector.x;
-        const destinationIndexTarget = this.closest(
+        const destinationIndexTarget = utils.closest(
           currentTabPositionX,
           tabPositions,
         );

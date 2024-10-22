@@ -6,7 +6,6 @@ class Proxy {
     }
 
     this.crypts = new crypts();
-
     this.connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
     console.log("Proxy variables:", {
@@ -20,41 +19,24 @@ class Proxy {
     this.transportVar = transportVar;
     this.wispUrl = wispUrl;
     this.bareUrl = bareUrl;
-
-    if (!searchVar || !transportVar || !wispUrl || !bareUrl) {
-      console.error("One or more variables are null or undefined:", {
-        searchVar,
-        transportVar,
-        wispUrl,
-        bareUrl,
-      });
-    }
   }
 
   async setTransports() {
     const transports = this.transportVar;
-    if (transports === "epoxy") {
-      await this.connection.setTransport("/epoxy/index.mjs", [
-        { wisp: this.wispUrl },
-      ]);
-    } else if (transports === "libcurl") {
-      await this.connection.setTransport("/libcurl/index.mjs", [
-        { wisp: this.wispUrl },
-      ]);
-    } else if (transports === "baremod") {
-      await this.connection.setTransport("/baremod/index.mjs", [this.bareUrl]);
-    } else {
-      await this.connection.setTransport("/epoxy/index.mjs", [
-        { wisp: this.wispUrl },
-      ]);
-    }
+    const transportMap = {
+      "epoxy": "/epoxy/index.mjs",
+      "libcurl": "/libcurl/index.mjs",
+      "baremod": "/baremod/index.mjs"
+    };
+    const transportFile = transportMap[transports] || "/epoxy/index.mjs";
+    await this.connection.setTransport(transportFile, [
+      { wisp: this.wispUrl },
+    ]);
   }
 
   search(input) {
     input = input.trim();
-    const searchTemplate =
-      this.searchVar || "https://www.google.com/search?q=%s";
-
+    const searchTemplate = this.searchVar || "https://www.google.com/search?q=%s";
     try {
       return new URL(input).toString();
     } catch (err) {
@@ -70,17 +52,12 @@ class Proxy {
     }
   }
 
-  launch() {
-    console.log("Proxy launched.");
-  }
-
   async registerSW(swFile, swConfigSettings) {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready.then(async () => {
-        await setTransports();
-      });
+      await navigator.serviceWorker.ready;
+      await this.setTransports();
       this.updateSW();
-      navigator.serviceWorker.register(swFile, {
+      await navigator.serviceWorker.register(swFile, {
         scope: swConfigSettings.prefix,
       });
     }
@@ -88,34 +65,65 @@ class Proxy {
 
   updateSW() {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
-      for (let registration of registrations) {
+      registrations.forEach(registration => {
         registration.update();
         console.log(`Service Worker at ${registration.scope} Updated`);
-      }
+      });
     });
   }
 
   uninstallSW() {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
-      for (let registration of registrations) {
+      registrations.forEach(registration => {
         registration.unregister();
         console.log(`Service Worker at ${registration.scope} Unregistered`);
-      }
+      });
     });
   }
 
-  async fetchConfig(url, jsonData) {
+  async fetchProxyMapping() {
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const text = await response.text();
-      jsonData = JSON.parse(text);
-      return jsonData;
+      const response = await fetch('/assets/json/proxy.json');
+      if (!response.ok) throw new Error('Failed to load proxy mappings.');
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching the text file:", error);
+      console.error("Error fetching proxy mappings:", error);
       return null;
     }
+  }
+
+  getDomainFromUrl(url) {
+    try {
+      return new URL(url).hostname;
+    } catch (error) {
+      console.error("Invalid URL format:", error);
+      return null;
+    }
+  }
+
+  async determineProxy(domain) {
+    const proxyMapping = await this.fetchProxyMapping();
+    if (proxyMapping) {
+      return proxyMapping[domain] || proxyMapping["default"];
+    }
+    return "uv"; // Default to Ultraviolet
+  }
+
+  async automatic(input) {
+    const domain = this.getDomainFromUrl(input);
+    const selectedProxy = await this.determineProxy(domain);
+
+    const { file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
+      file: "/@/sw.js",
+      config: __uv$config,
+      func: null,
+    };
+
+    if (swFunction) swFunction();
+
+    await this.registerSW(swFile, swConfigSettings);
+    await this.setTransports();
+
+    return { file: swFile, config: swConfigSettings };
   }
 }
