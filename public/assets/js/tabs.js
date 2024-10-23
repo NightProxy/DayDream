@@ -424,9 +424,15 @@ class Tabs {
     }
     this.layoutTabs();
   }
-
   layoutTabs() {
     const tabContentWidths = this.tabContentWidths;
+    
+    let cumulativeWidth = 0;
+    tabContentWidths.forEach((contentWidth) => {
+      const tabWidth = contentWidth + 2 * 9;
+      cumulativeWidth += tabWidth;
+      return cumulativeWidth;
+    });
   
     this.tabEls.forEach((tabEl, i) => {
       const contentWidth = tabContentWidths[i];

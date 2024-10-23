@@ -1,0 +1,22 @@
+@import url("/assets/css/search.css");
+
+.banner {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: center;
+  }
+  
+  .banner div .name {
+    color: var(--text-color);
+    font-size: 48px;
+    text-align: center;
+    margin: 0 20px;
+  }
+  
+  .banner .pfp {
+    width: 120px;
+    height: 120px;
+  }
+  

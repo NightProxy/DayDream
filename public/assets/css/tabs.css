@@ -289,6 +289,10 @@
   .tab.active .tab-bottom-border {
     display: block;
   }
+
+  .tab:hover .tab-bottom-border {
+    display: block;
+  }
   
   .tabs-is-sorting .tab:not(.tab-is-dragging),
   .tabs:not(.tabs-is-sorting) .tab.tab-was-just-dragged {
