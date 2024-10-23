@@ -9,21 +9,7 @@ class Render {
                         <div class="tabs-content" id="tab-groups"></div>
                         <div class="browser-button" id="create-tab"><span class="material-symbols-outlined">add</span></div>
                         </div>
-                    <!-- Styles to prevent flash after JS initialization -->
-                    <style>
-                        .tabs .tab {
-                            width: 258px;
-                        }
-                            .tabs .tab:nth-child(1) {
-                            transform: translate3d(0px, 0, 0);
-                        }
-
-                        .tabs .tab:nth-child(2) {
-                            transform: translate3d(239px, 0, 0);
-                        }
-                    </style>
                 </div>
-                <div class="tabs-optional-shadow-below-bottom-bar"></div>
                 <div class="under-tabs">
                 <div class="tabs-bottom-bar"></div>
 

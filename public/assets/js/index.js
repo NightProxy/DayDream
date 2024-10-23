@@ -16,6 +16,7 @@ const proxy = new Proxy(
 );
 
 const proxySetting = localStorage.getItem("proxy") ?? "uv";
+let swConfigSettings = {};
 const swConfig = {
   uv: {
     file: "/@/sw.js",
@@ -27,8 +28,11 @@ const swConfig = {
     config: __scramjet$config,
     func: async () => {
       const scramjet = new ScramjetController(__scramjet$config);
-      await scramjet.init("/$/sw.js");
-      await proxy.setTransports();
+      scramjet.modifyConfig(__scramjet$config);
+
+      scramjet.init('/$/sw.js').then(async () => {
+        await setTransports();
+      });
       console.log("Scramjet Service Worker registered.");
     }
   },
@@ -40,23 +44,19 @@ const swConfig = {
     }
   }
 };
-
-const { file: swFile, config: swConfigSettings, func: swFunction } = swConfig[proxySetting] ?? {
-  file: "/@/sw.js",
-  config: __uv$config,
-  func: null,
-};
-
 const render = new Render(document.getElementById("browser-container"));
 const items = new Items();
 const utils = new Utils(items);
 const tabs = new Tabs(render, nightmare, utils, items);
 const functions = new Functions(items, tabs);
-const searchbar = new Search(utils, proxy, swConfigSettings.prefix);
 
 if (typeof swFunction === "function") {
   swFunction();
 }
+
+proxy.registerSW(swConfig[proxySetting].file, swConfig[proxySetting].config).then(async () => {
+  await proxy.setTransports();
+});
 
 const uvSearchBar = items.addressBar;
 uvSearchBar.addEventListener("keydown", async (e) => {
@@ -69,16 +69,23 @@ uvSearchBar.addEventListener("keydown", async (e) => {
     if (searchValue.startsWith("daydream://")) {
       utils.navigate(searchValue);
     } else {
-      const { file: swFile, config: swConfigSettings } = proxySetting === "automatic"
-        ? await swConfig.automatic.func(searchValue)
+      if (proxySetting === "automatic") {
+        const result = await swConfig.automatic.func(proxy.search(searchValue));
+        swConfigSettings = result.config;
+      } else {
+        swConfigSettings = swConfig[proxySetting].config;
+      }
+
+      var { file: swFile, config: swConfigSettings } = proxySetting === "automatic"
+        ? await swConfig.automatic.func(proxy.search(searchValue))
         : swConfig[proxySetting];
 
+      await proxy.registerSW(swFile, swConfigSettings);
+
       let encodedUrl = swConfigSettings.prefix + proxy.crypts.encode(proxy.search(searchValue));
-      const decryptedUrl = proxy.decryptUrl(encodedUrl, proxySetting);
 
       console.log(`Using proxy: ${proxySetting}`);
       console.log(`Encoded URL: ${encodedUrl}`);
-      console.log(`Decrypted URL: ${decryptedUrl}`);
 
       const activeIframe = document.querySelector("iframe.active");
       if (activeIframe) {
@@ -100,11 +107,8 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
-proxy.registerSW(swConfig["uv"].file, swConfig["uv"].config).then(async () => {
-  await proxy.setTransports();
-  tabs.createTab("daydream://newtab");
-});
+functions.init()
+tabs.createTab("daydream://newtab");
 
-functions.init();
-
+const searchbar = new Search(utils, proxy, swConfigSettings.prefix);
 searchbar.init(items.addressBar);

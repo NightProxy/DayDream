@@ -54,11 +54,13 @@ class Proxy {
 
   async registerSW(swFile, swConfigSettings) {
     if ("serviceWorker" in navigator) {
-      await navigator.serviceWorker.ready;
-      await this.setTransports();
-      this.updateSW();
       await navigator.serviceWorker.register(swFile, {
         scope: swConfigSettings.prefix,
+      });
+
+      navigator.serviceWorker.ready.then(async () => {
+        await this.setTransports();
+        this.updateSW();
       });
     }
   }
@@ -94,6 +96,8 @@ class Proxy {
 
   getDomainFromUrl(url) {
     try {
+      url = url.replace(__uv$config.prefix, "");
+      url = url.replace(__scramjet$config.prefix, "");
       return new URL(url).hostname;
     } catch (error) {
       console.error("Invalid URL format:", error);
@@ -113,7 +117,7 @@ class Proxy {
     const domain = this.getDomainFromUrl(input);
     const selectedProxy = await this.determineProxy(domain);
 
-    const { file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
+    var { file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
       file: "/@/sw.js",
       config: __uv$config,
       func: null,

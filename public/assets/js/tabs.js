@@ -16,7 +16,6 @@ class Tabs {
     this.el.appendChild(this.styleEl);
 
     window.addEventListener("resize", (_) => {
-      this.cleanUpPreviouslyDraggedTabs();
       this.layoutTabs();
     });
 
@@ -56,7 +55,6 @@ class Tabs {
       const extraWidth =
         flooredClampedTargetWidth < 240 && extraWidthRemaining > 0 ? 1 : 0;
       widths.push(flooredClampedTargetWidth + extraWidth);
-      if (extraWidthRemaining > 0) extraWidthRemaining -= 1;
     }
 
     return widths;
@@ -69,7 +67,7 @@ class Tabs {
     let position = 9;
     tabContentWidths.forEach((width, i) => {
       const offset = i * 1;
-      positions.push(position - offset);
+      positions.push((position + 4) - offset);
       position += width;
     });
 
@@ -80,7 +78,7 @@ class Tabs {
     const positions = [];
 
     this.tabContentPositions.forEach((contentPosition) => {
-      positions.push(contentPosition - 9);
+      positions.push(contentPosition);
     });
 
     return positions;
@@ -102,7 +100,7 @@ class Tabs {
         this.ui.createElement("button", {
           class: "tab-close",
           id: `close-${id}`,
-        }),
+        }, [this.ui.createElement("span", { class: "material-symbols-outlined" }, ["close"])]),
       ]),
       this.ui.createElement("div", { class: "tab-bottom-border" }),
     ]);
@@ -180,7 +178,6 @@ class Tabs {
 
     this.selectTab({ tab, iframe, url });
 
-    this.cleanUpPreviouslyDraggedTabs();
     this.layoutTabs();
     this.setupDraggabilly();
   }
@@ -387,8 +384,6 @@ class Tabs {
             tabEl.classList.remove("tab-is-dragging");
             this.el.classList.remove("tabs-is-sorting");
 
-            tabEl.classList.add("tab-was-just-dragged");
-
             requestAnimationFrame((_) => {
               tabEl.style.transform = "";
 
@@ -430,30 +425,28 @@ class Tabs {
     this.layoutTabs();
   }
 
-  cleanUpPreviouslyDraggedTabs() {
-    this.tabEls.forEach((tabEl) =>
-      tabEl.classList.remove("tab-was-just-dragged"),
-    );
-  }
-
   layoutTabs() {
     const tabContentWidths = this.tabContentWidths;
-
+  
     this.tabEls.forEach((tabEl, i) => {
       const contentWidth = tabContentWidths[i];
-      const width = contentWidth + 2 * 9;
-
-      tabEl.style.width = width + "px";
+      const tabWidth = contentWidth + 2 * 9;
+  
+      // tabEl.style.width = tabWidth + "px";
     });
-
+  
     let styleHTML = "";
     this.tabPositions.forEach((position, i) => {
+      const contentWidth = tabContentWidths[i];
+      const tabWidth = contentWidth + 2 * 9;
+  
       styleHTML += `
-          #${this.render.container.id} .tab:nth-child(${i + 1}) {
-            transform: translate3d(${position}px, 0, 0)
-          }
-        `;
+        .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
+          transform: translate3d(${position}px, 0, 0)
+        }
+      `;
     });
     this.styleEl.innerHTML = styleHTML;
   }
+  
 }
