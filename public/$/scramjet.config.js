@@ -1,7 +1,7 @@
 // this is my custom file for my setup. however it doesn't directly interfere with the actual config variable, so the init is still needed.
 
 self.__scramjet$config = {
-  prefix: "/$/space/",
+  prefix: "/$/daydream/",
   files: {
       wasm: "/$/scramjet.wasm.js",
       worker: "/$/scramjet.worker.js",
