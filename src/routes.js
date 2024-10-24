@@ -66,4 +66,9 @@ router.use("/internal/icons/:url(*)", async (req, res) => {
   }
 });
 
+router.use((req, res) => {
+  res.status(404);
+  res.sendFile(path.join(__dirname, "public/internal/404.html"));
+});
+
 export default router;

@@ -15,7 +15,7 @@
   }
   
   .utility .search-header__input {
-    font-family: "DM Sans";
+    font-family: "Plus Jakarta Sans";
     font-size: 16px;
     background-color: var(--input-background-color);
     border: solid 0.5px var(--border-color);
@@ -49,7 +49,7 @@
     padding-right: 5px;
     margin: 0;
     direction: ltr;
-    width: 100%;
+    width: calc(100% - 2em);
     height: 3em;
     background-color: var(--utility-background-color);
     text-align: center;
@@ -58,7 +58,7 @@
     align-items: center;
     justify-content: flex-start;
     position: relative;
-    right: 0;
+    right: 0px;
   }
   
   .utility .right {
@@ -87,10 +87,7 @@
   }
   
   #uv-address {
-    font-family: "DM Sans";
-    font-size: 16px;
     transition: color ease-in-out 0.5s;
-    color: var(--page-text-color);
     text-overflow: ellipsis;
     padding-right: 32px;
     padding-left: 40px;

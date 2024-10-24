@@ -90,7 +90,7 @@ class Menu {
     this.currentPage = null;
   }
 
-  createMenu(dropdownName, dropdownId, { items, pages }) {
+  createMenu(tag, dropdownName, dropdownId, { items, pages }) {
     this.container = this.ui.createElement("div", { class: "menu-container" });
 
     this.menuTopBar = this.ui.createElement("div", { class: "menu-top-bar" });
@@ -171,7 +171,7 @@ class Menu {
       this.showPage(pages[0].id);
     }
 
-    document.body.appendChild(this.container);
+    tag.appendChild(this.container);
 
     setTimeout(() => {
       this.container.classList.add("visible");

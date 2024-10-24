@@ -4,6 +4,7 @@ class Tabs {
     this.ui = ui;
     this.utils = utils;
     this.items = items;
+    this.tabCount = 0;
     this.tabs = [];
     this.groups = [];
     this.draggabillies = [];
@@ -85,7 +86,8 @@ class Tabs {
   }
 
   createTab(url, updateSrc = true) {
-    const id = `tab-${Date.now()}`;
+    this.tabCount++
+    const id = `tab-${this.tabCount}`;
     const iframe = this.ui.createElement("iframe", {
       src: this.utils.processUrl(url),
     });
@@ -194,6 +196,32 @@ class Tabs {
     }
   }
 
+  closeCurrentTab() {
+    const activeTab = document.querySelector('.tab.active');
+    const activeIFrame = document.querySelector('iframe.active');
+    if (activeTab && activeIFrame) {
+      const currentTabId = parseInt(activeIFrame.id.replace('tab-', ''));
+      activeTab.remove();
+      activeIFrame.remove();
+
+      const remainingTabs = document.querySelectorAll('.tab');
+      if (remainingTabs.length > 0) {
+        const previousTab = document.getElementById(`tab-${currentTabId - 1}`);
+        const nextTab = document.getElementById(`tab-${currentTabId + 1}`);
+        (previousTab || nextTab || remainingTabs[remainingTabs.length - 1]).click();
+      }
+    }
+  }
+
+  closeAllTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.remove();
+    });
+    document.querySelector('.iframe-container').querySelectorAll('iframe').forEach(page => {
+      page.remove();
+    });
+  }
+
   createGroup(name) {
     const existingGroup = this.groups.find(
       (group) => group.header.textContent === name,
@@ -293,16 +321,6 @@ class Tabs {
       alert(`Bookmarking: ${currentTab.url}`);
     }
   }
-
-  closeCurrentTab() {
-    const currentTab = this.tabs.find((tab) =>
-      tab.tab.classList.contains("active"),
-    );
-    if (currentTab) {
-      this.closeTabById(currentTab.id);
-    }
-  }
-
   closeCurrentGroup() {
     const currentGroup = this.groups.find((group) =>
       group.content.contains(
@@ -324,7 +342,7 @@ class Tabs {
     tabInfo.tab.classList.add("active");
     tabInfo.iframe.classList.add("active");
 
-    this.items.addressBar.value = tabInfo.url;
+    this.items.addressBar.value = tabInfo.url; //change this to be the URL of the page later
 
     this.currentTab = tabInfo;
   }
@@ -346,7 +364,7 @@ class Tabs {
       this.draggabillyDragging.element.style.transform = "";
       this.draggabillyDragging.dragEnd();
       this.draggabillyDragging.isDragging = false;
-      this.draggabillyDragging.positionDrag = (_) => {}; // Prevent Draggabilly from updating tabEl.style.transform in later frames
+      this.draggabillyDragging.positionDrag = (_) => { }; // Prevent Draggabilly from updating tabEl.style.transform in later frames
       this.draggabillyDragging.destroy();
       this.draggabillyDragging = null;
     }
@@ -412,6 +430,11 @@ class Tabs {
         if (currentIndex !== destinationIndex) {
           this.animateTabMove(tabEl, currentIndex, destinationIndex);
         }
+        const lastTab = tabEls[tabEls.length - 1];
+        const lastTabPosition = this.tabPositions[this.tabPositions.length - 1];
+        const lastTabWidth = this.tabContentWidths[this.tabContentWidths.length - 1];
+        const translatePx = lastTabPosition + lastTabWidth + (tabEl === lastTab ? (tabEl.getAttribute("data-was-not-last-tab-when-started-dragging") ? moveVector.x - this.tabContentWidths[currentIndex] : moveVector.x) : 0) + 16;
+        document.querySelector("#create-tab").style.transform = `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`
       });
     });
   }
@@ -426,33 +449,39 @@ class Tabs {
   }
   layoutTabs() {
     const tabContentWidths = this.tabContentWidths;
-    
+
     let cumulativeWidth = 0;
     tabContentWidths.forEach((contentWidth) => {
-      const tabWidth = contentWidth + 2 * 9;
+      const tabWidth = Math.min(contentWidth + (2 * 9), 240);
       cumulativeWidth += tabWidth;
       return cumulativeWidth;
     });
-  
+
     this.tabEls.forEach((tabEl, i) => {
       const contentWidth = tabContentWidths[i];
-      const tabWidth = contentWidth + 2 * 9;
-  
-      // tabEl.style.width = tabWidth + "px";
+      const tabWidth = Math.min(contentWidth + (2 * 9), 240);
+      tabEl.classList.remove('is-small');
+      tabEl.classList.remove('is-smaller');
+      tabEl.classList.remove('is-mini');
+
+      tabEl.style.width = tabWidth + "px";
+      if (contentWidth < 84) tabEl.classList.add('is-small')
+      if (contentWidth < 60) tabEl.classList.add('is-smaller')
+      if (contentWidth < 48) tabEl.classList.add('is-mini')
     });
-  
+
     let styleHTML = "";
+    let lastPos = 0;
     this.tabPositions.forEach((position, i) => {
-      const contentWidth = tabContentWidths[i];
-      const tabWidth = contentWidth + 2 * 9;
-  
+
       styleHTML += `
         .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
           transform: translate3d(${position}px, 0, 0)
         }
-      `;
+      `; lastPos = position
     });
     this.styleEl.innerHTML = styleHTML;
+    document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 28}px)`;
   }
-  
+
 }

@@ -96,8 +96,6 @@ class Proxy {
 
   getDomainFromUrl(url) {
     try {
-      url = url.replace(__uv$config.prefix, "");
-      url = url.replace(__scramjet$config.prefix, "");
       return new URL(url).hostname;
     } catch (error) {
       console.error("Invalid URL format:", error);
@@ -130,4 +128,16 @@ class Proxy {
 
     return { file: swFile, config: swConfigSettings };
   }
+
+  redirect(url) {
+    this.registerSW(swFile, swConfigSettings).then(async () => {
+        await this.setTransports();
+        let encodedUrl = swConfigSettings.prefix + __uv$config.encodeUrl(this.search(url));
+        const activeIframe = document.querySelector('iframe.active');
+        if (activeIframe) {
+            navigate(activeIframe, encodedUrl);
+        }
+    });
+}
+
 }

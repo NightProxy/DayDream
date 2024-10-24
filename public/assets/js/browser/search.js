@@ -1,20 +1,22 @@
 class Search {
-  constructor(utils, proxy, prefix) {
+  constructor(utils, ui, dataAPI, proxy, prefix) {
     this.utils = utils;
+    this.ui = ui;
+    this.data = dataAPI;
     this.proxy = proxy;
     this.prefix = prefix;
     this.currentSectionIndex = 0;
     this.maxInitialResults = 4;
     this.maxExpandedResults = 8;
     this.appsData = [];
-    this.sections = {}; // Define sections as a class property
+    this.sections = {};
+    this.selectedSuggestionIndex = -1;
+    this.currentMaxResults = this.maxInitialResults;
   }
 
   init(searchbar) {
-    const suggestionList = document.createElement("div");
-    suggestionList.classList.add("suggestion-list");
+    const suggestionList = this.ui.createElement("div", { class: "suggestion-list", id: "suggestion-list" });
 
-    // Initialize sections and store them in the class property
     this.sections = {
       searchResults: this.createSection("Search Results"),
       otherPages: this.createSection("Other Pages"),
@@ -29,7 +31,7 @@ class Search {
     searchbar.addEventListener("input", async (event) => {
       suggestionList.style.display = "flex";
       const query = event.target.value.trim();
-      if (query === "" && event.key == "Backspace") {
+      if (query === "" && event.inputType === "deleteContentBackward") {
         this.clearSuggestions();
         suggestionList.style.display = "none";
         return;
@@ -49,50 +51,46 @@ class Search {
       await this.populateSections(suggestions, searchbar.value);
     });
 
-    let selectedSuggestionIndex = -1;
-    let currentMaxResults = this.maxInitialResults;
-
     window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" || event.ctrlKey || event.shiftKey || event.altKey) return;
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
       suggestionList.style.display = "flex";
 
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        if (selectedSuggestionIndex + 1 >= numSuggestions) {
+        if (this.selectedSuggestionIndex + 1 >= numSuggestions) {
           this.moveToNextSection(); // Move to next section when the last suggestion is selected
+          this.selectedSuggestionIndex = 0; // Select the first item in the next section
         } else {
-          selectedSuggestionIndex =
-            (selectedSuggestionIndex + 1) % numSuggestions;
+          this.selectedSuggestionIndex =
+            (this.selectedSuggestionIndex + 1) % numSuggestions;
         }
         this.updateSelectedSuggestion();
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        selectedSuggestionIndex =
-          (selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
+        this.selectedSuggestionIndex =
+          (this.selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
         this.updateSelectedSuggestion();
       } else if (event.key === "Tab") {
-        if (selectedSuggestionIndex !== -1) {
+        if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[selectedSuggestionIndex].textContent;
+            suggestionItems[this.selectedSuggestionIndex].textContent;
           searchbar.value = selectedSuggestion;
         }
       } else if (event.key === "ArrowRight") {
-        if (selectedSuggestionIndex !== -1) {
+        if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[selectedSuggestionIndex].textContent;
+            suggestionItems[this.selectedSuggestionIndex].textContent;
           searchbar.value = selectedSuggestion;
         }
-      } else if (event.key === "ArrowLeft") {
-        if (currentMaxResults === this.maxExpandedResults) {
-          event.preventDefault();
-          this.moveToNextSection();
+      } else if (event.key === "Backspace") {
+        if (searchbar.value === "") {
+          suggestionList.style.display = "none";
+          this.clearSuggestions();
         }
-      } else if (event.key == "Backspace") {
-        suggestionList.style.display = "none";
-        this.clearSuggestions();
       }
 
       suggestionList.querySelectorAll(".searchEngineIcon")[0].style.display =
@@ -151,7 +149,7 @@ class Search {
   }
 
   createSection(titleText) {
-    const section = document.createElement("div");
+    /*const section = document.createElement("div");
     section.classList.add("search-section");
 
     const searchTitle = document.createElement("div");
@@ -171,7 +169,15 @@ class Search {
     searchResults.classList.add("search-results");
 
     section.appendChild(searchTitle);
-    section.appendChild(searchResults);
+    section.appendChild(searchResults);*/
+    const section = this.ui.createElement("div", { class: "search-section" }, [
+      this.ui.createElement("div", { class: "search-title" }, [
+        this.ui.createElement("img", { class: "searchEngineIcon", src: "/assets/imgs/logo.png" }),
+        this.ui.createElement("span", {}, [titleText]),
+      ]),
+      this.ui.createElement("div", { class: "search-results" }),
+    ]);
+    const searchResults = section.querySelector(".search-results");
 
     return { section, searchResults };
   }
@@ -186,19 +192,20 @@ class Search {
     this.currentSectionIndex =
       (this.currentSectionIndex + 1) % Object.values(this.sections).length;
     while (
-      Object.values(this.sections)[this.currentSectionIndex].searchResults
-        .children.length === 0
+      Object.values(this.sections)[this.currentSectionIndex].searchResults.children.length === 0
     ) {
       this.currentSectionIndex =
         (this.currentSectionIndex + 1) % Object.values(this.sections).length;
     }
     this.selectedSuggestionIndex = -1;
-    this.currentMaxResults = this.maxInitialResults;
     this.updateSelectedSuggestion();
   }
 
   updateSelectedSuggestion() {
     const suggestionItems = this.getCurrentSuggestionItems();
+    document.querySelectorAll(".search-results div.selected").forEach((item) => {
+      item.classList.remove("selected");
+    });
     suggestionItems.forEach((item, index) => {
       item.classList.toggle("selected", index === this.selectedSuggestionIndex);
     });
@@ -232,7 +239,7 @@ class Search {
 
     await this.populateOtherPages(suggestions);
 
-//    await this.populateSettings(suggestions);
+    //    await this.populateSettings(suggestions);
 
     await this.populateGames(e);
   }
@@ -257,7 +264,9 @@ class Search {
       url = url.replace(/ /g, "");
       url = "daydream://" + url;
       const internalUrl = this.utils.processUrl(url);
-      const response = await fetch(internalUrl, { method: "HEAD" });
+      const response = await fetch(internalUrl, { method: "HEAD" }).catch(error => {
+        this.data.logger.createLog("Failed to Fetch:" + error)
+      });
 
       if (response.ok) {
         const listItem = this.createSuggestionItem(url);
@@ -348,17 +357,15 @@ class Search {
     listItem.addEventListener("click", () => {
       searchbar.value = suggestion;
       this.clearSuggestions();
+      document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
       if (suggestion.startsWith("daydream")) {
         const link = this.utils.processUrl(suggestion);
         if (link.startsWith("/internal/")) {
           this.utils.navigate(suggestion);
         }
       } else {
-        this.utils.navigate(
-          this.prefix + this.proxy.crypts.encode(this.proxy.search(suggestion)),
-        );
+        this.proxy.redirect(suggestion);
       }
-      suggestionList.style.display = "none";
     });
     return listItem;
   }
@@ -373,17 +380,15 @@ class Search {
     listItem.addEventListener("click", () => {
       searchbar.value = game.link;
       this.clearSuggestions();
+      document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
       if (game.link.startsWith("daydream")) {
         const link = this.utils.processUrl(game.link);
         if (link.startsWith("/internal/")) {
           this.utils.navigate(game.link);
         }
       } else {
-        this.utils.navigate(
-          this.prefix + this.proxy.crypts.encode(this.proxy.search(game.link)),
-        );
+        this.proxy.redirect(game.link);
       }
-      suggestionList.style.display = "none";
     });
 
     return listItem;

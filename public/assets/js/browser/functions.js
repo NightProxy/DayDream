@@ -1,6 +1,8 @@
 class Functions {
-  constructor(items, tabs) {
+  constructor(items,ui, tabs) {
     this.items = items;
+    this.ui = ui;
+    this.tabs = tabs;
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -25,20 +27,20 @@ class Functions {
     });
 
     this.items.newTab.addEventListener("click", () =>
-      tabs.createTab("daydream://newtab"),
+      this.tabs.createTab("daydream://newtab"),
     );
   }
 
   backward() {
-    this.items.activeTabIframe.contentWindow.history.back();
+    this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.back();
   }
 
   forward() {
-    this.items.activeTabIframe.contentWindow.history.forward();
+    this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.forward();
   }
 
   refresh() {
-    this.items.activeTabIframe.src = this.items.activeTabIframe.src;
+    tthis.items.iframeContainer.querySelector("iframe.active").contentWindow.location.reload();
   }
 
   injectErudaScript(iframeDocument) {
@@ -105,7 +107,7 @@ class Functions {
     });
   }
   inspectelement() {
-    const iframe = this.items.activeTabIframe;
+    const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (!iframe || !iframe.contentWindow) {
       console.error(
         "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
@@ -164,6 +166,6 @@ class Functions {
       ],
     };
 
-    this.ui.menu.createMenu("Home", "menuDropdown", elements);
+    this.ui.menu.createMenu(document.querySelector(".viewport"), "Home", "menuDropdown", elements);
   }
 }

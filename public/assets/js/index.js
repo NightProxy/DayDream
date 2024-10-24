@@ -8,6 +8,8 @@ var bareUrl = localStorage.getItem("bare") || "/bare/";
 
 const nightmare = new Nightmare();
 
+const dataApi = new DataAPI();
+
 const proxy = new Proxy(
   localStorage.getItem("search") || "https://www.google.com/search?q=%s",
   localStorage.getItem("transports") || "libcurl",
@@ -48,7 +50,10 @@ const render = new Render(document.getElementById("browser-container"));
 const items = new Items();
 const utils = new Utils(items);
 const tabs = new Tabs(render, nightmare, utils, items);
-const functions = new Functions(items, tabs);
+
+tabs.createTab("daydream://newtab");
+
+const functions = new Functions(items, nightmare,tabs);
 
 if (typeof swFunction === "function") {
   swFunction();
@@ -108,7 +113,6 @@ window.addEventListener("keydown", (event) => {
 });
 
 functions.init()
-tabs.createTab("daydream://newtab");
 
-const searchbar = new Search(utils, proxy, swConfigSettings.prefix);
+const searchbar = new Search(utils, nightmare, dataApi, proxy, swConfigSettings.prefix);
 searchbar.init(items.addressBar);

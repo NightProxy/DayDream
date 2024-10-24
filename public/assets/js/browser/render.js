@@ -5,10 +5,8 @@ class Render {
         <div class="surface">
             <div class="mock-browser">
                 <div class="tabs" style="--tab-content-margin: 9px">
-                        <div style="display:flex;" >
                         <div class="tabs-content" id="tab-groups"></div>
                         <div class="browser-button" id="create-tab"><span class="material-symbols-outlined">add</span></div>
-                        </div>
                 </div>
                 <div class="under-tabs">
                 <div class="tabs-bottom-bar"></div>
@@ -106,9 +104,13 @@ class Render {
 			</ul>
                 </div>
             </div>
-            <div class="viewport">
-            <ul class="navbar">
-			<hr />
+            <div class="viewport">		
+            <div class="iframe-container" id="iframe-container"></div>
+            </div>
+        </div>
+		<ul class="navbar">
+		<img class="logo" src="/assets/imgs/logo.png" />
+		<br>
 			<li>
 				<a href="/~"
 					><span
@@ -136,29 +138,6 @@ class Render {
 				</a>
 			</li>
 		</ul>
-    <svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="30"
-				height="30"
-				viewBox="0 0 30 30"
-				fill="none"
-				style="
-					position: absolute;
-					z-index: 2147483646;
-					left: calc(2.0em + 9.63px);
-					top: calc(46px + 3em);
-				"
-			>
-				<path
-					d="M30 0H0V30C0 30 -1.11468e-05 18.2353 8.86364 9.11765C17.7273 0 30 0 30 0Z"
-					fill="#161616"
-				/>
-			</svg>
-
-			
-            <div class="iframe-container" id="iframe-container"></div>
-            </div>
-        </div>
         `;
   }
 }

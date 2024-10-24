@@ -36,8 +36,8 @@ server.on("request", (req, res) => {
 
 server.on("upgrade", (req, socket, head) => {
   if (req.url.endsWith("/wisp/")) {
-    console.log("Wisp upgrade request:" + req);
     wisp.routeRequest(req, socket, head);
+    console.log("Wisp upgrade request:" + req);
   }
 });
 /*
@@ -59,9 +59,6 @@ function shutdown() {
   console.log("SIGTERM signal received: closing HTTP server");
   server.close(() => {
     console.log("HTTP server closed");
-    bareServer.close(() => {
-      console.log("Bare server closed");
       process.exit(0);
     });
-  });
 }

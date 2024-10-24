@@ -8,9 +8,9 @@ class Items {
     this.inspectButton = document.getElementById("inspect");
     this.extrasButton = document.getElementById("more-options");
     this.newTab = document.getElementById("create-tab");
-    this.activeTabIframe = document.querySelector("iframe.active");
     this.tabGroupsContainer = document.getElementById("tab-groups");
-    this.iframeContainer = document.getElementById("iframe-container");
+    this.iframeContainer = document.querySelector(".iframe-container");
+    this.activeTabIframe = this.iframeContainer.querySelector(".active");
     this.homeButton = document.getElementById("home");
   }
 }

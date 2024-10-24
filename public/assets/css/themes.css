@@ -34,11 +34,12 @@
     --dropdown-background-color: rgb(22, 22, 22);
     --dropdown-hover-background-color: rgb(25, 25, 25);
   
-    --tab-bg-color: #141414;
+    --tab-bg-color: rgb(22, 22, 22);
     --tab-active-bg-color: #333333;
     --tab-border-color: #555;
     --tab-secondary-color: #aa01ff;
     --tab-content-margin: 9px;
+    --tab-inactive-bg-color: #535353;
   
     --main-color: #ae00ff;
     --secondary-color: #7700ff;

@@ -1,0 +1,127 @@
+
+.menu-container {
+    position: fixed;
+    right: -300px;
+    width: 300px;
+    height: 100%;
+    background-color: var(--tab-bg-color);
+    color: var(--text-color);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .menu-container.visible {
+    right: 0;
+  }
+  
+  .menu-top-bar {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 10px;
+    position: absolute;
+    top: 10px;
+    color: var(--text-color);
+  }
+  
+  .menu-top-bar .close-button {
+    right: 10px;
+    position: sticky;
+  }
+  
+  .dropdown {
+    user-select: none;
+    position: relative;
+    display: inline-block;
+    background-color: none;
+    background: none;
+  }
+  
+  .dropdown-button {
+    background-color: transparent;
+    border: none;
+    padding: 10px 10px;
+    width: 300px;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--dropdown-udline);
+    border-bottom: 1px solid var(--dropdown-udline);
+    position: relative;
+  }
+  
+  .dropdown-button:focus {
+    outline: 2px solid var(--active-outline-clr);
+  }
+  
+  .dropdown-button span.material-symbols-outlined {
+    background-color: none;
+    position: sticky !important;
+    right: 10px;
+    top: 50%;
+    transition: transform 0.3s;
+    cursor: pointer;
+  }
+  
+  .dropdown-button.active span.material-symbols-outlined {
+    transform: rotate(180deg);
+    background-color: none;
+    cursor: pointer;
+  }
+  
+  .dropdown-options {
+    margin-top: 6px;
+    position: absolute;
+    background-color: var(--bg-color);
+    border-radius: 4px;
+    width: 150px;
+    z-index: 1;
+    display: none;
+    padding: 10px;
+    list-style-type: none;
+  }
+  
+  .dropdown-button.active+.dropdown-options {
+    display: block;
+  }
+  
+  .dropdown-options li {
+    list-style-type: none;
+    width: 100%;
+  }
+  
+  .dropdown-options li a {
+    text-decoration: none;
+    color: var(--dropdown-li-a);
+    width: 100%;
+    padding: 10px 21px 10px 0px;
+    max-width: 93.5%;
+    margin-left: 20px;
+    display: flex;
+  }
+  
+  .dropdown-options li a img {
+    display: block;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    align-content: center;
+    margin-right: 3px;
+  }
+  
+  .dropdown-options li:hover {
+    color: var(--dropdown-li-a-hvr);
+    background-color: var(--dropdown-li-hvr);
+    cursor: pointer;
+  }
+  
+  .dropdown-options li:active {
+    background-color: var(--dropdown-li-active);
+  }

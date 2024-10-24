@@ -7,7 +7,7 @@
   }
   
   .search-header__input {
-    font-family: "DM Sans";
+    font-family: "Plus Jakarta Sans";
     font-size: 16px;
     background-color: var(--input-background-color);
     border: solid 0.5px var(--border-color);
@@ -20,6 +20,24 @@
     margin-right: -2rem;
     opacity: 1;
     text-align: center;
+  }
+  .search-header__input::-webkit-input-placeholder {
+    font-family: "Plus Jakarta Sans";
+  }
+  
+  .search-header__input:-ms-input-placeholder {
+    font-family: "Plus Jakarta Sans";
+  }
+  
+  .search-header__input:-moz-placeholder {
+    font-family: "Plus Jakarta Sans";
+  }
+  
+  .search-header__input::-moz-placeholder {
+    font-family: "Plus Jakarta Sans";
+  }
+  .search-header__input::placeholder {
+    font-family: "Plus Jakarta Sans";
   }
   
   .search-header__input:focus {
@@ -66,10 +84,10 @@
 .suggestion-list {
     position: fixed;
     z-index: 1111;
-    top: calc(46px + 3em + 2px);
+    top: calc(46px + 3em);
     left: 50%;
     transform: translate(-50%, 0%);
-    background: var(--background-color);
+    background: var(--tab-bg-color);
     color: var(--text-color);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
@@ -78,7 +96,7 @@
     overflow-y: auto;
     display: none;
     flex-direction: column;
-    margin: 2px;
+    padding-top: 2px;
     border: 1px solid var(--tab-secondary-color);
     border-top: none;
   }
