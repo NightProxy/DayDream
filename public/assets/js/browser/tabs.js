@@ -193,6 +193,7 @@ class Tabs {
       if (this.tabs.length > 0) {
         this.selectTab(this.tabs[0]);
       }
+      this.layoutTabs()
     }
   }
 
@@ -210,6 +211,7 @@ class Tabs {
         const nextTab = document.getElementById(`tab-${currentTabId + 1}`);
         (previousTab || nextTab || remainingTabs[remainingTabs.length - 1]).click();
       }
+      this.layoutTabs();
     }
   }
 

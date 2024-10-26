@@ -46,7 +46,7 @@ const swConfig = {
     }
   }
 };
-const render = new Render(document.getElementById("browser-container"));
+const render = new Render(document.getElementById("browser-container"), nightmare);
 const items = new Items();
 const utils = new Utils(items);
 const tabs = new Tabs(render, nightmare, utils, items);
@@ -114,5 +114,5 @@ window.addEventListener("keydown", (event) => {
 
 functions.init()
 
-const searchbar = new Search(utils, nightmare, dataApi, proxy, swConfigSettings.prefix);
+const searchbar = new Search(utils, nightmare, dataApi, proxy, swConfig, proxySetting);
 searchbar.init(items.addressBar);

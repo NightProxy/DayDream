@@ -1,10 +1,11 @@
 class Search {
-  constructor(utils, ui, dataAPI, proxy, prefix) {
+  constructor(utils, ui, dataAPI, proxy, swConfig, proxySetting) {
     this.utils = utils;
     this.ui = ui;
     this.data = dataAPI;
     this.proxy = proxy;
-    this.prefix = prefix;
+    this.swConfig = swConfig;
+    this.proxySetting = proxySetting;
     this.currentSectionIndex = 0;
     this.maxInitialResults = 4;
     this.maxExpandedResults = 8;
@@ -364,7 +365,7 @@ class Search {
           this.utils.navigate(suggestion);
         }
       } else {
-        this.proxy.redirect(suggestion);
+        this.proxy.redirect(this.swConfig, this.proxySetting, suggestion);
       }
     });
     return listItem;
@@ -387,7 +388,7 @@ class Search {
           this.utils.navigate(game.link);
         }
       } else {
-        this.proxy.redirect(game.link);
+        this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
       }
     });
 

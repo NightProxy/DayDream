@@ -129,15 +129,20 @@ class Proxy {
     return { file: swFile, config: swConfigSettings };
   }
 
-  redirect(url) {
-    this.registerSW(swFile, swConfigSettings).then(async () => {
-        await this.setTransports();
-        let encodedUrl = swConfigSettings.prefix + __uv$config.encodeUrl(this.search(url));
+  async redirect(swConfig, proxySetting, url) {
+    this.registerSW(swConfig[proxySetting].file, swConfig[proxySetting].config).then(async () => {
+      await this.setTransports();
+    });
+    if (proxySetting === "automatic") {
+      const result = await swConfig.automatic.func(proxy.search(searchValue));
+      swConfigSettings = result.config;
+    } else {
+      swConfigSettings = swConfig[proxySetting].config;
+    }
+    let encodedUrl = swConfigSettings.prefix + __uv$config.encodeUrl(this.search(url));
         const activeIframe = document.querySelector('iframe.active');
         if (activeIframe) {
-            navigate(activeIframe, encodedUrl);
+            activeIframe.src = encodedUrl;
         }
-    });
 }
-
 }
