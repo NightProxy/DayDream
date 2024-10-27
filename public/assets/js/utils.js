@@ -1,5 +1,8 @@
 class Utils {
-  constructor(items) { }
+  constructor(items, dataApi) { 
+    this.items = items;
+    this.dataApi = dataApi;
+  }
 
   setFavicon(tabElement, iframe) {
     iframe.addEventListener("load", () => {
@@ -92,9 +95,10 @@ class Utils {
 
   navigate(url) {
     const processedUrl = this.processUrl(url);
-    const iframe = items.iframeContainer.querySelector("iframe.active");
+    const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (iframe) {
       iframe.src = processedUrl;
+      this.dataApi.logger.createLog(`Navigated to: ${processedUrl}`);
     }
   }
 

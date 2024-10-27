@@ -1,9 +1,10 @@
 class Tabs {
-  constructor(render, ui, utils, items) {
+  constructor(render, ui, utils, items, dataApi) {
     this.render = render;
     this.ui = ui;
     this.utils = utils;
     this.items = items;
+    this.dataApi = dataApi;
     this.tabCount = 0;
     this.tabs = [];
     this.groups = [];
@@ -96,6 +97,7 @@ class Tabs {
     const tab = this.ui.createElement("div", { class: "tab" }, [
       this.ui.createElement("div", { class: "tab-background" }),
       this.ui.createElement("div", { class: "tab-content" }, [
+        this.ui.createElement("div", { class: "tab-group-color" }),
         this.ui.createElement("div", { class: "tab-favicon" }),
         this.ui.createElement("div", { class: "tab-title" }, ["Untitled"]),
         this.ui.createElement("div", { class: "tab-drag-handle" }),
@@ -182,6 +184,7 @@ class Tabs {
 
     this.layoutTabs();
     this.setupDraggabilly();
+    this.dataApi.logger.createLog(`Created tab: ${url}`);
   }
 
   closeTabById(id) {
@@ -193,13 +196,15 @@ class Tabs {
       if (this.tabs.length > 0) {
         this.selectTab(this.tabs[0]);
       }
-      this.layoutTabs()
+      this.layoutTabs();
+      this.dataApi.logger.createLog(`Closed tab: ${tabInfo.url}`);
     }
   }
 
   closeCurrentTab() {
     const activeTab = document.querySelector('.tab.active');
     const activeIFrame = document.querySelector('iframe.active');
+    const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
       const currentTabId = parseInt(activeIFrame.id.replace('tab-', ''));
       activeTab.remove();
@@ -212,6 +217,7 @@ class Tabs {
         (previousTab || nextTab || remainingTabs[remainingTabs.length - 1]).click();
       }
       this.layoutTabs();
+      this.dataApi.logger.createLog(`Closed tab: ${activeIframeUrl}`);
     }
   }
 
@@ -222,8 +228,9 @@ class Tabs {
     document.querySelector('.iframe-container').querySelectorAll('iframe').forEach(page => {
       page.remove();
     });
+    this.dataApi.logger.createLog(`Closed all tabs`);
   }
-
+/*
   createGroup(name) {
     const existingGroup = this.groups.find(
       (group) => group.header.textContent === name,
@@ -309,6 +316,17 @@ class Tabs {
     }
   }
 
+closeCurrentGroup() {
+    const currentGroup = this.groups.find((group) =>
+      group.content.contains(
+        this.items.tabGroupsContainer.querySelector(".tab"),
+      ),
+    );
+    if (currentGroup) {
+      currentGroup.content.remove();
+      this.groups = this.groups.filter((group) => group.id !== currentGroup.id);
+    }
+  }*/
   duplicateTab(tab) {
     if (tab) {
       this.createTab(tab);
@@ -321,17 +339,6 @@ class Tabs {
     );
     if (currentTab) {
       alert(`Bookmarking: ${currentTab.url}`);
-    }
-  }
-  closeCurrentGroup() {
-    const currentGroup = this.groups.find((group) =>
-      group.content.contains(
-        this.items.tabGroupsContainer.querySelector(".tab"),
-      ),
-    );
-    if (currentGroup) {
-      currentGroup.content.remove();
-      this.groups = this.groups.filter((group) => group.id !== currentGroup.id);
     }
   }
 
@@ -347,6 +354,7 @@ class Tabs {
     this.items.addressBar.value = tabInfo.url; //change this to be the URL of the page later
 
     this.currentTab = tabInfo;
+    this.dataApi.logger.createLog(`Selected tab: ${tabInfo.url}`);
   }
 
   updateTabOrder() {
@@ -439,6 +447,7 @@ class Tabs {
         document.querySelector("#create-tab").style.transform = `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`
       });
     });
+    this.dataApi.logger.createLog(`Setup draggabilly successfully`);
   }
 
   animateTabMove(tabEl, originIndex, destinationIndex) {
@@ -484,6 +493,7 @@ class Tabs {
     });
     this.styleEl.innerHTML = styleHTML;
     document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 28}px)`;
+    this.dataApi.logger.createLog(`Rearranged tabs`);
   }
 
 }

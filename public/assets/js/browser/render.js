@@ -1,7 +1,8 @@
 class Render {
-	constructor(container, nightmare) {
+	constructor(container, nightmare, dataApi) {
 		this.container = container;
 		this.nightmare = nightmare;
+		this.dataApi = dataApi;
 		this.HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
 			this.nightmare.createElement("div", { class: "mock-browser" }, [
 				this.nightmare.createElement("div", { class: "tabs", style: "--tab-content-margin: 9px" }, [
@@ -75,7 +76,7 @@ class Render {
 				])
 			])
 		]);
-		
+
 		this.navbar = this.nightmare.createElement("ul", { class: "navbar" }, [
 			this.nightmare.createElement("img", { class: "logo", src: "/assets/imgs/logo.png" }),
 			this.nightmare.createElement("br"),
@@ -87,5 +88,18 @@ class Render {
 		]);
 		this.container.appendChild(this.HTMLcode);
 		this.container.appendChild(this.navbar);
+		const sidebar = document.querySelector('.navbar');
+		const browser = document.querySelector('.surface');
+		const bar = document.querySelector('.tabs-bottom-bar');
+		const IFcontainer = document.querySelector(".iframe-container");
+
+		const isDisabled = localStorage.getItem('sidebarAutohide') === 'true';
+		if (isDisabled) {
+			sidebar.classList.add('autohide');
+			browser.classList.add('autohide');
+			bar.classList.add('autohide');
+			IFcontainer.classList.add('autohide')
+		}
+		this.dataApi.logger.createLog("Rendered Browser");
 	}
 }

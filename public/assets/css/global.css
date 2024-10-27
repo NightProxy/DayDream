@@ -16,17 +16,25 @@ body {
 
 .surface {
   box-sizing: border-box;
-    display: flex;
-    width: calc(100% - calc(2em + 10px));
-    right: 0;
-    flex-direction: column;
-    justify-content: center;
-    position: fixed;
+  display: flex;
+  width: calc(100% - calc(2em + 10px));
+  right: 0;
+  flex-direction: column;
+  justify-content: center;
+  position: fixed;
+  transition: width 0.5s ease-in-out;
+
+}
+
+.surface.autohide {
+  width: calc(100%);
+  transition: width 0.5s ease-in-out;
+
 }
 
 @media (min-width: 800px) {
   .mock-browser {
-    width:100%;
+    width: 100%;
     border-radius: 8px;
     border-bottom-left-radius: 0%;
     border-bottom-right-radius: 0%;
@@ -179,6 +187,7 @@ body {
 }
 
 .navbar {
+  opacity: 1;
   list-style-type: none;
   padding-left: 5px;
   padding-right: 5px;
@@ -190,10 +199,19 @@ body {
   position: fixed;
   text-align: center;
   z-index: 1;
-  bottom:0;
+  bottom: 0;
   border-right: 1px solid transparent;
   border-image: linear-gradient(to bottom, transparent 50px, var(--tab-secondary-color) 50px);
   border-image-slice: 1;
+  transition: width 0.5s ease-in-out, border-image 0.5s ease-in-out, opacity 0.5 ease-in-out;
+}
+
+.navbar.autohide {
+  opacity: 0;
+  width: 0px;
+  border-image: linear-gradient(to bottom, transparent 5px, transparent 5px);
+  border-image-slice: 1;
+  transition: width 0.5s ease-in-out, border-image 0.5s ease-in-out, opacity 0.5 ease-in-out;
 }
 
 .navbar hr {
@@ -230,7 +248,12 @@ body {
   height: 100%;
   right: 0;
   position: fixed;
-  border: var(--iframe-border);
+  transition: width 0.5s ease-in-out;
+}
+
+.iframe-container.autohide {
+  width: 100%;
+  transition: width 0.5s ease-in-out;
 }
 
 iframe {
@@ -258,8 +281,8 @@ iframe.active {
   z-index: 2;
 }
 
- .glitch:before,
- .glitch:after {
+.glitch:before,
+.glitch:after {
   display: block;
   content: attr(data-text);
   position: absolute;
@@ -268,13 +291,13 @@ iframe.active {
   opacity: 0.8;
 }
 
- .glitch:before {
+.glitch:before {
   animation: glitch-it 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
   color: #9A16FF;
   z-index: -1;
 }
 
- .glitch:after {
+.glitch:after {
   animation: glitch-it 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both infinite;
   color: #19FFC9;
   z-index: -2;
@@ -282,27 +305,27 @@ iframe.active {
 
 @keyframes glitch-it {
   0% {
-      transform: translate(0);
+    transform: translate(0);
   }
 
   20% {
-      transform: translate(-3px, 3px);
+    transform: translate(-3px, 3px);
   }
 
   40% {
-      transform: translate(-3px, -3px);
+    transform: translate(-3px, -3px);
   }
 
   60% {
-      transform: translate(3px, 3px);
+    transform: translate(3px, 3px);
   }
 
   80% {
-      transform: translate(3px, -3px);
+    transform: translate(3px, -3px);
   }
 
   to {
-      transform: translate(0);
+    transform: translate(0);
   }
 }
 
@@ -321,6 +344,7 @@ iframe.active {
   height: 10px;
   width: 10px;
 }
+
 *::-webkit-scrollbar-track {
   border-radius: 5px;
   background-color: #DFE9EB;

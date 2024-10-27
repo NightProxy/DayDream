@@ -4,24 +4,14 @@ var defWisp =
   location.host +
   "/wisp/";
 var wispUrl = localStorage.getItem("wisp") || defWisp;
-var bareUrl = localStorage.getItem("bare") || "/bare/";
 
 const api = new Api(
   localStorage.getItem("search") || "https://www.google.com/search?q=%s",
   localStorage.getItem("transports") || "epoxy",
   wispUrl,
-  bareUrl,
+  dataApi,
 );
 
-const proxySetting = localStorage.getItem("proxy") ?? "uv";
-const swConfig = {
-  uv: { file: "/@/sw.js", config: __uv$config },
-};
-
-const { file: swFile, config: swConfigSettings } = swConfig[proxySetting] ?? {
-  file: "/@/sw.js",
-  config: __uv$config,
-};
 
 const utils = new Utils();
 

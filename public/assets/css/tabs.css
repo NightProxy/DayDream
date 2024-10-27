@@ -344,6 +344,12 @@
     right: 0;
     top: 44px;
     border-top: 1px solid var(--tab-secondary-color);
+    transition: width 0.5s ease-in-out;
+  }
+
+  .tabs-bottom-bar.autohide {
+    width: 100%;
+    transition: width 0.5s ease-in-out;
   }
 
   #create-tab {

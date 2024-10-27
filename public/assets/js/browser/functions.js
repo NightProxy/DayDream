@@ -1,8 +1,9 @@
 class Functions {
-  constructor(items,ui, tabs) {
+  constructor(items,ui, tabs, dataApi) {
     this.items = items;
     this.ui = ui;
     this.tabs = tabs;
+    this.dataApi = dataApi;
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -19,7 +20,7 @@ class Functions {
     });
 
     this.items.inspectButton.addEventListener("click", () => {
-      this.inspectelement();
+      this.inspectElement();
     });
 
     this.items.extrasButton.addEventListener("click", (event) => {
@@ -33,14 +34,17 @@ class Functions {
 
   backward() {
     this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.back();
+    this.dataApi.logger.createLog(`Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   forward() {
     this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.forward();
+    this.dataApi.logger.createLog(`Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   refresh() {
-    tthis.items.iframeContainer.querySelector("iframe.active").contentWindow.location.reload();
+    this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.reload();
+    this.dataApi.logger.createLog(`Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   injectErudaScript(iframeDocument) {
@@ -106,7 +110,7 @@ class Functions {
       resolve();
     });
   }
-  inspectelement() {
+  inspectElement() {
     const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (!iframe || !iframe.contentWindow) {
       console.error(
@@ -150,6 +154,7 @@ class Functions {
       this.erudaScriptInjecting = false;
       console.log("Iframe navigation detected, Eruda toggle reset.");
     });
+    this.dataApi.loggger.createLog("Toggled Inspect Element")
   }
 
   extrasmenu(e) {

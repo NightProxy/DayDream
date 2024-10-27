@@ -53,7 +53,7 @@ class Search {
     });
 
     window.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (event.key === "Escape" || event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
       suggestionList.style.display = "flex";
@@ -70,21 +70,25 @@ class Search {
         this.updateSelectedSuggestion();
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        this.selectedSuggestionIndex =
-          (this.selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
+        if (this.selectedSuggestionIndex === 0) {
+          this.moveToPreviousSection(); // Move to the previous section when the first suggestion is selected
+        } else {
+          this.selectedSuggestionIndex =
+            (this.selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
+        }
         this.updateSelectedSuggestion();
       } else if (event.key === "Tab") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[this.selectedSuggestionIndex].textContent;
+            suggestionItems[this.selectedSuggestionIndex].querySelector(".suggestion-text").textContent;
           searchbar.value = selectedSuggestion;
         }
       } else if (event.key === "ArrowRight") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[this.selectedSuggestionIndex].textContent;
+            suggestionItems[this.selectedSuggestionIndex].querySelector(".suggestion-text").textContent;
           searchbar.value = selectedSuggestion;
         }
       } else if (event.key === "Backspace") {
@@ -187,6 +191,22 @@ class Search {
     return Object.values(this.sections)[
       this.currentSectionIndex
     ].searchResults.querySelectorAll("div");
+  }
+
+  moveToPreviousSection() {
+    const sectionsArray = Object.values(this.sections);
+    this.currentSectionIndex =
+      (this.currentSectionIndex - 1 + sectionsArray.length) % sectionsArray.length;
+  
+    while (sectionsArray[this.currentSectionIndex].searchResults.children.length === 0) {
+      this.currentSectionIndex =
+        (this.currentSectionIndex - 1 + sectionsArray.length) % sectionsArray.length;
+    }
+  
+    const previousSectionItems = this.getCurrentSuggestionItems();
+    this.selectedSuggestionIndex = previousSectionItems.length - 1;
+  
+    this.updateSelectedSuggestion();
   }
 
   moveToNextSection() {
@@ -351,10 +371,13 @@ class Search {
   createSuggestionItem(suggestion) {
     const listItem = document.createElement("div");
     const listIcon = document.createElement("span");
+    const listSuggestion = document.createElement("span");
     listIcon.classList.add("material-symbols-outlined");
     listIcon.textContent = "search";
     listItem.appendChild(listIcon);
-    listItem.innerHTML += suggestion;
+    listSuggestion.classList.add("suggestion-text");
+    listSuggestion.textContent = suggestion;
+    listItem.appendChild(listSuggestion);
     listItem.addEventListener("click", () => {
       searchbar.value = suggestion;
       this.clearSuggestions();
