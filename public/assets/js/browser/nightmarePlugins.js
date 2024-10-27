@@ -10,57 +10,46 @@ class SideMenu {
     constructor(ui) {
         this.ui = ui;
         this.container = null;
-        this.button = null;
         this.isOpen = false;
     }
 
-    createMenu(tag, className, menuElement, menuTag) {
-        this.button = this.ui.createElement("button", { class:  className}, [
-            this.ui.createElement("span", { class: "material-symbols-outlined" }, [
-                "more_vert",
-            ]),
-        ]);
-        this.button.addEventListener("click", () => {
-            if (this.isOpen) {
-                this.closeMenu();
-            } else {
-                this.openMenu(menuElement, menuTag);
-            }
+    attachTo(element, content) {
+        if (!element) throw new Error("Please provide a valid element to attach the menu.");
+
+        element.addEventListener("click", (event) => {
+            event.stopPropagation();
+            this.isOpen ? this.closeMenu() : this.openMenu(element, content);
         });
 
-        tag.appendChild(this.button);
+        // Close the menu when clicking outside
+        window.addEventListener("click", () => this.closeMenu());
     }
 
-    openMenu(menuElement, menuTag) {
-        this.container = this.ui.createElement("div", { class: "side-menu-container" });
+    openMenu(element, content) {
+        if (this.isOpen || !element) return;
 
-        const header = this.ui.createElement("div", { class: "side-menu-header" }, [
-            this.ui.createElement("span", { class: "side-menu-title" }, ["Menu"]),
-        ]);
-        this.container.appendChild(header);
+        this.container = this.ui.createElement("div", { class: "menu-container" });
 
-        this.container.appendChild(menuElement);
+        // Append custom content to the menu container
+        if (typeof content === "function") {
+            // If content is a function, call it to get dynamic elements
+            this.container.appendChild(content(this.ui));
+        } else if (Array.isArray(content)) {
+            // If content is an array, add each item to the container
+            content.forEach((item) => this.container.appendChild(item));
+        } else if (content instanceof HTMLElement) {
+            // If content is a single HTML element
+            this.container.appendChild(content);
+        }
 
-        const footer = this.ui.createElement("div", { class: "side-menu-footer" }, [
-            this.ui.createElement("button", { class: "side-menu-button" }, ["Close"]),
-        ]);
-        footer.querySelector("button").addEventListener("click", () => {
-            this.closeMenu();
-        });
-        this.container.appendChild(footer);
+        // Position the menu relative to the clicked element
+        const rect = element.getBoundingClientRect();
+        this.container.style.position = "absolute";
+        this.container.style.top = `${rect.bottom + window.scrollY}px`;
+        this.container.style.left = `${rect.right + window.scrollX}px`;
 
-        this.container.style.top = `${this.button.getBoundingClientRect().top}px`;
-        this.container.style.left = `${this.button.getBoundingClientRect().right}px`;
-
-        menuTag.appendChild(this.container);
-
+        document.body.appendChild(this.container);
         this.isOpen = true;
-
-        document.addEventListener("click", (event) => {
-            if (!event.target.closest(".side-menu-button, .side-menu-container")) {
-                this.closeMenu();
-            }
-        });
     }
 
     closeMenu() {
@@ -71,6 +60,7 @@ class SideMenu {
         this.isOpen = false;
     }
 }
+
 
 class Notification {
     constructor(ui) {

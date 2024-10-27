@@ -6,6 +6,7 @@ var defWisp =
 var wispUrl = localStorage.getItem("wisp") || defWisp;
 
 const nightmare = new Nightmare();
+const nightmarePlugins = new NightmarePlugins(nightmare);
 
 const dataApi = new DataAPI();
 
@@ -32,10 +33,15 @@ const swConfig = {
       scramjet.modifyConfig(__scramjet$config);
 
       scramjet.init('/$/sw.js').then(async () => {
-        await setTransports();
+        await proxy.setTransports();
       });
       console.log("Scramjet Service Worker registered.");
     }
+  },
+  ec: {
+    file: "/~/sw.js",
+    config: __eclipse$config,
+    func: null,
   },
   auto: {
     file: null,
@@ -47,14 +53,14 @@ const swConfig = {
 };
 const render = new Render(document.getElementById("browser-container"), nightmare, dataApi);
 const items = new Items();
-const utils = new Utils(items,dataApi);
+const utils = new Utils(items, dataApi);
 const tabs = new Tabs(render, nightmare, utils, items, dataApi);
 
 tabs.createTab("daydream://newtab");
 
-const functions = new Functions(items, nightmare,tabs, dataApi);
+const functions = new Functions(items, nightmare, tabs, dataApi, nightmarePlugins);
 const keys = new Keys(tabs, functions, dataApi);
- 
+
 keys.init();
 
 if (typeof swFunction === "function") {
@@ -62,7 +68,12 @@ if (typeof swFunction === "function") {
 }
 
 proxy.registerSW(swConfig[proxySetting].file, swConfig[proxySetting].config).then(async () => {
-  await proxy.setTransports();
+  await proxy.setTransports().then(async () => {
+    const transport = await proxy.connection.getTransports();
+    if (transport == null) {
+      proxy.setTransports();
+    }
+  });
 });
 
 const uvSearchBar = items.addressBar;
@@ -92,7 +103,6 @@ uvSearchBar.addEventListener("keydown", async (e) => {
       let encodedUrl = swConfigSettings.prefix + proxy.crypts.encode(proxy.search(searchValue));
 
       console.log(`Using proxy: ${proxySetting}`);
-      console.log(`Encoded URL: ${encodedUrl}`);
 
       const activeIframe = document.querySelector("iframe.active");
       if (activeIframe) {
@@ -110,3 +120,13 @@ functions.init()
 
 const searchbar = new Search(utils, nightmare, dataApi, proxy, swConfig, proxySetting);
 searchbar.init(items.addressBar);
+
+uvSearchBar.addEventListener("keydown", (e) => {
+  if (e.key == "Enter") {
+    e.preventDefault();
+    setTimeout(() => {
+      searchbar.clearSuggestions();
+      document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
+    }, 30)
+  }
+}); 

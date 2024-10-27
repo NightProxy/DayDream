@@ -92,9 +92,9 @@ class Tabs {
     const iframe = this.ui.createElement("iframe", {
       src: this.utils.processUrl(url),
     });
-    iframe.id = id;
+    iframe.id = `iframe-${this.tabCount}`;
 
-    const tab = this.ui.createElement("div", { class: "tab" }, [
+    const tab = this.ui.createElement("div", { class: "tab", id: `tab-${this.tabCount}`}, [
       this.ui.createElement("div", { class: "tab-background" }),
       this.ui.createElement("div", { class: "tab-content" }, [
         this.ui.createElement("div", { class: "tab-group-color" }),
@@ -171,9 +171,9 @@ class Tabs {
       );
     });
 
-    tab
-      .querySelector(`#close-${id}`)
-      .addEventListener("click", () => this.closeTabById(id));
+    tab.querySelector(`#close-${id}`).addEventListener("click", () => {
+        this.closeTabById(id);
+      });
 
     this.items.tabGroupsContainer.appendChild(tab);
     this.items.iframeContainer.appendChild(iframe);
@@ -189,13 +189,13 @@ class Tabs {
 
   closeTabById(id) {
     const tabInfo = this.tabs.find((tab) => tab.id === id);
+    console.log(tabInfo);
+    console.log(id);
+    console.log(`tab-${(parseInt(id.replace('tab-', '')-1))}`)
     if (tabInfo) {
       tabInfo.tab.remove();
       tabInfo.iframe.remove();
       this.tabs = this.tabs.filter((tab) => tab.id !== id);
-      if (this.tabs.length > 0) {
-        this.selectTab(this.tabs[0]);
-      }
       this.layoutTabs();
       this.dataApi.logger.createLog(`Closed tab: ${tabInfo.url}`);
     }
@@ -357,6 +357,11 @@ closeCurrentGroup() {
     this.dataApi.logger.createLog(`Selected tab: ${tabInfo.url}`);
   }
 
+  selectTabById(id) {
+    document.getElementById(id).click();
+    this.dataApi.logger.createLog(`Selected tab: tab-${id}`);
+  }
+
   updateTabOrder() {
     this.tabs.forEach((tab, index) => {
       tab.tab.classList.toggle("active", index === this.currentTabIndex);
@@ -492,7 +497,7 @@ closeCurrentGroup() {
       `; lastPos = position
     });
     this.styleEl.innerHTML = styleHTML;
-    document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 28}px)`;
+    document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
     this.dataApi.logger.createLog(`Rearranged tabs`);
   }
 

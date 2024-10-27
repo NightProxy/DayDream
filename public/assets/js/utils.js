@@ -60,7 +60,7 @@ class Utils {
     let js = "";
     if (url.startsWith("daydream://")) {
       const path = url.replace("daydream://", "");
-      return `/internal/${path}.html`;
+      return `/internal/${path}`;
     } else if (
       url.startsWith("http://") ||
       url.startsWith("https://") ||
@@ -72,7 +72,7 @@ class Utils {
       js = url.replace("javascript:", "");
       document.querySelector("iframe.active").contentWindow.eval(js);
     } else {
-      return `/internal/${url}.html`;
+      return `/internal/${url}`;
     }
   }
 

@@ -59,7 +59,12 @@ class Proxy {
       });
 
       navigator.serviceWorker.ready.then(async () => {
-        await this.setTransports();
+        await this.setTransports().then(async () => {
+          const transport = await this.connection.getTransports();
+          if (transport == null) {
+            this.setTransports();
+          }
+        });
         this.updateSW();
       });
     }
@@ -134,7 +139,7 @@ class Proxy {
       await this.setTransports();
     });
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(proxy.search(searchValue));
+      const result = await swConfig.auto.func(proxy.search(url));
       swConfigSettings = result.config;
     } else {
       swConfigSettings = swConfig[proxySetting].config;

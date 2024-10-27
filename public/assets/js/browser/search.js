@@ -379,7 +379,6 @@ class Search {
     listSuggestion.textContent = suggestion;
     listItem.appendChild(listSuggestion);
     listItem.addEventListener("click", () => {
-      searchbar.value = suggestion;
       this.clearSuggestions();
       document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
       if (suggestion.startsWith("daydream")) {
@@ -402,7 +401,6 @@ class Search {
     listItem.appendChild(listIcon);
     listItem.innerHTML += game.name;
     listItem.addEventListener("click", () => {
-      searchbar.value = game.link;
       this.clearSuggestions();
       document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
       if (game.link.startsWith("daydream")) {

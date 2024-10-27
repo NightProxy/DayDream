@@ -1,9 +1,10 @@
 class Functions {
-  constructor(items,ui, tabs, dataApi) {
+  constructor(items,ui, tabs, dataApi, nightmarePlugins) {
     this.items = items;
     this.ui = ui;
     this.tabs = tabs;
     this.dataApi = dataApi;
+    this.nightmarePlugins = nightmarePlugins;
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -22,10 +23,8 @@ class Functions {
     this.items.inspectButton.addEventListener("click", () => {
       this.inspectElement();
     });
-
-    this.items.extrasButton.addEventListener("click", (event) => {
-      this.extrasmenu(event);
-    });
+    
+    this.extrasmenu(this.items.extrasButton);
 
     this.items.newTab.addEventListener("click", () =>
       this.tabs.createTab("daydream://newtab"),
@@ -157,20 +156,10 @@ class Functions {
     this.dataApi.loggger.createLog("Toggled Inspect Element")
   }
 
-  extrasmenu(e) {
-    const elements = {
-      items: [
-        { pageId: "home", label: "Home" },
-        { pageId: "bookmarks", label: "Bookmarks" },
-        { pageId: "history", label: "History" },
-      ],
-      pages: [
-        { id: "home", content: "<div>Home Page Content</div>" },
-        { id: "bookmarks", content: "<div>Bookmarks Content</div>" },
-        { id: "history", content: "<div>History Content</div>" },
-      ],
-    };
-
-    this.ui.menu.createMenu(document.querySelector(".viewport"), "Home", "menuDropdown", elements);
+  extrasmenu(button) {
+    const content = this.ui.createElement("div", {class: "side-menu"}, [
+      this.ui.createElement("span", {}, ["Hello!"])
+    ])
+    this.nightmarePlugins.sidemenu.attachTo(button, content)
   }
 }
