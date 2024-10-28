@@ -128,12 +128,16 @@ class VersionsAPI {
     }
 }
 
+// ExtensionsAPI.js
 class ExtensionsAPI {
     constructor() {
+        // Initialize the database to store extensions and their metadata
         this.db = localforage.createInstance({
-            name: "extensions",
-            storeName: "extensions",
+            name: 'extensions',
+            storeName: 'extensions',
         });
+
+        // Extensions object and list tracking
         this.extensions = {};
         this.extensionLists = {
             enabled: [],
@@ -142,9 +146,10 @@ class ExtensionsAPI {
         };
     }
 
+    // Load extensions data from localforage
     async loadExtensions() {
-        const storedExtensions = await this.db.getItem("extensions");
-        const extensionLists = await this.db.getItem("extensionLists");
+        const storedExtensions = await this.db.getItem('extensions');
+        const extensionLists = await this.db.getItem('extensionLists');
 
         this.extensions = storedExtensions || {};
         this.extensionLists = extensionLists || {
@@ -154,67 +159,108 @@ class ExtensionsAPI {
         };
     }
 
+    // Save the current state of extensions and lists
     async saveExtensions() {
-        await this.db.setItem("extensions", this.extensions);
-        await this.db.setItem("extensionLists", this.extensionLists);
+        await this.db.setItem('extensions', this.extensions);
+        await this.db.setItem('extensionLists', this.extensionLists);
     }
 
-    async register(extension) {
-        this.extensions[extension.name] = {
-            ...extension,
-            enabled: false,
-        };
-        this.extensionLists.installed.push(extension.name);
-        await this.saveExtensions();
-        console.log(`Extension ${extension.name} registered.`);
+    // Register and install a new extension
+    async installExtension(file) {
+        try {
+            // Use JSZip to extract the .ddxpkg file
+            const zip = await JSZip.loadAsync(file);
+            const manifestContent = await zip.file('manifest.json').async('string');
+            const manifest = JSON.parse(manifestContent);
+            const extensionID = manifest.id;
+
+            // Check if extension is already installed
+            if (this.extensions[extensionID]) {
+                console.log(`Extension ${extensionID} is already installed.`);
+                return;
+            }
+
+            // Register extension metadata
+            this.extensions[extensionID] = {
+                id: extensionID,
+                name: manifest.name,
+                enabled: false,
+                manifest: manifest,
+            };
+            this.extensionLists.installed.push(extensionID);
+
+            // Send the file to Service Worker to handle unzipping and storage
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'installExtension',
+                    file: file,
+                });
+                console.log(`Sent ${manifest.name} to Service Worker for installation.`);
+            } else {
+                console.error('Service Worker not available.');
+            }
+
+            // Save the updated extension state
+            await this.saveExtensions();
+            console.log(`Extension ${manifest.name} installed successfully.`);
+        } catch (error) {
+            console.error('Failed to install extension:', error);
+        }
     }
 
-    async toggleExtension(extensionName, enabled) {
-        if (this.extensions[extensionName]) {
-            this.extensions[extensionName].enabled = enabled;
+    // Enable an extension by ID
+    async enable(extensionID) {
+        await this.toggleExtension(extensionID, true);
+    }
+
+    // Disable an extension by ID
+    async disable(extensionID) {
+        await this.toggleExtension(extensionID, false);
+    }
+
+    // Toggle extension enabled/disabled state
+    async toggleExtension(extensionID, enabled) {
+        if (this.extensions[extensionID]) {
+            this.extensions[extensionID].enabled = enabled;
+
             if (enabled) {
-                this.extensionLists.enabled.push(extensionName);
+                this.extensionLists.enabled.push(extensionID);
                 this.extensionLists.disabled = this.extensionLists.disabled.filter(
-                    (name) => name !== extensionName,
+                    (id) => id !== extensionID
                 );
             } else {
-                this.extensionLists.disabled.push(extensionName);
+                this.extensionLists.disabled.push(extensionID);
                 this.extensionLists.enabled = this.extensionLists.enabled.filter(
-                    (name) => name !== extensionName,
+                    (id) => id !== extensionID
                 );
             }
+
             await this.saveExtensions();
-            console.log(`Extension ${extensionName} ${enabled ? "enabled" : "disabled"}.`);
+            console.log(`Extension ${extensionID} ${enabled ? 'enabled' : 'disabled'}.`);
         } else {
-            console.log(`Extension ${extensionName} not found.`);
+            console.log(`Extension ${extensionID} not found.`);
         }
     }
 
-    async remove(extensionName) {
-        if (this.extensions[extensionName]) {
-            delete this.extensions[extensionName];
+    // Remove an extension by ID
+    async remove(extensionID) {
+        if (this.extensions[extensionID]) {
+            delete this.extensions[extensionID];
             this.extensionLists.installed = this.extensionLists.installed.filter(
-                (name) => name !== extensionName,
+                (id) => id !== extensionID
             );
             this.extensionLists.enabled = this.extensionLists.enabled.filter(
-                (name) => name !== extensionName,
+                (id) => id !== extensionID
             );
             this.extensionLists.disabled = this.extensionLists.disabled.filter(
-                (name) => name !== extensionName,
+                (id) => id !== extensionID
             );
+
             await this.saveExtensions();
-            console.log(`Extension ${extensionName} removed.`);
+            console.log(`Extension ${extensionID} removed.`);
         } else {
-            console.log(`Extension ${extensionName} not found.`);
+            console.log(`Extension ${extensionID} not found.`);
         }
-    }
-
-    async enable(extensionName) {
-        await this.toggleExtension(extensionName, true);
-    }
-
-    async disable(extensionName) {
-        await this.toggleExtension(extensionName, false);
     }
 }
 
