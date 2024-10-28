@@ -9,18 +9,16 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     console.log('Service Worker activated');
-    event.waitUntil(clients.claim()); // Take control of any clients
+    event.waitUntil(clients.claim());
 });
 
-// Listen for messages from the main script to handle extension file uploads
 self.addEventListener('message', async (event) => {
     if (event.data.type === 'installExtension') {
-        const file = event.data.file;  // The .ddxpkg file sent from main thread
+        const file = event.data.file;
         await installExtension(file);
     }
 });
 
-// Function to handle extension installation
 async function installExtension(file) {
     try {
         const zip = await JSZip.loadAsync(file);

@@ -60,7 +60,7 @@ class Proxy {
 
       navigator.serviceWorker.ready.then(async () => {
         await this.setTransports().then(async () => {
-          const transport = await this.connection.getTransports();
+          const transport = await this.connection.getTransport();
           if (transport == null) {
             this.setTransports();
           }

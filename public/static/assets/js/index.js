@@ -69,7 +69,7 @@ if (typeof swFunction === "function") {
 
 proxy.registerSW(swConfig[proxySetting].file, swConfig[proxySetting].config).then(async () => {
   await proxy.setTransports().then(async () => {
-    const transport = await proxy.connection.getTransports();
+    const transport = await proxy.connection.getTransport();
     if (transport == null) {
       proxy.setTransports();
     }

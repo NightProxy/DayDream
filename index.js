@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public/static/")));
 // app.use(cors());
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/@/", express.static(uvPath));
@@ -40,13 +40,63 @@ server.on("upgrade", (req, socket, head) => {
     console.log("Wisp upgrade request:" + req);
   }
 });
-/*
-privateBareServer(server, sysConfig.bare);
-privateWispServer(server, sysConfig.wisp.paths);
-*/
+
 server.on("listening", () => {
-  console.log(chalk.green(`Server is running on http://${hostname()}:${PORT}`));
+  const address = server.address();
+  const theme = chalk.hex("#8F00FF");
+  const host = chalk.hex("0d52bd");
+  console.log(
+    chalk.bold(
+      theme(`
+        
+██████╗  █████╗ ██╗   ██╗██████╗ ██████╗ ███████╗ █████╗ ███╗   ███╗    ██╗  ██╗
+██╔══██╗██╔══██╗╚██╗ ██╔╝██╔══██╗██╔══██╗██╔════╝██╔══██╗████╗ ████║    ╚██╗██╔╝
+██║  ██║███████║ ╚████╔╝ ██║  ██║██████╔╝█████╗  ███████║██╔████╔██║     ╚███╔╝ 
+██║  ██║██╔══██║  ╚██╔╝  ██║  ██║██╔══██╗██╔══╝  ██╔══██║██║╚██╔╝██║     ██╔██╗ 
+██████╔╝██║  ██║   ██║   ██████╔╝██║  ██║███████╗██║  ██║██║ ╚═╝ ██║    ██╔╝ ██╗
+╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝  ╚═╝
+                                                                                
+`),
+    ),
+  );
+  console.log(
+    `  ${chalk.bold(host("Local System:"))}            http://${address.family === "IPv6" ? `[${address.address}]` : address.address}${address.port === 80 ? "" : ":" + chalk.bold(address.port)}`,
+  );
+
+  console.log(
+    `  ${chalk.bold(host("Local System:"))}            http://localhost${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`,
+  );
+
+  try {
+    console.log(
+      `  ${chalk.bold(host("On Your Network:"))}  http://${hostname()}${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`,
+    );
+  } catch (err) {
+    // can't find LAN interface
+  }
+
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    console.log(
+      `  ${chalk.bold(host("Replit:"))}           https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
+    );
+  }
+
+  if (process.env.HOSTNAME && process.env.GITPOD_WORKSPACE_CLUSTER_HOST) {
+    console.log(
+      `  ${chalk.bold(host("Gitpod:"))}           https://${PORT}-${process.env.HOSTNAME}.${process.env.GITPOD_WORKSPACE_CLUSTER_HOST}`,
+    );
+  }
+
+  if (
+    process.env.CODESPACE_NAME &&
+    process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
+  ) {
+    console.log(
+      `  ${chalk.bold(host("Github Codespaces:"))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? "" : address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+    );
+  }
 });
+
 
 server.listen({ port: PORT });
 

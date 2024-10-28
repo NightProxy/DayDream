@@ -8,11 +8,7 @@ const router = express.Router();
 const __dirname = process.cwd();
 
 router.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
-});
-
-router.get("/test", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/test.html"));
+  res.sendFile(path.join(__dirname, "public/pages/index.html"));
 });
 
 router.get("/results/:query", async (req, res) => {
@@ -27,7 +23,7 @@ router.get("/results/:query", async (req, res) => {
 
 router.use(
   "/internal/",
-  express.static(path.join(__dirname, "public/internal/")),
+  express.static(path.join(__dirname, "public/pages/internal/")),
 );
 
 router.use("/internal/icons/:url(*)", async (req, res) => {
@@ -68,7 +64,7 @@ router.use("/internal/icons/:url(*)", async (req, res) => {
 
 router.use((req, res) => {
   res.status(404);
-  res.sendFile(path.join(__dirname, "public/internal/404.html"));
+  res.sendFile(path.join(__dirname, "public/static/internal/error/index.html"));
 });
 
 export default router;
