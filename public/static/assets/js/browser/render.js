@@ -4,7 +4,6 @@ class Render {
 		this.nightmare = nightmare;
 		this.dataApi = dataApi;
 		this.HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
-			this.nightmare.createElement("div", { class: "mock-browser" }, [
 				this.nightmare.createElement("div", { class: "tabs", style: "--tab-content-margin: 9px" }, [
 					this.nightmare.createElement("div", { class: "tabs-content", id: "tab-groups" }),
 					this.nightmare.createElement("div", { class: "browser-button", id: "create-tab" }, [
@@ -74,7 +73,6 @@ class Render {
 				this.nightmare.createElement("div", { class: "viewport" }, [
 					this.nightmare.createElement("div", { class: "iframe-container", id: "iframe-container" }),
 				])
-			])
 		]);
 
 		this.navbar = this.nightmare.createElement("ul", { class: "navbar" }, [
@@ -90,15 +88,17 @@ class Render {
 		this.container.appendChild(this.navbar);
 		const sidebar = document.querySelector('.navbar');
 		const browser = document.querySelector('.surface');
-		const bar = document.querySelector('.tabs-bottom-bar');
-		const IFcontainer = document.querySelector(".iframe-container");
+		const tabs = document.querySelector('.tabs');
+		const bar = document.querySelector('.under-tabs');
+		const IFcontainer = document.querySelector(".viewport");
 
-		const isDisabled = localStorage.getItem('sidebarAutohide') === 'true';
+		const isDisabled = localStorage.getItem('verticalTabs') === 'true';
 		if (isDisabled) {
 			sidebar.classList.add('autohide');
 			browser.classList.add('autohide');
-			bar.classList.add('autohide');
-			IFcontainer.classList.add('autohide')
+			tabs.classList.add('vertical');
+			bar.classList.add('vertical');
+			IFcontainer.classList.add('vertical')
 		}
 		this.dataApi.logger.createLog("Rendered Browser");
 	}

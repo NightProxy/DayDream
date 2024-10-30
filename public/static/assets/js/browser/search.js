@@ -16,7 +16,12 @@ class Search {
   }
 
   init(searchbar) {
-    const suggestionList = this.ui.createElement("div", { class: "suggestion-list", id: "suggestion-list" });
+    let suggestionList;
+    if (localStorage.getItem("verticalTabs") === "true") {
+    suggestionList = this.ui.createElement("div", { class: "suggestion-list vertical", id: "suggestion-list" });
+    } else {
+    suggestionList = this.ui.createElement("div", { class: "suggestion-list", id: "suggestion-list" });
+    }
 
     this.sections = {
       searchResults: this.createSection("Search Results"),

@@ -9,8 +9,20 @@
     border-radius: 5px 5px 0 0;
     overflow: hidden;
     display:grid;
+    transition: width 0.5s ease, height 0.5s ease, position 0.5s ease;
   }
-  
+
+  .tabs.vertical {
+    position: absolute;
+    height: 100%;
+    width: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    left: 0;
+    top: 0;
+    transition: width 0.5s ease, height 0.5s ease, position 0.5s ease;
+  }
   .tabs * {
     box-sizing: inherit;
   }
@@ -20,8 +32,17 @@
     width: calc(100% - 54px);
     height: 100%;
     gap: 5px;
+    transition: width 0.5s ease;
   }
-  
+
+  .tabs.vertical .tabs-content {
+    width: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    transition: width 0.5s ease;
+  }
  /* .tab-content * {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
       Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -40,8 +61,17 @@
     cursor: default;
     display: flex;
     flex-direction: column;
+    transition: position 0.5s ease;
   }
   
+  .tabs.vertical  .tab {
+    position: relative;
+    left: none;
+    top:0;
+    height: 36px;
+    transition: position 0.5s ease;
+  }
+
   .tab-dividers {
     position: absolute;
     top: 7px;
@@ -92,8 +122,9 @@
     border-top-color: var(--tab-secondary-color);
     border-left-color: var(--tab-secondary-color);
     border-right-color: var(--tab-secondary-color);
-    border-bottom: 1px solid var(--tab-bg-color);
+    border-bottom: 1px solid var(--tab--color);
   }
+
   
   .tab:has(.active) .tab-background {
     background-color: var(--tab-active-bg-color);
@@ -118,11 +149,17 @@
       opacity: 1;
     }
   }
-  
-  .tab.tab-was-just-added {
-    top: 10px;
-    animation: tab-was-just-added 120ms forwards ease-in-out;
+
+  .tabs.vertical .tab .tab-background {
+    border-bottom-color: var(--tab-secondary-color);
+    border-radius: 8px;
+    border: 1px solid var(--tab-secondary-color);
   }
+
+  .tabs.vertical .tab .tab-bottom-border {
+    display: none;
+  }
+
   
   .tab-content {
     position: absolute;
@@ -296,6 +333,14 @@
   .tab:hover .tab-bottom-border {
     display: block;
   }
+
+  .tabs.vertical .tab.active .tab-bottom-border {
+    display: none;
+  }
+
+  .tabs.vertical .tab:hover .tab-bottom-border {
+    display: none;
+  }
   
   .tabs-is-sorting .tab:not(.tab-is-dragging),
   .tabs:not(.tabs-is-sorting) .tab.tab-was-just-dragged {
@@ -331,6 +376,24 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    position: sticky;
+  }
+
+  .under-tabs.vertical {
+    width: calc(100% - 280px);
+    position: relative;
+    right: 0%;
+    align-self: flex-end;
+  }
+
+
+  .under-tabs.vertical .tabs-bottom-bar {
+    display: none;
+  }
+
+  .under-tabs.vertical .utility {
+    position: relative;
+    right: 0;
   }
   
   .tabs-bottom-bar {
@@ -367,3 +430,44 @@
     color: var(--tab-secondary-color);
   }
 
+  .tabs.vertical #create-tab {
+    position: static;
+  }
+  .viewport {
+    display: flex;
+    flex-direction: row;
+    width: calc(100% - calc(2em + 11px));
+    height: calc(100% - calc(2em + 12px + 46px));
+    overflow: hidden;
+    right:0;
+  }
+
+  .viewport.vertical {
+    width: calc(100% - 280px);
+    height: calc(100% - 3em);
+  }
+  
+  .iframe-container {
+    height: inherit;
+    width: inherit;
+    right: 0;
+    position: fixed;
+    transition: width 0.5s ease-in-out;
+  }
+  
+  .iframe-container.autohide {
+    width: 100%;
+    transition: width 0.5s ease-in-out;
+  }
+  
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: var(--iframe-border);
+    display: none;
+    /* Hide all iframes by default */
+  }
+  
+  iframe.active {
+    display: block;
+  }

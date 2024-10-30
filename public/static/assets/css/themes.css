@@ -37,13 +37,15 @@
     --tab-bg-color: rgb(22, 22, 22);
     --tab-active-bg-color: #333333;
     --tab-border-color: #555;
-    --tab-secondary-color: #aa01ff;
+    --tab-secondary-color: var(--main-color);
     --tab-content-margin: 9px;
     --tab-inactive-bg-color: #535353;
   
-    --main-color: #ae00ff;
     --secondary-color: #7700ff;
     --third-color: #6a00ff;
   
     --searchbar-width: calc(100% - calc(6 * 36px));
+
+    --main-color: #aa01ff;
+    --faded-main-color: rgba(170, 1, 255, 0.26);
   }

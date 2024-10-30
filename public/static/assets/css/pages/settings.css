@@ -1,0 +1,229 @@
+.dropdown {
+    user-select: none;
+    position: relative;
+    display: inline-block;
+    background-color: none;
+    background: none;
+  }
+  
+  .dropdown-button {
+    background-color: transparent;
+    border: none;
+    padding: 10px 10px;
+    width: 300px;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--dropdown-udline);
+    border-bottom: 1px solid var(--dropdown-udline);
+    position: relative;
+  }
+  
+  .dropdown-button:focus {
+    outline: 2px solid var(--active-outline-clr);
+  }
+  
+  .dropdown-button span.material-symbols-outlined {
+    background-color: none;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s;
+    cursor: pointer;
+  }
+  
+  .dropdown-button.active span.material-symbols-outlined {
+    transform: translateY(-50%) rotate(180deg);
+    background-color: none;
+    cursor: pointer;
+  }
+  
+  .dropdown-options {
+    margin-top: 6px;
+    position: absolute;
+    background-color: var(--dropdown-optn-bg);
+    border-radius: 4px;
+    width: 100%;
+    z-index: 1;
+    display: none;
+    padding: 0;
+    list-style-type: none;
+  }
+  
+  .dropdown-button.active + .dropdown-options {
+    display: block;
+  }
+  
+  .dropdown-options li {
+    list-style-type: none;
+    width: 100%;
+  }
+  
+  .dropdown-options li a {
+    text-decoration: none;
+    color: var(--dropdown-li-a);
+    width: 100%;
+    padding: 10px 21px 10px 0px;
+    max-width: 93.5%;
+    margin-left: 20px;
+    display: flex;
+  }
+  
+  .dropdown-options li a img {
+    display: block;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    align-content: center;
+    margin-right: 3px;
+  }
+  
+  .dropdown-options li:hover {
+    color: var(--dropdown-li-a-hvr);
+    background-color: var(--dropdown-li-hvr);
+    cursor: pointer;
+  }
+  
+  .dropdown-options li:active {
+    background-color: var(--dropdown-li-active);
+  }
+  
+  .sideSnav {
+    list-style-type: none;
+    margin-left: -20px;
+    width: 190px;
+    user-select: none;
+    float: left;
+  }
+  
+  .sideSnav li {
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+  
+  .sideSnav li:active {
+    color: var(--active-outline-clr);
+    position: relative;
+    /* add this */
+  }
+  
+  .sideSnav li:active:before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    /* adjust width as needed */
+    height: 35px;
+    /* adjust height as needed */
+    background-color: var(--active-outline-clr);
+    /* adjust color as needed */
+  }
+  
+  .sideActive {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: default;
+    color: var(--sidesetting-active);
+  }
+  
+  .sideActive:before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    /* adjust width as needed */
+    height: 35px;
+    /* adjust height as needed */
+    background-color: var(--sidesetting-active);
+    /* adjust color as needed */
+  }
+  
+  .scontent {
+    display: none;
+  }
+  
+  .scontent h1 {
+    font-size: 20px;
+    font-weight: 500;
+  }
+  
+  .scontent h2,
+  h3 {
+    font-size: 17px;
+    font-weight: 500;
+  }
+  
+  .scontent p {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  
+  .scontent ul {
+    list-style-type: none;
+    margin-left: -20px;
+  }
+  
+  .scontent li {
+    line-height: 24px;
+    font-size: 14px;
+  }
+  
+  .scontent hr {
+    border: 0;
+    height: 1px;
+    background: var(--hr);
+    opacity: 0.4;
+    margin-top: 25px;
+    margin-bottom: 40px;
+  }
+  
+  hr {
+    border: 0;
+    height: 1px;
+    background: var(--hr);
+    opacity: 0.4;
+    margin-top: 25px;
+    margin-bottom: 40px;
+  }
+  
+  .scontent {
+    float: left;
+    text-align: left;
+    padding-left: 40px;
+    /* adjust padding as needed */
+    height: 550px;
+    margin-top: 0px;
+    width: 79%;
+    overflow-y: auto;
+    /* add this property */
+    overflow-x: hidden;
+  }
+  
+  .scontent::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scontent::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 30px;
+  }
+  
+  .scontent::-webkit-scrollbar-thumb {
+    background: var(--nav-bg);
+    border-radius: 30px;
+  }
+  
+  .scontent * {
+    text-align: left;
+  }
+  
+  h3 .about-hover:hover {
+    color: var(--active-outline-clr);
+    
+  }

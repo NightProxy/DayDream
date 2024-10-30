@@ -99,6 +99,16 @@
     padding-top: 2px;
     border: 1px solid var(--tab-secondary-color);
     border-top: none;
+    transition: transform 0.5s ease, width 0.5s ease, left 0.5s ease, right 0.5s ease, top 0.5s ease;
+  }
+
+  .suggestion-list.vertical {
+    top: 3em;
+    right: 0;
+    transform: none;
+    left: auto;
+    width: calc(100% - 280px);
+    transition: transform 0.5s ease, width 0.5s ease, left 0.5s ease, right 0.5s ease, top 0.5s ease;
   }
   
   .suggestion-list div {
@@ -161,7 +171,7 @@
       0 0 15px 1px var(--shadow-color),
       0 0 1px 1px var(--theme-color);
     transition: 0.3s;
-    background-color: var(--tab-bg-color);
+    background-color: var(--faded-main-color);
   }
   
   .suggestion-list .search-section .search-results .selected {
@@ -169,5 +179,5 @@
       0 0 15px 1px var(--shadow-color),
       0 0 1px 1px var(--theme-color);
     transition: 0.3s;
-    background-color: var(--tab-active-bg-color);
+    background-color: var(--faded-main-color);
   }

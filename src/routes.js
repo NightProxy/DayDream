@@ -64,7 +64,7 @@ router.use("/internal/icons/:url(*)", async (req, res) => {
 
 router.use((req, res) => {
   res.status(404);
-  res.sendFile(path.join(__dirname, "public/static/internal/error/index.html"));
+  res.sendFile(path.join(__dirname, "public/pages/internal/error/index.html"));
 });
 
 export default router;

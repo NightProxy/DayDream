@@ -86,6 +86,57 @@ class Tabs {
     return positions;
   }
 
+  get tabContentHeights() {
+    const numberOfTabs = this.tabEls.length;
+    const tabsContentHeight = this.el.querySelector(".tabs-content").clientHeight;
+    const tabsCumulativeOverlappedHeight = (numberOfTabs - 1) * 1; // Adjust for slight overlap
+    const targetHeight =
+      (tabsContentHeight + tabsCumulativeOverlappedHeight) / numberOfTabs;
+    const clampedTargetHeight = Math.max(24, Math.min(36, targetHeight));
+    const flooredClampedTargetHeight = Math.floor(clampedTargetHeight);
+    const totalTabsHeightUsingTarget =
+      flooredClampedTargetHeight * numberOfTabs -
+      tabsCumulativeOverlappedHeight;
+    const totalExtraHeightDueToFlooring =
+      tabsContentHeight - totalTabsHeightUsingTarget;
+
+    // TODO - Support tabs with different heights / e.g. "pinned" tabs
+    const heights = [];
+    let extraHeightRemaining = totalExtraHeightDueToFlooring;
+    for (let i = 0; i < numberOfTabs; i += 1) {
+      const extraHeight =
+        flooredClampedTargetHeight < 36 && extraHeightRemaining > 0 ? 1 : 0;
+      heights.push(flooredClampedTargetHeight + extraHeight);
+    }
+
+    return heights;
+  }
+
+  get tabContentPositionsY() {
+    const positions = [];
+    const tabContentHeights = this.tabContentHeights;
+
+    let position = 9;
+    tabContentHeights.forEach((height, i) => {
+      const offset = i * 1; // Adjust for overlap offset
+      positions.push((position + 4) - offset);
+      position += height;
+    });
+
+    return positions;
+  }
+
+  get tabPositionsY() {
+    const positions = [];
+
+    this.tabContentPositionsY.forEach((contentPosition) => {
+      positions.push(contentPosition);
+    });
+
+    return positions;
+  }
+
+
   createTab(url, updateSrc = true) {
     this.tabCount++
     const id = `tab-${this.tabCount}`;
@@ -371,6 +422,7 @@ closeCurrentGroup() {
   setupDraggabilly() {
     const tabEls = this.tabEls;
     const tabPositions = this.tabPositions;
+    const tabPositionsY = this.tabPositionsY;
 
     if (this.isDragging) {
       this.isDragging = false;
@@ -388,8 +440,10 @@ closeCurrentGroup() {
 
     tabEls.forEach((tabEl, originalIndex) => {
       const originalTabPositionX = tabPositions[originalIndex];
+      const originalTabPositionY = tabPositionsY[originalIndex];
+      const axis = localStorage.getItem("verticalTabs") === "true" ? "y" : "x";
       const draggabilly = new Draggabilly(tabEl, {
-        axis: "x",
+        axis: axis,
         handle: ".tab-drag-handle",
         containment: this.el.querySelector(".tabs-content"),
       });
@@ -405,6 +459,28 @@ closeCurrentGroup() {
 
       draggabilly.on("dragEnd", (_) => {
         this.isDragging = false;
+        if (localStorage.getItem("verticalTabs") === "true") {
+        const finalTranslateY = parseFloat(tabEl.style.top, 10);
+        tabEl.style.transform = `translate3d(0, 0, 0)`;
+
+        // Animate dragged tab back into its place
+        requestAnimationFrame((_) => {
+          tabEl.style.top = "0";
+          tabEl.style.transform = `translate3d(0, ${finalTranslateY}px, 0)`;
+
+          requestAnimationFrame((_) => {
+            tabEl.classList.remove("tab-is-dragging");
+            this.el.classList.remove("tabs-is-sorting");
+
+            requestAnimationFrame((_) => {
+              tabEl.style.transform = "";
+
+              this.layoutTabs();
+              this.setupDraggabilly();
+            });
+          });
+        });
+      } else {
         const finalTranslateX = parseFloat(tabEl.style.left, 10);
         tabEl.style.transform = `translate3d(0, 0, 0)`;
 
@@ -425,13 +501,32 @@ closeCurrentGroup() {
             });
           });
         });
+      }
       });
 
       draggabilly.on("dragMove", (event, pointer, moveVector) => {
-        // Current index be computed within the event since it can change during the dragMove
         const tabEls = this.tabEls;
         const currentIndex = tabEls.indexOf(tabEl);
+        if (localStorage.getItem("verticalTabs") === "true") {
+          const currentTabPositionY = originalTabPositionY + moveVector.y;
+        const destinationIndexTarget = utils.closest(
+          currentTabPositionY,
+          tabPositionsY,
+        );
+        const destinationIndex = Math.max(
+          0,
+          Math.min(tabEls.length, destinationIndexTarget),
+        );
 
+        if (currentIndex !== destinationIndex) {
+          this.animateTabMove(tabEl, currentIndex, destinationIndex);
+        }
+        const lastTab = tabEls[tabEls.length - 1];
+        const lastTabPosition = this.tabPositions[this.tabPositions.length - 1];
+        const lastTabWidth = this.tabContentWidths[this.tabContentWidths.length - 1];
+        const translatePx = lastTabPosition + lastTabWidth + (tabEl === lastTab ? (tabEl.getAttribute("data-was-not-last-tab-when-started-dragging") ? moveVector.y - this.tabContentHeights[currentIndex] : moveVector.y) : 0) + 16;
+        document.querySelector("#create-tab").style.transform = `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`
+        } else {
         const currentTabPositionX = originalTabPositionX + moveVector.x;
         const destinationIndexTarget = utils.closest(
           currentTabPositionX,
@@ -450,6 +545,7 @@ closeCurrentGroup() {
         const lastTabWidth = this.tabContentWidths[this.tabContentWidths.length - 1];
         const translatePx = lastTabPosition + lastTabWidth + (tabEl === lastTab ? (tabEl.getAttribute("data-was-not-last-tab-when-started-dragging") ? moveVector.x - this.tabContentWidths[currentIndex] : moveVector.x) : 0) + 16;
         document.querySelector("#create-tab").style.transform = `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`
+      }
       });
     });
     this.dataApi.logger.createLog(`Setup draggabilly successfully`);
@@ -464,6 +560,31 @@ closeCurrentGroup() {
     this.layoutTabs();
   }
   layoutTabs() {
+    document.getElementById("create-tab").style = "";
+    if (localStorage.getItem("verticalTabs") === "true") {
+      const tabContentWidths = this.tabContentHeights;
+
+    let cumulativeWidth = 0;
+    tabContentWidths.forEach(() => {
+      const tabWidth = 36;
+      cumulativeWidth += tabWidth;
+      return cumulativeWidth;
+    });
+
+
+    let styleHTML = "";
+    let lastPos = 0;
+    this.tabPositionsY.forEach((position, i) => {
+
+      styleHTML += `
+        .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
+          transform: translate3d(0, ${position}px, 0)
+        }
+      `; lastPos = position
+    });
+    this.styleEl.innerHTML = styleHTML;
+    document.getElementById("create-tab").style.transform = `translate3d(0, ${lastPos + tabContentWidths[tabContentWidths.length - 1] + 20}px), 0`;
+    } else {
     const tabContentWidths = this.tabContentWidths;
 
     let cumulativeWidth = 0;
@@ -498,7 +619,9 @@ closeCurrentGroup() {
     });
     this.styleEl.innerHTML = styleHTML;
     document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
-    this.dataApi.logger.createLog(`Rearranged tabs`);
   }
+  this.dataApi.logger.createLog(`Rearranged tabs`);
+
+}
 
 }

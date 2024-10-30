@@ -23,6 +23,7 @@ body {
   justify-content: center;
   position: fixed;
   transition: width 0.5s ease-in-out;
+  height: 100%;
 
 }
 
@@ -30,39 +31,6 @@ body {
   width: calc(100%);
   transition: width 0.5s ease-in-out;
 
-}
-
-@media (min-width: 800px) {
-  .mock-browser {
-    width: 100%;
-    border-radius: 8px;
-    border-bottom-left-radius: 0%;
-    border-bottom-right-radius: 0%;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-
-  .mock-browser-content {
-    position: relative;
-    z-index: 1;
-    padding: 3em 0.5em;
-    margin-top: -1px;
-  }
-
-  .tabs-optional-shadow-below-bottom-bar {
-    z-index: 2;
-  }
-}
-
-@media (max-width: 799px) {
-
-  .mock-browser-content {
-    padding: 1em 0.5em;
-  }
-
-  .mock-browser .tabs {
-    border-radius: 0;
-  }
 }
 
 .context-menu {
@@ -233,39 +201,6 @@ body {
 
 .logo:hover {
   cursor: pointer;
-}
-
-.viewport {
-  display: flex;
-  flex-direction: row;
-  height: calc(100% - calc(2em + 12px + 46px));
-  width: 100%;
-  overflow: hidden;
-}
-
-.iframe-container {
-  width: calc(100% - calc(2em + 11px));
-  height: 100%;
-  right: 0;
-  position: fixed;
-  transition: width 0.5s ease-in-out;
-}
-
-.iframe-container.autohide {
-  width: 100%;
-  transition: width 0.5s ease-in-out;
-}
-
-iframe {
-  width: 100%;
-  height: 100%;
-  border: var(--iframe-border);
-  display: none;
-  /* Hide all iframes by default */
-}
-
-iframe.active {
-  display: block;
 }
 
 

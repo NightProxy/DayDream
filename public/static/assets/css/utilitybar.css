@@ -62,7 +62,7 @@
   }
   
   .utility .right {
-    position: fixed;
+    position: relative;
     right: 0;
   }
   

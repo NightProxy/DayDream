@@ -62,23 +62,29 @@ class Keys {
             } else if (event.altKey && event.key === 's') {
                 const sidebar = document.querySelector('.navbar');
                 const browser = document.querySelector('.surface');
-                const bar = document.querySelector('.tabs-bottom-bar');
-                const container = document.querySelector(".iframe-container");
+                const tabs = document.querySelector('.tabs');
+                const bar = document.querySelector('.under-tabs');
+                const IFcontainer = document.querySelector(".viewport");
+                const suggestions = document.querySelector('.suggestion-list');
                 const isDisabled = sidebar.classList.toggle('autohide');
 
                 if (isDisabled) {
                     browser.classList.add('autohide');
-                    bar.classList.add('autohide');
-                    container.classList.add('autohide')
+                    tabs.classList.add('vertical');
+                    bar.classList.add('vertical');
+                    IFcontainer.classList.add('vertical')
+                    suggestions.classList.add('vertical')
                 } else {
                     browser.classList.remove('autohide');
-                    bar.classList.remove('autohide');
-                    container.classList.remove('autohide')
-
+                    tabs.classList.remove('vertical');
+                    bar.classList.remove('vertical');
+                    IFcontainer.classList.remove('vertical')
+                    suggestions.classList.remove('vertical')
                 }
 
                 // Save the current state to localStorage
-                localStorage.setItem('sidebarAutohide', isDisabled);
+                localStorage.setItem('verticalTabs', isDisabled);
+                this.tabs.layoutTabs();
             }
         });
     }
