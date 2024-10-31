@@ -14,18 +14,47 @@
 
   .tabs.vertical {
     position: absolute;
-    height: 100%;
+    height: calc(100% - calc(3em + 6px));
     width: 280px;
     overflow-y: auto;
     display: flex;
     flex-direction: column-reverse;
     left: 0;
-    top: 0;
+    bottom: 0;
     transition: width 0.5s ease, height 0.5s ease, position 0.5s ease;
   }
   .tabs * {
     box-sizing: inherit;
   }
+
+  .tabs .bottom-buttons {
+    display: none;
+    position: relative;
+    opacity: 0;
+    align-items: center;
+    flex-direction: row;
+    gap: 5px;
+    bottom: 8px;
+    transition: opacity 0.5s ease;
+  }
+
+  .tabs.vertical .bottom-buttons {
+    display: flex;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    width: inherit;
+  }
+
+  .tabs .bottom-buttons .left-buttons {
+    position: absolute;
+    left: 6px;
+  }
+
+  .tabs .bottom-buttons .right-buttons {
+    position: absolute;
+    right: 6px;
+  }
+
   
   .tabs-content {
     position: relative;
@@ -377,13 +406,15 @@
     flex-direction: row;
     align-items: center;
     position: sticky;
+    transition: all 0.5s ease;
+
   }
 
   .under-tabs.vertical {
-    width: calc(100% - 280px);
     position: relative;
     right: 0%;
     align-self: flex-end;
+    transition: all 0.5s ease;
   }
 
 

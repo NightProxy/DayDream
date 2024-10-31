@@ -5,6 +5,18 @@ class Render {
 		this.dataApi = dataApi;
 		this.HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
 				this.nightmare.createElement("div", { class: "tabs", style: "--tab-content-margin: 9px" }, [
+					this.nightmare.createElement("div", { class: "bottom-buttons" }, [
+						this.nightmare.createElement("div", { class: "left-buttons"}, [
+							this.nightmare.createElement("div", { class: "bottom-button", id: "settings" }, [
+								this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["construction"]),
+							]),
+						]),
+						this.nightmare.createElement("div", { class: "right-buttons" }, [
+							this.nightmare.createElement("div", { class: "bottom-button", id: "closeAllTabs" }, [
+								this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["tab_close"]),
+							])
+						])
+					]),
 					this.nightmare.createElement("div", { class: "tabs-content", id: "tab-groups" }),
 					this.nightmare.createElement("div", { class: "browser-button", id: "create-tab" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["add"]),

@@ -99,16 +99,13 @@
     padding-top: 2px;
     border: 1px solid var(--tab-secondary-color);
     border-top: none;
-    transition: transform 0.5s ease, width 0.5s ease, left 0.5s ease, right 0.5s ease, top 0.5s ease;
+    transition:width 0.5s ease, top 0.5s ease;
   }
 
   .suggestion-list.vertical {
     top: 3em;
-    right: 0;
-    transform: none;
-    left: auto;
-    width: calc(100% - 280px);
-    transition: transform 0.5s ease, width 0.5s ease, left 0.5s ease, right 0.5s ease, top 0.5s ease;
+    width: calc(100% - 560px);
+    transition:  width 0.5s ease, top 0.5s ease;
   }
   
   .suggestion-list div {
