@@ -571,6 +571,11 @@ closeCurrentGroup() {
       return cumulativeWidth;
     });
 
+    this.tabEls.forEach((tabEl, i) => {
+
+      tabEl.style.width = null;
+
+    });
 
     let styleHTML = "";
     let lastPos = 0;

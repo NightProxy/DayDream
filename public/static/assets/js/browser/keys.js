@@ -53,7 +53,7 @@ class Keys {
                     this.functions.inspectElement();
                 }
                 // Open Settings
-            } else if (event.altKey && event.shiftKey && event.key === 'S') {
+            } else if (event.altKey && event.metaKey && event.key === 'S') {
                 const activeIframe = document.querySelector('.page.active');
                 if (activeIframe) {
                     navigate(activeIframe, 'daydream://settings');
@@ -84,8 +84,29 @@ class Keys {
 
                 // Save the current state to localStorage
                 localStorage.setItem('verticalTabs', isDisabled);
+                setTimeout(() => {
                 this.tabs.layoutTabs();
+                }, 100);
+            } else if (event.altKey && event.shiftKey && event.key === "S") {
+                if (localStorage.getItem('verticalTabs') === 'true') {
+                    const tabs = document.querySelector('.tabs');
+                    const viewport = document.querySelector('.viewport');
+                    const isDisabled = tabs.classList.toggle('hidden');
+
+                if (isDisabled) {
+                    tabs.classList.add('hidden');
+                    viewport.classList.add('hidden')
+                } else {
+                    tabs.classList.remove('hidden');
+                    viewport.classList.remove('hidden')
+                }
+
+                // Save the current state to localStorage
+                localStorage.setItem('verticalTabs-notshowing', isDisabled);
+            } else {
+                return;
             }
+        };
         });
     }
 }

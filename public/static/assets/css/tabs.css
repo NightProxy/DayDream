@@ -28,39 +28,31 @@
     width: 0px;
     transition: width 0.5s ease, height 0.5s ease, position 0.5s ease;
   }
+
+  .tabs.vertical.hidden .tab {
+    display: none;
+  }
+
   .tabs * {
     box-sizing: inherit;
   }
 
   .tabs .bottom-buttons {
     display: none;
-    position: relative;
     opacity: 0;
     align-items: center;
+    align-content: center;
     flex-direction: row;
     gap: 5px;
-    bottom: 8px;
-    width: calc(100% - 54px);
     transition: opacity 0.5s ease;
+    align-self: center;
   }
 
   .tabs.vertical .bottom-buttons {
     display: flex;
     opacity: 1;
     transition: opacity 0.5s ease;
-    width: inherit;
   }
-
-  .tabs .bottom-buttons .left-buttons {
-    position: absolute;
-    left: 6px;
-  }
-
-  .tabs .bottom-buttons .right-buttons {
-    position: absolute;
-    right: 6px;
-  }
-
   
   .tabs-content {
     position: relative;
@@ -96,7 +88,7 @@
     cursor: default;
     display: flex;
     flex-direction: column;
-    transition: position 0.5s ease;
+    transition: position 0.5s ease, width 0.3s ease;
   }
   
   .tabs.vertical  .tab {
@@ -427,11 +419,6 @@
   .under-tabs.vertical .tabs-bottom-bar {
     display: none;
   }
-
-  .under-tabs.vertical .utility {
-    position: relative;
-    right: 0;
-  }
   
   .tabs-bottom-bar {
     width: calc(100% - calc(2em + 10px));
@@ -469,6 +456,12 @@
 
   .tabs.vertical #create-tab {
     position: static;
+    margin-top: 10px;
+    width: calc(100% - 54px);
+    padding: 10px;
+    border: 1px solid var(--tab-secondary-color);
+    border-radius: 15px;
+    justify-content: center;
   }
   .viewport {
     display: flex;
@@ -490,18 +483,13 @@
     width: 100%;
     transition: width 0.5s ease;
   }
-  
+
   .iframe-container {
     height: inherit;
     width: inherit;
     right: 0;
     position: fixed;
-    transition: width 0.5s ease-in-out;
-  }
-  
-  .iframe-container.autohide {
-    width: 100%;
-    transition: width 0.5s ease-in-out;
+    border-top-left-radius: 15px;
   }
   
   iframe {

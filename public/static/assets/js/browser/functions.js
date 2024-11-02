@@ -1,5 +1,5 @@
 class Functions {
-  constructor(items,ui, tabs, dataApi, nightmarePlugins) {
+  constructor(items, ui, tabs, dataApi, nightmarePlugins) {
     this.items = items;
     this.ui = ui;
     this.tabs = tabs;
@@ -10,6 +10,9 @@ class Functions {
     this.erudaScriptInjecting = false;
   }
   init() {
+    this.items.toggleTabsButton.addEventListener("click", () => {
+      this.toggleTabs();
+    });
     this.items.backButton.addEventListener("click", () => {
       this.backward();
     });
@@ -20,15 +23,32 @@ class Functions {
       this.forward();
     });
 
-    this.items.inspectButton.addEventListener("click", () => {
-      this.inspectElement();
-    });
-    
     this.extrasmenu(this.items.extrasButton);
 
     this.items.newTab.addEventListener("click", () =>
       this.tabs.createTab("daydream://newtab"),
     );
+  }
+
+  toggleTabs() {
+    if (localStorage.getItem('verticalTabs') === 'true') {
+      const tabs = document.querySelector('.tabs');
+      const viewport = document.querySelector('.viewport');
+      const isDisabled = tabs.classList.toggle('hidden');
+
+      if (isDisabled) {
+        tabs.classList.add('hidden');
+        viewport.classList.add('hidden')
+      } else {
+        tabs.classList.remove('hidden');
+        viewport.classList.remove('hidden')
+      }
+
+      // Save the current state to localStorage
+      localStorage.setItem('verticalTabs-notshowing', isDisabled);
+    } else {
+      return;
+    }
   }
 
   backward() {
@@ -157,8 +177,9 @@ class Functions {
   }
 
   extrasmenu(button) {
-    const content = this.ui.createElement("div", {class: "side-menu"}, [
-      this.ui.createElement("span", {}, ["Hello!"])
+    const content = this.ui.createElement("div", { class: "menu-item" }, [
+      this.ui.createElement("span", {class: "material-symbols-outlined"}, ["tab"]),
+      this.ui.createElement("span", {class: "menu-label"}, ["Open New Tab"])
     ])
     this.nightmarePlugins.sidemenu.attachTo(button, content)
   }

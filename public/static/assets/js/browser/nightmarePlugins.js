@@ -32,21 +32,19 @@ class SideMenu {
 
         // Append custom content to the menu container
         if (typeof content === "function") {
-            // If content is a function, call it to get dynamic elements
             this.container.appendChild(content(this.ui));
         } else if (Array.isArray(content)) {
-            // If content is an array, add each item to the container
             content.forEach((item) => this.container.appendChild(item));
         } else if (content instanceof HTMLElement) {
-            // If content is a single HTML element
             this.container.appendChild(content);
         }
 
-        // Position the menu relative to the clicked element
+        // Position the menu so its top-right corner aligns with the button's bottom-right corner
         const rect = element.getBoundingClientRect();
-        this.container.style.position = "absolute";
+        let containRect = this.container.getBoundingClientRect();
+        containRect = containRect.width;
         this.container.style.top = `${rect.bottom + window.scrollY}px`;
-        this.container.style.left = `${rect.right + window.scrollX}px`;
+        this.container.style.left = `${ rect.left + rect.width + window.scrollX  - 150}px`;
 
         document.body.appendChild(this.container);
         this.isOpen = true;
@@ -60,6 +58,7 @@ class SideMenu {
         this.isOpen = false;
     }
 }
+
 
 
 class Notification {

@@ -1,8 +1,7 @@
 
 .menu-container {
     position: fixed;
-    right: -300px;
-    width: 300px;
+    width: 150px;
     height: 100%;
     background-color: var(--tab-bg-color);
     color: var(--text-color);

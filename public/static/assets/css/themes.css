@@ -44,8 +44,8 @@
     --secondary-color: #7700ff;
     --third-color: #6a00ff;
   
-    --searchbar-width: calc(100% - calc(6 * 36px));
+    --searchbar-width: calc(100% - calc(3 * 36px));
 
-    --main-color: #aa01ff;
+    --main-color: #8d01ff;
     --faded-main-color: rgba(170, 1, 255, 0.26);
   }

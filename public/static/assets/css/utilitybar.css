@@ -43,6 +43,20 @@
     color: var(--text-color);
   }
   
+  .under-tabs.vertical .utility {
+    position: relative;
+    background: var(--backgroud-color);
+    right: 0;
+  }
+  .under-tabs .utility li #toggleTabs {
+    display:none; 
+    z-index: 999999999999999;
+  }
+
+  .under-tabs.vertical .utility li #toggleTabs {
+    display:block; 
+  }
+
   .utility {
     list-style-type: none;
     padding-left: 5px;
@@ -79,7 +93,7 @@
   
   .utility hr {
     width: 1px;
-    height: 35px;
+    height: 32px;
     background: var(--hr-background);
     border: none;
     margin-left: 10px;
