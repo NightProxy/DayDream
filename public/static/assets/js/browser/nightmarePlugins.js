@@ -44,7 +44,7 @@ class SideMenu {
         let containRect = this.container.getBoundingClientRect();
         containRect = containRect.width;
         this.container.style.top = `${rect.bottom + window.scrollY}px`;
-        this.container.style.left = `${ rect.left + rect.width + window.scrollX  - 150}px`;
+        this.container.style.left = `${ rect.left + rect.width + window.scrollX  - 300}px`;
 
         document.body.appendChild(this.container);
         this.isOpen = true;
