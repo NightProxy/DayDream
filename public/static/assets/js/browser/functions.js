@@ -23,7 +23,7 @@ class Functions {
       this.forward();
     });
 
-    this.extrasmenu(this.items.extrasButton);
+    this.extras();
 
     this.items.newTab.addEventListener("click", () =>
       this.tabs.createTab("daydream://newtab"),
@@ -176,17 +176,26 @@ class Functions {
     this.dataApi.loggger.createLog("Toggled Inspect Element")
   }
 
-  extrasmenu(button) {
+  extras() {
+    this.extrasMenu(this.items.extrasButton);
+  }
+
+  extrasMenu(button) {
     let content = this.ui.createElement("div", {}, [
-      this.ui.createElement("div", { class: "menu-item" }, [
+      this.ui.createElement("div", { class: "menu-item", id: "openNewTab" }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["tab"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Open New Tab"]),
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"])
       ]),
-      this.ui.createElement("div", { class: "menu-item" }, [
+      this.ui.createElement("div", { class: "menu-item", id: "openNewWindow" }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_new"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Open a New Window"]),
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "openNewABWindow" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["visibility_off"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Open an Incognito Window"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + N"])
       ]),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -227,6 +236,71 @@ class Functions {
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + I"])
       ]),
     ])
-    this.nightmarePlugins.sidemenu.attachTo(button, content)
+    this.nightmarePlugins.sidemenu.attachTo(button, content);
+    setTimeout(() => {
+      this.extrasMenuFunctions();
+    }, 50);
   }
+
+  extrasMenuFunctions() {
+    if (document.querySelector(".menu-container") != null) {
+      console.log("Menu container found");
+      const openNewTab = document.getElementById("openNewTab");
+      const openNewWindow = document.getElementById("openNewWindow");
+      const openNewABWindow = document.getElementById("openNewABWindow");
+      const zoomOut = document.getElementById("zoom-out");
+      const zoomIn = document.getElementById("zoom-in");
+      const fullscreen = document.getElementById("fullscreen");
+      const openBookmarks = document.getElementById("openBookmarks");
+      const openGames = document.getElementById("openGames");
+      const openExtensions = document.getElementById("openExtensions");
+      const screenshot = document.getElementById("screenshot");
+      const inspectElement = document.getElementById("inspectElement");
+
+      openNewTab.addEventListener("click", () => {
+        this.tabs.createTab("daydream://newtab");
+      });
+
+      openNewWindow.addEventListener("click", () => {
+        console.log("Opening new window");
+      });
+
+      openNewABWindow.addEventListener("click", () => {
+        console.log("Opening new incognito window");
+      });
+
+      zoomOut.addEventListener("click", () => {
+        console.log("Zooming out");
+      });
+
+      zoomIn.addEventListener("click", () => {
+        console.log("Zooming in");
+      });
+
+      fullscreen.addEventListener("click", () => {
+        console.log("Fullscreen");
+      });
+
+      openBookmarks.addEventListener("click", () => {
+        console.log("Opening bookmarks");
+      });
+
+      openGames.addEventListener("click", () => {
+        console.log("Opening games");
+      });
+
+      openExtensions.addEventListener("click", () => {
+        console.log("Opening extensions");
+      });
+
+      screenshot.addEventListener("click", () => {
+        console.log("Taking screenshot");
+      });
+
+      inspectElement.addEventListener("click", () => {
+        this.inspectElement();
+      });
+    }
+  }
+
 }

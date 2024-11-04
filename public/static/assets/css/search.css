@@ -91,7 +91,7 @@
     color: var(--text-color);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
-    width: var(--searchbar-width);
+    width: calc(100% - calc(72px * 2));
     height: fit-content;
     overflow-y: auto;
     display: none;
