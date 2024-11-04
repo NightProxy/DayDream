@@ -21,7 +21,6 @@ class SideMenu {
             this.isOpen ? this.closeMenu() : this.openMenu(element, content);
         });
 
-        // Close the menu when clicking outside
         window.addEventListener("click", () => this.closeMenu());
     }
 

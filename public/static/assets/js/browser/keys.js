@@ -16,45 +16,37 @@ class Keys {
                 this.tabs.closeCurrentTab();
 
             } else if (event.altKey && event.key === 'ArrowLeft') {
-                const activeIframe = document.querySelector('.page.active');
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     activeIframe.contentWindow.history.back();
                 }
                 // Go Next
             } else if (event.altKey && event.key === 'ArrowRight') {
-                const activeIframe = document.querySelector('.page.active');
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     activeIframe.contentWindow.history.forward();
                 }
                 // Reload page
             } else if (event.altKey && event.key === 'r') {
-                const activeIframe = document.querySelector('.page.active');
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     activeIframe.contentWindow.location.reload();
                 }
             } else if (event.altKey && event.keyCode === 116) {
-                const activeIframe = document.querySelector('.page.active');
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     activeIframe.contentWindow.location.reload();
                 }
-            } else if (event.ctrlKey && event.shiftKey && event.key === 'i') {
-                const activeIframe = document.querySelector('.page.active');
-                if (activeIframe) {
-                    this.functions.inspectElement();
-                }
-            } else if (event.altKey && event.metaKey && event.key === 'i') {
-                const activeIframe = document.querySelector('.page.active');
-                if (activeIframe) {
-                    this.functions.inspectElement();
-                }
-            } else if (event.altKey && event.shiftKey && event.key === 'i') {
-                const activeIframe = document.querySelector('.page.active');
+            }  else if (event.altKey && event.shiftKey && event.key === 'I') {
+                event.preventDefault();
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     this.functions.inspectElement();
                 }
                 // Open Settings
             } else if (event.altKey && event.metaKey && event.key === 'S') {
-                const activeIframe = document.querySelector('.page.active');
+                event.preventDefault();
+                const activeIframe = document.querySelector('iframe.active');
                 if (activeIframe) {
                     navigate(activeIframe, 'daydream://settings');
                 }

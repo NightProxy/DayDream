@@ -98,35 +98,35 @@ class Render {
 			this.nightmare.createElement("br"),
 			this.nightmare.createElement("div", { class: "center" }, [
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", { title: "Games"}, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["sports_esports"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", {class: "coming-soon", title: "COMING SOON" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["robot_2"]),
 					]),
 				]),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", { class: "coming-soon", title: "COMING SOON"}, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["forum"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", {title: "Music" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["headphones"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", { title: "History"}, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["history"]),
 					]),
 				]),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { }, [
+					this.nightmare.createElement("div", { title: "Settings"}, [
 						this.nightmare.createElement("span", { style: "margin-top: 0", class: "material-symbols-outlined" }, ["tune"]),
 					]),
 				]),

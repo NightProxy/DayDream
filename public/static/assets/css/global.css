@@ -206,6 +206,18 @@ body {
   color: var(--main-color);
 }
 
+.navbar .coming-soon::after {
+  content: "SOON";
+  font-size: 8px;
+  background: var(--border-color);
+  color: var(--text-color);
+  padding: 2px 4px; 
+  border-radius: 4px;
+  position: relative;
+  bottom: 5px;
+  white-space: nowrap;
+}
+
 .logo {
   width: 32px;
   height: 32px;

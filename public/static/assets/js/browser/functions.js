@@ -177,9 +177,55 @@ class Functions {
   }
 
   extrasmenu(button) {
-    const content = this.ui.createElement("div", { class: "menu-item" }, [
-      this.ui.createElement("span", {class: "material-symbols-outlined"}, ["tab"]),
-      this.ui.createElement("span", {class: "menu-label"}, ["Open New Tab"])
+    let content = this.ui.createElement("div", {}, [
+      this.ui.createElement("div", { class: "menu-item" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["tab"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Open New Tab"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_new"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Open a New Window"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"])
+      ]),
+      this.ui.createElement("div", { class: "menu-row" }, [
+        this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
+        this.ui.createElement("div", { class: "menu-item", id: "zoom-out" }, [
+          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["remove"]),
+        ]),
+        this.ui.createElement("span", { class: "menu-label", id: "zoom-percentage" }, ["100%"]),
+        this.ui.createElement("div", { class: "menu-item", id: "zoom-in" }, [
+          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["add"])
+        ]),
+        this.ui.createElement("div", { class: "menu-item", id: "fullscreen" }, [
+          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_full"])
+        ]),
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "openBookmarks" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["hotel_class"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + B"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "openGames" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["playing_cards"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + G"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "openExtensions" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["extension"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Extensions"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + E"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "screenshot" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["screenshot"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Screenshot"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"])
+      ]),
+      this.ui.createElement("div", { class: "menu-item", id: "inspectElement" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["code"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Inspect Element"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + I"])
+      ]),
     ])
     this.nightmarePlugins.sidemenu.attachTo(button, content)
   }
