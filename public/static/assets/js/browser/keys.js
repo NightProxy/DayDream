@@ -43,14 +43,6 @@ class Keys {
                 if (activeIframe) {
                     this.functions.inspectElement();
                 }
-                // Open Settings
-            } else if (event.altKey && event.metaKey && event.key === 'S') {
-                event.preventDefault();
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    navigate(activeIframe, 'daydream://settings');
-                }
-                // Toggle Sidebar
             } else if (event.altKey && event.key === 's') {
                 const sidebar = document.querySelector('.navbar');
                 const browser = document.querySelector('.surface');

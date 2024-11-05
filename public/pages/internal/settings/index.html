@@ -1,586 +1,204 @@
 <!doctype html>
 
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DDX Settings</title>
-    <script src="/assets/js/lib/eruda/eruda.js"></script>
-    <script>
-      eruda.init();
-    </script>
-    <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
-    <link rel="stylesheet" href="/assets/css/imports.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/themes.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
-    <link rel="stylesheet" href="/assets/css/pages/settings.css" />
-    <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta property="og:image" content="/assets/imgs/logo.png" />
-    <script src="/assets/js/lib/html2canvas/html2canvas.min.js"></script>
-    <script src="/assets/js/lib/localforage/localforage.min.js"></script>
-  </head>
-  <body>
-    <div
-      style="
-        position: absolute;
-        font-family: Roboto;
-        color: white;
-        width: 1200px;
-        height: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        margin-top: 3.5%;
-        z-index: 2;
-        margin-left: 0;
-      "
-      id="footer"
-    >
-      <h1 style="font-weight: 100; font-size: 56px; color: var(--header-clr)">
-        SETTINGS
-      </h1>
-      <ul class="sideSnav">
-        <a href="/settings/#/cloak">
-          <li class="settingItem" data-id="cloak">Cloaking</li>
-        </a>
-        <a href="/settings/#/plugins">
-          <li class="settingItem" data-id="plugins">Plugins</li>
-        </a>
-        <a href="/settings/#/themes">
-          <li class="settingItem" data-id="themes">Customization</li>
-        </a>
-        <a href="/settings/#/proxy">
-          <li class="settingItem" data-id="proxy">Proxy</li>
-        </a>
-        <a href="/settings/#/misc">
-          <li class="settingItem" data-id="misc">Misc</li>
-        </a>
-        <a href="/settings/#/accounts">
-          <li class="settingItem" data-id="accounts">Accounts</li>
-        </a>
-        <hr />
-        <a href="/settings/#/about">
-          <li class="settingItem" data-id="about">About & Statistics</li>
-        </a>
-      </ul>
-      <div class="scontent" id="cloak">
-        <h1>Cloaking</h1>
-        <h3>About:Blank</h3>
-        <label class="switch">
-          <input type="checkbox" id="abSwitch" />
-          <span class="slider"></span>
-        </label>
 
-        <h3>Blob</h3>
-        <label class="switch">
-          <input type="checkbox" id="blobSwitch" />
-          <span class="slider"></span>
-        </label>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DDX Settings</title>
+  <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
+  <link rel="stylesheet" href="/assets/css/imports.css" />
+  <link rel="stylesheet" type="text/css" href="/assets/css/themes.css" />
+  <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
+  <link rel="stylesheet" href="/assets/css/pages/settings.css" />
+  <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta property="og:image" content="/assets/imgs/logo.png" />
+  <script src="/assets/js/lib/html2canvas/html2canvas.min.js"></script>
+  <script src="/assets/js/lib/localforage/localforage.min.js"></script>
+</head>
 
-        <h3>Reset</h3>
-        <button id="cloakDisable">Disable Cloaks</button>
-      </div>
-      <div class="scontent" id="plugins">
-        <h1>Plugins</h1>
-        <p>
-          Plugins are features you can inject into Elysium to provide yourself
-          with a better, more customized, experience. Plugins consist of mods,
-          upgrades, features, etc.
-        </p>
-        <hr />
-        <h2 style="margin-bottom: -10px">Official Plugins</h2>
-        <p>
-          Official Plugins are verified by our development team and are made to
-          be injected into Elysium. These ones have been listed down below for
-          easier use without having to use our
-          <a class="a" href="#">Elysium Plugin Docs</a> guide.
-        </p>
-        <h2 style="margin-bottom: -10px">Unofficial Plugins</h2>
-        <p>
-          Unofficial Plugins are <b>NOT</b> verified by our team and may have
-          bugs, supportment issues, etc. Our developer team reviews these
-          plugins regularly to keep your own personal deployments safe from
-          nuking.
-        </p>
-        <p>
-          <b
-            >To find these Plugins you will have to go to our
-            <a class="a" href="https://github.com/nightproxy/plugins"
-              >GitHub Plugins</a
-            >
-            and our <a class="a" href="#">Elysium Plugin Docs</a> page.</b
-          >
-        </p>
-        <hr />
-        <h1>Official Elysium Plugins</h1>
-        <div class="pluginContain">
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">AdBlocker</div>
-            <div class="plugincontent">
-              <p>Blocks <b>most</b> ads on sites while using our proxy</p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Eruda (Inspect)</div>
-            <div class="plugincontent">
-              <p>
-                Enable inspect throughout the entire site instead of just the
-                proxy
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Vencord (Discord)</div>
-            <div class="plugincontent">
-              <p>
-                Adds Vencords features to Discord. This is now
-                <b>NOT AGAINST</b> Discord's terms and can be used freely.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Custom Background</div>
-            <div class="plugincontent">
-              <p>
-                Adds a custom background for your to put a URL or upload a file
-                for the background of the site.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Community Themes</div>
-            <div class="plugincontent">
-              <p>
-                Adds community themes to the already growing themes category.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Tab Masking</div>
-            <div class="plugincontent">
-              <p>
-                When you leave your tab a fake image of Google will open so when
-                your teachers look at the previ...
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Page Music</div>
-            <div class="plugincontent">
-              <p>
-                Play Umbra+ while you're in Elysium. This is turned off
-                automatically when gaming.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Ambient Music</div>
-            <div class="plugincontent">
-              <p>
-                Add a bit of flair with Elysium's Ambient Music. This will
-                automatically turn off when in Umbra+.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Custom Theme Col...</div>
-            <div class="plugincontent">
-              <p>
-                Allows for custom theming. After toggling this, toggle custom
-                within the themes page.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">task_alt</span>
-            </div>
-          </div>
-        </div>
-        <h1 style="margin-top: 30px">Troll Plugins</h1>
-        <div class="pluginContain">
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Liberty Mutual</div>
-            <div class="plugincontent">
-              <p>
-                Liberty Mutual customizes your game and proxy experience, so you
-                only pay for what you need.
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">mode_heat</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Ka-Blanky!</div>
-            <div class="plugincontent">
-              <p>Quite literally nukes about:blank over and over.</p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">cancel</span>
-            </div>
-          </div>
-          <div style="margin: 0" class="plugin">
-            <img
-              src="https://i.pinimg.com/736x/19/d7/c6/19d7c6d800f9fcfd57a23495dc2efd76.jpg"
-            />
-            <div class="pluginheading">Preload to hell</div>
-            <div class="plugincontent">
-              <p>
-                Infinitely sets a preloader. (You'll have to reset cookies to
-                fix)
-              </p>
-              <label class="switch">
-                <input type="checkbox" />
-                <span class="slider"></span>
-              </label>
-              <span class="material-symbols-outlined">error</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="scontent" id="themes">
-        <h1>Themes</h1>
-      </div>
-      <div class="scontent" id="proxy">
-        <h1>Proxy</h1>
+<body>
+  <ul class="sideSnav">
+    <a href="#Cloaking">
+      <li class="settingItem" data-id="cloak">Cloaking</li>
+    </a>
+    <a href="#Themes">
+      <li class="settingItem" data-id="themes">Customization</li>
+    </a>
+    <a href="#Proxy">
+      <li class="settingItem" data-id="proxy">Proxy</li>
+    </a>
+    <a href="#Misc">
+      <li class="settingItem" data-id="misc">Misc</li>
+    </a>
+    <a href="#Profiles">
+      <li class="settingItem" data-id="accounts">Accounts</li>
+    </a>
+    <hr />
+    <a href="#About">
+      <li class="settingItem" data-id="about">About & Statistics</li>
+    </a>
+  </ul>
+  <div class="columnDiv">
+    <h1 id="Cloaking">Cloaking</h1>
+    <h3>About:Blank</h3>
+    <label class="switch">
+      <input type="checkbox" id="abSwitch" />
+      <span class="slider"></span>
+    </label>
 
-        <div id="proxyDropdown" class="dropdown">
-          <div id="proxyButton" class="dropdown-button">
-            <span class="button-text">Proxies</span>
-            <span class="material-symbols-outlined">keyboard_arrow_down</span>
-          </div>
-          <ul id="proxyOptions" class="dropdown-options">
-            <li>
-              <a data-value="uv"
-                ><img src="/assets/imgs/proxies/uv.png" />Ultraviolet</a
-              >
-            </li>
-            <li>
-              <a data-value="rammerhead"
-                ><img src="/assets/imgs/proxies/rh.png" />Rammerhead</a
-              >
-            </li>
-            <li>
-              <a data-value="sj"
-                ><img src="/assets/imgs/proxies/sj.png" />Scramjet</a
-              >
-            </li>
-            <li>
-              <a data-value="mt"
-                ><img src="/assets/imgs/proxies/mt.png" />Meteor</a
-              >
-            </li>
-            <li>
-              <a data-value="ec">
-                <img src="/assets/imgs/proxies/eclipse.svg" />Eclispe</a
-              >
-            </li>
-            <li>
-              <a data-value="gl"> Gloom (HIGHLY EXPERIMENTAL)</a>
-            </li>
-          </ul>
-        </div>
+    <h3>Blob</h3>
+    <label class="switch">
+      <input type="checkbox" id="blobSwitch" />
+      <span class="slider"></span>
+    </label>
 
-        <div id="transportDropdown" class="dropdown">
-          <div id="transportButton" class="dropdown-button">
-            <span class="button-text">Transports</span>
-            <span class="material-symbols-outlined">keyboard_arrow_down</span>
-          </div>
-          <ul id="transportOptions" class="dropdown-options">
-            <li><a data-value="epoxy">Epoxy</a></li>
-            <li><a data-value="libcurl">LibCurl</a></li>
-            <li><a data-value="baremod">Bare Module</a></li>
-          </ul>
-        </div>
+    <h3>Reset</h3>
+    <button id="cloakDisable">Disable Cloaks</button>
+    <h1 id="Themes">Themes</h1>
+    <h1 id="Proxy">Proxy</h1>
+    <div class="scontent">
 
-        <div id="searchDropdown" class="dropdown">
-          <div id="searchButton" class="dropdown-button">
-            <span class="button-text">Search Engine</span>
-            <span class="material-symbols-outlined">keyboard_arrow_down</span>
-          </div>
-          <ul id="searchOptions" class="dropdown-options">
-            <li>
-              <a data-value="https://www.google.com/search?q=%s">Google</a>
-            </li>
-            <li><a data-value="https://bing.com/search?q=%s">Bing</a></li>
-            <li><a data-value="https://duckduckgo.com/?q=%s">DuckDuckGo</a></li>
-            <li>
-              <a data-value="https://search.yahoo.com/search?p=%s">Yahoo</a>
-            </li>
-          </ul>
+      <div id="proxyDropdown" class="dropdown">
+        <div id="proxyButton" class="dropdown-button">
+          <span class="button-text">Proxies</span>
+          <span class="material-symbols-outlined">keyboard_arrow_down</span>
         </div>
-
-        <div id="browseDropdown" class="dropdown">
-          <div id="browseButton" class="dropdown-button">
-            <span class="button-text">Page Browser</span>
-            <span class="material-symbols-outlined">keyboard_arrow_down</span>
-          </div>
-          <ul id="browseOptions" class="dropdown-options">
-            <li><a data-value="tabs">Tabs (Default)</a></li>
-            <li><a data-value="launcher">Launcher (Games Default)</a></li>
-            <li><a data-value="norm">Normal Page (may have issues)</a></li>
-          </ul>
-        </div>
-
-        <div id="wispDiv">
-          <label for="wispSetting">Wisp Setting:</label>
-          <input type="text" id="wispSetting" />
-        </div>
-
-        <div id="bareDiv">
-          <label for="bareSetting">Bare Setting:</label>
-          <input type="text" id="bareSetting" />
-        </div>
+        <ul id="proxyOptions" class="dropdown-options">
+          <li>
+            <a data-value="uv"><img src="/assets/imgs/proxies/uv.png" />Ultraviolet</a>
+          </li>
+          <li>
+            <a data-value="sj"><img src="/assets/imgs/proxies/sj.png" />Scramjet</a>
+          </li>
+          <li>
+            <a data-value="ec">
+              <img src="/assets/imgs/proxies/eclipse.svg" />Eclispe</a>
+          </li>
+        </ul>
       </div>
 
-      <div class="scontent" id="misc">
-        <h1>Misc</h1>
+      <div id="transportDropdown" class="dropdown">
+        <div id="transportButton" class="dropdown-button">
+          <span class="button-text">Transports</span>
+          <span class="material-symbols-outlined">keyboard_arrow_down</span>
+        </div>
+        <ul id="transportOptions" class="dropdown-options">
+          <li><a data-value="libcurl">LibCurl</a></li>
+          <li><a data-value="epoxy">Epoxy</a></li>
+          <li><a data-value="baremod">Bare Module</a></li>
+        </ul>
       </div>
 
-      <div class="scontent" id="accounts">
-        <h1>Accounts</h1>
-        <input
-          type="file"
-          id="dataInput"
-          style="display: none"
-          onchange="api.settings.importData();"
-        />
-        <button id="exportData">Export Data</button>
-        <button id="importData">Import Data</button>
+      <div id="searchDropdown" class="dropdown">
+        <div id="searchButton" class="dropdown-button">
+          <span class="button-text">Search Engine</span>
+          <span class="material-symbols-outlined">keyboard_arrow_down</span>
+        </div>
+        <ul id="searchOptions" class="dropdown-options">
+          <li>
+            <a data-value="https://www.google.com/search?q=%s">Google</a>
+          </li>
+          <li><a data-value="https://bing.com/search?q=%s">Bing</a></li>
+          <li><a data-value="https://duckduckgo.com/?q=%s">DuckDuckGo</a></li>
+          <li>
+            <a data-value="https://search.yahoo.com/search?p=%s">Yahoo</a>
+          </li>
+        </ul>
       </div>
 
-      <div class="scontent" id="about">
-        <h1>About Elysium</h1>
-        <p>
-          Elysium is a web based proxy made for users to play games, communicate
-          with others, and generally have fun. Modding and community plugins
-          help advance this more with even wilder ways to customize Elysium to
-          the best of your experience.
-        </p>
-        <hr />
-        <h1>Statistics</h1>
-        <p>
-          In the last year we've had over, 130K new users on Light, 1.8 million
-          views, and still counting. These statistics really help us grow, learn
-          whats popular in the community, and make Elysium to the best of your
-          needs. Thank you for choosing Elysium.
-        </p>
-        <hr />
-        <h1>Developers of Elysium</h1>
-        <h3><a class="about-hover" href="">Noctra: (Former Owner)</a></h3>
-        <ul>
-          <li>- Creator of Elysium</li>
-          <li>- Wrote all user interface code</li>
-          <li>- Created Elysium official Plugins List</li>
-        </ul>
-        <h3><a class="about-hover" href="https://notamplify.online">Amplify: (Owner) </a></h3>
-        <ul>
-          <li>- Many bug fixes</li>
-          <li>- Wrote all functionality</li>
-          <li>- Wrote Elysium official Plugins System</li>
-          <li>- Wrote troubleshooting guide</li>
-          <li>- Manages server stability</li>
-          <li>- Manages stability of Plugins</li>
-          <li>- Manages Elysium</li>
-        </ul>
-        <h3><a class="about-hover" href="">KDust7: (Co-Owner)</a></h3>
-        <ul>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-        </ul>
-        <h3><a class="about-hover" href="">Crllect: (Co-Owner)</a></h3>
-        <ul>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-          <li>-</li>
-        </ul>
-        <h3><a class="about-hover" href="">Stella:</a></h3>
-        <ul>
-          <li>- Assisted with UI</li>
-        </ul>
-        <h3><a class="about-hover" href="https://github.com/e9x">Divide/e9x</a></h3>
-        <ul>
-          <li>- Helped with Script Injection for plugins.</li>
-        </ul>
-        <h1>Thank you for contributing to Elysium.</h1>
-        <p>
-          If you would like to contribute, check out our
-          <a class="a" href="https://github.com/nightproxy/Elysium">GitHub</a>
-          for how to get started.
-        </p>
+      <div id="wispDiv">
+        <label for="wispSetting">Wisp Setting:</label>
+        <input type="text" id="wispSetting" />
       </div>
     </div>
-    <footer style="margin-top: 170px">
-      <h1
-        style="
-          position: absolute;
-          margin-top: 50px;
-          text-transform: none;
-          font-weight: 400;
-          font-size: 16px;
-        "
-      >
-        Questions or concerns?
-        <a class="a" target="_blank" href="https://discord.lightgo.app"
-          >Join our Discord</a
-        >
-      </h1>
-      <div class="footer">
-        <h1>About Elysium</h1>
-        <ul style="list-style-type: none">
-          <li>Developers</li>
-          <li>Servers</li>
-          <li>GitHub</li>
-          <li>Compatible Devices</li>
-        </ul>
-      </div>
-      <div class="footer">
-        <h1>Support</h1>
-        <ul style="list-style-type: none">
-          <li>Getting Started</li>
-          <li>Troubleshooting</li>
-          <li>Site Status</li>
-          <li>Network Issues</li>
-        </ul>
-      </div>
-      <div class="footer">
-        <h1>Settings</h1>
-        <ul style="list-style-type: none">
-          <a href="/settings/#/plugins">
-            <li>Plugin Settings</li>
-          </a>
-          <a href="/settings/#/proxy">
-            <li>Proxy Settings</li>
-          </a>
-          <a href="/settings/#/cloak">
-            <li>Cloaking Settings</li>
-          </a>
-          <a href="/settings/#/about">
-            <li>About & Statistics</li>
-          </a>
-        </ul>
-      </div>
-      <div class="footer">
-        <h1>Contacts</h1>
-        <ul style="list-style-type: none">
-          <li>Discord Server</li>
-          <li>Email Us</li>
-        </ul>
-      </div>
-      <h3
-        style="
-          position: absolute;
-          margin-top: 280px;
-          text-transform: none;
-          font-weight: 400;
-          font-size: 12px;
-        "
-      >
-        <a class="a2" style="margin-right: 20px" href="/terms">Terms of Use</a>
-        <a class="a2" href="/privacy">Privacy Policy</a>
-      </h3>
-      <h3
-        style="
-          position: absolute;
-          margin-top: 320px;
-          text-transform: none;
-          font-weight: 300;
-          font-size: 12px;
-        "
-      >
-        © 2024-2025 Night Network, or its affiliates
-      </h3>
-    </footer>
-    <script src="/assets/js/internal/settings.js"></script>
-  </body>
+
+    <h1 id="Misc">Misc</h1>
+    <div class="scontent">
+
+    </div>
+
+    <h1 id="Profiles">Profile Management</h1>
+    <div class="scontent">
+      <input type="file" id="dataInput" style="display: none" onchange="api.settings.importData();" />
+      <button id="exportData">Export Data</button>
+      <button id="importData">Import Data</button>
+    </div>
+
+    <h1 id="About">About DayDreamX</h1>
+    <div class="scontent">
+      <p>
+        Elysium is a web based proxy made for users to play games, communicate
+        with others, and generally have fun. Modding and community plugins
+        help advance this more with even wilder ways to customize Elysium to
+        the best of your experience.
+      </p>
+      <hr />
+      <h1>Techstack</h1>
+      <ul>
+        <li>- Chrome Tabs (Rewritten to modern standards)</li>
+        <li>- Ultraviolet V3</li>
+        <li>- Scramjet</li>
+        <li>- Eclipse</li>
+        <li>- BareMux V2</li>
+        <li>- Libcurl.js</li>
+        <li>- Epoxy</li>
+        <li>- Wisp JS Client</li>
+        <li>- FilerJS</li>
+        <li>- JSzip</li>
+        <li>- Eruda</li>
+        <li>- JS-cookie</li>
+        <li>- Dragabilly</li>
+        <li>- Localforage</li>
+        <li>- NightmareJS</li>
+        <li>- WorkerWare</li>
+        <li>- Html2Canvas</li>
+        <li>- Sandstone (Modified)</li>
+      </ul>
+      <hr />
+      <h1>Devs:</h1>
+      <h3><a class="about-hover" href="https://notamplify.online">Amplify: (Owner) </a></h3>
+      <ul>
+        <li>- Many bug fixes</li>
+        <li>- Wrote UI</li>
+        <li>- Wrote all functionality</li>
+        <li>- Wrote Extensions System and Other APIs</li>
+        <li>- Wrote Docs</li>
+        <li>- Manages And runs DayDreamX and its stability</li>
+      </ul>
+      <h3><a class="about-hover" href="">KDust7: (Owner)</a></h3>
+      <ul>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+      </ul>
+      <h3><a class="about-hover" href="">Crllect: (Admin)</a></h3>
+      <ul>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+        <li>-</li>
+      </ul>
+      <h1>Thank you for contributing to DayDreamX.</h1>
+      <p>
+        If you would like to contribute, check out our
+        <a class="a" href="https://github.com/NightProxy/DayDreamX">GitHub</a>
+        for how to get started.
+      </p>
+    </div>
+  </div>
+  <script src="/assets/js/internal/settings.js"></script>
+</body>
+
 </html>
