@@ -1,6 +1,6 @@
 class Proxy {
-  constructor(searchVar, transportVar, wispUrl, bareUrl) {
-    if (!searchVar || !transportVar || !wispUrl || !bareUrl) {
+  constructor(searchVar, transportVar, wispUrl, logging) {
+    if (!searchVar || !transportVar || !wispUrl ) {
       console.error("Proxy, search, and transport variables are required.");
       return;
     }
@@ -12,26 +12,25 @@ class Proxy {
       searchVar,
       transportVar,
       wispUrl,
-      bareUrl,
     });
 
     this.searchVar = searchVar;
     this.transportVar = transportVar;
     this.wispUrl = wispUrl;
-    this.bareUrl = bareUrl;
+    this.logging = logging;
   }
 
   async setTransports() {
     const transports = this.transportVar;
     const transportMap = {
       "epoxy": "/epoxy/index.mjs",
-      "libcurl": "/libcurl/index.mjs",
-      "baremod": "/baremod/index.mjs"
+      "libcurl": "/libcurl/index.mjs"
     };
-    const transportFile = transportMap[transports] || "/epoxy/index.mjs";
+    const transportFile = transportMap[transports] || "/libcurl/index.mjs";
     await this.connection.setTransport(transportFile, [
       { wisp: this.wispUrl },
     ]);
+    this.logging.createLog(`Transport Set: ${this.connection.getTransport}`)
   }
 
   search(input) {
@@ -74,7 +73,7 @@ class Proxy {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       registrations.forEach(registration => {
         registration.update();
-        console.log(`Service Worker at ${registration.scope} Updated`);
+        this.logging.createLog(`Service Worker at ${registration.scope} Updated`);
       });
     });
   }
@@ -83,7 +82,7 @@ class Proxy {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       registrations.forEach(registration => {
         registration.unregister();
-        console.log(`Service Worker at ${registration.scope} Unregistered`);
+        this.logging.createLog(`Service Worker at ${registration.scope} Unregistered`);
       });
     });
   }
@@ -113,7 +112,7 @@ class Proxy {
     if (proxyMapping) {
       return proxyMapping[domain] || proxyMapping["default"];
     }
-    return "uv"; // Default to Ultraviolet
+    return "uv";
   }
 
   async automatic(input) {

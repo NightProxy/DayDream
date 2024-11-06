@@ -1,0 +1,24 @@
+class SettingsAPI {
+    constructor() {
+        this.store = localforage.createInstance({
+            name: 'Settings',
+            storeName: 'settings',
+        });
+    }
+
+    async getItem(key) {
+        return await this.store.getItem(key);
+    }
+
+    async setItem(key, value) {
+        return await this.store.setItem(key, value);
+    }
+
+    async clearSetting(key) {
+        return await this.store.removeItem(key);
+    }
+
+    async clearAllSettings() {
+        return await this.store.clear();
+    }
+  }

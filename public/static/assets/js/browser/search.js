@@ -1,8 +1,9 @@
 class Search {
-  constructor(utils, ui, dataAPI, proxy, swConfig, proxySetting) {
+  constructor(utils, ui, logger, settings, proxy, swConfig, proxySetting) {
     this.utils = utils;
     this.ui = ui;
-    this.data = dataAPI;
+    this.data = logger;
+    this.settings = settings;
     this.proxy = proxy;
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
@@ -15,9 +16,9 @@ class Search {
     this.currentMaxResults = this.maxInitialResults;
   }
 
-  init(searchbar) {
+  async init(searchbar) {
     let suggestionList;
-    if (localStorage.getItem("verticalTabs") === "true") {
+    if (await this.settings.getItem("verticalTabs") === "true") {
     suggestionList = this.ui.createElement("div", { class: "suggestion-list vertical", id: "suggestion-list" });
     } else {
     suggestionList = this.ui.createElement("div", { class: "suggestion-list", id: "suggestion-list" });
@@ -57,7 +58,7 @@ class Search {
       await this.populateSections(suggestions, searchbar.value);
     });
 
-    window.addEventListener("keydown", (event) => {
+    window.addEventListener("keydown", async (event) => {
       if (event.key === "Escape" || event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
@@ -105,7 +106,7 @@ class Search {
 
       suggestionList.querySelectorAll(".searchEngineIcon")[0].style.display =
         "block";
-      switch (localStorage.getItem("search")) {
+      switch (await this.settings.getItem("search")) {
         case "https://duckduckgo.com/?q=%s":
           suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
             "/assets/imgs/b/ddg.webp";
@@ -136,7 +137,7 @@ class Search {
           break;
         default:
           this.utils
-            .getFavicon(localStorage.getItem("search"))
+            .getFavicon(await this.settings.getItem("search"))
             .then((dataUrl) => {
               if (dataUrl == null || dataUrl.endsWith("null")) {
                 suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
@@ -291,7 +292,7 @@ class Search {
       url = "daydream://" + url;
       const internalUrl = this.utils.processUrl(url);
       const response = await fetch(internalUrl, { method: "HEAD" }).catch(error => {
-        this.data.logger.createLog("Failed to Fetch:" + error)
+        this.data.createLog("Failed to Fetch:" + error)
       });
 
       if (response.ok) {

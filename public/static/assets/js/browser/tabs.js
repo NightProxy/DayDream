@@ -1,10 +1,11 @@
 class Tabs {
-  constructor(render, ui, utils, items, dataApi) {
+  constructor(render, ui, utils, items, logger, settings) {
     this.render = render;
     this.ui = ui;
     this.utils = utils;
     this.items = items;
-    this.dataApi = dataApi;
+    this.logger = logger;
+    this.settings = settings;
     this.tabCount = 0;
     this.tabs = [];
     this.groups = [];
@@ -235,7 +236,7 @@ class Tabs {
 
     this.layoutTabs();
     this.setupDraggabilly();
-    this.dataApi.logger.createLog(`Created tab: ${url}`);
+    this.logger.createLog(`Created tab: ${url}`);
   }
 
   closeTabById(id) {
@@ -248,7 +249,7 @@ class Tabs {
       tabInfo.iframe.remove();
       this.tabs = this.tabs.filter((tab) => tab.id !== id);
       this.layoutTabs();
-      this.dataApi.logger.createLog(`Closed tab: ${tabInfo.url}`);
+      this.logger.createLog(`Closed tab: ${tabInfo.url}`);
     }
   }
 
@@ -268,7 +269,7 @@ class Tabs {
         (previousTab || nextTab || remainingTabs[remainingTabs.length - 1]).click();
       }
       this.layoutTabs();
-      this.dataApi.logger.createLog(`Closed tab: ${activeIframeUrl}`);
+      this.logger.createLog(`Closed tab: ${activeIframeUrl}`);
     }
   }
 
@@ -279,7 +280,7 @@ class Tabs {
     document.querySelector('.iframe-container').querySelectorAll('iframe').forEach(page => {
       page.remove();
     });
-    this.dataApi.logger.createLog(`Closed all tabs`);
+    this.logger.createLog(`Closed all tabs`);
   }
 /*
   createGroup(name) {
@@ -405,12 +406,12 @@ closeCurrentGroup() {
     this.items.addressBar.value = tabInfo.url; //change this to be the URL of the page later
 
     this.currentTab = tabInfo;
-    this.dataApi.logger.createLog(`Selected tab: ${tabInfo.url}`);
+    this.logger.createLog(`Selected tab: ${tabInfo.url}`);
   }
 
   selectTabById(id) {
     document.getElementById(id).click();
-    this.dataApi.logger.createLog(`Selected tab: tab-${id}`);
+    this.logger.createLog(`Selected tab: tab-${id}`);
   }
 
   updateTabOrder() {
@@ -438,10 +439,15 @@ closeCurrentGroup() {
 
     this.draggabillies.forEach((d) => d.destroy());
 
-    tabEls.forEach((tabEl, originalIndex) => {
+    tabEls.forEach(async (tabEl, originalIndex) => {
       const originalTabPositionX = tabPositions[originalIndex];
       const originalTabPositionY = tabPositionsY[originalIndex];
-      const axis = localStorage.getItem("verticalTabs") === "true" ? "y" : "x";
+      let axis;
+      if (await this.settings.getItem("verticalTabs")) {
+        axis = "y";
+      } else {
+        axis = "x";
+      }
       const draggabilly = new Draggabilly(tabEl, {
         axis: axis,
         handle: ".tab-drag-handle",
@@ -457,9 +463,9 @@ closeCurrentGroup() {
         this.el.classList.add("tabs-is-sorting");
       });
 
-      draggabilly.on("dragEnd", (_) => {
+      draggabilly.on("dragEnd", async (_) => {
         this.isDragging = false;
-        if (localStorage.getItem("verticalTabs") === "true") {
+        if (await this.settings.getItem("verticalTabs")) {
         const finalTranslateY = parseFloat(tabEl.style.top, 10);
         tabEl.style.transform = `translate3d(0, 0, 0)`;
 
@@ -504,12 +510,12 @@ closeCurrentGroup() {
       }
       });
 
-      draggabilly.on("dragMove", (event, pointer, moveVector) => {
+      draggabilly.on("dragMove", async (event, pointer, moveVector) => {
         const tabEls = this.tabEls;
         const currentIndex = tabEls.indexOf(tabEl);
-        if (localStorage.getItem("verticalTabs") === "true") {
+        if (await this.settings.getItem("verticalTabs")) {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
-        const destinationIndexTarget = utils.closest(
+        const destinationIndexTarget = this.utils.closest(
           currentTabPositionY,
           tabPositionsY,
         );
@@ -528,7 +534,7 @@ closeCurrentGroup() {
         document.querySelector("#create-tab").style.transform = `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`
         } else {
         const currentTabPositionX = originalTabPositionX + moveVector.x;
-        const destinationIndexTarget = utils.closest(
+        const destinationIndexTarget = this.utils.closest(
           currentTabPositionX,
           tabPositions,
         );
@@ -548,7 +554,7 @@ closeCurrentGroup() {
       }
       });
     });
-    this.dataApi.logger.createLog(`Setup draggabilly successfully`);
+    this.logger.createLog(`Setup draggabilly successfully`);
   }
 
   animateTabMove(tabEl, originIndex, destinationIndex) {
@@ -559,9 +565,9 @@ closeCurrentGroup() {
     }
     this.layoutTabs();
   }
-  layoutTabs() {
+  async layoutTabs() {
     document.getElementById("create-tab").style = "";
-    if (localStorage.getItem("verticalTabs") === "true") {
+    if (await this.settings.getItem("verticalTabs")) {
       const tabContentWidths = this.tabContentHeights;
 
     let cumulativeWidth = 0;
@@ -625,7 +631,7 @@ closeCurrentGroup() {
     this.styleEl.innerHTML = styleHTML;
     document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
   }
-  this.dataApi.logger.createLog(`Rearranged tabs`);
+  this.logger.createLog(`Rearranged tabs`);
 
 }
 

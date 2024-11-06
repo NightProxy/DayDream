@@ -1,10 +1,13 @@
 class Functions {
-  constructor(items, ui, tabs, dataApi, nightmarePlugins) {
+  constructor(items, ui, tabs, logger, settings, utils,nightmarePlugins, windowing) {
     this.items = items;
     this.ui = ui;
     this.tabs = tabs;
-    this.dataApi = dataApi;
+    this.logger = logger;
+    this.settings = settings;
+    this.utils = utils;
     this.nightmarePlugins = nightmarePlugins;
+    this.windowing = windowing;
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -30,8 +33,8 @@ class Functions {
     );
   }
 
-  toggleTabs() {
-    if (localStorage.getItem('verticalTabs') === 'true') {
+  async toggleTabs() {
+    if ((await this.settings.getItem('verticalTabs')) != false) {
       const tabs = document.querySelector('.tabs');
       const viewport = document.querySelector('.viewport');
       const isDisabled = tabs.classList.toggle('hidden');
@@ -44,8 +47,7 @@ class Functions {
         viewport.classList.remove('hidden')
       }
 
-      // Save the current state to localStorage
-      localStorage.setItem('verticalTabs-notshowing', isDisabled);
+      await this.settings.setItem('verticalTabs-notshowing', isDisabled);
     } else {
       return;
     }
@@ -53,17 +55,17 @@ class Functions {
 
   backward() {
     this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.back();
-    this.dataApi.logger.createLog(`Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.logger.createLog(`Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   forward() {
     this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.forward();
-    this.dataApi.logger.createLog(`Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.logger.createLog(`Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   refresh() {
     this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.reload();
-    this.dataApi.logger.createLog(`Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.logger.createLog(`Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
   }
 
   injectErudaScript(iframeDocument) {
@@ -173,11 +175,25 @@ class Functions {
       this.erudaScriptInjecting = false;
       console.log("Iframe navigation detected, Eruda toggle reset.");
     });
-    this.dataApi.loggger.createLog("Toggled Inspect Element")
+    this.logger.loggger.createLog("Toggled Inspect Element")
   }
 
   extras() {
     this.extrasMenu(this.items.extrasButton);
+  }
+
+  goFullscreen() {
+    const iframe = document.querySelector("iframe.active");
+    
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.mozRequestFullScreen) { 
+      iframe.mozRequestFullScreen();
+    } else if (iframe.webkitRequestFullscreen) { 
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    }
   }
 
   extrasMenu(button) {
@@ -192,7 +208,7 @@ class Functions {
       ]),
       //New Window
       this.ui.createElement("div", { class: "menu-item", id: "openNewWindow", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.windowing.newWindow();
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_new"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Open a New Window"]),
@@ -200,7 +216,7 @@ class Functions {
       ]),
       //New Incognito Window
       this.ui.createElement("div", { class: "menu-item", id: "openNewABWindow", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.windowing.aboutBlankWindow();
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["visibility_off"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Open an Incognito Window"]),
@@ -223,14 +239,14 @@ class Functions {
         ]),
         // Fullscreen
         this.ui.createElement("div", { class: "menu-item", id: "fullscreen", onclick: ()=>{
-          this.tabs.createTab("daydream://newtab");
+          this.goFullscreen();
         } }, [
           this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_full"])
         ]),
       ]),
       // Bookmarks
       this.ui.createElement("div", { class: "menu-item", id: "openBookmarks", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.tabs.createTab("daydream://bookmarks");
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["hotel_class"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
@@ -238,7 +254,7 @@ class Functions {
       ]),
       // Games
       this.ui.createElement("div", { class: "menu-item", id: "openGames", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.tabs.createTab("daydream://games");
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["playing_cards"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
@@ -246,7 +262,7 @@ class Functions {
       ]),
       // Extensions
       this.ui.createElement("div", { class: "menu-item", id: "openExtensions", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.tabs.createTab("daydream://extensions");
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["extension"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Extensions"]),
@@ -254,7 +270,7 @@ class Functions {
       ]), 
       // Screenshot
       this.ui.createElement("div", { class: "menu-item", id: "screenshot", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        console.log("Screenshot taken");
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["screenshot"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Screenshot"]),
@@ -262,11 +278,19 @@ class Functions {
       ]),
       //Inspect Element
       this.ui.createElement("div", { class: "menu-item", id: "inspectElement", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
+        this.inspectElement();
       }  }, [
         this.ui.createElement("span", { class: "material-symbols-outlined" }, ["code"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Inspect Element"]),
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + I"])
+      ]),
+      // Settings
+      this.ui.createElement("div", { class: "menu-item", id: "settingsFromMenu", onclick: ()=>{
+        this.tabs.createTab("daydream://settings");
+      }  }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["settings"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + ,"])
       ]),
     ])
     this.nightmarePlugins.sidemenu.attachTo(button, content);

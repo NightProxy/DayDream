@@ -30,56 +30,6 @@ class Nightmare {
     });
     return element;
   }
-
-  showPageFromHash(page, pageDefaultId, navItem, navItemChildren, navActive) {
-    let hash = window.location.hash.slice(1);
-    if (hash.startsWith("/")) {
-      hash = hash.slice(1);
-    }
-
-    const pages = document.querySelectorAll(`.${page}`);
-    let pageToShow = document.getElementById(pageDefaultId);
-
-    pages.forEach((page) => {
-      page.style.display = "none";
-    });
-
-    if (hash) {
-      const targetPage = document.getElementById(hash);
-      if (targetPage) {
-        pageToShow = targetPage;
-      }
-    }
-    pageToShow.style.display = "block";
-
-    const settingItems = document.querySelectorAll(`${navItem}`);
-    let foundActive = false;
-
-    settingItems.forEach((item) => {
-      const navLink = item.querySelector(navItemChildren);
-      if (navLink) {
-        if (item.dataset.id === hash) {
-          navLink.classList.add("navactive");
-          foundActive = true;
-        } else {
-          navLink.classList.remove("navactive");
-        }
-      }
-    });
-
-    if (!foundActive) {
-      const defaultSettingItem = document.querySelector(
-        `${navItem}[data-id=${pageDefaultId}]`,
-      );
-      if (defaultSettingItem) {
-        const defaultNavLink =
-          defaultSettingItem.querySelector(navItemChildren);
-        if (defaultNavLink) {
-          defaultNavLink.classList.add(navActive);
-        }
-      }
-    }
-  }
 }
 
 class Menu {

@@ -1,6 +1,7 @@
 class Windowing {
-    constructor(dataApi) {
-        this.dataApi = dataApi;
+    constructor(logger, settings) {
+        this.logger = logger;
+        this.settings = settings;
     }
 
     newWindow() {
@@ -9,7 +10,7 @@ class Windowing {
         window.open(currentUrl, '_blank', 'noopener,noreferrer');
     }
 
-    aboutBlankWindow() {
+    async aboutBlankWindow() {
         if (window === window.top) {
             const aboutBlankTab = window.open("about:blank");
             const iframe = document.createElement("iframe");
@@ -27,13 +28,40 @@ class Windowing {
             const link = aboutBlankTab.document.createElement("link");
             link.rel = "icon";
             link.type = "image/x-icon";
-            link.href = localStorage.getItem("favicon") || window.location.href + "/assets/imgs/icons/default.ico";
+            link.href = await this.settings.getItem("favicon") || location.href + "/assets/imgs/logo.png";
             aboutBlankTab.document.head.appendChild(link);
             aboutBlankTab.document.body.appendChild(iframe);
 
-            window.location.href = this.dataApi.settingsApi.getItem("redirectUrl") || "https://google.com";
         } else {
-            this.dataApi.logger.createLog("Already in About:Blank or site is in iframe");
+            this.logger.createLog("Already in About:Blank or site is in iframe");
+        }
+    }
+
+    async aboutBlank() {
+        if (window === window.top) {
+            const aboutBlankTab = window.open("about:blank");
+            const iframe = document.createElement("iframe");
+            iframe.src = location.href;
+            iframe.style.width = "100%";
+            iframe.style.height = "100%";
+            iframe.style.border = "none";
+            iframe.style.frameborder = "0";
+            iframe.style.marginwidth = "0";
+            iframe.style.position = "fixed";
+            iframe.style.inset = "0px";
+            iframe.style.outline = "none";
+            iframe.style.scrolling = "auto";
+            aboutBlankTab.document.title = document.title;
+            const link = aboutBlankTab.document.createElement("link");
+            link.rel = "icon";
+            link.type = "image/x-icon";
+            link.href = await this.settings.getItem("favicon") || window.location.href + "/assets/imgs/icons/default.ico";
+            aboutBlankTab.document.head.appendChild(link);
+            aboutBlankTab.document.body.appendChild(iframe);
+
+            window.location.href = await this.settings.getItem("redirectUrl") || "https://google.com";
+        } else {
+            this.logger.createLog("Already in About:Blank or site is in iframe");
         }
     }
 
@@ -67,9 +95,9 @@ class Windowing {
             const blobUrl = URL.createObjectURL(blob);
 
             window.open(blobUrl, "_blank");
+
         } else {
             console.log("already in blob or iframe");
-            alert("already in blob or iframe");
         }
     }
 }

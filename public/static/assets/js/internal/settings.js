@@ -1,9 +1,35 @@
-document.addEventListener("DOMContentLoaded", () => {
+const settingsAPI = new SettingsAPI();
+const dataExportAPI = new DataExportAPI();
+const globalFunctions = new Global(settingsAPI);
+
+document.addEventListener("DOMContentLoaded", async () => {
+  var colorPicker = new iro.ColorPicker(".colorPicker", {
+    width: 160,
+    color: await settingsAPI.getItem("themeColor") || "#aa00ff",
+    borderWidth: 0,
+    layoutDirection: "horizontal",
+    layout: [
+      {
+        component: iro.ui.Box,
+      },
+      {
+        component: iro.ui.Slider,
+        options: {
+          sliderType: 'hue'
+        }
+      }
+    ]
+  });
+
+  colorPicker.on("input:change", async function (color) {
+    settingsAPI.setItem("themeColor", color.hexString);
+    document.documentElement.style.setProperty("--main-color", await settingsAPI.getItem("themeColor") || color.hexString);
+  });
   // Function to initialize a dropdown
-  const initializeDropdown = (
+  const initializeDropdown = async (
     buttonId,
     optionsId,
-    localStorageKey,
+    settingsKey,
     defaultValue,
   ) => {
     const dropdownButton = document.getElementById(buttonId);
@@ -27,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Load saved value
-    const savedValue = localStorage.getItem(localStorageKey) || defaultValue;
+    const savedValue = await settingsAPI.getItem(settingsKey) || defaultValue;
     const selectedOption = dropdownOptions.querySelector(
       `[data-value="${savedValue}"]`,
     );
@@ -52,8 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedValue = event.target.getAttribute("data-value");
         const selectedOption = event.target.textContent;
         buttonText.textContent = selectedOption;
-        localStorage.setItem(localStorageKey, selectedValue); // Save to localStorage
-        dropdownOptions.style.display = "none"; // Hide dropdown options
+        settingsAPI.setItem(settingsKey, selectedValue);
+        dropdownOptions.style.display = "none";
         dropdownButton.classList.remove("active");
 
         // Refresh the page based on the new value
@@ -93,11 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load and handle visibility of wisp and bare settings
   const wispSetting = document.getElementById("wispSetting");
   if (wispSetting) {
-    wispSetting.value = localStorage.getItem("wisp") || "";
+    wispSetting.value = settingsAPI.getItem("wisp") || "";
   }
 
   // Add event listener to save wisp and bare settings
-  const saveInputValue = (inputId, localStorageKey) => {
+  const saveInputValue = (inputId, settingsKey) => {
     const inputElement = document.getElementById(inputId);
     if (!inputElement) {
       console.error(`Input element with id "${inputId}" not found.`);
@@ -105,12 +131,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     inputElement.addEventListener("change", () => {
-      localStorage.setItem(localStorageKey, inputElement.value);
+      settingsAPI.setItem(settingsKey, inputElement.value);
       location.reload();
     });
     inputElement.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {
-        localStorage.setItem(localStorageKey, inputElement.value);
+        settingsAPI.setItem(settingsKey, inputElement.value);
         location.reload();
       }
     });
@@ -128,6 +154,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("dataInput").click();
   });
   exportButton.addEventListener("click", function () {
-    api.settings.exportData();
+    dataExportAPI.exportData();
   });
 });

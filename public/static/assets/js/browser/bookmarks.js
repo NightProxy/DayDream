@@ -1,12 +1,13 @@
 class BookmarkManager {
-    constructor(storageKey = 'bookmarks') {
+     constructor(storageKey = 'bookmarks', settings) {
         this.storageKey = storageKey;
-        this.bookmarks = JSON.parse(localStorage.getItem(this.storageKey)) || [];
+        this.settings = settings;
+        this.bookmarks = JSON.parse(this.settings.getItem(this.storageKey)) || [];
         this.currentView = 'list'; // 'list' or 'row'
     }
 
-    save() {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.bookmarks));
+    async save() {
+        this.settings.setItem(this.storageKey, JSON.stringify(this.bookmarks));
     }
 
     addBookmark(title, url, folder = null) {

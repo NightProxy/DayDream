@@ -1,8 +1,13 @@
 class Render {
-	constructor(container, nightmare, dataApi) {
+	constructor(container, nightmare, logger, settings) {
 		this.container = container;
 		this.nightmare = nightmare;
-		this.dataApi = dataApi;
+		this.logger = logger;
+		this.settings = settings;
+		this.init();
+	}
+
+	async init()  {
 		this.HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
 			this.nightmare.createElement("div", { class: "tabs", style: "--tab-content-margin: 9px" }, [
 				this.nightmare.createElement("div", { class: "bottom-buttons" }, [
@@ -98,35 +103,35 @@ class Render {
 			this.nightmare.createElement("br"),
 			this.nightmare.createElement("div", { class: "center" }, [
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { title: "Games"}, [
+					this.nightmare.createElement("div", { title: "Games" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["sports_esports"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", {class: "coming-soon", title: "COMING SOON" }, [
+					this.nightmare.createElement("div", { class: "coming-soon", title: "COMING SOON" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["robot_2"]),
 					]),
 				]),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { class: "coming-soon", title: "COMING SOON"}, [
+					this.nightmare.createElement("div", { class: "coming-soon", title: "COMING SOON" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["forum"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", {title: "Music" }, [
+					this.nightmare.createElement("div", { title: "Music" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["headphones"]),
 					]),
 				]),
 				this.nightmare.createElement("hr", {}, []),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { title: "History"}, [
+					this.nightmare.createElement("div", { title: "History" }, [
 						this.nightmare.createElement("span", { class: "material-symbols-outlined" }, ["history"]),
 					]),
 				]),
 				this.nightmare.createElement("li", {}, [
-					this.nightmare.createElement("div", { title: "Settings"}, [
+					this.nightmare.createElement("div", { title: "Settings" }, [
 						this.nightmare.createElement("span", { style: "margin-top: 0", class: "material-symbols-outlined" }, ["tune"]),
 					]),
 				]),
@@ -140,18 +145,18 @@ class Render {
 		const bar = document.querySelector('.under-tabs');
 		const IFcontainer = document.querySelector(".viewport");
 
-		const isDisabled = localStorage.getItem('verticalTabs') === 'true';
+		const isDisabled = await this.settings.getItem('verticalTabs');
 		if (isDisabled) {
 			sidebar.classList.add('autohide');
 			browser.classList.add('autohide');
 			tabs.classList.add('vertical');
 			bar.classList.add('vertical');
 			IFcontainer.classList.add('vertical')
-			if (localStorage.getItem('verticalTabs-notshowing') === 'true') {
+			if (await this.settings.getItem('verticalTabs-notshowing')) {
 				tabs.classList.add('hidden');
 				IFcontainer.classList.add('hidden')
 			}
 		}
-		this.dataApi.logger.createLog("Rendered Browser");
+		this.logger.createLog("Rendered Browser");
 	}
 }

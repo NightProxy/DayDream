@@ -1,12 +1,13 @@
 class Keys {
-    constructor(tabs, functions) {
+    constructor(tabs, functions, settings) {
         this.keys = [];
         this.tabs = tabs;
         this.functions = functions;
+        this.settings = settings;
     }
 
     init() {
-        window.addEventListener('keydown', event => {
+        window.addEventListener('keydown', async event => {
             if (event.altKey && event.key === 't') {
                 this.tabs.createTab("daydream://newtab");
             } else if (event.ctrlKey && event.key === 't') {
@@ -57,22 +58,26 @@ class Keys {
                     tabs.classList.add('vertical');
                     bar.classList.add('vertical');
                     IFcontainer.classList.add('vertical')
-                    suggestions.classList.add('vertical')
+                    if (suggestions != null) {
+                        suggestions.classList.add('vertical')
+                    }
                 } else {
                     browser.classList.remove('autohide');
                     tabs.classList.remove('vertical');
                     bar.classList.remove('vertical');
                     IFcontainer.classList.remove('vertical')
-                    suggestions.classList.remove('vertical')
+                    if (suggestions != null) {
+                        suggestions.classList.remove('vertical')
+                    }
                 }
 
-                // Save the current state to localStorage
-                localStorage.setItem('verticalTabs', isDisabled);
+                // Save the current state to this.settings
+                await this.settings.setItem('verticalTabs', isDisabled);
                 setTimeout(() => {
                 this.tabs.layoutTabs();
                 }, 100);
             } else if (event.altKey && event.shiftKey && event.key === "S") {
-                if (localStorage.getItem('verticalTabs') === 'true') {
+                if (await this.settings.getItem('verticalTabs') === 'true') {
                     const tabs = document.querySelector('.tabs');
                     const viewport = document.querySelector('.viewport');
                     const isDisabled = tabs.classList.toggle('hidden');
@@ -85,8 +90,8 @@ class Keys {
                     viewport.classList.remove('hidden')
                 }
 
-                // Save the current state to localStorage
-                localStorage.setItem('verticalTabs-notshowing', isDisabled);
+                // Save the current state to this.settings
+                await this.settings.setItem('verticalTabs-notshowing', isDisabled);
             } else {
                 return;
             }

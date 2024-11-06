@@ -1,7 +1,8 @@
 class Utils {
-  constructor(items, dataApi) { 
+  constructor(items, logger, settings) { 
     this.items = items;
-    this.dataApi = dataApi;
+    this.logger = logger;
+    this.settings = settings;
   }
 
   setFavicon(tabElement, iframe) {
@@ -98,7 +99,7 @@ class Utils {
     const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (iframe) {
       iframe.src = processedUrl;
-      this.dataApi.logger.createLog(`Navigated to: ${processedUrl}`);
+      this.logger.createLog(`Navigated to: ${processedUrl}`);
     }
   }
 
