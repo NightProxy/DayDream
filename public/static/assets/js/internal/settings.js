@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "transportButton",
     "transportOptions",
     "transports",
-    "epoxy",
+    "libcurl",
   );
   initializeDropdown(
     "searchButton",
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Load and handle visibility of wisp and bare settings
   const wispSetting = document.getElementById("wispSetting");
   if (wispSetting) {
-    wispSetting.value = settingsAPI.getItem("wisp") || "";
+    wispSetting.value = await settingsAPI.getItem("wisp") || (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
   }
 
   // Add event listener to save wisp and bare settings
@@ -130,19 +130,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    inputElement.addEventListener("change", () => {
-      settingsAPI.setItem(settingsKey, inputElement.value);
+    inputElement.addEventListener("change", async () => {
+      await settingsAPI.setItem(settingsKey, inputElement.value);
       location.reload();
     });
-    inputElement.addEventListener("keypress", (event) => {
+    inputElement.addEventListener("keypress", async (event) => {
       if (event.key === "Enter") {
-        settingsAPI.setItem(settingsKey, inputElement.value);
+        await settingsAPI.setItem(settingsKey, inputElement.value);
         location.reload();
       }
     });
   };
 
   saveInputValue("wispSetting", "wisp");
+});
+
+function saveInputValueAsButton(button, input, key) {
+  if (!input) {
+    console.error(`Input element with id "${id}" not found.`);
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    await settingsAPI.setItem(key, input.value);
+    location.reload();
+  });
+}
+
+saveInputValueAsButton(
+  document.getElementById("saveWispSetting"),
+  document.getElementById("wispSetting"),
+  "wisp",
+);
+
+document.getElementById("resetWispSetting").addEventListener("click", async () => {
+  await settingsAPI.removeItem("wisp");
+  location.reload();
 });
 
 

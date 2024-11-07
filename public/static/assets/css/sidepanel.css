@@ -3,7 +3,7 @@
     position: fixed;
     width: 300px;
     padding: 10px 0px;
-    background-color: var(--tab-bg-color);
+    background-color: var(--background-color);
     color: var(--text-color);
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     transition: right 0.3s ease;
@@ -149,7 +149,7 @@
   .menu-item .menu-key {
     font-size: 10px;
     font-weight: 400;
-    color: var(--text-color-secondary);
+    color: var(--hover-text-color);
   }
 
   .menu-row {

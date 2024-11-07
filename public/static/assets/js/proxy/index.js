@@ -1,6 +1,6 @@
 class Proxy {
   constructor(searchVar, transportVar, wispUrl, logging) {
-    if (!searchVar || !transportVar || !wispUrl ) {
+    if (!searchVar || !transportVar || !wispUrl) {
       console.error("Proxy, search, and transport variables are required.");
       return;
     }
@@ -51,22 +51,30 @@ class Proxy {
     }
   }
 
-  async registerSW(swFile, swConfigSettings) {
-    if ("serviceWorker" in navigator) {
-      await navigator.serviceWorker.register(swFile, {
-        scope: swConfigSettings.prefix,
-      });
+  async registerSW(swConfig) {
+    switch (swConfig.type) {
+      case "sw":
+        if ("serviceWorker" in navigator) {
+          await navigator.serviceWorker.register(swConfig.file, {});
 
-      navigator.serviceWorker.ready.then(async () => {
-        await this.setTransports().then(async () => {
-          const transport = await this.connection.getTransport();
-          if (transport == null) {
-            this.setTransports();
-          }
-        });
-        this.updateSW();
-      });
-    }
+          navigator.serviceWorker.ready.then(async () => {
+            await this.setTransports().then(async () => {
+              const transport = await this.connection.getTransport();
+              if (transport == null) {
+                this.setTransports();
+              }
+            });
+            this.updateSW();
+          });
+        }
+        break;
+      case "iframe":
+        console.log("iframe proxy selected");
+        break;
+      case "multi":
+        console.log("multi proxy selected");
+        break;
+    };
   }
 
   updateSW() {
@@ -119,7 +127,8 @@ class Proxy {
     const domain = this.getDomainFromUrl(input);
     const selectedProxy = await this.determineProxy(domain);
 
-    var { file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
+    var { type: swType, file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
+      type: "sw",
       file: "/@/sw.js",
       config: __uv$config,
       func: null,
@@ -127,26 +136,41 @@ class Proxy {
 
     if (swFunction) swFunction();
 
-    await this.registerSW(swFile, swConfigSettings);
+    await this.registerSW({ type: swType, file: swFile, config: swConfigSettings });
     await this.setTransports();
 
-    return { file: swFile, config: swConfigSettings };
+    return { type: swType, file: swFile, config: swConfigSettings };
   }
 
   async redirect(swConfig, proxySetting, url) {
-    this.registerSW(swConfig[proxySetting].file, swConfig[proxySetting].config).then(async () => {
+    this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
     });
     if (proxySetting === "auto") {
       const result = await swConfig.auto.func(proxy.search(url));
-      swConfigSettings = result.config;
+      swConfigSettings = result;
     } else {
-      swConfigSettings = swConfig[proxySetting].config;
+      swConfigSettings = swConfig[proxySetting];
+
     }
-    let encodedUrl = swConfigSettings.prefix + __uv$config.encodeUrl(this.search(url));
-        const activeIframe = document.querySelector('iframe.active');
+    const activeIframe = document.querySelector('iframe.active');
+    switch (swConfigSettings.type) {
+      case "sw":
+        let encodedUrl = swConfigSettings.config.prefix + __uv$config.encodeUrl(this.search(url));
         if (activeIframe) {
-            activeIframe.src = encodedUrl;
+          activeIframe.src = encodedUrl;
         }
-}
+        break;
+      case "iframe":
+        if (proxySetting == "auto" || proxySetting == "ss") {
+          let main_frame = new sandstone.controller.ProxyFrame(activeIframe);
+          main_frame.navigate_to(this.search(url));
+
+          main_frame.on_load = async () => {
+            document.getElementById("uv-address").value = main_frame.url.href;
+          }
+        }
+        break;
+    }
+  }
 }

@@ -3,9 +3,6 @@
   <head>
     <title>New Tab</title>
     <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
-    <script src="/baremux/index.js"></script>
-    <script src="/@/uv.bundle.js"></script>
-    <script src="/@/uv.config.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
@@ -13,10 +10,6 @@
     <link rel="stylesheet" type="text/css" href="/assets/css/themes.css" />
     <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
     <link rel="stylesheet" type="text/css" href="/assets/css/pages/newtab.css" />
-    <script src="/assets/js/lib/eruda/eruda.js"></script>
-    <script>
-      eruda.init();
-    </script>
   </head>
   <body>
     <div class="bg-container">
@@ -180,7 +173,9 @@
         retina_detect: true,
       });*/
     </script>
-    <script src="/assets/js/lib/draggability/draggabilly.pkgd.js"></script>
+    <!--APIs-->
+    <script src="/assets/js/apis/events.js"></script>
+    <!--Main Scripts-->
     <script src="/assets/js/internal/newTab.js"></script>
   </body>
 </html>

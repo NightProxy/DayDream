@@ -27,6 +27,7 @@ class Functions {
     });
 
     this.extras();
+    this.navbarfunctions();
 
     this.items.newTab.addEventListener("click", () =>
       this.tabs.createTab("daydream://newtab"),
@@ -252,6 +253,14 @@ class Functions {
         this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + B"])
       ]),
+      // History
+      this.ui.createElement("div", { class: "menu-item", id: "openHistory", onclick: ()=>{
+        this.tabs.createTab("daydream://history");
+      }  }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["history"]),
+        this.ui.createElement("span", { class: "menu-label" }, ["History"]),
+        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + Y"])
+      ]),
       // Games
       this.ui.createElement("div", { class: "menu-item", id: "openGames", onclick: ()=>{
         this.tabs.createTab("daydream://games");
@@ -272,7 +281,7 @@ class Functions {
       this.ui.createElement("div", { class: "menu-item", id: "screenshot", onclick: ()=>{
         console.log("Screenshot taken");
       }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["screenshot"]),
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["content_paste"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Screenshot"]),
         this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"])
       ]),
@@ -294,5 +303,39 @@ class Functions {
       ]),
     ])
     this.nightmarePlugins.sidemenu.attachTo(button, content);
+  }
+
+  navbarfunctions() {
+    const navbar = document.querySelector(".navbar");
+    const games = navbar.querySelector("#gamesShortcut");
+    const ai = navbar.querySelector("#aiShortcut");
+    const chat = navbar.querySelector("#chatShortcut");
+    const music = navbar.querySelector("#musicShortcut");
+    const history = navbar.querySelector("#historyShortcut");
+    const settings = navbar.querySelector("#settShortcut");
+
+    games.addEventListener("click", () => {
+      this.utils.navigate("daydream://games")
+    })
+
+    ai.addEventListener("click", () => {
+      alert("This feature is coming soon!")
+    });
+
+    chat.addEventListener("click", () => {
+      alert("This feature is coming soon!")
+    });
+
+    music.addEventListener("click", () => {
+      console.log("opening music");
+    })
+
+    history.addEventListener("click", () => {
+      this.utils.navigate("daydream://history");
+    })
+
+    settings.addEventListener("click", () => {
+      this.utils.navigate("daydream://settings")
+    })
   }
 }

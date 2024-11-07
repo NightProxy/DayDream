@@ -1,6 +1,6 @@
 body {
   overflow: hidden;
-  background-image: url("/assets/imgs/DDX.bg.jpeg");
+  background-image: var(--background-image);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

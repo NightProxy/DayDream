@@ -14,7 +14,7 @@ class SettingsAPI {
         return await this.store.setItem(key, value);
     }
 
-    async clearSetting(key) {
+    async removeItem(key) {
         return await this.store.removeItem(key);
     }
 

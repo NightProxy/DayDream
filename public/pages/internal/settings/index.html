@@ -14,8 +14,6 @@
   <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta property="og:image" content="/assets/imgs/logo.png" />
-  <script src="/assets/js/lib/html2canvas/html2canvas.min.js"></script>
-  <script src="/assets/js/lib/localforage/localforage.min.js"></script>
 </head>
 
 <body>
@@ -85,6 +83,9 @@
         </div>
         <ul id="proxyOptions" class="dropdown-options">
           <li>
+            <a data-value="auto">Automatic</a>
+          </li>
+          <li>
             <a data-value="uv"><img src="/assets/imgs/proxies/uv.png" />Ultraviolet</a>
           </li>
           <li>
@@ -94,6 +95,8 @@
             <a data-value="ec">
               <img src="/assets/imgs/proxies/eclipse.svg" />Eclipse</a>
           </li>
+          <li>
+            <a data-value="ss"><img src="/assets/imgs/proxies/ss.png" />SandStone</a>
         </ul>
       </div>
 
@@ -129,6 +132,8 @@
       <div id="wispDiv">
         <label for="wispSetting">Wisp Setting:</label>
         <input type="text" id="wispSetting" />
+        <button id="saveWispSetting">Save</button>
+        <button id="resetWispSetting">Reset</button>
       </div>
     </div>
 
@@ -174,6 +179,7 @@
         <li>- WorkerWare</li>
         <li>- Html2Canvas</li>
         <li>- Sandstone (Modified)</li>
+        <li>- Iro.js</li>
       </ul>
       <hr />
       <h1>Devs:</h1>
@@ -223,6 +229,7 @@
   <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>
   <script src="/assets/js/lib/iro/iro.min.js"></script>
   <!--APIs-->
+  <script src="/assets/js/apis/events.js"></script>
   <script src="/assets/js/apis/settings.js"></script>
   <script src="/assets/js/apis/exporting.js"></script>
   <!--Main Scripts-->

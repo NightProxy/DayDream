@@ -1,11 +1,12 @@
 class Tabs {
-  constructor(render, ui, utils, items, logger, settings) {
+  constructor(render, ui, utils, items, logger, settings, eventsAPI) {
     this.render = render;
     this.ui = ui;
     this.utils = utils;
     this.items = items;
     this.logger = logger;
     this.settings = settings;
+    this.eventsAPI = eventsAPI;
     this.tabCount = 0;
     this.tabs = [];
     this.groups = [];
@@ -187,7 +188,10 @@ class Tabs {
       });
     };
 
-    tab.addEventListener("click", () => this.selectTab({ tab, iframe, url }));
+    tab.addEventListener("click", () => {
+      this.selectTab({ tab, iframe, url });
+      this.eventsAPI.emit("tabs:clicked")
+    });
 
     tab.addEventListener("contextmenu", (e) => {
       e.preventDefault();

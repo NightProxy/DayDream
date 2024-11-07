@@ -1,7 +1,7 @@
 @import url("/assets/css/search.css");
 
 .background {
-  background-image: url("/assets/imgs/DDX.bg.jpeg");
+  background-image: var(--background-image);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

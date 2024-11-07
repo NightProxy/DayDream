@@ -4,7 +4,7 @@
   }
   
   .utility .utilityIcon:hover {
-    background-color: var(--header-hover-background-color);
+    background-color: var(--hover-background-color);
     border-radius: 7px;
     transition: 0.2s all ease-in-out;
   }
@@ -94,7 +94,7 @@
   .utility hr {
     width: 1px;
     height: 32px;
-    background: var(--hr-background);
+    background: var(--border-color);
     border: none;
     margin-left: 10px;
     margin-right: 10px;

@@ -1,13 +1,18 @@
 class BookmarkManager {
-     constructor(storageKey = 'bookmarks', settings) {
-        this.storageKey = storageKey;
-        this.settings = settings;
-        this.bookmarks = JSON.parse(this.settings.getItem(this.storageKey)) || [];
-        this.currentView = 'list'; // 'list' or 'row'
+    constructor(utils) {
+        this.storageKey = 'bookmarks';
+        this.utils = utils;
+        this.db = localStorage.createInstance({
+            name: 'Bookmarks',
+            storeName: 'bookmarks',
+        });
+        (async () => {
+            this.bookmarks = JSON.parse(await this.db.getItem(this.storageKey)) || [];
+        })();
     }
 
     async save() {
-        this.settings.setItem(this.storageKey, JSON.stringify(this.bookmarks));
+        this.db.setItem(this.storageKey, JSON.stringify(this.bookmarks));
     }
 
     addBookmark(title, url, folder = null) {
@@ -43,10 +48,9 @@ class BookmarkManager {
         }
     }
 
-    renderBookmarks(viewType = this.currentView) {
-        this.currentView = viewType;
+    renderBookmarks() {
         const container = document.querySelector('#bookmark-container');
-        container.innerHTML = ''; 
+        container.innerHTML = '';
 
         this.bookmarks.forEach(bm => {
             if (!bm.folder) {
@@ -58,11 +62,10 @@ class BookmarkManager {
 
     createBookmarkElement(bookmark) {
         const bmElement = document.createElement('div');
-        bmElement.className = `bookmark ${this.currentView}`;
+        bmElement.className = `bookmark`;
         bmElement.textContent = bookmark.title;
         bmElement.dataset.id = bookmark.id;
 
-        // Right-click context menu
         bmElement.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             this.showContextMenu(e, bookmark);
@@ -70,9 +73,10 @@ class BookmarkManager {
 
         bmElement.addEventListener('click', () => {
             if (bookmark.url.startsWith('javascript:')) {
-                //execute js in iframe here
+               const bookmarklet = bookmark.url.replace('javascript:', '');
+                document.querySelector("iframe.active").contentWindow.eval(bookmarklet);
             } else {
-                 // Open URL in new tab
+                this.utils.navigate(bookmark.url);
             }
         });
 
@@ -100,7 +104,7 @@ class BookmarkManager {
             contextMenu.classList.remove('visible');
         };
 
-        // Additional actions: move to folder, etc.
+        // Reminder: add more actions like move to folder, etc.
     }
 
     createFolder(folderName) {
@@ -112,7 +116,7 @@ class BookmarkManager {
 
     importBookmarks(jsonData) {
         try {
-            const importedBookmarks = JSON.parse(jsonData);
+            const importedBookmarks = JSON.parse(decodeURIComponent(jsonData));
             this.bookmarks = [...this.bookmarks, ...importedBookmarks];
             this.save();
             this.renderBookmarks();
@@ -131,8 +135,4 @@ class BookmarkManager {
         downloadAnchor.remove();
     }
 
-    toggleView(viewType) {
-        this.currentView = viewType;
-        this.renderBookmarks(viewType);
-    }
 }
