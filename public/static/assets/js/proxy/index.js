@@ -23,19 +23,18 @@ class Proxy {
   async setTransports() {
     const transports = this.transportVar;
     const transportMap = {
-      "epoxy": "/epoxy/index.mjs",
-      "libcurl": "/libcurl/index.mjs"
+      epoxy: "/epoxy/index.mjs",
+      libcurl: "/libcurl/index.mjs",
     };
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
-    await this.connection.setTransport(transportFile, [
-      { wisp: this.wispUrl },
-    ]);
-    this.logging.createLog(`Transport Set: ${this.connection.getTransport}`)
+    await this.connection.setTransport(transportFile, [{ wisp: this.wispUrl }]);
+    this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
   }
 
   search(input) {
     input = input.trim();
-    const searchTemplate = this.searchVar || "https://www.google.com/search?q=%s";
+    const searchTemplate =
+      this.searchVar || "https://www.google.com/search?q=%s";
     try {
       return new URL(input).toString();
     } catch (err) {
@@ -74,31 +73,35 @@ class Proxy {
       case "multi":
         console.log("multi proxy selected");
         break;
-    };
+    }
   }
 
   updateSW() {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
-      registrations.forEach(registration => {
+      registrations.forEach((registration) => {
         registration.update();
-        this.logging.createLog(`Service Worker at ${registration.scope} Updated`);
+        this.logging.createLog(
+          `Service Worker at ${registration.scope} Updated`,
+        );
       });
     });
   }
 
   uninstallSW() {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
-      registrations.forEach(registration => {
+      registrations.forEach((registration) => {
         registration.unregister();
-        this.logging.createLog(`Service Worker at ${registration.scope} Unregistered`);
+        this.logging.createLog(
+          `Service Worker at ${registration.scope} Unregistered`,
+        );
       });
     });
   }
 
   async fetchProxyMapping() {
     try {
-      const response = await fetch('/assets/json/proxy.json');
-      if (!response.ok) throw new Error('Failed to load proxy mappings.');
+      const response = await fetch("/assets/json/proxy.json");
+      if (!response.ok) throw new Error("Failed to load proxy mappings.");
       return await response.json();
     } catch (error) {
       console.error("Error fetching proxy mappings:", error);
@@ -127,7 +130,12 @@ class Proxy {
     const domain = this.getDomainFromUrl(input);
     const selectedProxy = await this.determineProxy(domain);
 
-    var { type: swType, file: swFile, config: swConfigSettings, func: swFunction } = swConfig[selectedProxy] ?? {
+    var {
+      type: swType,
+      file: swFile,
+      config: swConfigSettings,
+      func: swFunction,
+    } = swConfig[selectedProxy] ?? {
       type: "sw",
       file: "/@/sw.js",
       config: __uv$config,
@@ -136,7 +144,11 @@ class Proxy {
 
     if (swFunction) swFunction();
 
-    await this.registerSW({ type: swType, file: swFile, config: swConfigSettings });
+    await this.registerSW({
+      type: swType,
+      file: swFile,
+      config: swConfigSettings,
+    });
     await this.setTransports();
 
     return { type: swType, file: swFile, config: swConfigSettings };
@@ -151,12 +163,13 @@ class Proxy {
       swConfigSettings = result;
     } else {
       swConfigSettings = swConfig[proxySetting];
-
     }
-    const activeIframe = document.querySelector('iframe.active');
+    const activeIframe = document.querySelector("iframe.active");
     switch (swConfigSettings.type) {
       case "sw":
-        let encodedUrl = swConfigSettings.config.prefix + __uv$config.encodeUrl(this.search(url));
+        let encodedUrl =
+          swConfigSettings.config.prefix +
+          __uv$config.encodeUrl(this.search(url));
         if (activeIframe) {
           activeIframe.src = encodedUrl;
         }
@@ -168,7 +181,7 @@ class Proxy {
 
           main_frame.on_load = async () => {
             document.getElementById("uv-address").value = main_frame.url.href;
-          }
+          };
         }
         break;
     }

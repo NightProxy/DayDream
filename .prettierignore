@@ -1,0 +1,9 @@
+node_modules/
+.gitiignore
+package-lock.json
+package.json
+README.md
+public/static/&/
+public/static/@/
+public/static/$/
+public/static/~/

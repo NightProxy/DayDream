@@ -1,23 +1,19 @@
 {
-    "id": "example-extension-123",
-    "name": "Example Extension",
-    "version": "1.0.0",
-    "description": "A simple example extension.",
-    "author": "Your Name",
-    "permissions": [
-        "storage",
-        "network",
-        "notifications"
-    ],
-    "type": "utility",
-    "background": {
-        "service_worker": "background.js"
-    },
-    "content_scripts": [
-        {
-            "matches": ["https://example.com/*"],
-            "js": ["content-script.js"]
-        }
-    ],
-    "icon": "icon.png"
+  "id": "example-extension-123",
+  "name": "Example Extension",
+  "version": "1.0.0",
+  "description": "A simple example extension.",
+  "author": "Your Name",
+  "permissions": ["storage", "network", "notifications"],
+  "type": "utility",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://example.com/*"],
+      "js": ["content-script.js"]
+    }
+  ],
+  "icon": "icon.png"
 }

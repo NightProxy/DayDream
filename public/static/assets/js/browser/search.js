@@ -18,10 +18,16 @@ class Search {
 
   async init(searchbar) {
     let suggestionList;
-    if (await this.settings.getItem("verticalTabs") === "true") {
-    suggestionList = this.ui.createElement("div", { class: "suggestion-list vertical", id: "suggestion-list" });
+    if ((await this.settings.getItem("verticalTabs")) === "true") {
+      suggestionList = this.ui.createElement("div", {
+        class: "suggestion-list vertical",
+        id: "suggestion-list",
+      });
     } else {
-    suggestionList = this.ui.createElement("div", { class: "suggestion-list", id: "suggestion-list" });
+      suggestionList = this.ui.createElement("div", {
+        class: "suggestion-list",
+        id: "suggestion-list",
+      });
     }
 
     this.sections = {
@@ -59,7 +65,14 @@ class Search {
     });
 
     window.addEventListener("keydown", async (event) => {
-      if (event.key === "Escape" || event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
+      if (
+        event.key === "Escape" ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.metaKey
+      )
+        return;
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
       suggestionList.style.display = "flex";
@@ -80,21 +93,26 @@ class Search {
           this.moveToPreviousSection(); // Move to the previous section when the first suggestion is selected
         } else {
           this.selectedSuggestionIndex =
-            (this.selectedSuggestionIndex - 1 + numSuggestions) % numSuggestions;
+            (this.selectedSuggestionIndex - 1 + numSuggestions) %
+            numSuggestions;
         }
         this.updateSelectedSuggestion();
       } else if (event.key === "Tab") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[this.selectedSuggestionIndex].querySelector(".suggestion-text").textContent;
+            suggestionItems[this.selectedSuggestionIndex].querySelector(
+              ".suggestion-text",
+            ).textContent;
           searchbar.value = selectedSuggestion;
         }
       } else if (event.key === "ArrowRight") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
-            suggestionItems[this.selectedSuggestionIndex].querySelector(".suggestion-text").textContent;
+            suggestionItems[this.selectedSuggestionIndex].querySelector(
+              ".suggestion-text",
+            ).textContent;
           searchbar.value = selectedSuggestion;
         }
       } else if (event.key === "Backspace") {
@@ -183,7 +201,10 @@ class Search {
     section.appendChild(searchResults);*/
     const section = this.ui.createElement("div", { class: "search-section" }, [
       this.ui.createElement("div", { class: "search-title" }, [
-        this.ui.createElement("img", { class: "searchEngineIcon", src: "/assets/imgs/logo.png" }),
+        this.ui.createElement("img", {
+          class: "searchEngineIcon",
+          src: "/assets/imgs/logo.png",
+        }),
         this.ui.createElement("span", {}, [titleText]),
       ]),
       this.ui.createElement("div", { class: "search-results" }),
@@ -202,16 +223,21 @@ class Search {
   moveToPreviousSection() {
     const sectionsArray = Object.values(this.sections);
     this.currentSectionIndex =
-      (this.currentSectionIndex - 1 + sectionsArray.length) % sectionsArray.length;
-  
-    while (sectionsArray[this.currentSectionIndex].searchResults.children.length === 0) {
+      (this.currentSectionIndex - 1 + sectionsArray.length) %
+      sectionsArray.length;
+
+    while (
+      sectionsArray[this.currentSectionIndex].searchResults.children.length ===
+      0
+    ) {
       this.currentSectionIndex =
-        (this.currentSectionIndex - 1 + sectionsArray.length) % sectionsArray.length;
+        (this.currentSectionIndex - 1 + sectionsArray.length) %
+        sectionsArray.length;
     }
-  
+
     const previousSectionItems = this.getCurrentSuggestionItems();
     this.selectedSuggestionIndex = previousSectionItems.length - 1;
-  
+
     this.updateSelectedSuggestion();
   }
 
@@ -219,7 +245,8 @@ class Search {
     this.currentSectionIndex =
       (this.currentSectionIndex + 1) % Object.values(this.sections).length;
     while (
-      Object.values(this.sections)[this.currentSectionIndex].searchResults.children.length === 0
+      Object.values(this.sections)[this.currentSectionIndex].searchResults
+        .children.length === 0
     ) {
       this.currentSectionIndex =
         (this.currentSectionIndex + 1) % Object.values(this.sections).length;
@@ -230,9 +257,11 @@ class Search {
 
   updateSelectedSuggestion() {
     const suggestionItems = this.getCurrentSuggestionItems();
-    document.querySelectorAll(".search-results div.selected").forEach((item) => {
-      item.classList.remove("selected");
-    });
+    document
+      .querySelectorAll(".search-results div.selected")
+      .forEach((item) => {
+        item.classList.remove("selected");
+      });
     suggestionItems.forEach((item, index) => {
       item.classList.toggle("selected", index === this.selectedSuggestionIndex);
     });
@@ -291,9 +320,11 @@ class Search {
       url = url.replace(/ /g, "");
       url = "daydream://" + url;
       const internalUrl = this.utils.processUrl(url);
-      const response = await fetch(internalUrl, { method: "HEAD" }).catch(error => {
-        this.data.createLog("Failed to Fetch:" + error)
-      });
+      const response = await fetch(internalUrl, { method: "HEAD" }).catch(
+        (error) => {
+          this.data.createLog("Failed to Fetch:" + error);
+        },
+      );
 
       if (response.ok) {
         const listItem = this.createSuggestionItem(url);
@@ -348,7 +379,7 @@ class Search {
       await this.fetchAppData();
     }
 
-    const lowerQuery = query.toLowerCase()
+    const lowerQuery = query.toLowerCase();
     const filteredGames = this.appsData
       .filter((app) => app.name.toLowerCase().includes(lowerQuery))
       .slice(0, 10);
@@ -386,7 +417,8 @@ class Search {
     listItem.appendChild(listSuggestion);
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
-      document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
+      document.querySelector("#suggestion-list.suggestion-list").style.display =
+        "none";
       if (suggestion.startsWith("daydream")) {
         const link = this.utils.processUrl(suggestion);
         if (link.startsWith("/internal/")) {
@@ -408,7 +440,8 @@ class Search {
     listItem.innerHTML += game.name;
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
-      document.querySelector("#suggestion-list.suggestion-list").style.display = "none";
+      document.querySelector("#suggestion-list.suggestion-list").style.display =
+        "none";
       if (game.link.startsWith("daydream")) {
         const link = this.utils.processUrl(game.link);
         if (link.startsWith("/internal/")) {

@@ -97,7 +97,6 @@ server.on("listening", () => {
   }
 });
 
-
 server.listen({ port: PORT });
 
 process.on("SIGINT", shutdown);
@@ -109,6 +108,6 @@ function shutdown() {
   console.log("SIGTERM signal received: closing HTTP server");
   server.close(() => {
     console.log("HTTP server closed");
-      process.exit(0);
-    });
+    process.exit(0);
+  });
 }

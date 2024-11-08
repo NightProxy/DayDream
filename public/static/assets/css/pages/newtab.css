@@ -12,73 +12,71 @@
   top: 0;
   left: 0;
   z-index: -1;
-
 }
 
 .banner {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: center;
-    align-items: center;
-  }
-  
-  .banner div .name {
-    color: var(--text-color);
-    font-size: 48px;
-    text-align: center;
-    margin: 0 20px;
-  }
-  
-  .banner .pfp {
-    width: 120px;
-    height: 120px;
-  }
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+}
 
-  .search-header {
-    width: 360px;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    backdrop-filter: blur(8px);
-    transition: background-color 0.3s ease;
-  }
-  
-  .search-header:hover {
-    background-color: var(--faded-main-color);
-  }
-  
-  .search-header__input {
-    flex-grow: 1;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: white;
-    font-size: 16px;
-    padding: 5px;
-  }
-  
-  .search-header__input:focus {
-    outline: none;
-  }
-  
-  .search-header__input:focus {
-    border-bottom: 4px solid var(--main-color);/* Solid color bar under input */
-  }
-  
-  .search-header__button {
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .search-header__icon {
-    fill: #3A3A3A;
-    transition: fill 0.3s ease;
-  }
-  
-  .search-header__button:hover .search-header__icon {
-    fill: #ffffff;
-  }
-  
+.banner div .name {
+  color: var(--text-color);
+  font-size: 48px;
+  text-align: center;
+  margin: 0 20px;
+}
+
+.banner .pfp {
+  width: 120px;
+  height: 120px;
+}
+
+.search-header {
+  width: 360px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.3s ease;
+}
+
+.search-header:hover {
+  background-color: var(--faded-main-color);
+}
+
+.search-header__input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  padding: 5px;
+}
+
+.search-header__input:focus {
+  outline: none;
+}
+
+.search-header__input:focus {
+  border-bottom: 4px solid var(--main-color); /* Solid color bar under input */
+}
+
+.search-header__button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.search-header__icon {
+  fill: #3a3a3a;
+  transition: fill 0.3s ease;
+}
+
+.search-header__button:hover .search-header__icon {
+  fill: #ffffff;
+}

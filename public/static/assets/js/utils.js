@@ -1,5 +1,5 @@
 class Utils {
-  constructor(items, logger, settings) { 
+  constructor(items, logger, settings) {
     this.items = items;
     this.logger = logger;
     this.settings = settings;
@@ -133,7 +133,7 @@ class Utils {
               lastRan = Date.now();
             }
           },
-          limit - (Date.now() - lastRan)
+          limit - (Date.now() - lastRan),
         );
       }
     };

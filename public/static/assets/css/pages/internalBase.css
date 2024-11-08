@@ -1,3 +1,5 @@
+@import url("/assets/css/imports.css");
+
 #background {
   position: absolute;
   width: 100%;
@@ -8,16 +10,16 @@
 }
 
 .page {
-    display: flex;
-    /* flex-wrap: wrap; */
-    flex-direction: column;
-    align-content: center;
-    align-items: center;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    position: absolute;
-    z-index: 2;
-    width: 50%;
-    height: 50%;
-  }
+  display: flex;
+  /* flex-wrap: wrap; */
+  flex-direction: column;
+  align-content: center;
+  align-items: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+  z-index: 2;
+  width: 50%;
+  height: 50%;
+}

@@ -24,13 +24,11 @@ body {
   position: fixed;
   transition: width 0.5s ease-in-out;
   height: 100%;
-
 }
 
 .surface.autohide {
   width: calc(100%);
   transition: width 0.5s ease-in-out;
-
 }
 
 .context-menu {
@@ -90,9 +88,17 @@ body {
   z-index: 1;
   bottom: 0;
   border-right: 1px solid transparent;
-  border-image: linear-gradient(to bottom, transparent 50px, var(--main-color) 50px);
+  border-image: linear-gradient(
+    to bottom,
+    transparent 50px,
+    var(--main-color) 50px
+  );
   border-image-slice: 1;
-  transition: width 0.5s ease-in-out, border-image 0.5s ease-in-out, opacity 0.5s ease-in-out, left 0.5s ease-in-out;
+  transition:
+    width 0.5s ease-in-out,
+    border-image 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
+    left 0.5s ease-in-out;
 }
 
 .navbar.autohide {
@@ -101,7 +107,11 @@ body {
   left: -20px;
   border-image: linear-gradient(to bottom, transparent 5px, transparent 5px);
   border-image-slice: 1;
-  transition: width 0.5s ease-in-out, border-image 0.5s ease-in-out, opacity 0.5s ease-in-out, left 0.5s ease-in-out;
+  transition:
+    width 0.5s ease-in-out,
+    border-image 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
+    left 0.5s ease-in-out;
 }
 
 .navbar hr {
@@ -118,7 +128,7 @@ body {
   justify-content: start;
   align-self: center;
   height: 100%;
-  gap:5px;
+  gap: 5px;
 }
 
 .navbar div {
@@ -129,9 +139,9 @@ body {
 .navbar .coming-soon::after {
   content: "SOON";
   font-size: 8px;
-  background: var(--border-color);
+  background: var(--utility-background-color);
   color: var(--text-color);
-  padding: 2px 4px; 
+  padding: 2px 4px;
   border-radius: 4px;
   position: relative;
   bottom: 5px;
@@ -149,7 +159,6 @@ body {
 .logo:hover {
   cursor: pointer;
 }
-
 
 .glitch {
   position: sticky;
@@ -175,13 +184,14 @@ body {
 
 .glitch:before {
   animation: glitch-it 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-  color: #9A16FF;
+  color: #9a16ff;
   z-index: -1;
 }
 
 .glitch:after {
-  animation: glitch-it 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both infinite;
-  color: #19FFC9;
+  animation: glitch-it 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both
+    infinite;
+  color: #19ffc9;
   z-index: -2;
 }
 
@@ -229,27 +239,27 @@ body {
 
 *::-webkit-scrollbar-track {
   border-radius: 5px;
-  background-color: #DFE9EB;
+  background-color: #dfe9eb;
   border: 5px solid #717171;
 }
 
 *::-webkit-scrollbar-track:hover {
-  background-color: #B8C0C2;
+  background-color: #b8c0c2;
 }
 
 *::-webkit-scrollbar-track:active {
-  background-color: #B8C0C2;
+  background-color: #b8c0c2;
 }
 
 *::-webkit-scrollbar-thumb {
   border-radius: 5px;
-  background-color: #9F0EE8;
+  background-color: #9f0ee8;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #7E0AF2;
+  background-color: #7e0af2;
 }
 
 *::-webkit-scrollbar-thumb:active {
-  background-color: #EFEFEF;
+  background-color: #efefef;
 }

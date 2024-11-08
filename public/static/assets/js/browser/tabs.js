@@ -71,7 +71,7 @@ class Tabs {
     let position = 9;
     tabContentWidths.forEach((width, i) => {
       const offset = i * 1;
-      positions.push((position + 4) - offset);
+      positions.push(position + 4 - offset);
       position += width;
     });
 
@@ -90,7 +90,8 @@ class Tabs {
 
   get tabContentHeights() {
     const numberOfTabs = this.tabEls.length;
-    const tabsContentHeight = this.el.querySelector(".tabs-content").clientHeight;
+    const tabsContentHeight =
+      this.el.querySelector(".tabs-content").clientHeight;
     const tabsCumulativeOverlappedHeight = (numberOfTabs - 1) * 1; // Adjust for slight overlap
     const targetHeight =
       (tabsContentHeight + tabsCumulativeOverlappedHeight) / numberOfTabs;
@@ -121,7 +122,7 @@ class Tabs {
     let position = 9;
     tabContentHeights.forEach((height, i) => {
       const offset = i * 1; // Adjust for overlap offset
-      positions.push((position + 4) - offset);
+      positions.push(position + 4 - offset);
       position += height;
     });
 
@@ -138,29 +139,42 @@ class Tabs {
     return positions;
   }
 
-
   createTab(url, updateSrc = true) {
-    this.tabCount++
+    this.tabCount++;
     const id = `tab-${this.tabCount}`;
     const iframe = this.ui.createElement("iframe", {
       src: this.utils.processUrl(url),
     });
     iframe.id = `iframe-${this.tabCount}`;
 
-    const tab = this.ui.createElement("div", { class: "tab", id: `tab-${this.tabCount}`}, [
-      this.ui.createElement("div", { class: "tab-background" }),
-      this.ui.createElement("div", { class: "tab-content" }, [
-        this.ui.createElement("div", { class: "tab-group-color" }),
-        this.ui.createElement("div", { class: "tab-favicon" }),
-        this.ui.createElement("div", { class: "tab-title" }, ["Untitled"]),
-        this.ui.createElement("div", { class: "tab-drag-handle" }),
-        this.ui.createElement("button", {
-          class: "tab-close",
-          id: `close-${id}`,
-        }, [this.ui.createElement("span", { class: "material-symbols-outlined" }, ["close"])]),
-      ]),
-      this.ui.createElement("div", { class: "tab-bottom-border" }),
-    ]);
+    const tab = this.ui.createElement(
+      "div",
+      { class: "tab", id: `tab-${this.tabCount}` },
+      [
+        this.ui.createElement("div", { class: "tab-background" }),
+        this.ui.createElement("div", { class: "tab-content" }, [
+          this.ui.createElement("div", { class: "tab-group-color" }),
+          this.ui.createElement("div", { class: "tab-favicon" }),
+          this.ui.createElement("div", { class: "tab-title" }, ["Untitled"]),
+          this.ui.createElement("div", { class: "tab-drag-handle" }),
+          this.ui.createElement(
+            "button",
+            {
+              class: "tab-close",
+              id: `close-${id}`,
+            },
+            [
+              this.ui.createElement(
+                "span",
+                { class: "material-symbols-outlined" },
+                ["close"],
+              ),
+            ],
+          ),
+        ]),
+        this.ui.createElement("div", { class: "tab-bottom-border" }),
+      ],
+    );
 
     const updateTabTitle = () => {
       if (iframe.contentDocument) {
@@ -190,7 +204,7 @@ class Tabs {
 
     tab.addEventListener("click", () => {
       this.selectTab({ tab, iframe, url });
-      this.eventsAPI.emit("tabs:clicked")
+      this.eventsAPI.emit("tabs:clicked");
     });
 
     tab.addEventListener("contextmenu", (e) => {
@@ -228,8 +242,8 @@ class Tabs {
     });
 
     tab.querySelector(`#close-${id}`).addEventListener("click", () => {
-        this.closeTabById(id);
-      });
+      this.closeTabById(id);
+    });
 
     this.items.tabGroupsContainer.appendChild(tab);
     this.items.iframeContainer.appendChild(iframe);
@@ -247,7 +261,7 @@ class Tabs {
     const tabInfo = this.tabs.find((tab) => tab.id === id);
     console.log(tabInfo);
     console.log(id);
-    console.log(`tab-${(parseInt(id.replace('tab-', '')-1))}`)
+    console.log(`tab-${parseInt(id.replace("tab-", "") - 1)}`);
     if (tabInfo) {
       tabInfo.tab.remove();
       tabInfo.iframe.remove();
@@ -258,19 +272,23 @@ class Tabs {
   }
 
   closeCurrentTab() {
-    const activeTab = document.querySelector('.tab.active');
-    const activeIFrame = document.querySelector('iframe.active');
+    const activeTab = document.querySelector(".tab.active");
+    const activeIFrame = document.querySelector("iframe.active");
     const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
-      const currentTabId = parseInt(activeIFrame.id.replace('tab-', ''));
+      const currentTabId = parseInt(activeIFrame.id.replace("tab-", ""));
       activeTab.remove();
       activeIFrame.remove();
 
-      const remainingTabs = document.querySelectorAll('.tab');
+      const remainingTabs = document.querySelectorAll(".tab");
       if (remainingTabs.length > 0) {
         const previousTab = document.getElementById(`tab-${currentTabId - 1}`);
         const nextTab = document.getElementById(`tab-${currentTabId + 1}`);
-        (previousTab || nextTab || remainingTabs[remainingTabs.length - 1]).click();
+        (
+          previousTab ||
+          nextTab ||
+          remainingTabs[remainingTabs.length - 1]
+        ).click();
       }
       this.layoutTabs();
       this.logger.createLog(`Closed tab: ${activeIframeUrl}`);
@@ -278,15 +296,18 @@ class Tabs {
   }
 
   closeAllTabs() {
-    document.querySelectorAll('.tab').forEach(tab => {
+    document.querySelectorAll(".tab").forEach((tab) => {
       tab.remove();
     });
-    document.querySelector('.iframe-container').querySelectorAll('iframe').forEach(page => {
-      page.remove();
-    });
+    document
+      .querySelector(".iframe-container")
+      .querySelectorAll("iframe")
+      .forEach((page) => {
+        page.remove();
+      });
     this.logger.createLog(`Closed all tabs`);
   }
-/*
+  /*
   createGroup(name) {
     const existingGroup = this.groups.find(
       (group) => group.header.textContent === name,
@@ -436,7 +457,7 @@ closeCurrentGroup() {
       this.draggabillyDragging.element.style.transform = "";
       this.draggabillyDragging.dragEnd();
       this.draggabillyDragging.isDragging = false;
-      this.draggabillyDragging.positionDrag = (_) => { }; // Prevent Draggabilly from updating tabEl.style.transform in later frames
+      this.draggabillyDragging.positionDrag = (_) => {}; // Prevent Draggabilly from updating tabEl.style.transform in later frames
       this.draggabillyDragging.destroy();
       this.draggabillyDragging = null;
     }
@@ -470,48 +491,48 @@ closeCurrentGroup() {
       draggabilly.on("dragEnd", async (_) => {
         this.isDragging = false;
         if (await this.settings.getItem("verticalTabs")) {
-        const finalTranslateY = parseFloat(tabEl.style.top, 10);
-        tabEl.style.transform = `translate3d(0, 0, 0)`;
+          const finalTranslateY = parseFloat(tabEl.style.top, 10);
+          tabEl.style.transform = `translate3d(0, 0, 0)`;
 
-        // Animate dragged tab back into its place
-        requestAnimationFrame((_) => {
-          tabEl.style.top = "0";
-          tabEl.style.transform = `translate3d(0, ${finalTranslateY}px, 0)`;
-
+          // Animate dragged tab back into its place
           requestAnimationFrame((_) => {
-            tabEl.classList.remove("tab-is-dragging");
-            this.el.classList.remove("tabs-is-sorting");
+            tabEl.style.top = "0";
+            tabEl.style.transform = `translate3d(0, ${finalTranslateY}px, 0)`;
 
             requestAnimationFrame((_) => {
-              tabEl.style.transform = "";
+              tabEl.classList.remove("tab-is-dragging");
+              this.el.classList.remove("tabs-is-sorting");
 
-              this.layoutTabs();
-              this.setupDraggabilly();
+              requestAnimationFrame((_) => {
+                tabEl.style.transform = "";
+
+                this.layoutTabs();
+                this.setupDraggabilly();
+              });
             });
           });
-        });
-      } else {
-        const finalTranslateX = parseFloat(tabEl.style.left, 10);
-        tabEl.style.transform = `translate3d(0, 0, 0)`;
+        } else {
+          const finalTranslateX = parseFloat(tabEl.style.left, 10);
+          tabEl.style.transform = `translate3d(0, 0, 0)`;
 
-        // Animate dragged tab back into its place
-        requestAnimationFrame((_) => {
-          tabEl.style.left = "0";
-          tabEl.style.transform = `translate3d(${finalTranslateX}px, 0, 0)`;
-
+          // Animate dragged tab back into its place
           requestAnimationFrame((_) => {
-            tabEl.classList.remove("tab-is-dragging");
-            this.el.classList.remove("tabs-is-sorting");
+            tabEl.style.left = "0";
+            tabEl.style.transform = `translate3d(${finalTranslateX}px, 0, 0)`;
 
             requestAnimationFrame((_) => {
-              tabEl.style.transform = "";
+              tabEl.classList.remove("tab-is-dragging");
+              this.el.classList.remove("tabs-is-sorting");
 
-              this.layoutTabs();
-              this.setupDraggabilly();
+              requestAnimationFrame((_) => {
+                tabEl.style.transform = "";
+
+                this.layoutTabs();
+                this.setupDraggabilly();
+              });
             });
           });
-        });
-      }
+        }
       });
 
       draggabilly.on("dragMove", async (event, pointer, moveVector) => {
@@ -519,43 +540,69 @@ closeCurrentGroup() {
         const currentIndex = tabEls.indexOf(tabEl);
         if (await this.settings.getItem("verticalTabs")) {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
-        const destinationIndexTarget = this.utils.closest(
-          currentTabPositionY,
-          tabPositionsY,
-        );
-        const destinationIndex = Math.max(
-          0,
-          Math.min(tabEls.length, destinationIndexTarget),
-        );
+          const destinationIndexTarget = this.utils.closest(
+            currentTabPositionY,
+            tabPositionsY,
+          );
+          const destinationIndex = Math.max(
+            0,
+            Math.min(tabEls.length, destinationIndexTarget),
+          );
 
-        if (currentIndex !== destinationIndex) {
-          this.animateTabMove(tabEl, currentIndex, destinationIndex);
-        }
-        const lastTab = tabEls[tabEls.length - 1];
-        const lastTabPosition = this.tabPositions[this.tabPositions.length - 1];
-        const lastTabWidth = this.tabContentWidths[this.tabContentWidths.length - 1];
-        const translatePx = lastTabPosition + lastTabWidth + (tabEl === lastTab ? (tabEl.getAttribute("data-was-not-last-tab-when-started-dragging") ? moveVector.y - this.tabContentHeights[currentIndex] : moveVector.y) : 0) + 16;
-        document.querySelector("#create-tab").style.transform = `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`
+          if (currentIndex !== destinationIndex) {
+            this.animateTabMove(tabEl, currentIndex, destinationIndex);
+          }
+          const lastTab = tabEls[tabEls.length - 1];
+          const lastTabPosition =
+            this.tabPositions[this.tabPositions.length - 1];
+          const lastTabWidth =
+            this.tabContentWidths[this.tabContentWidths.length - 1];
+          const translatePx =
+            lastTabPosition +
+            lastTabWidth +
+            (tabEl === lastTab
+              ? tabEl.getAttribute(
+                  "data-was-not-last-tab-when-started-dragging",
+                )
+                ? moveVector.y - this.tabContentHeights[currentIndex]
+                : moveVector.y
+              : 0) +
+            16;
+          document.querySelector("#create-tab").style.transform =
+            `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`;
         } else {
-        const currentTabPositionX = originalTabPositionX + moveVector.x;
-        const destinationIndexTarget = this.utils.closest(
-          currentTabPositionX,
-          tabPositions,
-        );
-        const destinationIndex = Math.max(
-          0,
-          Math.min(tabEls.length, destinationIndexTarget),
-        );
+          const currentTabPositionX = originalTabPositionX + moveVector.x;
+          const destinationIndexTarget = this.utils.closest(
+            currentTabPositionX,
+            tabPositions,
+          );
+          const destinationIndex = Math.max(
+            0,
+            Math.min(tabEls.length, destinationIndexTarget),
+          );
 
-        if (currentIndex !== destinationIndex) {
-          this.animateTabMove(tabEl, currentIndex, destinationIndex);
+          if (currentIndex !== destinationIndex) {
+            this.animateTabMove(tabEl, currentIndex, destinationIndex);
+          }
+          const lastTab = tabEls[tabEls.length - 1];
+          const lastTabPosition =
+            this.tabPositions[this.tabPositions.length - 1];
+          const lastTabWidth =
+            this.tabContentWidths[this.tabContentWidths.length - 1];
+          const translatePx =
+            lastTabPosition +
+            lastTabWidth +
+            (tabEl === lastTab
+              ? tabEl.getAttribute(
+                  "data-was-not-last-tab-when-started-dragging",
+                )
+                ? moveVector.x - this.tabContentWidths[currentIndex]
+                : moveVector.x
+              : 0) +
+            16;
+          document.querySelector("#create-tab").style.transform =
+            `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`;
         }
-        const lastTab = tabEls[tabEls.length - 1];
-        const lastTabPosition = this.tabPositions[this.tabPositions.length - 1];
-        const lastTabWidth = this.tabContentWidths[this.tabContentWidths.length - 1];
-        const translatePx = lastTabPosition + lastTabWidth + (tabEl === lastTab ? (tabEl.getAttribute("data-was-not-last-tab-when-started-dragging") ? moveVector.x - this.tabContentWidths[currentIndex] : moveVector.x) : 0) + 16;
-        document.querySelector("#create-tab").style.transform = `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`
-      }
       });
     });
     this.logger.createLog(`Setup draggabilly successfully`);
@@ -574,69 +621,67 @@ closeCurrentGroup() {
     if (await this.settings.getItem("verticalTabs")) {
       const tabContentWidths = this.tabContentHeights;
 
-    let cumulativeWidth = 0;
-    tabContentWidths.forEach(() => {
-      const tabWidth = 36;
-      cumulativeWidth += tabWidth;
-      return cumulativeWidth;
-    });
+      let cumulativeWidth = 0;
+      tabContentWidths.forEach(() => {
+        const tabWidth = 36;
+        cumulativeWidth += tabWidth;
+        return cumulativeWidth;
+      });
 
-    this.tabEls.forEach((tabEl, i) => {
+      this.tabEls.forEach((tabEl, i) => {
+        tabEl.style.width = null;
+      });
 
-      tabEl.style.width = null;
-
-    });
-
-    let styleHTML = "";
-    let lastPos = 0;
-    this.tabPositionsY.forEach((position, i) => {
-
-      styleHTML += `
+      let styleHTML = "";
+      let lastPos = 0;
+      this.tabPositionsY.forEach((position, i) => {
+        styleHTML += `
         .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
           transform: translate3d(0, ${position}px, 0)
         }
-      `; lastPos = position
-    });
-    this.styleEl.innerHTML = styleHTML;
-    document.getElementById("create-tab").style.transform = `translate3d(0, ${lastPos + tabContentWidths[tabContentWidths.length - 1] + 20}px), 0`;
+      `;
+        lastPos = position;
+      });
+      this.styleEl.innerHTML = styleHTML;
+      document.getElementById("create-tab").style.transform =
+        `translate3d(0, ${lastPos + tabContentWidths[tabContentWidths.length - 1] + 20}px), 0`;
     } else {
-    const tabContentWidths = this.tabContentWidths;
+      const tabContentWidths = this.tabContentWidths;
 
-    let cumulativeWidth = 0;
-    tabContentWidths.forEach((contentWidth) => {
-      const tabWidth = Math.min(contentWidth + (2 * 9), 240);
-      cumulativeWidth += tabWidth;
-      return cumulativeWidth;
-    });
+      let cumulativeWidth = 0;
+      tabContentWidths.forEach((contentWidth) => {
+        const tabWidth = Math.min(contentWidth + 2 * 9, 240);
+        cumulativeWidth += tabWidth;
+        return cumulativeWidth;
+      });
 
-    this.tabEls.forEach((tabEl, i) => {
-      const contentWidth = tabContentWidths[i];
-      const tabWidth = Math.min(contentWidth + (2 * 9), 240);
-      tabEl.classList.remove('is-small');
-      tabEl.classList.remove('is-smaller');
-      tabEl.classList.remove('is-mini');
+      this.tabEls.forEach((tabEl, i) => {
+        const contentWidth = tabContentWidths[i];
+        const tabWidth = Math.min(contentWidth + 2 * 9, 240);
+        tabEl.classList.remove("is-small");
+        tabEl.classList.remove("is-smaller");
+        tabEl.classList.remove("is-mini");
 
-      tabEl.style.width = tabWidth + "px";
-      if (contentWidth < 84) tabEl.classList.add('is-small')
-      if (contentWidth < 60) tabEl.classList.add('is-smaller')
-      if (contentWidth < 48) tabEl.classList.add('is-mini')
-    });
+        tabEl.style.width = tabWidth + "px";
+        if (contentWidth < 84) tabEl.classList.add("is-small");
+        if (contentWidth < 60) tabEl.classList.add("is-smaller");
+        if (contentWidth < 48) tabEl.classList.add("is-mini");
+      });
 
-    let styleHTML = "";
-    let lastPos = 0;
-    this.tabPositions.forEach((position, i) => {
-
-      styleHTML += `
+      let styleHTML = "";
+      let lastPos = 0;
+      this.tabPositions.forEach((position, i) => {
+        styleHTML += `
         .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
           transform: translate3d(${position}px, 0, 0)
         }
-      `; lastPos = position
-    });
-    this.styleEl.innerHTML = styleHTML;
-    document.getElementById("create-tab").style.transform = `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
+      `;
+        lastPos = position;
+      });
+      this.styleEl.innerHTML = styleHTML;
+      document.getElementById("create-tab").style.transform =
+        `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
+    }
+    this.logger.createLog(`Rearranged tabs`);
   }
-  this.logger.createLog(`Rearranged tabs`);
-
-}
-
 }

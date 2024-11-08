@@ -1,5 +1,14 @@
 class Functions {
-  constructor(items, ui, tabs, logger, settings, utils,nightmarePlugins, windowing) {
+  constructor(
+    items,
+    ui,
+    tabs,
+    logger,
+    settings,
+    utils,
+    nightmarePlugins,
+    windowing,
+  ) {
     this.items = items;
     this.ui = ui;
     this.tabs = tabs;
@@ -35,38 +44,50 @@ class Functions {
   }
 
   async toggleTabs() {
-    if ((await this.settings.getItem('verticalTabs')) != false) {
-      const tabs = document.querySelector('.tabs');
-      const viewport = document.querySelector('.viewport');
-      const isDisabled = tabs.classList.toggle('hidden');
+    if ((await this.settings.getItem("verticalTabs")) != false) {
+      const tabs = document.querySelector(".tabs");
+      const viewport = document.querySelector(".viewport");
+      const isDisabled = tabs.classList.toggle("hidden");
 
       if (isDisabled) {
-        tabs.classList.add('hidden');
-        viewport.classList.add('hidden')
+        tabs.classList.add("hidden");
+        viewport.classList.add("hidden");
       } else {
-        tabs.classList.remove('hidden');
-        viewport.classList.remove('hidden')
+        tabs.classList.remove("hidden");
+        viewport.classList.remove("hidden");
       }
 
-      await this.settings.setItem('verticalTabs-notshowing', isDisabled);
+      await this.settings.setItem("verticalTabs-notshowing", isDisabled);
     } else {
       return;
     }
   }
 
   backward() {
-    this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.back();
-    this.logger.createLog(`Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.items.iframeContainer
+      .querySelector("iframe.active")
+      .contentWindow.history.back();
+    this.logger.createLog(
+      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+    );
   }
 
   forward() {
-    this.items.iframeContainer.querySelector("iframe.active").contentWindow.history.forward();
-    this.logger.createLog(`Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.items.iframeContainer
+      .querySelector("iframe.active")
+      .contentWindow.history.forward();
+    this.logger.createLog(
+      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+    );
   }
 
   refresh() {
-    this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.reload();
-    this.logger.createLog(`Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`);
+    this.items.iframeContainer
+      .querySelector("iframe.active")
+      .contentWindow.location.reload();
+    this.logger.createLog(
+      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+    );
   }
 
   injectErudaScript(iframeDocument) {
@@ -176,7 +197,7 @@ class Functions {
       this.erudaScriptInjecting = false;
       console.log("Iframe navigation detected, Eruda toggle reset.");
     });
-    this.logger.loggger.createLog("Toggled Inspect Element")
+    this.logger.loggger.createLog("Toggled Inspect Element");
   }
 
   extras() {
@@ -185,12 +206,12 @@ class Functions {
 
   goFullscreen() {
     const iframe = document.querySelector("iframe.active");
-    
+
     if (iframe.requestFullscreen) {
       iframe.requestFullscreen();
-    } else if (iframe.mozRequestFullScreen) { 
+    } else if (iframe.mozRequestFullScreen) {
       iframe.mozRequestFullScreen();
-    } else if (iframe.webkitRequestFullscreen) { 
+    } else if (iframe.webkitRequestFullscreen) {
       iframe.webkitRequestFullscreen();
     } else if (iframe.msRequestFullscreen) {
       iframe.msRequestFullscreen();
@@ -200,108 +221,294 @@ class Functions {
   extrasMenu(button) {
     let content = this.ui.createElement("div", {}, [
       //New Tab
-      this.ui.createElement("div", { class: "menu-item", id: "openNewTab", onclick: ()=>{
-        this.tabs.createTab("daydream://newtab");
-      } }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["tab"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Open New Tab"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openNewTab",
+          onclick: () => {
+            this.tabs.createTab("daydream://newtab");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["tab"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Open New Tab",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
+        ],
+      ),
       //New Window
-      this.ui.createElement("div", { class: "menu-item", id: "openNewWindow", onclick: ()=>{
-        this.windowing.newWindow();
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_new"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Open a New Window"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openNewWindow",
+          onclick: () => {
+            this.windowing.newWindow();
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["open_in_new"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Open New Window",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
+        ],
+      ),
       //New Incognito Window
-      this.ui.createElement("div", { class: "menu-item", id: "openNewABWindow", onclick: ()=>{
-        this.windowing.aboutBlankWindow();
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["visibility_off"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Open an Incognito Window"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + N"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openNewABWindow",
+          onclick: () => {
+            this.windowing.aboutBlankWindow();
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["visibility_off"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Open About:Blank Window",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + N",
+          ]),
+        ],
+      ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
         // Zoom Out
-        this.ui.createElement("div", { class: "menu-item", id: "zoom-out", onclick: ()=>{
-          this.tabs.createTab("daydream://newtab");
-        }  }, [
-          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["remove"]),
-        ]),
-        this.ui.createElement("span", { class: "menu-label", id: "zoom-percentage" }, ["100%"]),
+        this.ui.createElement(
+          "div",
+          {
+            class: "menu-item",
+            id: "zoom-out",
+            onclick: () => {
+              this.tabs.createTab("daydream://newtab");
+            },
+          },
+          [
+            this.ui.createElement(
+              "span",
+              { class: "material-symbols-outlined" },
+              ["remove"],
+            ),
+          ],
+        ),
+        this.ui.createElement(
+          "span",
+          { class: "menu-label", id: "zoom-percentage" },
+          ["100%"],
+        ),
         //Zoom In
-        this.ui.createElement("div", { class: "menu-item", id: "zoom-in", onclick: ()=>{
-          this.tabs.createTab("daydream://newtab");
-        }  }, [
-          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["add"])
-        ]),
+        this.ui.createElement(
+          "div",
+          {
+            class: "menu-item",
+            id: "zoom-in",
+            onclick: () => {
+              this.tabs.createTab("daydream://newtab");
+            },
+          },
+          [
+            this.ui.createElement(
+              "span",
+              { class: "material-symbols-outlined" },
+              ["add"],
+            ),
+          ],
+        ),
         // Fullscreen
-        this.ui.createElement("div", { class: "menu-item", id: "fullscreen", onclick: ()=>{
-          this.goFullscreen();
-        } }, [
-          this.ui.createElement("span", { class: "material-symbols-outlined" }, ["open_in_full"])
-        ]),
+        this.ui.createElement(
+          "div",
+          {
+            class: "menu-item",
+            id: "fullscreen",
+            onclick: () => {
+              this.goFullscreen();
+            },
+          },
+          [
+            this.ui.createElement(
+              "span",
+              { class: "material-symbols-outlined" },
+              ["open_in_full"],
+            ),
+          ],
+        ),
       ]),
       // Bookmarks
-      this.ui.createElement("div", { class: "menu-item", id: "openBookmarks", onclick: ()=>{
-        this.tabs.createTab("daydream://bookmarks");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["hotel_class"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + B"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openBookmarks",
+          onclick: () => {
+            this.tabs.createTab("daydream://bookmarks");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["hotel_class"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + B",
+          ]),
+        ],
+      ),
       // History
-      this.ui.createElement("div", { class: "menu-item", id: "openHistory", onclick: ()=>{
-        this.tabs.createTab("daydream://history");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["history"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["History"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + Y"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openHistory",
+          onclick: () => {
+            this.tabs.createTab("daydream://history");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["history"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, ["History"]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + Y",
+          ]),
+        ],
+      ),
       // Games
-      this.ui.createElement("div", { class: "menu-item", id: "openGames", onclick: ()=>{
-        this.tabs.createTab("daydream://games");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["playing_cards"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + G"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openGames",
+          onclick: () => {
+            this.tabs.createTab("daydream://games");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["playing_cards"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + G",
+          ]),
+        ],
+      ),
       // Extensions
-      this.ui.createElement("div", { class: "menu-item", id: "openExtensions", onclick: ()=>{
-        this.tabs.createTab("daydream://extensions");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["extension"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Extensions"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + E"])
-      ]), 
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "openExtensions",
+          onclick: () => {
+            this.tabs.createTab("daydream://extensions");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["extension"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Extensions",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + E",
+          ]),
+        ],
+      ),
       // Screenshot
-      this.ui.createElement("div", { class: "menu-item", id: "screenshot", onclick: ()=>{
-        console.log("Screenshot taken");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["content_paste"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Screenshot"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "screenshot",
+          onclick: () => {
+            console.log("Screenshot taken");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["content_paste"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Screenshot",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"]),
+        ],
+      ),
       //Inspect Element
-      this.ui.createElement("div", { class: "menu-item", id: "inspectElement", onclick: ()=>{
-        this.inspectElement();
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["code"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Inspect Element"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + I"])
-      ]),
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "inspectElement",
+          onclick: () => {
+            this.inspectElement();
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["code"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, [
+            "Inspect Element",
+          ]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + I",
+          ]),
+        ],
+      ),
       // Settings
-      this.ui.createElement("div", { class: "menu-item", id: "settingsFromMenu", onclick: ()=>{
-        this.tabs.createTab("daydream://settings");
-      }  }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["settings"]),
-        this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
-        this.ui.createElement("span", { class: "menu-key" }, ["Alt + Shift + ,"])
-      ]),
-    ])
+      this.ui.createElement(
+        "div",
+        {
+          class: "menu-item",
+          id: "settingsFromMenu",
+          onclick: () => {
+            this.tabs.createTab("daydream://settings");
+          },
+        },
+        [
+          this.ui.createElement(
+            "span",
+            { class: "material-symbols-outlined" },
+            ["settings"],
+          ),
+          this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
+          this.ui.createElement("span", { class: "menu-key" }, [
+            "Alt + Shift + ,",
+          ]),
+        ],
+      ),
+    ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
 
@@ -315,27 +522,27 @@ class Functions {
     const settings = navbar.querySelector("#settShortcut");
 
     games.addEventListener("click", () => {
-      this.utils.navigate("daydream://games")
-    })
+      this.utils.navigate("daydream://games");
+    });
 
     ai.addEventListener("click", () => {
-      alert("This feature is coming soon!")
+      alert("This feature is coming soon!");
     });
 
     chat.addEventListener("click", () => {
-      alert("This feature is coming soon!")
+      alert("This feature is coming soon!");
     });
 
     music.addEventListener("click", () => {
       console.log("opening music");
-    })
+    });
 
     history.addEventListener("click", () => {
       this.utils.navigate("daydream://history");
-    })
+    });
 
     settings.addEventListener("click", () => {
-      this.utils.navigate("daydream://settings")
-    })
+      this.utils.navigate("daydream://settings");
+    });
   }
 }

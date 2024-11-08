@@ -1,11 +1,9 @@
 {
-    "id": "example-theme-123",
-    "name": "Example Theme",
-    "version": "1.0.0",
-    "description": "A simple example theme.",
-    "author": "Your Name",
-    "colors": {
-
-    },
-    "icon": "icon.png"
+  "id": "example-theme-123",
+  "name": "Example Theme",
+  "version": "1.0.0",
+  "description": "A simple example theme.",
+  "author": "Your Name",
+  "colors": {},
+  "icon": "icon.png"
 }

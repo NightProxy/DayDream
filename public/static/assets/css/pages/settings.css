@@ -24,14 +24,14 @@ body {
   font-size: 16px;
   cursor: pointer;
   color: var(--dropdown-udline);
-  border-bottom: 1px solid var(--dropdown-udline);
+  border-bottom: 1px solid var(--main-color);
   position: relative;
   display: flex;
   align-items: center;
 }
 
 .dropdown-button:focus {
-  outline: 2px solid var(--active-outline-clr);
+  outline: 2px solid var(--main-color);
 }
 
 .dropdown-button span.material-symbols-outlined {
@@ -50,7 +50,7 @@ body {
 .dropdown-options {
   margin-top: 6px;
   position: absolute;
-  background-color: #8888887e;
+  background-color: transparent;
   border-radius: 4px;
   width: 100%;
   z-index: 1;
@@ -60,7 +60,7 @@ body {
   backdrop-filter: blur(50px);
 }
 
-.dropdown-button.active+.dropdown-options {
+.dropdown-button.active + .dropdown-options {
   display: block;
 }
 
@@ -76,7 +76,6 @@ body {
 
 .dropdown-options li a {
   text-decoration: none;
-  color: var(--dropdown-li-a);
   width: 100%;
   padding: 10px 21px 10px 0px;
   max-width: 93.5%;
@@ -94,13 +93,13 @@ body {
 }
 
 .dropdown-options li:hover {
-  color: var(--dropdown-li-a-hvr);
-  background-color: var(--dropdown-li-hvr);
+  color: var(--hover-text-color);
+  background-color: var(--faded-main-color);
   cursor: pointer;
 }
 
 .dropdown-options li:active {
-  background-color: var(--dropdown-li-active);
+  color: var(--main-color);
 }
 
 .sideSnav {
@@ -137,11 +136,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  /* adjust width as needed */
   height: 35px;
-  /* adjust height as needed */
-  background-color: var(--active-outline-clr);
-  /* adjust color as needed */
 }
 
 .sideSnav a {
@@ -159,7 +154,7 @@ body {
   display: block;
   width: calc(100% - 20px);
   backdrop-filter: blur(50px) brightness(0.5);
-  background-color: #3d3d3d6e;
+  background-color: var(--dark-translucent-bg);
   border-radius: 15px;
   float: left;
   text-align: left;
@@ -241,4 +236,49 @@ h3 .about-hover:hover {
   position: fixed;
   right: 0;
   overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.section-horiz {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.section-vert {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+input[type="text"] {
+  font-size: 14px;
+  padding: 5px 10px;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  border-radius: 10px;
+  transition: 0.5s ease;
+}
+
+input[type="text"]:focus {
+  background: var(--faded-main-color);
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-color);
+  font-family: Plus Jakarta Sans;
+}
+
+h1 {
+  color: var(--main-color);
 }

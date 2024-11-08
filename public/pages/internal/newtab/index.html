@@ -7,14 +7,22 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
     <link rel="stylesheet" href="/assets/css/imports.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/themes.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/pages/newtab.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/vars.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/assets/css/pages/internalBase.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/assets/css/pages/newtab.css"
+    />
   </head>
   <body>
     <div class="bg-container">
       <div class="background" id="background"></div>
- <!--     <div class="aur_cont">
+      <!--     <div class="aur_cont">
         <span class="aur aur_1"></span>
         <span class="aur aur_2"></span>
         <span class="aur aur_3"></span>
@@ -28,7 +36,6 @@
       </div>-->
     </div>
     <div class="page">
-      
       <div
         style="animation: fade-in-top 1s; margin-top: 30px"
         class="search-header"
@@ -40,11 +47,7 @@
           class="search-header__input"
           type="text"
         />
-        <button
-          aria-label="search"
-          type="submit"
-          class="search-header__button"
-        >
+        <button aria-label="search" type="submit" class="search-header__button">
           <svg
             fill="none"
             viewBox="0 0 18 18"
@@ -175,7 +178,10 @@
     </script>
     <!--APIs-->
     <script src="/assets/js/apis/events.js"></script>
+    <script src="/assets/js/apis/settings.js"></script>
     <!--Main Scripts-->
+    <script src="/assets/js/global/theming.js"></script>
+    <script src="/assets/js/global/index.js"></script>
     <script src="/assets/js/internal/newTab.js"></script>
   </body>
 </html>

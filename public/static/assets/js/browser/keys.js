@@ -1,101 +1,100 @@
 class Keys {
-    constructor(tabs, functions, settings) {
-        this.keys = [];
-        this.tabs = tabs;
-        this.functions = functions;
-        this.settings = settings;
-    }
+  constructor(tabs, functions, settings) {
+    this.keys = [];
+    this.tabs = tabs;
+    this.functions = functions;
+    this.settings = settings;
+  }
 
-    init() {
-        window.addEventListener('keydown', async event => {
-            if (event.altKey && event.key === 't') {
-                this.tabs.createTab("daydream://newtab");
-            } else if (event.ctrlKey && event.key === 't') {
-                event.preventDefault();
-                this.tabs.createTab("daydream://newtab");
-            } else if (event.altKey && event.key === 'w') {
-                this.tabs.closeCurrentTab();
+  init() {
+    window.addEventListener("keydown", async (event) => {
+      if (event.altKey && event.key === "t") {
+        this.tabs.createTab("daydream://newtab");
+      } else if (event.ctrlKey && event.key === "t") {
+        event.preventDefault();
+        this.tabs.createTab("daydream://newtab");
+      } else if (event.altKey && event.key === "w") {
+        this.tabs.closeCurrentTab();
+      } else if (event.altKey && event.key === "ArrowLeft") {
+        const activeIframe = document.querySelector("iframe.active");
+        if (activeIframe) {
+          activeIframe.contentWindow.history.back();
+        }
+        // Go Next
+      } else if (event.altKey && event.key === "ArrowRight") {
+        const activeIframe = document.querySelector("iframe.active");
+        if (activeIframe) {
+          activeIframe.contentWindow.history.forward();
+        }
+        // Reload page
+      } else if (event.altKey && event.key === "r") {
+        const activeIframe = document.querySelector("iframe.active");
+        if (activeIframe) {
+          activeIframe.contentWindow.location.reload();
+        }
+      } else if (event.altKey && event.keyCode === 116) {
+        const activeIframe = document.querySelector("iframe.active");
+        if (activeIframe) {
+          activeIframe.contentWindow.location.reload();
+        }
+      } else if (event.altKey && event.shiftKey && event.key === "I") {
+        event.preventDefault();
+        const activeIframe = document.querySelector("iframe.active");
+        if (activeIframe) {
+          this.functions.inspectElement();
+        }
+      } else if (event.altKey && event.key === "s") {
+        const sidebar = document.querySelector(".navbar");
+        const browser = document.querySelector(".surface");
+        const tabs = document.querySelector(".tabs");
+        const bar = document.querySelector(".under-tabs");
+        const IFcontainer = document.querySelector(".viewport");
+        const suggestions = document.querySelector(".suggestion-list");
+        const isDisabled = sidebar.classList.toggle("autohide");
 
-            } else if (event.altKey && event.key === 'ArrowLeft') {
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    activeIframe.contentWindow.history.back();
-                }
-                // Go Next
-            } else if (event.altKey && event.key === 'ArrowRight') {
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    activeIframe.contentWindow.history.forward();
-                }
-                // Reload page
-            } else if (event.altKey && event.key === 'r') {
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    activeIframe.contentWindow.location.reload();
-                }
-            } else if (event.altKey && event.keyCode === 116) {
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    activeIframe.contentWindow.location.reload();
-                }
-            }  else if (event.altKey && event.shiftKey && event.key === 'I') {
-                event.preventDefault();
-                const activeIframe = document.querySelector('iframe.active');
-                if (activeIframe) {
-                    this.functions.inspectElement();
-                }
-            } else if (event.altKey && event.key === 's') {
-                const sidebar = document.querySelector('.navbar');
-                const browser = document.querySelector('.surface');
-                const tabs = document.querySelector('.tabs');
-                const bar = document.querySelector('.under-tabs');
-                const IFcontainer = document.querySelector(".viewport");
-                const suggestions = document.querySelector('.suggestion-list');
-                const isDisabled = sidebar.classList.toggle('autohide');
+        if (isDisabled) {
+          browser.classList.add("autohide");
+          tabs.classList.add("vertical");
+          bar.classList.add("vertical");
+          IFcontainer.classList.add("vertical");
+          if (suggestions != null) {
+            suggestions.classList.add("vertical");
+          }
+        } else {
+          browser.classList.remove("autohide");
+          tabs.classList.remove("vertical");
+          bar.classList.remove("vertical");
+          IFcontainer.classList.remove("vertical");
+          if (suggestions != null) {
+            suggestions.classList.remove("vertical");
+          }
+        }
 
-                if (isDisabled) {
-                    browser.classList.add('autohide');
-                    tabs.classList.add('vertical');
-                    bar.classList.add('vertical');
-                    IFcontainer.classList.add('vertical')
-                    if (suggestions != null) {
-                        suggestions.classList.add('vertical')
-                    }
-                } else {
-                    browser.classList.remove('autohide');
-                    tabs.classList.remove('vertical');
-                    bar.classList.remove('vertical');
-                    IFcontainer.classList.remove('vertical')
-                    if (suggestions != null) {
-                        suggestions.classList.remove('vertical')
-                    }
-                }
+        // Save the current state to this.settings
+        await this.settings.setItem("verticalTabs", isDisabled);
+        setTimeout(() => {
+          this.tabs.layoutTabs();
+        }, 100);
+      } else if (event.altKey && event.shiftKey && event.key === "S") {
+        if ((await this.settings.getItem("verticalTabs")) === "true") {
+          const tabs = document.querySelector(".tabs");
+          const viewport = document.querySelector(".viewport");
+          const isDisabled = tabs.classList.toggle("hidden");
 
-                // Save the current state to this.settings
-                await this.settings.setItem('verticalTabs', isDisabled);
-                setTimeout(() => {
-                this.tabs.layoutTabs();
-                }, 100);
-            } else if (event.altKey && event.shiftKey && event.key === "S") {
-                if (await this.settings.getItem('verticalTabs') === 'true') {
-                    const tabs = document.querySelector('.tabs');
-                    const viewport = document.querySelector('.viewport');
-                    const isDisabled = tabs.classList.toggle('hidden');
+          if (isDisabled) {
+            tabs.classList.add("hidden");
+            viewport.classList.add("hidden");
+          } else {
+            tabs.classList.remove("hidden");
+            viewport.classList.remove("hidden");
+          }
 
-                if (isDisabled) {
-                    tabs.classList.add('hidden');
-                    viewport.classList.add('hidden')
-                } else {
-                    tabs.classList.remove('hidden');
-                    viewport.classList.remove('hidden')
-                }
-
-                // Save the current state to this.settings
-                await this.settings.setItem('verticalTabs-notshowing', isDisabled);
-            } else {
-                return;
-            }
-        };
-        });
-    }
+          // Save the current state to this.settings
+          await this.settings.setItem("verticalTabs-notshowing", isDisabled);
+        } else {
+          return;
+        }
+      }
+    });
+  }
 }

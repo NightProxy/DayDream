@@ -1,240 +1,331 @@
 <!doctype html>
 
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DDX Settings</title>
+    <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
+    <link rel="stylesheet" href="/assets/css/imports.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/vars.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/assets/css/pages/internalBase.css"
+    />
+    <link rel="stylesheet" href="/assets/css/pages/settings.css" />
+    <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:image" content="/assets/imgs/logo.png" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DDX Settings</title>
-  <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
-  <link rel="stylesheet" href="/assets/css/imports.css" />
-  <link rel="stylesheet" type="text/css" href="/assets/css/themes.css" />
-  <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
-  <link rel="stylesheet" href="/assets/css/pages/settings.css" />
-  <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta property="og:image" content="/assets/imgs/logo.png" />
-</head>
-
-<body>
-  <ul class="sideSnav">
-    <h1>Settings</h1>
-    <a href="#Cloaking">
-      <li class="settingItem" data-id="cloak"><span
-          class="material-symbols-outlined">preview</span><span>Cloaking</span></li>
-    </a>
-    <a href="#Themes">
-      <li class="settingItem" data-id="themes"><span
-          class="material-symbols-outlined">palette</span><span>Theming</span></li>
-    </a>
-    <a href="#Searching">
-      <li class="settingItem" data-id="searching"><span
-          class="material-symbols-outlined">manage_search</span><span>Search</span></li>
-    </a>
-    <a href="#Misc">
-      <li class="settingItem" data-id="misc"><span class="material-symbols-outlined">more_vert</span><span>Misc</span>
-      </li>
-    </a>
-    <a href="#Profiles">
-      <li class="settingItem" data-id="accounts"><span
-          class="material-symbols-outlined">manage_accounts</span><span>Profiles</span></li>
-    </a>
-    <hr />
-    <a href="#About">
-      <li class="settingItem" data-id="about"><span class="material-symbols-outlined">info</span><span>About &
-          Statistics</span></li>
-    </a>
-  </ul>
-  <div class="scrollDiv">
-    <h1 id="Cloaking">Cloaking</h1>
-    <div class="scontent">
-      <h3>About:Blank</h3>
-      <label class="switch">
-        <input type="checkbox" id="abSwitch" />
-        <span class="slider"></span>
-      </label>
-
-      <h3>Blob</h3>
-      <label class="switch">
-        <input type="checkbox" id="blobSwitch" />
-        <span class="slider"></span>
-      </label>
-
-      <h3>Reset</h3>
-      <button id="cloakDisable">Disable Cloaks</button>
-    </div>
-    <h1 id="Themes">Customization</h1>
-    <div class="scontent">
-      <h3>Preinstalled Themes:</h3>
-
-      <h3>User-Installed Themes:</h3>
-
-      <h3>Custom Theme:</h3>
-      <div class="colorPicker"></div>
-
-    </div>
-    <h1 id="Searching">Searching</h1>
-    <div class="scontent">
-
-      <div id="proxyDropdown" class="dropdown">
-        <div id="proxyButton" class="dropdown-button">
-          <span class="button-text">Client</span>
-          <span class="material-symbols-outlined">keyboard_arrow_down</span>
-        </div>
-        <ul id="proxyOptions" class="dropdown-options">
-          <li>
-            <a data-value="auto">Automatic</a>
-          </li>
-          <li>
-            <a data-value="uv"><img src="/assets/imgs/proxies/uv.png" />Ultraviolet</a>
-          </li>
-          <li>
-            <a data-value="sj"><img src="/assets/imgs/proxies/sj.png" />Scramjet</a>
-          </li>
-          <li>
-            <a data-value="ec">
-              <img src="/assets/imgs/proxies/eclipse.svg" />Eclipse</a>
-          </li>
-          <li>
-            <a data-value="ss"><img src="/assets/imgs/proxies/ss.png" />SandStone</a>
-        </ul>
-      </div>
-
-      <div id="transportDropdown" class="dropdown">
-        <div id="transportButton" class="dropdown-button">
-          <span class="button-text">Transports</span>
-          <span class="material-symbols-outlined">keyboard_arrow_down</span>
-        </div>
-        <ul id="transportOptions" class="dropdown-options">
-          <li><a data-value="libcurl">LibCurl</a></li>
-          <li><a data-value="epoxy">Epoxy</a></li>
-          <li><a data-value="baremod">Bare Module</a></li>
-        </ul>
-      </div>
-
-      <div id="searchDropdown" class="dropdown">
-        <div id="searchButton" class="dropdown-button">
-          <span class="button-text">Search Engine</span>
-          <span class="material-symbols-outlined">keyboard_arrow_down</span>
-        </div>
-        <ul id="searchOptions" class="dropdown-options">
-          <li>
-            <a data-value="https://www.google.com/search?q=%s">Google</a>
-          </li>
-          <li><a data-value="https://bing.com/search?q=%s">Bing</a></li>
-          <li><a data-value="https://duckduckgo.com/?q=%s">DuckDuckGo</a></li>
-          <li>
-            <a data-value="https://search.yahoo.com/search?p=%s">Yahoo</a>
-          </li>
-        </ul>
-      </div>
-
-      <div id="wispDiv">
-        <label for="wispSetting">Wisp Setting:</label>
-        <input type="text" id="wispSetting" />
-        <button id="saveWispSetting">Save</button>
-        <button id="resetWispSetting">Reset</button>
-      </div>
-    </div>
-
-    <h1 id="Misc">Misc</h1>
-    <div class="scontent">
-
-    </div>
-
-    <h1 id="Profiles">Profile Management</h1>
-    <div class="scontent">
-      <input type="file" id="dataInput" style="display: none" onchange="dataExportAPI.importData();" />
-      <button id="exportData">Export Data</button>
-      <button id="importData">Import Data</button>
-    </div>
-
-    <h1 id="About">About DayDreamX</h1>
-    <div class="scontent">
-      <p>
-        DayDreamX is a Project that aims to bring a new browsing experience to users by providing a modern and
-        customizable interface that is both fast and secure.<br>
-        Our browser is heavily inspired by Opera GX and Arc, and we aim to provide a similar experience to our users
-        without the downsides of spyware or lack of support.<br>
-        We aim to provide a similar browser remake similar to r58playz's AboutBrowser, Cohen's Velocity, and Other
-        Projects. <br>We keep our site running with ads, while giving you the choice to disable them.
-      </p>
-      <h1>Techstack</h1>
-      <ul>
-        <li>- Chrome Tabs (Rewritten to modern standards and capabilities)</li>
-        <li>- Ultraviolet V3</li>
-        <li>- Scramjet</li>
-        <li>- Eclipse</li>
-        <li>- BareMux V2</li>
-        <li>- Libcurl.js</li>
-        <li>- Epoxy</li>
-        <li>- Wisp JS Client</li>
-        <li>- FilerJS</li>
-        <li>- JSzip</li>
-        <li>- Eruda</li>
-        <li>- JS-cookie</li>
-        <li>- Dragabilly</li>
-        <li>- Localforage</li>
-        <li>- NightmareJS</li>
-        <li>- WorkerWare</li>
-        <li>- Html2Canvas</li>
-        <li>- Sandstone (Modified)</li>
-        <li>- Iro.js</li>
-      </ul>
+  <body>
+    <ul class="sideSnav">
+      <h1>Settings</h1>
+      <a href="#Cloaking">
+        <li class="settingItem" data-id="cloak">
+          <span class="material-symbols-outlined">preview</span
+          ><span>Cloaking</span>
+        </li>
+      </a>
+      <a href="#Themes">
+        <li class="settingItem" data-id="themes">
+          <span class="material-symbols-outlined">palette</span
+          ><span>Theming</span>
+        </li>
+      </a>
+      <a href="#Searching">
+        <li class="settingItem" data-id="searching">
+          <span class="material-symbols-outlined">manage_search</span
+          ><span>Search</span>
+        </li>
+      </a>
+      <a href="#Misc">
+        <li class="settingItem" data-id="misc">
+          <span class="material-symbols-outlined">more_vert</span
+          ><span>Misc</span>
+        </li>
+      </a>
+      <a href="#Profiles">
+        <li class="settingItem" data-id="accounts">
+          <span class="material-symbols-outlined">manage_accounts</span
+          ><span>Profiles</span>
+        </li>
+      </a>
       <hr />
-      <h1>Devs:</h1>
-      <h3><a class="about-hover" href="https://notamplify.online">Amplify: (Owner) </a></h3>
-      <ul>
-        <li>- Many bug fixes</li>
-        <li>- Wrote UI</li>
-        <li>- Wrote all functionality</li>
-        <li>- Wrote Extensions System and Other APIs</li>
-        <li>- Wrote Docs</li>
-        <li>- Manages And runs DayDreamX and its stability</li>
-      </ul>
-      <h3><a class="about-hover" href="">KDust7: (Owner)</a></h3>
-      <ul>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-      </ul>
-      <h3><a class="about-hover" href="">Crllect: (Admin)</a></h3>
-      <ul>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-        <li>-</li>
-      </ul>
-      <h1>Thank you for contributing to DayDreamX.</h1>
-      <p>
-        If you would like to contribute, check out our
-        <a class="a" href="https://github.com/NightProxy/DayDreamX">GitHub</a>
-        for how to get started.
-      </p>
-    </div>
-  </div>
-  <!--Libs-->
-  <script src="/assets/js/lib/js-cookie/js.cookie.min.js"></script>
-  <script src="/assets/js/lib/localforage/localforage.min.js"></script>
-  <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>
-  <script src="/assets/js/lib/iro/iro.min.js"></script>
-  <!--APIs-->
-  <script src="/assets/js/apis/events.js"></script>
-  <script src="/assets/js/apis/settings.js"></script>
-  <script src="/assets/js/apis/exporting.js"></script>
-  <!--Main Scripts-->
-  <script src="/assets/js/global.js"></script>
-  <script src="/assets/js/internal/settings.js"></script>
-</body>
+      <a href="#About">
+        <li class="settingItem" data-id="about">
+          <span class="material-symbols-outlined">info</span
+          ><span>About & Statistics</span>
+        </li>
+      </a>
+    </ul>
+    <div class="scrollDiv">
+      <h1 id="Cloaking">Cloaking</h1>
+      <div class="scontent">
+        <h3>About:Blank</h3>
+        <label class="switch">
+          <input type="checkbox" id="abSwitch" />
+          <span class="slider"></span>
+        </label>
 
+        <h3>Blob</h3>
+        <label class="switch">
+          <input type="checkbox" id="blobSwitch" />
+          <span class="slider"></span>
+        </label>
+
+        <h3>Reset</h3>
+        <button id="cloakDisable">Disable Cloaks</button>
+      </div>
+      <h1 id="Themes">Customization</h1>
+      <div class="scontent">
+        <h3>Preinstalled Themes:</h3>
+        <div class="section-horiz" id="preThemes"></div>
+
+        <h3>User-Installed Themes:</h3>
+        <div class="section-horiz" id="userThemes"></div>
+
+        <h3>Custom Theme:</h3>
+        <div class="section-vert">
+          <div class="section-horiz">
+            <h5>Color:</h5>
+            <div class="colorPicker"></div>
+          </div>
+          <div class="section-horiz">
+            <h5>Base:</h5>
+            <div id="themeDropdownCustom" class="dropdown">
+              <div id="themeButtonCustom" class="dropdown-button">
+                <span class="button-text">Base Theme</span>
+                <span class="material-symbols-outlined"
+                  >keyboard_arrow_down</span
+                >
+              </div>
+              <ul id="themeOptionsCustom" class="dropdown-options">
+                <li>
+                  <a data-value="light">Light</a>
+                </li>
+                <li>
+                  <a data-value="T-light">Light (Tinted)</a>
+                </li>
+                <li>
+                  <a data-value="dark">Dark</a>
+                </li>
+                <li>
+                  <a data-value="T-dark">Dark (Tinted)</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="section-horiz">
+            <h5>Background</h5>
+            <img class="bgPreview" id="bgPreview" />
+            <input type="file" id="bgInput" style="display: none" />
+            <button id="bgUpload" onclick="document.getElementById('bgInput').click()">Upload</button>
+            <button id="bgReset">Reset</button>
+          </div>
+        </div>
+      </div>
+      <h1 id="Searching">Searching</h1>
+      <div class="scontent">
+        <div class="section-vert">
+          <div class="section-horiz">
+            <h5>Backend:</h5>
+            <div id="proxyDropdown" class="dropdown">
+              <div id="proxyButton" class="dropdown-button">
+                <span class="button-text">Client</span>
+                <span class="material-symbols-outlined"
+                  >keyboard_arrow_down</span
+                >
+              </div>
+              <ul id="proxyOptions" class="dropdown-options">
+                <li>
+                  <a data-value="auto">Automatic</a>
+                </li>
+                <li>
+                  <a data-value="uv"
+                    ><img src="/assets/imgs/proxies/uv.png" />Ultraviolet</a
+                  >
+                </li>
+                <li>
+                  <a data-value="sj"
+                    ><img src="/assets/imgs/proxies/sj.png" />Scramjet</a
+                  >
+                </li>
+                <li>
+                  <a data-value="ec">
+                    <img src="/assets/imgs/proxies/eclipse.svg" />Eclipse</a
+                  >
+                </li>
+                <li>
+                  <a data-value="ss"
+                    ><img src="/assets/imgs/proxies/ss.png" />SandStone</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="section-horiz">
+            <h5>Transport</h5>
+            <div id="transportDropdown" class="dropdown">
+              <div id="transportButton" class="dropdown-button">
+                <span class="button-text">Transports</span>
+                <span class="material-symbols-outlined"
+                  >keyboard_arrow_down</span
+                >
+              </div>
+              <ul id="transportOptions" class="dropdown-options">
+                <li><a data-value="libcurl">LibCurl</a></li>
+                <li><a data-value="epoxy">Epoxy</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="section-horiz">
+            <h5>Search Engine</h5>
+            <div id="searchDropdown" class="dropdown">
+              <div id="searchButton" class="dropdown-button">
+                <span class="button-text">Search Engine</span>
+                <span class="material-symbols-outlined"
+                  >keyboard_arrow_down</span
+                >
+              </div>
+              <ul id="searchOptions" class="dropdown-options">
+                <li>
+                  <a data-value="https://www.google.com/search?q=%s">Google</a>
+                </li>
+                <li>
+                  <a data-value="https://bing.com/search?q=%s">Bing</a>
+                </li>
+                <li>
+                  <a data-value="https://duckduckgo.com/?q=%s">DuckDuckGo</a>
+                </li>
+                <li>
+                  <a data-value="https://search.yahoo.com/search?p=%s">Yahoo</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div id="wispDiv">
+            <label for="wispSetting">Wisp Setting:</label>
+            <input type="text" id="wispSetting" />
+            <br />
+            <button id="saveWispSetting">Save</button>
+            <button id="resetWispSetting">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <h1 id="Misc">Misc</h1>
+      <div class="scontent"></div>
+
+      <h1 id="Profiles">Profile Management</h1>
+      <div class="scontent">
+        <input
+          type="file"
+          id="dataInput"
+          style="display: none"
+          onchange="dataExportAPI.importData();"
+        />
+        <button id="exportData">Export Data</button>
+        <button id="importData">Import Data</button>
+      </div>
+
+      <h1 id="About">About DayDreamX</h1>
+      <div class="scontent">
+        <p>
+          DayDreamX is a Project that aims to bring a new browsing experience to
+          users by providing a modern and customizable interface that is both
+          fast and secure.<br />
+          Our browser is heavily inspired by Opera GX and Arc, and we aim to
+          provide a similar experience to our users without the downsides of
+          spyware or lack of support.<br />
+          We aim to provide a similar browser remake similar to r58playz's
+          AboutBrowser, Cohen's Velocity, and Other Projects. <br />We keep our
+          site running with ads, while giving you the choice to disable them.
+        </p>
+        <h1>Techstack</h1>
+        <ul>
+          <li>
+            - Chrome Tabs (Rewritten to modern standards and capabilities)
+          </li>
+          <li>- Ultraviolet V3</li>
+          <li>- Scramjet</li>
+          <li>- Eclipse</li>
+          <li>- BareMux V2</li>
+          <li>- Libcurl.js</li>
+          <li>- Epoxy</li>
+          <li>- Wisp JS Client</li>
+          <li>- FilerJS</li>
+          <li>- JSzip</li>
+          <li>- Eruda</li>
+          <li>- JS-cookie</li>
+          <li>- Dragabilly</li>
+          <li>- Localforage</li>
+          <li>- NightmareJS</li>
+          <li>- WorkerWare</li>
+          <li>- Html2Canvas</li>
+          <li>- Sandstone (Modified)</li>
+          <li>- Iro.js</li>
+        </ul>
+        <hr />
+        <h1>Devs:</h1>
+        <h3>
+          <a class="about-hover" href="https://notamplify.online"
+            >Amplify: (Owner)
+          </a>
+        </h3>
+        <ul>
+          <li>- Many bug fixes</li>
+          <li>- Wrote UI</li>
+          <li>- Wrote all functionality</li>
+          <li>- Wrote Extensions System and Other APIs</li>
+          <li>- Wrote Docs</li>
+          <li>- Manages And runs DayDreamX and its stability</li>
+        </ul>
+        <h3><a class="about-hover" href="">KDust7: (Owner)</a></h3>
+        <ul>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+        </ul>
+        <h3><a class="about-hover" href="">Crllect: (Admin)</a></h3>
+        <ul>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+          <li>-</li>
+        </ul>
+        <h1>Thank you for contributing to DayDreamX.</h1>
+        <p>
+          If you would like to contribute, check out our
+          <a class="a" href="https://github.com/NightProxy/DayDreamX">GitHub</a>
+          for how to get started.
+        </p>
+      </div>
+    </div>
+    <!--Libs-->
+    <script src="/assets/js/lib/js-cookie/js.cookie.min.js"></script>
+    <script src="/assets/js/lib/localforage/localforage.min.js"></script>
+    <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>
+    <script src="/assets/js/lib/iro/iro.min.js"></script>
+    <!--APIs-->
+    <script src="/assets/js/apis/events.js"></script>
+    <script src="/assets/js/apis/settings.js"></script>
+    <script src="/assets/js/apis/exporting.js"></script>
+    <!--Main Scripts-->
+    <script src="/assets/js/global/theming.js"></script>
+    <script src="/assets/js/global/index.js"></script>
+    <script src="/assets/js/internal/settings.js"></script>
+  </body>
 </html>

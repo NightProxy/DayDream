@@ -1,164 +1,163 @@
-
 .menu-container {
-    position: fixed;
-    width: 300px;
-    padding: 10px 0px;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    transition: right 0.3s ease;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-  }
-  
-  .menu-container.visible {
-    right: 0;
-  }
-  
-  .menu-top-bar {
-    display: flex;
-    flex-direction: row;
-  }
-  
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 10px;
-    position: absolute;
-    top: 10px;
-    color: var(--text-color);
-  }
-  
-  .menu-top-bar .close-button {
-    right: 10px;
-    position: sticky;
-  }
-  
-  .dropdown {
-    user-select: none;
-    position: relative;
-    display: inline-block;
-    background-color: none;
-    background: none;
-  }
-  
-  .dropdown-button {
-    background-color: transparent;
-    border: none;
-    padding: 10px 10px;
-    width: 300px;
-    text-align: left;
-    font-size: 16px;
-    cursor: pointer;
-    color: var(--dropdown-udline);
-    border-bottom: 1px solid var(--dropdown-udline);
-    position: relative;
-  }
-  
-  .dropdown-button:focus {
-    outline: 2px solid var(--active-outline-clr);
-  }
-  
-  .dropdown-button span.material-symbols-outlined {
-    background-color: none;
-    position: sticky !important;
-    right: 10px;
-    top: 50%;
-    transition: transform 0.3s;
-    cursor: pointer;
-  }
-  
-  .dropdown-button.active span.material-symbols-outlined {
-    transform: rotate(180deg);
-    background-color: none;
-    cursor: pointer;
-  }
-  
-  .dropdown-options {
-    margin-top: 6px;
-    position: absolute;
-    background-color: var(--bg-color);
-    border-radius: 4px;
-    width: 150px;
-    z-index: 1;
-    display: none;
-    padding: 10px;
-    list-style-type: none;
-  }
-  
-  .dropdown-button.active+.dropdown-options {
-    display: block;
-  }
-  
-  .dropdown-options li {
-    list-style-type: none;
-    width: 100%;
-  }
-  
-  .dropdown-options li a {
-    text-decoration: none;
-    color: var(--dropdown-li-a);
-    width: 100%;
-    padding: 10px 21px 10px 0px;
-    max-width: 93.5%;
-    margin-left: 20px;
-    display: flex;
-  }
-  
-  .dropdown-options li a img {
-    display: block;
-    width: 20px;
-    height: 20px;
-    align-items: center;
-    align-content: center;
-    margin-right: 3px;
-  }
-  
-  .dropdown-options li:hover {
-    color: var(--dropdown-li-a-hvr);
-    background-color: var(--dropdown-li-hvr);
-    cursor: pointer;
-  }
-  
-  .dropdown-options li:active {
-    background-color: var(--dropdown-li-active);
-  }
+  position: fixed;
+  width: 300px;
+  padding: 10px 0px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+}
 
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 10px;
-    border-radius: 10px;
-  }
+.menu-container.visible {
+  right: 0;
+}
 
-  .menu-item:hover {
-    background-color: var(--faded-main-color);
-    cursor: pointer;
-  }
+.menu-top-bar {
+  display: flex;
+  flex-direction: row;
+}
 
-  .menu-item .menu-label {
-    font-size: 14px;
-    font-weight: 500;
-  }
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 10px;
+  position: absolute;
+  top: 10px;
+  color: var(--text-color);
+}
 
-  .menu-item .menu-key {
-    font-size: 10px;
-    font-weight: 400;
-    color: var(--hover-text-color);
-  }
+.menu-top-bar .close-button {
+  right: 10px;
+  position: sticky;
+}
 
-  .menu-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
+.dropdown {
+  user-select: none;
+  position: relative;
+  display: inline-block;
+  background-color: none;
+  background: none;
+}
 
-  .menu-row .menu-button {
-    padding: 5px;
-  }
+.dropdown-button {
+  background-color: transparent;
+  border: none;
+  padding: 10px 10px;
+  width: 300px;
+  text-align: left;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--dropdown-udline);
+  border-bottom: 1px solid var(--dropdown-udline);
+  position: relative;
+}
+
+.dropdown-button:focus {
+  outline: 2px solid var(--active-outline-clr);
+}
+
+.dropdown-button span.material-symbols-outlined {
+  background-color: none;
+  position: sticky !important;
+  right: 10px;
+  top: 50%;
+  transition: transform 0.3s;
+  cursor: pointer;
+}
+
+.dropdown-button.active span.material-symbols-outlined {
+  transform: rotate(180deg);
+  background-color: none;
+  cursor: pointer;
+}
+
+.dropdown-options {
+  margin-top: 6px;
+  position: absolute;
+  background-color: var(--bg-color);
+  border-radius: 4px;
+  width: 150px;
+  z-index: 1;
+  display: none;
+  padding: 10px;
+  list-style-type: none;
+}
+
+.dropdown-button.active + .dropdown-options {
+  display: block;
+}
+
+.dropdown-options li {
+  list-style-type: none;
+  width: 100%;
+}
+
+.dropdown-options li a {
+  text-decoration: none;
+  color: var(--dropdown-li-a);
+  width: 100%;
+  padding: 10px 21px 10px 0px;
+  max-width: 93.5%;
+  margin-left: 20px;
+  display: flex;
+}
+
+.dropdown-options li a img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  align-content: center;
+  margin-right: 3px;
+}
+
+.dropdown-options li:hover {
+  color: var(--dropdown-li-a-hvr);
+  background-color: var(--dropdown-li-hvr);
+  cursor: pointer;
+}
+
+.dropdown-options li:active {
+  background-color: var(--dropdown-li-active);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 10px;
+}
+
+.menu-item:hover {
+  background-color: var(--faded-main-color);
+  cursor: pointer;
+}
+
+.menu-item .menu-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.menu-item .menu-key {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--hover-text-color);
+}
+
+.menu-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-row .menu-button {
+  padding: 5px;
+}

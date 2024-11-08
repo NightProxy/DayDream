@@ -1,180 +1,184 @@
 .search-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-align: center;
-    border-radius: 30px;
-  }
-  
-  .search-header__input {
-    font-family: "Plus Jakarta Sans";
-    font-size: 16px;
-    background-color: var(--input-background-color);
-    border: solid 0.5px var(--border-color);
-    color: var(--text-color);
-    padding: 0.7rem 1rem;
-    border-radius: 25px;
-    width: 240px;
-    height: 20px;
-    transition: all ease-in-out 0.5s;
-    margin-right: -2rem;
-    opacity: 1;
-    text-align: center;
-  }
-  .search-header__input::-webkit-input-placeholder {
-    font-family: "Plus Jakarta Sans";
-  }
-  
-  .search-header__input:-ms-input-placeholder {
-    font-family: "Plus Jakarta Sans";
-  }
-  
-  .search-header__input:-moz-placeholder {
-    font-family: "Plus Jakarta Sans";
-  }
-  
-  .search-header__input::-moz-placeholder {
-    font-family: "Plus Jakarta Sans";
-  }
-  .search-header__input::placeholder {
-    font-family: "Plus Jakarta Sans";
-  }
-  
-  .search-header__input:focus {
-    outline: none;
-    background-color: #0a0a0af0;
-  }
-  
-  .search-header__input::-webkit-input-placeholder {
-    font-weight: 200;
-    color: #868686;
-    font-family: "DM Sans";
-  }
-  
-  .search-header__input:focus+.search-header__button {
-    background-color: transparent;
-  }
-  
-  .search-header__button {
-    border: none;
-    background-color: transparent;
-    margin-top: 0.1em;
-  }
-  
-  .search-header__button:hover {
-    cursor: pointer;
-  }
-  
-  .search-header__icon {
-    height: 1.3em;
-    width: 1.3em;
-    fill: #3a3a3a;
-  }
-  
-  .searchEngineIcon {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    object-fit: cover;
-    position: relative;
-    z-index: 9999999;
-    margin-right: -35px;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  border-radius: 30px;
+}
+
+.search-header__input {
+  font-family: "Plus Jakarta Sans";
+  font-size: 16px;
+  background-color: var(--input-background-color);
+  border: solid 0.5px var(--border-color);
+  color: var(--text-color);
+  padding: 0.7rem 1rem;
+  border-radius: 25px;
+  width: 240px;
+  height: 20px;
+  transition: all ease-in-out 0.5s;
+  margin-right: -2rem;
+  opacity: 1;
+  text-align: center;
+}
+.search-header__input::-webkit-input-placeholder {
+  font-family: "Plus Jakarta Sans";
+}
+
+.search-header__input:-ms-input-placeholder {
+  font-family: "Plus Jakarta Sans";
+}
+
+.search-header__input:-moz-placeholder {
+  font-family: "Plus Jakarta Sans";
+}
+
+.search-header__input::-moz-placeholder {
+  font-family: "Plus Jakarta Sans";
+}
+.search-header__input::placeholder {
+  font-family: "Plus Jakarta Sans";
+}
+
+.search-header__input:focus {
+  outline: none;
+  background-color: #0a0a0af0;
+}
+
+.search-header__input::-webkit-input-placeholder {
+  font-weight: 200;
+  color: #868686;
+  font-family: "DM Sans";
+}
+
+.search-header__input:focus + .search-header__button {
+  background-color: transparent;
+}
+
+.search-header__button {
+  border: none;
+  background-color: transparent;
+  margin-top: 0.1em;
+}
+
+.search-header__button:hover {
+  cursor: pointer;
+}
+
+.search-header__icon {
+  height: 1.3em;
+  width: 1.3em;
+  fill: #3a3a3a;
+}
+
+.searchEngineIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+  z-index: 9999999;
+  margin-right: -35px;
+}
 
 .suggestion-list {
-    position: fixed;
-    z-index: 1111;
-    top: calc(46px + 3em);
-    left: 50%;
-    transform: translate(-50%, 0%);
-    background: var(--tab-bg-color);
-    color: var(--text-color);
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    width: calc(100% - calc(72px * 2));
-    height: fit-content;
-    overflow-y: auto;
-    display: none;
-    flex-direction: column;
-    padding-top: 2px;
-    border: 1px solid var(--main-color);
-    border-top: none;
-    transition:width 0.5s ease, top 0.5s ease;
-  }
+  position: fixed;
+  z-index: 1111;
+  top: calc(46px + 3em);
+  left: 50%;
+  transform: translate(-50%, 0%);
+  background: var(--tab-bg-color);
+  color: var(--text-color);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  width: calc(100% - calc(72px * 2));
+  height: fit-content;
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  padding-top: 2px;
+  border: 1px solid var(--main-color);
+  border-top: none;
+  transition:
+    width 0.5s ease,
+    top 0.5s ease;
+}
 
-  .suggestion-list.vertical {
-    top: 3em;
-    width: calc(100% - 560px);
-    transition:  width 0.5s ease, top 0.5s ease;
-  }
-  
-  .suggestion-list div {
-    border-radius: 20px;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    padding-left: 7px;
-    padding-right: 7px;
-    transition: 0.3s;
-  }
-  
-  .suggestion-list .search-section {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .suggestion-list .search-section .search-title {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 6px;
-  }
-  
-  .suggestion-list .search-section .search-title .searchEngineIcon {
-    width: 20px;
-    height: 20px;
-    border-radius: 0 !important;
-    object-fit: cover;
-    position: relative;
-    z-index: 1;
-    margin-right: 2px;
-  }
-  
-  .suggestion-list .search-section .search-title span {
-    font-size: 16px;
-    font-weight: 500;
-    text-decoration: bold;
-  }
-  
-  .suggestion-list .search-section .search-results div {
-    border-radius: 20px;
-    display: flex;
-    margin-right: 0.6vw;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    padding-left: 7px;
-    padding-right: 7px;
-    cursor: pointer;
-    gap: 5px;
-    transition: 0.3s;
-  }
-  
-  .suggestion-list .search-section .search-results div img {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .suggestion-list .search-section .search-results div:hover {
-    box-shadow:
-      0 0 15px 1px var(--shadow-color),
-      0 0 1px 1px var(--theme-color);
-    transition: 0.3s;
-    background-color: var(--faded-main-color);
-  }
-  
-  .suggestion-list .search-section .search-results .selected {
-    box-shadow:
-      0 0 15px 1px var(--shadow-color),
-      0 0 1px 1px var(--theme-color);
-    transition: 0.3s;
-    background-color: var(--faded-main-color);
-  }
+.suggestion-list.vertical {
+  top: 3em;
+  width: calc(100% - 560px);
+  transition:
+    width 0.5s ease,
+    top 0.5s ease;
+}
+
+.suggestion-list div {
+  border-radius: 20px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
+  transition: 0.3s;
+}
+
+.suggestion-list .search-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion-list .search-section .search-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.suggestion-list .search-section .search-title .searchEngineIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 0 !important;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  margin-right: 2px;
+}
+
+.suggestion-list .search-section .search-title span {
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: bold;
+}
+
+.suggestion-list .search-section .search-results div {
+  border-radius: 20px;
+  display: flex;
+  margin-right: 0.6vw;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
+  cursor: pointer;
+  gap: 5px;
+  transition: 0.3s;
+}
+
+.suggestion-list .search-section .search-results div img {
+  width: 20px;
+  height: 20px;
+}
+
+.suggestion-list .search-section .search-results div:hover {
+  box-shadow:
+    0 0 15px 1px var(--shadow-color),
+    0 0 1px 1px var(--theme-color);
+  transition: 0.3s;
+  background-color: var(--faded-main-color);
+}
+
+.suggestion-list .search-section .search-results .selected {
+  box-shadow:
+    0 0 15px 1px var(--shadow-color),
+    0 0 1px 1px var(--theme-color);
+  transition: 0.3s;
+  background-color: var(--faded-main-color);
+}
