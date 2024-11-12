@@ -5,7 +5,6 @@ class Proxy {
       return;
     }
 
-    this.crypts = new crypts();
     this.connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
     console.log("Proxy variables:", {
@@ -184,6 +183,37 @@ class Proxy {
           };
         }
         break;
+    }
+  }
+
+  async inFrame_Redirect(swConfig, proxySetting, url) {
+    this.registerSW(swConfig[proxySetting].file).then(async () => {
+      await this.setTransports();
+    });
+    if (proxySetting === "auto") {
+      const result = await swConfig.auto.func(proxy.search(url));
+      swConfigSettings = result;
+    } else {
+      swConfigSettings = swConfig[proxySetting];
+    }
+    switch (swConfigSettings.type) {
+      case "sw":
+        let encodedUrl =
+          swConfigSettings.config.prefix +
+          __uv$config.encodeUrl(this.search(url));
+          location.href = encodedUrl;
+        break;
+      /*case "iframe":
+        if (proxySetting == "auto" || proxySetting == "ss") {
+          let main_frame = new sandstone.controller.ProxyFrame(activeIframe);
+          main_frame.navigate_to(this.search(url));
+
+          main_frame.on_load = async () => {
+            document.getElementById("uv-address").value = main_frame.url.href;
+          };
+        }
+        break;
+        */
     }
   }
 }

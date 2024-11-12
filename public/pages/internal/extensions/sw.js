@@ -16,6 +16,9 @@ self.addEventListener("message", async (event) => {
   if (event.data.type === "installExtension") {
     const file = event.data.file;
     await installExtension(file);
+  } else if (event.data.type === "removeExtension") {
+    const extensionID = event.data.extensionID;
+    await removeExtension(extensionID);
   }
 });
 
@@ -44,7 +47,34 @@ async function installExtension(file) {
   }
 }
 
-// Serve files from filer on fetch events
+async function removeExtension(extensionID) {
+  const basePath = `/internal/extensions/${extensionID}/`;
+
+  fs.readdir(basePath, (err, entries) => {
+    if (err) {
+      console.error(`Failed to read directory ${basePath}:`, err);
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const filePath = Path.join(basePath, entry);
+      fs.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error(`Failed to delete file ${filePath}:`, unlinkErr);
+        }
+      });
+    });
+
+    fs.rmdir(basePath, (rmdirErr) => {
+      if (rmdirErr) {
+        console.error(`Failed to remove directory ${basePath}:`, rmdirErr);
+      } else {
+        console.log(`Removed extension files for ${extensionID} successfully.`);
+      }
+    });
+  });
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const pathMatch = url.pathname.match(

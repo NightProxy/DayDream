@@ -30,6 +30,15 @@ class ExtensionsAPI {
     await this.db.setItem("extensionLists", this.extensionLists);
   }
 
+  async registerSW() {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/internal/extensions/sw.js");
+      console.log("Service Worker registered for extensions.");
+    } else {
+      console.error("Service Worker not supported.");
+    }
+  }
+
   async installExtension(file) {
     try {
       const zip = await JSZip.loadAsync(file);
@@ -106,19 +115,30 @@ class ExtensionsAPI {
     if (this.extensions[extensionID]) {
       delete this.extensions[extensionID];
       this.extensionLists.installed = this.extensionLists.installed.filter(
-        (id) => id !== extensionID,
+        (id) => id !== extensionID
       );
       this.extensionLists.enabled = this.extensionLists.enabled.filter(
-        (id) => id !== extensionID,
+        (id) => id !== extensionID
       );
       this.extensionLists.disabled = this.extensionLists.disabled.filter(
-        (id) => id !== extensionID,
+        (id) => id !== extensionID
       );
-
+  
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: "removeExtension",
+          extensionID: extensionID,
+        });
+        console.log(`Requested removal of extension files for ${extensionID}.`);
+      } else {
+        console.error("Service Worker not available.");
+      }
+  
       await this.saveExtensions();
       console.log(`Extension ${extensionID} removed.`);
     } else {
       console.log(`Extension ${extensionID} not found.`);
     }
   }
+  
 }

@@ -6,7 +6,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventsAPI = new EventSystem();
   const profilesAPI = new ProfilesAPI();
   const loggingAPI = new Logger();
+  const extensionsAPI = new ExtensionsAPI();
 
+
+  await extensionsAPI.registerSW();
+  await extensionsAPI.loadExtensions();
   var defWisp =
     (location.protocol === "https:" ? "wss" : "ws") +
     "://" +
@@ -35,11 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       config: __scramjet$config,
       func: async () => {
         const scramjet = new ScramjetController(__scramjet$config);
-        scramjet.modifyConfig(__scramjet$config);
-
         scramjet.init("/$/sw.js").then(async () => {
           await proxy.setTransports();
         });
+        scramjet.modifyConfig(__scramjet$config);
+
         console.log("Scramjet Service Worker registered.");
       },
     },
@@ -69,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("browser-container"),
     nightmare,
     loggingAPI,
-    settingsAPI,
+    settingsAPI
   );
   const items = new Items();
   const utils = new Utils(items, loggingAPI, settingsAPI);
@@ -80,7 +84,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     items,
     loggingAPI,
     settingsAPI,
-    eventsAPI,
+    eventsAPI
   );
 
   tabs.createTab("daydream://newtab");
@@ -96,14 +100,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     nightmarePlugins,
     windowing,
     eventsAPI,
+    extensionsAPI
   );
   const keys = new Keys(tabs, functions, settingsAPI, eventsAPI);
 
   keys.init();
-
-  if (typeof swFunction === "function") {
-    swFunction();
-  }
 
   proxy.registerSW(swConfig[proxySetting]).then(async () => {
     await proxy.setTransports().then(async () => {
@@ -134,8 +135,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         await proxy.registerSW(swConfigSettings);
 
+        console.log("swConfigSettings:", swConfigSettings);
         console.log(
-          `Using proxy: ${proxySetting}, Settings are: ` + swConfigSettings,
+          "swConfigSettings.func exists:",
+          typeof swConfigSettings.func === "function"
+        );
+        if (typeof swConfigSettings.func === "function") {
+          swConfigSettings.func();
+        } else {
+          console.warn("No function to execute in swConfigSettings.func");
+        }
+
+        console.log(
+          `Using proxy: ${proxySetting}, Settings are: ` +
+            (await swConfigSettings)
         );
         console.log(swConfigSettings);
 
@@ -152,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           case "iframe":
             if (proxySetting == "auto" || proxySetting == "ss") {
               let main_frame = new sandstone.controller.ProxyFrame(
-                document.querySelector("iframe.active"),
+                document.querySelector("iframe.active")
               );
               main_frame.navigate_to(proxy.search(searchValue));
 
@@ -175,7 +188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     proxy,
     swConfig,
     proxySetting,
-    eventsAPI,
+    eventsAPI
   );
   searchbar.init(items.addressBar);
 
@@ -185,29 +198,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => {
         searchbar.clearSuggestions();
         document.querySelector(
-          "#suggestion-list.suggestion-list",
+          "#suggestion-list.suggestion-list"
         ).style.display = "none";
       }, 30);
     }
   });
-  return {
-    tabs,
-    functions,
-    keys,
-    searchbar,
-    globalFunctions,
-    render,
-    items,
-    utils,
-    windowing,
-    eventsAPI,
-    loggingAPI,
-    settingsAPI,
-    nightmarePlugins,
-    nightmare,
-    profilesAPI,
-    proxy,
-    swConfig,
-    swConfigSettings,
-  };
+
+  window.nm = nightmare;
+  window.np = nightmarePlugins;
+  window.st = settingsAPI;
+  window.ev = eventsAPI;
+  window.ex = extensionsAPI;
+  window.px = proxy;
+  window.lg = loggingAPI;
+  window.pr = profilesAPI;
+  window.gl = globalFunctions;
+  window.re = render;
+  window.it = items;
+  window.ut = utils;
+  window.tb = tabs;
+  window.wn = windowing;
+  window.fn = functions;
+  window.ky = keys;
+  window.sb = searchbar;
+  window.sc = swConfig;
+  window.ss = swConfigSettings;
+
 });

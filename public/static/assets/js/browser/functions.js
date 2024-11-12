@@ -8,6 +8,8 @@ class Functions {
     utils,
     nightmarePlugins,
     windowing,
+    eventsAPI,
+    extensionsAPI
   ) {
     this.items = items;
     this.ui = ui;
@@ -17,6 +19,8 @@ class Functions {
     this.utils = utils;
     this.nightmarePlugins = nightmarePlugins;
     this.windowing = windowing;
+    this.events = eventsAPI;
+    this.extensions = extensionsAPI;
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -508,6 +512,15 @@ class Functions {
           ]),
         ],
       ),
+    ]);
+    this.nightmarePlugins.sidemenu.attachTo(button, content);
+  }
+
+  extensionsMenu(button) {
+    let extensionsList = [];
+
+    let content = this.ui.createElement("div", {}, [
+     
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
