@@ -8,9 +8,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loggingAPI = new Logger();
   const extensionsAPI = new ExtensionsAPI();
 
-
+  profilesAPI.init();
+  
   await extensionsAPI.registerSW();
   await extensionsAPI.loadExtensions();
+
   var defWisp =
     (location.protocol === "https:" ? "wss" : "ws") +
     "://" +
@@ -211,7 +213,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.ex = extensionsAPI;
   window.px = proxy;
   window.lg = loggingAPI;
-  window.pr = profilesAPI;
+  window.pf = profilesAPI;
   window.gl = globalFunctions;
   window.re = render;
   window.it = items;
