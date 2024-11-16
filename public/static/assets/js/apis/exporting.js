@@ -1,27 +1,5 @@
 class DataExportAPI {
   constructor() {}
-
-  base6xorEncrypt(text) {
-    let output = "";
-    for (let i = 0; i < text.length; i++) {
-      let charCode = text.charCodeAt(i) ^ 2;
-      let encryptedData = String.fromCharCode(charCode);
-      output += encryptedData;
-    }
-    return window.btoa(encodeURIComponent(output));
-  }
-
-  base6xorDecrypt(encryptedData) {
-    let decodedData = decodeURIComponent(window.atob(encryptedData));
-    let output = "";
-    for (let i = 0; i < decodedData.length; i++) {
-      let charCode = decodedData.charCodeAt(i) ^ 2;
-      let decryptedOutput = String.fromCharCode(charCode);
-      output += decryptedOutput;
-    }
-    return output;
-  }
-
   extractCookies() {
     let cookies = {};
     document.cookie.split(";").forEach((c) => {

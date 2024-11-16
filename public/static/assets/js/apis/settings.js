@@ -1,7 +1,7 @@
 class SettingsAPI {
   constructor() {
     this.store = localforage.createInstance({
-      name: "Settings",
+      name: "settings",
       storeName: "settings",
     });
   }

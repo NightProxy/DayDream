@@ -2,6 +2,7 @@ class Logger {
   constructor() {
     this.store = localforage.createInstance({
       name: "logs",
+      storeName: "logs",
     });
     this.sessionId = this.getSessionId();
   }

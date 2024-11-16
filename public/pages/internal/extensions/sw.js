@@ -1,7 +1,9 @@
 importScripts("/assets/js/lib/filerJS/filer.min.js");
 importScripts("/assets/js/lib/JSzip/jszip.min.js");
 
-const fs = new Filer.FileSystem();
+const fs = new Filer.FileSystem({
+  name: "files"
+});
 
 self.addEventListener("install", (event) => {
   console.log("Service Worker installed");
