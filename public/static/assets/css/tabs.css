@@ -226,7 +226,7 @@
   width: 16px;
   background-size: 16px;
   margin-left: 4px;
-  background-image: url("/assets/imgs/logo.png");
+  background-image: var(--logo);
 }
 
 .tab-small .tab-favicon {

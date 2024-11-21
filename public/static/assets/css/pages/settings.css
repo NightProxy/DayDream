@@ -42,12 +42,13 @@
   background-color: var(--utility-background-color);
   border-radius: 4px;
   width: 100%;
-  z-index: 1;
+  z-index: auto;
   display: none;
   padding: 0;
   border-radius: 8px;
   list-style-type: none;
   backdrop-filter: blur(50px);
+  overflow: visible;
 }
 
 .dropdown-button.active + .dropdown-options {
@@ -59,6 +60,7 @@
   width: 100%;
   border-radius: 8px;
   backdrop-filter: blur(50px);
+  position: relative;
 }
 
 .dropdown-options li:hover {
@@ -117,7 +119,6 @@
 .sideSnav li:active {
   color: var(--active-outline-clr);
   position: relative;
-  /* add this */
 }
 
 .sideSnav li:active:before {
@@ -151,6 +152,7 @@
   text-align: left;
   margin-top: 0px;
   padding-left: 20px;
+  pointer-events: none;
 }
 
 .scontent h1 {
@@ -242,6 +244,7 @@ h3 .about-hover:hover {
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+  pointer-events: auto;
 }
 
 .section-vert {
@@ -249,6 +252,7 @@ h3 .about-hover:hover {
   flex-direction: column;
   gap: 10px;
   padding: 10px;
+  pointer-events: auto;
 }
 
 input[type="text"] {

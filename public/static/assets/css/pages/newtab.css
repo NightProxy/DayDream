@@ -62,7 +62,6 @@ div:has(.banner) {
   margin-top: 20px;
 }
 
-
 .banner {
   display: flex;
   flex-direction: row;
@@ -73,10 +72,15 @@ div:has(.banner) {
 }
 
 .banner .banner__image {
-  width: 128px;
-  height: 128px;
+  width: 96px;
+  height: 96px;
   border-radius: 10px;
   margin: 10px;
+  background-image: var(--logo);
+  background-size: 96px;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 .banner .banner__title {

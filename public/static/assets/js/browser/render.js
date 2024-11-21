@@ -21,9 +21,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined" },
-                  ["construction"],
+                  ["construction"]
                 ),
-              ],
+              ]
             ),
             this.nightmare.createElement(
               "div",
@@ -32,9 +32,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined" },
-                  ["tab_close"],
+                  ["tab_close"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement("div", {
@@ -48,11 +48,11 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["add"],
+                ["add"]
               ),
-            ],
+            ]
           ),
-        ],
+        ]
       ),
       this.nightmare.createElement("div", { class: "under-tabs" }, [
         this.nightmare.createElement("div", { class: "tabs-bottom-bar" }),
@@ -65,9 +65,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined" },
-                  ["thumbnail_bar"],
+                  ["thumbnail_bar"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement("li", {}, [
@@ -78,9 +78,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined" },
-                  ["home"],
+                  ["home"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement("li", {}, [
@@ -91,9 +91,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined backButton" },
-                  ["arrow_back"],
+                  ["arrow_back"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement("li", {}, [
@@ -104,9 +104,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined refreshButton" },
-                  ["refresh"],
+                  ["refresh"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement("li", {}, [
@@ -117,9 +117,9 @@ class Render {
                 this.nightmare.createElement(
                   "span",
                   { class: "material-symbols-outlined forwardButton" },
-                  ["arrow_forward"],
+                  ["arrow_forward"]
                 ),
-              ],
+              ]
             ),
           ]),
           this.nightmare.createElement(
@@ -161,11 +161,11 @@ class Render {
                         fill: "#3A3A3A",
                         d: "M7.132 0C3.197 0 0 3.124 0 6.97c0 3.844 3.197 6.969 7.132 6.969 1.557 0 2.995-.49 4.169-1.32L16.82 18 18 16.847l-5.454-5.342a6.846 6.846 0 0 0 1.718-4.536C14.264 3.124 11.067 0 7.132 0zm0 .82c3.48 0 6.293 2.748 6.293 6.15 0 3.4-2.813 6.149-6.293 6.149S.839 10.37.839 6.969C.839 3.568 3.651.82 7.132.82z",
                       }),
-                    ],
+                    ]
                   ),
-                ],
+                ]
               ),
-            ],
+            ]
           ),
           this.nightmare.createElement("div", { class: "right" }, [
             this.nightmare.createElement("li", {}, [
@@ -176,9 +176,9 @@ class Render {
                   this.nightmare.createElement(
                     "span",
                     { class: "material-symbols-outlined bookmarkButton" },
-                    ["star"],
+                    ["star"]
                   ),
-                ],
+                ]
               ),
             ]),
             this.nightmare.createElement("li", {}, [
@@ -189,9 +189,9 @@ class Render {
                   this.nightmare.createElement(
                     "span",
                     { class: "material-symbols-outlined" },
-                    ["deployed_code"],
+                    ["deployed_code"]
                   ),
-                ],
+                ]
               ),
             ]),
             this.nightmare.createElement("li", {}, [
@@ -202,9 +202,9 @@ class Render {
                   this.nightmare.createElement(
                     "span",
                     { class: "material-symbols-outlined" },
-                    ["group"],
+                    ["group"]
                   ),
-                ],
+                ]
               ),
             ]),
             this.nightmare.createElement("li", {}, [
@@ -215,9 +215,9 @@ class Render {
                   this.nightmare.createElement(
                     "span",
                     { class: "material-symbols-outlined erudaButton" },
-                    ["more_horiz"],
+                    ["more_horiz"]
                   ),
-                ],
+                ]
               ),
             ]),
           ]),
@@ -232,11 +232,9 @@ class Render {
     ]);
 
     this.navbar = this.nightmare.createElement("ul", { class: "navbar" }, [
-      this.nightmare.createElement("img", {
+      this.nightmare.createElement("div", {
         class: "logo",
-        src: "/assets/imgs/logo.png",
       }),
-      this.nightmare.createElement("br"),
       this.nightmare.createElement("br"),
       this.nightmare.createElement("div", { class: "section" }, [
         this.nightmare.createElement("li", {}, [
@@ -247,9 +245,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["sports_esports"],
+                ["sports_esports"]
               ),
-            ],
+            ]
           ),
         ]),
         this.nightmare.createElement("hr", {}, []),
@@ -261,9 +259,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["robot_2"],
+                ["robot_2"]
               ),
-            ],
+            ]
           ),
         ]),
         this.nightmare.createElement("li", {}, [
@@ -274,9 +272,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["forum"],
+                ["forum"]
               ),
-            ],
+            ]
           ),
         ]),
         this.nightmare.createElement("hr", {}, []),
@@ -288,9 +286,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["headphones"],
+                ["headphones"]
               ),
-            ],
+            ]
           ),
         ]),
         this.nightmare.createElement("hr", {}, []),
@@ -302,9 +300,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["history"],
+                ["history"]
               ),
-            ],
+            ]
           ),
         ]),
         this.nightmare.createElement("li", {}, [
@@ -315,9 +313,9 @@ class Render {
               this.nightmare.createElement(
                 "span",
                 { style: "margin-top: 0", class: "material-symbols-outlined" },
-                ["tune"],
+                ["tune"]
               ),
-            ],
+            ]
           ),
         ]),
       ]),

@@ -7,6 +7,7 @@ const fs = new Filer.FileSystem({
 self.addEventListener("install", (event) => {
   console.log("Theming Service Worker installed");
   event.waitUntil(createBackgroundDirectory());
+  event.waitUntil(createLogoDirectory());
 });
 
 self.addEventListener("activate", (event) => {
@@ -25,12 +26,27 @@ self.addEventListener("message", async (event) => {
       break;
 
     case "removeBG":
-      await removeBackground();
+      await removeBackground(file);
       break;
 
     case "listBG":
       const filenames = await listBackgroundFiles();
       event.ports[0]?.postMessage({ filenames });
+      break;
+
+    case "uploadLogo":
+      if (file) {
+        await uploadLogo(file);
+      }
+      break;
+    case "removeLogo":
+      if (file) {
+        await removeLogo(file);
+      }
+      break;
+    case "listLogos":
+      const logoFilenames = await listLogoFiles();
+      event.ports[0]?.postMessage({ logoFilenames });
       break;
 
     default:
@@ -70,35 +86,18 @@ async function uploadBackground(file) {
   }
 }
 
-async function removeBackground() {
-  try {
-    const dirPath = "/backgrounds";
+async function removeBackground(file) {
+  const dirPath = "/backgrounds";
 
-    fs.readdir(dirPath, (err, entries) => {
-      if (err) {
-        console.error("Error reading backgrounds directory:", err);
-        return;
-      }
-
-      entries.forEach((file) => {
-        const filePath = `${dirPath}/${file}`;
-        fs.unlink(filePath, (unlinkErr) => {
-          if (unlinkErr) {
-            console.error(
-              `Failed to delete background "${filePath}":`,
-              unlinkErr,
-            );
-          } else {
-            console.log(`Background "${filePath}" removed successfully.`);
-          }
-        });
-      });
-    });
-  } catch (err) {
-    console.error("Error removing backgrounds:", err);
-  }
+  const filePath = `${dirPath}/${file}`;
+  fs.unlink(filePath, (unlinkErr) => {
+    if (unlinkErr) {
+      console.error(`Failed to delete background "${filePath}":`, unlinkErr);
+    } else {
+      console.log(`Background "${filePath}" removed successfully.`);
+    }
+  });
 }
-
 async function listBackgroundFiles() {
   return new Promise((resolve) => {
     const dirPath = "/backgrounds/";
@@ -106,6 +105,66 @@ async function listBackgroundFiles() {
     fs.readdir(dirPath, (err, entries) => {
       if (err) {
         console.error("Error listing background files:", err);
+        resolve([]);
+      } else {
+        resolve(entries);
+      }
+    });
+  });
+}
+
+async function createLogoDirectory() {
+  return new Promise((resolve) => {
+    const dirPath = "/logos";
+    fs.mkdir(dirPath, { recursive: true }, (err) => {
+      if (err) {
+        console.error("Error creating backgrounds directory:", err);
+        resolve(false);
+      } else {
+        console.log("Backgrounds directory created successfully.");
+        resolve(true);
+      }
+    });
+  });
+}
+
+async function uploadLogo(file) {
+  try {
+    const filename = `/logos/${file.name}`;
+    console.log(`Uploading file: ${file.name}, size: ${file.size} bytes`);
+
+    const arrayBuffer = await file.arrayBuffer();
+
+    const fileBuffer = Filer.Buffer.from(arrayBuffer);
+
+    await fs.writeFile(filename, fileBuffer);
+
+    console.log(`Logo "${filename}" uploaded successfully.`);
+  } catch (err) {
+    console.error("Error uploading image:", err);
+  }
+}
+
+async function removeLogo(file) {
+  const dirPath = "/logos";
+
+  const filePath = `${dirPath}/${file}`;
+  fs.unlink(filePath, (unlinkErr) => {
+    if (unlinkErr) {
+      console.error(`Failed to delete Logo "${filePath}":`, unlinkErr);
+    } else {
+      console.log(`Logo "${filePath}" removed successfully.`);
+    }
+  });
+}
+
+async function listLogoFiles() {
+  return new Promise((resolve) => {
+    const dirPath = "/logos/";
+
+    fs.readdir(dirPath, (err, entries) => {
+      if (err) {
+        console.error("Error listing logo files:", err);
         resolve([]);
       } else {
         resolve(entries);
@@ -147,11 +206,46 @@ self.addEventListener("fetch", (event) => {
                   "accept-ranges": "bytes",
                   connection: "keep-alive",
                 },
-              }),
+              })
             );
           }
         });
-      }),
+      })
+    );
+  } else if (url.pathname.startsWith("/internal/themes/logos/")) {
+    const filename = url.pathname.replace("/internal/themes/logos/", "");
+    event.respondWith(
+      new Promise((resolve) => {
+        fs.readFile(`/logos/${filename}`, "binary", (err, data) => {
+          if (err) {
+            console.error(`File not found: ${filename}`, err);
+            resolve(new Response("File not found", { status: 404 }));
+          } else {
+            let contentType = "application/octet-stream";
+            const ext = filename.split(".").pop().toLowerCase();
+
+            if (ext === "png") contentType = "image/png";
+            else if (ext === "jpg" || ext === "jpeg")
+              contentType = "image/jpeg";
+            else if (ext === "gif") contentType = "image/gif";
+            else if (ext === "webp") contentType = "image/webp";
+            else if (ext === "svg") contentType = "image/svg+xml";
+
+            resolve(
+              new Response(data, {
+                status: 200,
+                headers: {
+                  "Content-Type": contentType,
+                  "Cache-Control": "public, max-age=0",
+                  Vary: "Accept-Encoding",
+                  "accept-ranges": "bytes",
+                  connection: "keep-alive",
+                },
+              })
+            );
+          }
+        });
+      })
     );
   }
 });

@@ -30,6 +30,12 @@ class Themeing {
       this.setBackgroundImage();
     });
 
+    this.setLogo();
+    
+    document.addEventListener("theme:logo-change", async (event) => {
+     this.setLogo();
+    });
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/internal/themeing.sw.js");
     }
@@ -84,6 +90,23 @@ class Themeing {
       );
     }
     console.log("Background image set");
+  }
+  async setLogo() {
+    const logo = await this.settings.getItem("theme:logo");
+    const fetchLogo = await fetch(logo);
+    if (fetchLogo.ok) {
+      document.documentElement.style.setProperty(
+        "--logo",
+        `url(${logo || "/assets/imgs/logo.png"})`
+      );
+    } 
+    if (!fetchLogo.ok) {
+      document.documentElement.style.setProperty(
+        "--logo",
+        "url(/assets/imgs/logo.png)"
+      );
+    }
+    console.log("Logo set");
   }
 
   applyColorTint(color, tintColor, tintFactor = 0.5) {

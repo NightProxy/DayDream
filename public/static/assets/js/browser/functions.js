@@ -513,6 +513,10 @@ class Functions {
           ]),
         ]
       ),
+      this.ui.createElement("div", { class: "menu-item" }, [
+        this.ui.createElement("span", { class: "menu-label" }, ["Panic"]),
+        this.ui.createElement("span", { class: "menu-key", id: "panic-keybind" }, ["~"]),
+      ]),
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
@@ -585,7 +589,7 @@ class Functions {
 
     const content = this.ui.createElement(
       "iframe",
-      { class: "news", src: "" },
+      { class: "news", src: "https://night-network.changelogfy.com/" },
       []
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);

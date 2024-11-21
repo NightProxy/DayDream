@@ -31,7 +31,7 @@
       <a href="#Themes">
         <li class="settingItem" data-id="themes">
           <span class="material-symbols-outlined">palette</span
-          ><span>Theming</span>
+          ><span>Appearence</span>
         </li>
       </a>
       <a href="#Searching">
@@ -112,8 +112,29 @@
           </div>
         </div>
       </div>
-      <h1 id="Themes">Customization</h1>
+      <h1 id="Themes">Appearence</h1>
       <div class="scontent">
+        <h2>Formatting</h2>
+        <div class="section-horiz">
+          <h5>Tab Layout:</h5>
+          <div id="tabLayoutDropdown" class="dropdown">
+            <div id="tabLayoutButton" class="dropdown-button">
+              <span class="button-text">Tab Layout</span>
+              <span class="material-symbols-outlined">keyboard_arrow_down</span>
+            </div>
+            <ul id="tabLayoutOptions" class="dropdown-options">
+              <li>
+                <a data-value="false">Horizontal</a>
+              </li>
+              <li>
+                <a data-value="true">Vertical</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="scontent">
+        <h2>Themeing</h2>
         <h3>Preinstalled Themes:</h3>
         <div class="section-horiz" id="preThemes"></div>
 
@@ -167,6 +188,21 @@
             </div>
             <div class="bg-list" id="bgList"></div>
             <input type="file" id="bgInput" style="display: none" />
+            <h5>Logo</h5>
+            <div class="section-vert">
+              <img class="Logo" id="logoPreview" />
+              <div class="section-horiz">
+                <button
+                  id="logoUpload"
+                  onclick="document.getElementById('logoInput').click()"
+                >
+                  Upload
+                </button>
+                <button id="logoRemove">Remove</button>
+              </div>
+            </div>
+            <div class="bg-list" id="logoList"></div>
+            <input type="file" id="logoInput" style="display: none" />
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ const initializeDropdown = async (
   optionsId,
   settingsKey,
   defaultValue,
-  functions = null,
+  functions = null
 ) => {
   const dropdownButton = document.getElementById(buttonId);
   const dropdownOptions = document.getElementById(optionsId);
@@ -93,16 +93,20 @@ const initSwitch = async (item, setting, functionToCall) => {
   });
 };
 
-
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/internal/themeing.sw.js");
 }
 
-const uploadInput = document.getElementById("bgInput");
-const uploadButton = document.getElementById("bgUpload");
-const removeButton = document.getElementById("bgRemove");
+const uploadBGInput = document.getElementById("bgInput");
+const uploadBGButton = document.getElementById("bgUpload");
+const removeBGButton = document.getElementById("bgRemove");
 const bgList = document.getElementById("bgList");
 const selectedBgPreview = document.getElementById("bgPreview");
+const uploadLogoInput = document.getElementById("logoInput");
+const uploadLogoButton = document.getElementById("logoUpload");
+const removeLogoButton = document.getElementById("logoRemove");
+const logoList = document.getElementById("logoList");
+const selectedLogoPreview = document.getElementById("logoPreview");
 
 function sendMessageToSW(message) {
   return new Promise((resolve, reject) => {
@@ -122,8 +126,8 @@ function sendMessageToSW(message) {
   });
 }
 
-uploadInput.addEventListener("change", () => {
-  const file = uploadInput.files[0];
+uploadBGInput.addEventListener("change", () => {
+  const file = uploadBGInput.files[0];
   if (!file) {
     alert("Please select a file to upload.");
     return;
@@ -140,10 +144,48 @@ uploadInput.addEventListener("change", () => {
   eventsAPI.emit("theme:background-change");
 });
 
-removeButton.addEventListener("click", () => {
-  sendMessageToSW({ type: "removeBG" }).then(() => {
+uploadLogoInput.addEventListener("change", () => {
+  const file = uploadLogoInput.files[0];
+  if (!file) {
+    alert("Please select a file to upload.");
+    return;
+  }
+
+  sendMessageToSW({ type: "uploadLogo", file }).then(() => {
+    alert("Logo uploaded successfully.");
+    listLogos();
+  });
+  settingsAPI.setItem("theme:logo", `/internal/themes/logos/${file.name}`);
+  eventsAPI.emit("theme:logo-change");
+});
+
+removeLogoButton.addEventListener("click", async () => {
+  sendMessageToSW({
+    type: "removeLogo",
+    file: (await settingsAPI.getItem("theme:logo")).replace(
+      "/internal/themes/logos/",
+      ""
+    ),
+  }).then(() => {
+    alert("Logo removed.");
+    setTimeout(() => {
+      listLogos();
+    }, 100);
+  });
+});
+
+removeBGButton.addEventListener("click", async () => {
+  sendMessageToSW({
+    type: "removeBG",
+    file: (await settingsAPI.getItem("theme:background-image")).replace(
+      "/internal/themes/backgrounds/",
+      ""
+    ),
+  }).then(() => {
     alert("All backgrounds removed.");
-    listBackgrounds();
+    setTimeout(() => {
+      listBackgrounds();
+    }, 100);
   });
 });
 
@@ -175,15 +217,45 @@ async function listBackgrounds() {
   });
 }
 
+async function listLogos() {
+  const { logoFilenames } = await sendMessageToSW({ type: "listLogos" });
+  console.log(logoFilenames);
+  logoList.innerHTML = "";
+  logoFilenames.forEach((filename) => {
+    const listItem = document.createElement("div");
+    listItem.className = "bg-list-item";
+
+    const text = document.createElement("span");
+    text.textContent = filename;
+
+    const selectButton = document.createElement("button");
+    selectButton.textContent = "Select";
+    selectButton.addEventListener("click", () => {
+      selectedBgPreview.src = `/internal/themes/logos/${filename}`;
+      settingsAPI.setItem("theme:logo", `/internal/themes/logos/${filename}`);
+      eventsAPI.emit("theme:logo-change");
+    });
+
+    listItem.appendChild(text);
+    listItem.appendChild(selectButton);
+    logoList.appendChild(listItem);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   //Cloaking
   initializeDropdown("tabCloakButton", "tabCloakOptions", "tabCloak", "off");
   initializeDropdown("URL-cloakButton", "URL-cloakOptions", "URL_Cloak", "off");
-  initSwitch(document.getElementById("autoCloakSwitch"), "autoCloak", function() {
-    eventsAPI.emit("cloaking:auto-toggle");
-  });
+  initSwitch(
+    document.getElementById("autoCloakSwitch"),
+    "autoCloak",
+    function () {
+      eventsAPI.emit("cloaking:auto-toggle");
+    }
+  );
 
-  //Themeing
+  //Apperance
+  initializeDropdown("tabLayoutButton", "tabLayoutOptions", "verticalTabs", "false")
   var colorPicker = new iro.ColorPicker(".colorPicker", {
     width: 80,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
@@ -211,7 +283,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "themeOptionsCustom",
     "themeCustom",
     "dark",
-    function() {
+    function () {
       eventsAPI.emit("theme:template-change");
       setTimeout(() => {
         eventsAPI.emit("theme:template-change");
@@ -220,9 +292,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   listBackgrounds();
+  listLogos();
   selectedBgPreview.src =
     (await settingsAPI.getItem("theme:background-image")) ||
     "/assets/imgs/DDX.bg.jpeg";
+  selectedLogoPreview.src =
+    (await settingsAPI.getItem("theme:logo")) || "/assets/imgs/logo.png";
 
   // Searching
   initializeDropdown("proxyButton", "proxyOptions", "proxy", "uv");

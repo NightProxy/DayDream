@@ -154,6 +154,11 @@ body {
   transition: 0.3s;
   user-select: none;
   margin: 4px 0px;
+  background-image: var(--logo);
+  background-size: 32px;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 .logo:hover {
