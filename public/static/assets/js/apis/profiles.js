@@ -42,7 +42,7 @@ class ProfilesAPI {
 
     const profile = {
       name: profileName,
-      data: {},
+      data: "",
       date: new Date().toISOString(),
     };
 
@@ -110,7 +110,7 @@ class ProfilesAPI {
 
       const db = await this.openDB(
         this.PROFILE_DB_NAME,
-        this.PROFILE_STORE_NAME
+        this.PROFILE_STORE_NAME,
       );
       const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
       const store = tx.objectStore(this.PROFILE_STORE_NAME);
@@ -227,7 +227,7 @@ class ProfilesAPI {
       Object.entries(decryptedData.cookies).forEach(
         ([cookieName, cookieValue]) => {
           this.cookies.set(cookieName, cookieValue);
-        }
+        },
       );
     } catch (err) {
       console.error("Error importing data:", err);

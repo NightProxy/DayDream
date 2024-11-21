@@ -1,20 +1,9 @@
-body {
-  overflow: hidden;
-  background-image: var(--background-image);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  height: 100vh;
-  width: 100vw;
-  backdrop-filter: blur(10px);
-}
-
 .dropdown {
   user-select: none;
   position: relative;
   display: inline-block;
-  background-color: var;
   background: none;
+  width: 150px;
 }
 
 .dropdown-button {
@@ -23,11 +12,11 @@ body {
   text-align: left;
   font-size: 16px;
   cursor: pointer;
-  color: var(--dropdown-udline);
   border-bottom: 1px solid var(--main-color);
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .dropdown-button:focus {
@@ -50,12 +39,13 @@ body {
 .dropdown-options {
   margin-top: 6px;
   position: absolute;
-  background-color: transparent;
+  background-color: var(--utility-background-color);
   border-radius: 4px;
   width: 100%;
   z-index: 1;
   display: none;
   padding: 0;
+  border-radius: 8px;
   list-style-type: none;
   backdrop-filter: blur(50px);
 }
@@ -67,6 +57,7 @@ body {
 .dropdown-options li {
   list-style-type: none;
   width: 100%;
+  border-radius: 8px;
   backdrop-filter: blur(50px);
 }
 
@@ -250,6 +241,7 @@ h3 .about-hover:hover {
   flex-direction: row;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .section-vert {
@@ -281,4 +273,65 @@ input[type="text"]::placeholder {
 
 h1 {
   color: var(--main-color);
+}
+
+.bgPreview {
+  display: block;
+  width: 250px;
+  height: auto;
+  border-radius: 8px;
+}
+
+.bg-list {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+}
+
+.switch {
+  position: relative;
+  height: 1.5rem;
+  width: 3rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 9999px;
+  background-color: rgba(100, 116, 139, 0.377);
+  transition: all .3s ease;
+}
+
+.switch:checked {
+  background-color: var(--main-color);
+}
+
+.switch::before {
+  position: absolute;
+  content: "";
+  left: calc(1.5rem - 1.6rem);
+  top: calc(1.5rem - 1.6rem);
+  display: block;
+  height: 1.6rem;
+  width: 1.6rem;
+  cursor: pointer;
+  border: 1px solid rgba(100, 116, 139, 0.527);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 3px 10px rgba(100, 116, 139, 0.327);
+  transition: all .3s ease;
+}
+
+.switch:checked:before {
+  transform: translateX(100%);
+  border-color: var(--faded-main-color);
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--utility-background-color);
+  color: var(--text-color);
+  font-family: Plus Jakarta Sans;
 }

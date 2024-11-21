@@ -86,7 +86,8 @@ class Utils {
       url.startsWith("https://") ||
       url.startsWith("daydream://") ||
       url.startsWith("data:") ||
-      url.startsWith("javascript:")
+      url.startsWith("javascript:") ||
+      (url.startsWith("/") && !url.startsWith("/internal/"))
     ) {
       return url;
     } else {

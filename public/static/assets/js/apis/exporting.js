@@ -61,22 +61,22 @@ class DataExportAPI {
 
   getAllIDBData() {
     return indexedDB.databases().then((databases) => {
-      let promises = databases.map((dbInfo) => getIDBData(dbInfo.name));
+      let promises = databases.map((dbInfo) => this.getIDBData(dbInfo.name));
       return Promise.all(promises);
     });
   }
 
   exportData(fileName) {
-    getAllIDBData()
+    this.getAllIDBData()
       .then((idbData) => {
         let data = {
           idbData: JSON.stringify(idbData),
           localStorageData: JSON.stringify(localStorage),
-          cookies: extractCookies(),
+          cookies: this.extractCookies(),
         };
 
         let jsonData = JSON.stringify(data);
-        let encryptedData = base6xorEncrypt(jsonData);
+        let encryptedData = this.base6xorEncrypt(jsonData);
 
         let blob = new Blob([encryptedData], {
           type: "application/octet-stream",
@@ -105,7 +105,7 @@ class DataExportAPI {
 
     reader.onload = (e) => {
       try {
-        let decryptedDataJSON = base6xorDecrypt(e.target.result);
+        let decryptedDataJSON = this.base6xorDecrypt(e.target.result);
         let decryptedData = JSON.parse(decryptedDataJSON);
 
         let idbData = JSON.parse(decryptedData.idbData);

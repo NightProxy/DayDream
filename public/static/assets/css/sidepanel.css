@@ -161,3 +161,28 @@
 .menu-row .menu-button {
   padding: 5px;
 }
+
+.menu-row .menu-right {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+}
+
+
+.sidepanel {
+  position: absolute;
+  height: calc(100% - 3em - 46px);
+  width: 300px;
+  z-index: 9999999;
+  background-color: var(--background-color);
+  top: calc(3em + 46px);
+  left: calc(2em + 10px + 1px);
+}
+
+.tabs.vertical ~ .sidepanel {
+  top: 3em;
+  left: 280px;
+  height: calc(100% - 3em);
+}

@@ -20,168 +20,66 @@
     />
   </head>
   <body>
-    <div class="bg-container">
-      <div class="background" id="background"></div>
-      <!--     <div class="aur_cont">
-        <span class="aur aur_1"></span>
-        <span class="aur aur_2"></span>
-        <span class="aur aur_3"></span>
-        <span class="aur aur_4"></span>
-        <span class="aur aur_5"></span>
-        <span class="aur aur_6"></span>
-        <span class="aur aur_7"></span>
-        <span class="aur aur_8"></span>
-        <span class="aur aur_9"></span>
-        <span class="aur aur_10"></span>
-      </div>-->
-    </div>
-    <div class="page">
-      <div
-        style="animation: fade-in-top 1s; margin-top: 30px"
-        class="search-header"
-      >
-        <img src="" class="searchEngineIcon" />
-        <input
-          id="newTabSearch"
-          placeholder="Search the Web..."
-          class="search-header__input"
-          type="text"
-        />
-        <button aria-label="search" type="submit" class="search-header__button">
-          <svg
-            fill="none"
-            viewBox="0 0 18 18"
-            height="18"
-            width="18"
-            class="search-header__icon"
-          >
-            <path
-              fill="#3A3A3A"
-              d="M7.132 0C3.197 0 0 3.124 0 6.97c0 3.844 3.197 6.969 7.132 6.969 1.557 0 2.995-.49 4.169-1.32L16.82 18 18 16.847l-5.454-5.342a6.846 6.846 0 0 0 1.718-4.536C14.264 3.124 11.067 0 7.132 0zm0 .82c3.48 0 6.293 2.748 6.293 6.15 0 3.4-2.813 6.149-6.293 6.149S.839 10.37.839 6.969C.839 3.568 3.651.82 7.132.82z"
-            ></path>
-          </svg>
-        </button>
+    <div>
+      <div class="banner">
+        <img src="/assets/imgs/logo.png" class="banner__image" />
+        <h1 class="banner__title">DayDream X</h1>
       </div>
+    <div
+      style="animation: fade-in-top 1s; margin-top: 30px"
+      class="search-header"
+    >
+      <img id="searchEngineIcon" src="" class="searchEngineIcon" />
+      <input
+        id="newTabSearch"
+        placeholder="Search the Web..."
+        class="search-header__input"
+        type="text"
+        autocomplete="off"
+      />
+      <button aria-label="search" type="submit" class="search-header__button">
+        <svg
+          fill="none"
+          viewBox="0 0 18 18"
+          height="18"
+          width="18"
+          class="search-header__icon"
+        >
+          <path
+            fill="#3A3A3A"
+            d="M7.132 0C3.197 0 0 3.124 0 6.97c0 3.844 3.197 6.969 7.132 6.969 1.557 0 2.995-.49 4.169-1.32L16.82 18 18 16.847l-5.454-5.342a6.846 6.846 0 0 0 1.718-4.536C14.264 3.124 11.067 0 7.132 0zm0 .82c3.48 0 6.293 2.748 6.293 6.15 0 3.4-2.813 6.149-6.293 6.149S.839 10.37.839 6.969C.839 3.568 3.651.82 7.132.82z"
+          ></path>
+        </svg>
+      </button>
     </div>
-    <script src="/assets/js/lib/particles.js/particles.min.js"></script>
-    <script>
-      /*particlesJS("background", {
-        particles: {
-          number: {
-            value: 300,
-            density: {
-              enable: true,
-              value_area: 850,
-            },
-          },
-          color: {
-            value: "#ffffff",
-          },
-          shape: {
-            type: "circle",
-            stroke: {
-              width: 0,
-              color: "#000000",
-            },
-            polygon: {
-              nb_sides: 5,
-            },
-            image: {
-              src: "img/github.svg",
-              width: 100,
-              height: 100,
-            },
-          },
-          opacity: {
-            value: 0.5,
-            random: true,
-            anim: {
-              enable: true,
-              speed: 1,
-              opacity_min: 0.1,
-              sync: false,
-            },
-          },
-          size: {
-            value: 2,
-            random: true,
-            anim: {
-              enable: true,
-              speed: 1,
-              size_min: 0.1,
-              sync: false,
-            },
-          },
-          line_linked: {
-            enable: false,
-            distance: 150,
-            color: "#ffffff",
-            opacity: 0.4,
-            width: 1,
-          },
-          move: {
-            enable: true,
-            speed: 0.5,
-            direction: "top",
-            random: false,
-            straight: true,
-            out_mode: "out",
-            bounce: false,
-            attract: {
-              enable: false,
-              rotateX: 600,
-              rotateY: 1200,
-            },
-          },
-        },
-        interactivity: {
-          detect_on: "window",
-          events: {
-            onhover: {
-              enable: false,
-              mode: "repulse",
-            },
-            onclick: {
-              enable: true,
-              mode: "repulse",
-            },
-            resize: true,
-          },
-          modes: {
-            grab: {
-              distance: 400,
-              line_linked: {
-                opacity: 1,
-              },
-            },
-            bubble: {
-              distance: 400,
-              size: 40,
-              duration: 2,
-              opacity: 8,
-              speed: 3,
-            },
-            repulse: {
-              distance: 200,
-              duration: 0.4,
-            },
-            push: {
-              particles_nb: 4,
-            },
-            remove: {
-              particles_nb: 2,
-            },
-          },
-        },
-        retina_detect: true,
-      });*/
-    </script>
+  </div>
+    <script src="/assets/js/lib/html2canvas/html2canvas.min.js"></script>
+    <script src="/assets/js/lib/js-cookie/js.cookie.min.js"></script>
+    <script src="/assets/js/lib/localforage/localforage.min.js"></script>
+    <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>
+    <script src="/assets/js/lib/draggability/draggabilly.pkgd.js"></script>
+    <script src="/assets/js/lib/Nightmare/nightmare.js"></script>
+    <!--Pro*y Files-->
+    <script src="/baremux/index.js"></script>
+    <script src="/@/uv.bundle.js"></script>
+    <script src="/@/uv.config.js"></script>
+    <script src="/$/scramjet.config.js"></script>
+    <script src="/$/scramjet.controller.js"></script>
+    <script src="/~/eclipse.codecs.js"></script>
+    <script src="/~/eclipse.config.js"></script>
+    <script src="/&/sandstone.js"></script>
     <!--APIs-->
     <script src="/assets/js/apis/events.js"></script>
+    <script src="/assets/js/apis/logging.js"></script>
+    <script src="/assets/js/apis/profiles.js"></script>
     <script src="/assets/js/apis/settings.js"></script>
+    <script src="/assets/js/apis/extensions.js"></script>
+    <script src="/assets/js/apis/versions.js"></script>
+    <script src="/assets/js/apis/exporting.js"></script>
+    <script src="/assets/js/apis/proxy.js"></script>
     <!--Main Scripts-->
     <script src="/assets/js/global/theming.js"></script>
     <script src="/assets/js/global/index.js"></script>
-    <script src="/assets/js/internal/newTab.js"></script>
+    <script src="/assets/js/internal/newtab.js"></script>
   </body>
 </html>

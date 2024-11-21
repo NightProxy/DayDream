@@ -39,11 +39,11 @@ class Functions {
       this.forward();
     });
 
-    this.extras();
+    this.menus();
     this.navbarfunctions();
 
     this.items.newTab.addEventListener("click", () =>
-      this.tabs.createTab("daydream://newtab"),
+      this.tabs.createTab("daydream://newtab")
     );
   }
 
@@ -72,7 +72,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.history.back();
     this.logger.createLog(
-      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
     );
   }
 
@@ -81,7 +81,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.history.forward();
     this.logger.createLog(
-      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
     );
   }
 
@@ -90,7 +90,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.location.reload();
     this.logger.createLog(
-      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
+      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
     );
   }
 
@@ -161,7 +161,7 @@ class Functions {
     const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
       );
       return;
     }
@@ -176,7 +176,7 @@ class Functions {
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
       );
       return;
     }
@@ -204,8 +204,9 @@ class Functions {
     this.logger.loggger.createLog("Toggled Inspect Element");
   }
 
-  extras() {
+  menus() {
     this.extrasMenu(this.items.extrasButton);
+    this.extensionsMenu(this.items.extensionsButton);
   }
 
   goFullscreen() {
@@ -238,13 +239,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["tab"],
+            ["tab"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ],
+        ]
       ),
       //New Window
       this.ui.createElement(
@@ -260,13 +261,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["open_in_new"],
+            ["open_in_new"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ],
+        ]
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -282,7 +283,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["visibility_off"],
+            ["visibility_off"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open About:Blank Window",
@@ -290,7 +291,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ],
+        ]
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -308,14 +309,14 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["remove"],
+              ["remove"]
             ),
-          ],
+          ]
         ),
         this.ui.createElement(
           "span",
           { class: "menu-label", id: "zoom-percentage" },
-          ["100%"],
+          ["100%"]
         ),
         //Zoom In
         this.ui.createElement(
@@ -331,9 +332,9 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["add"],
+              ["add"]
             ),
-          ],
+          ]
         ),
         // Fullscreen
         this.ui.createElement(
@@ -349,9 +350,9 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["open_in_full"],
+              ["open_in_full"]
             ),
-          ],
+          ]
         ),
       ]),
       // Bookmarks
@@ -368,13 +369,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["hotel_class"],
+            ["hotel_class"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ],
+        ]
       ),
       // History
       this.ui.createElement(
@@ -390,13 +391,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["history"],
+            ["history"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["History"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ],
+        ]
       ),
       // Games
       this.ui.createElement(
@@ -412,13 +413,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["playing_cards"],
+            ["playing_cards"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ],
+        ]
       ),
       // Extensions
       this.ui.createElement(
@@ -434,7 +435,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["extension"],
+            ["extension"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Extensions",
@@ -442,7 +443,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ],
+        ]
       ),
       // Screenshot
       this.ui.createElement(
@@ -458,13 +459,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["content_paste"],
+            ["content_paste"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Screenshot",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"]),
-        ],
+        ]
       ),
       //Inspect Element
       this.ui.createElement(
@@ -480,7 +481,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["code"],
+            ["code"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Inspect Element",
@@ -488,7 +489,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ],
+        ]
       ),
       // Settings
       this.ui.createElement(
@@ -504,13 +505,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["settings"],
+            ["settings"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ],
+        ]
       ),
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
@@ -520,7 +521,47 @@ class Functions {
     let extensionsList = [];
 
     let content = this.ui.createElement("div", {}, [
-     
+      this.ui.createElement("div", { class: "menu-row" }, [
+        this.ui.createElement("span", { style: "margin: 0px 20px;" }, [
+          "Extensions",
+        ]),
+        this.ui.createElement("div", { class: "menu-right" }, [
+          this.ui.createElement(
+            "div",
+            {
+              class: "menu-item",
+              id: "reloadExtensions",
+              onclick: () => {
+                console.log("Reloading extensions");
+              },
+            },
+            [
+              this.ui.createElement(
+                "span",
+                { class: "material-symbols-outlined" },
+                ["refresh"]
+              ),
+            ]
+          ),
+          this.ui.createElement(
+            "div",
+            {
+              class: "menu-item",
+              id: "disableAllExtensions",
+              onclick: () => {
+                console.log("Disabling all extensions");
+              },
+            },
+            [
+              this.ui.createElement(
+                "span",
+                { class: "material-symbols-outlined" },
+                ["toggle_off"]
+              ),
+            ]
+          ),
+        ]),
+      ]),
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
@@ -542,9 +583,12 @@ class Functions {
       alert("This feature is coming soon!");
     });
 
-    chat.addEventListener("click", () => {
-      alert("This feature is coming soon!");
-    });
+    const content = this.ui.createElement(
+      "iframe",
+      { class: "news", src: "" },
+      []
+    );
+    this.nightmarePlugins.sidepanel.attachTo(chat, content);
 
     music.addEventListener("click", () => {
       console.log("opening music");

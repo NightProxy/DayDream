@@ -1,9 +1,10 @@
 class Keys {
-  constructor(tabs, functions, settings) {
+  constructor(tabs, functions, settings, events) {
     this.keys = [];
     this.tabs = tabs;
     this.functions = functions;
     this.settings = settings;
+    this.events = events;
   }
 
   init() {
@@ -72,9 +73,7 @@ class Keys {
 
         // Save the current state to this.settings
         await this.settings.setItem("verticalTabs", isDisabled);
-        setTimeout(() => {
-          this.tabs.layoutTabs();
-        }, 100);
+        this.events.emit("tabs:changeLayout");
       } else if (event.altKey && event.shiftKey && event.key === "S") {
         if ((await this.settings.getItem("verticalTabs")) === "true") {
           const tabs = document.querySelector(".tabs");

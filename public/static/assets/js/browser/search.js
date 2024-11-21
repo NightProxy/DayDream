@@ -175,6 +175,22 @@ class Search {
     });
 
     document.body.appendChild(suggestionList);
+  
+  let tabs = document.querySelectorAll('.tab');
+  let activeIframe = document.querySelector('iframe.active');
+  
+  activeIframe.addEventListener('load', () => {
+      let check = this.utils.getInternalURL(new URL(activeIframe.src).pathname);
+      if (check.startsWith('daydream://')) {
+          searchbar.value = check;
+      } else {
+          let url = new URL(activeIframe.src).pathname;
+          url = url.replace(swConfigSettings.prefix, '');
+          url = __uv$config.decodeUrl(url);
+          url = new URL(url).origin;
+          searchbar.value = url;
+      }
+  });
   }
 
   createSection(titleText) {

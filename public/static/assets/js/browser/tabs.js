@@ -23,11 +23,19 @@ class Tabs {
       this.layoutTabs();
     });
 
+    document.addEventListener("tabs:changeLayout", (_) => {
+      console.log("changing layout");
+      setTimeout(() => {
+        this.layoutTabs();
+        this.setupDraggabilly();
+      }, 200);
+    });
+
     this.el.addEventListener("dblclick", (event) => {
       if (
         [this.el, this.el.querySelector(".tabs-content")].includes(event.target)
       )
-        this.addTab();
+        this.createTab("daydream://newtab");
     });
 
     this.tabEls.forEach((tabEl) => this.setTabCloseEventListener(tabEl));
@@ -35,6 +43,15 @@ class Tabs {
 
   get tabEls() {
     return Array.prototype.slice.call(this.el.querySelectorAll(".tab"));
+  }
+
+  get pinnedTabEls() {
+    return Array.prototype.slice.call(this.el.querySelectorAll(".tab.pinnned"));
+  }
+  get unpinedTabEls() {
+    return Array.prototype.slice.call(
+      this.el.querySelectorAll(".tab:not(.tab.pinned)")
+    );
   }
 
   get tabContentWidths() {
@@ -52,7 +69,6 @@ class Tabs {
     const totalExtraWidthDueToFlooring =
       tabsContentWidth - totalTabsWidthUsingTarget;
 
-    // TODO - Support tabs with different widths / e.g. "pinned" tabs
     const widths = [];
     let extraWidthRemaining = totalExtraWidthDueToFlooring;
     for (let i = 0; i < numberOfTabs; i += 1) {
@@ -145,6 +161,9 @@ class Tabs {
     const iframe = this.ui.createElement("iframe", {
       src: this.utils.processUrl(url),
     });
+    const script = this.ui.createElement("script", {
+      src: "/assets/js/browser/client.js",
+    });
     iframe.id = `iframe-${this.tabCount}`;
 
     const tab = this.ui.createElement(
@@ -167,13 +186,13 @@ class Tabs {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["close"],
+                ["close"]
               ),
-            ],
+            ]
           ),
         ]),
         this.ui.createElement("div", { class: "tab-bottom-border" }),
-      ],
+      ]
     );
 
     const updateTabTitle = () => {
@@ -185,26 +204,24 @@ class Tabs {
         }
       }
     };
-
-    iframe.onload = updateTabTitle;
-
-    const observer = new MutationObserver(() => {
-      updateTabTitle();
-      this.utils.setFavicon(tab, iframe);
-    });
-
-    iframe.onload = () => {
+    iframe.addEventListener("load", () => {
+      iframe.contentDocument.body.appendChild(script);
+      this.eventsAPI.emit("tab:loaded", { url: iframe.src, iframe: iframe.id });
       updateTabTitle();
       this.utils.setFavicon(tab, iframe);
       observer.observe(iframe.contentDocument.head, {
         childList: true,
         subtree: true,
       });
-    };
+    });
+
+    const observer = new MutationObserver(() => {
+      updateTabTitle();
+      this.utils.setFavicon(tab, iframe);
+    });
 
     tab.addEventListener("click", () => {
       this.selectTab({ tab, iframe, url });
-      this.eventsAPI.emit("tabs:clicked");
     });
 
     tab.addEventListener("contextmenu", (e) => {
@@ -237,7 +254,7 @@ class Tabs {
         { x: e.pageX, y: e.pageY },
         "contextMenu",
         "",
-        "padding: 5px;",
+        "padding: 5px;"
       );
     });
 
@@ -263,6 +280,10 @@ class Tabs {
     console.log(id);
     console.log(`tab-${parseInt(id.replace("tab-", "") - 1)}`);
     if (tabInfo) {
+      this.eventsAPI.emit("tab:closed", {
+        url: tabInfo.iframe.src,
+        iframe: tabInfo.iframe.id,
+      });
       tabInfo.tab.remove();
       tabInfo.iframe.remove();
       this.tabs = this.tabs.filter((tab) => tab.id !== id);
@@ -277,6 +298,10 @@ class Tabs {
     const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
       const currentTabId = parseInt(activeIFrame.id.replace("tab-", ""));
+      this.eventsAPI.emit("tab:closed", {
+        url: activeIframeUrl,
+        iframe: activeIFrame.id,
+      });
       activeTab.remove();
       activeIFrame.remove();
 
@@ -404,15 +429,15 @@ closeCurrentGroup() {
       this.groups = this.groups.filter((group) => group.id !== currentGroup.id);
     }
   }*/
-  duplicateTab(tab) {
+  duplicateTab(url) {
     if (tab) {
-      this.createTab(tab);
+      this.createTab(url);
     }
   }
 
   bookmarkCurrentTab() {
     const currentTab = this.tabs.find((tab) =>
-      tab.tab.classList.contains("active"),
+      tab.tab.classList.contains("active")
     );
     if (currentTab) {
       alert(`Bookmarking: ${currentTab.url}`);
@@ -428,7 +453,20 @@ closeCurrentGroup() {
     tabInfo.tab.classList.add("active");
     tabInfo.iframe.classList.add("active");
 
-    this.items.addressBar.value = tabInfo.url; //change this to be the URL of the page later
+    this.eventsAPI.emit("tab:selected", {
+      url: tabInfo.iframe.src,
+      iframe: tabInfo.iframe.id,
+    });
+
+    let check = this.utils.getInternalURL(new URL(tabInfo.iframe.src).pathname);
+    if (check.startsWith("daydream://")) {
+      this.items.addressBar.value = check;
+    } else {
+      let url = new URL(tabInfo.iframe.src).pathname;
+      url = url.replace(window.SWconfig[window.ProxySettings].config.prefix, "");
+      url = __uv$config.decodeUrl(url);
+      this.items.addressBar.value = url;
+    }
 
     this.currentTab = tabInfo;
     this.logger.createLog(`Selected tab: ${tabInfo.url}`);
@@ -486,10 +524,12 @@ closeCurrentGroup() {
         this.draggabillyDragging = draggabilly;
         tabEl.classList.add("tab-is-dragging");
         this.el.classList.add("tabs-is-sorting");
+        this.eventsAPI.emit("tab:dragStart");
       });
 
       draggabilly.on("dragEnd", async (_) => {
         this.isDragging = false;
+        this.eventsAPI.emit("tab:dragEnd");
         if (await this.settings.getItem("verticalTabs")) {
           const finalTranslateY = parseFloat(tabEl.style.top, 10);
           tabEl.style.transform = `translate3d(0, 0, 0)`;
@@ -542,11 +582,11 @@ closeCurrentGroup() {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionY,
-            tabPositionsY,
+            tabPositionsY
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget),
+            Math.min(tabEls.length, destinationIndexTarget)
           );
 
           if (currentIndex !== destinationIndex) {
@@ -562,7 +602,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging",
+                  "data-was-not-last-tab-when-started-dragging"
                 )
                 ? moveVector.y - this.tabContentHeights[currentIndex]
                 : moveVector.y
@@ -574,11 +614,11 @@ closeCurrentGroup() {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionX,
-            tabPositions,
+            tabPositions
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget),
+            Math.min(tabEls.length, destinationIndexTarget)
           );
 
           if (currentIndex !== destinationIndex) {
@@ -594,7 +634,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging",
+                  "data-was-not-last-tab-when-started-dragging"
                 )
                 ? moveVector.x - this.tabContentWidths[currentIndex]
                 : moveVector.x
@@ -617,6 +657,7 @@ closeCurrentGroup() {
     this.layoutTabs();
   }
   async layoutTabs() {
+    this.eventsAPI.emit("tabs:layout");
     document.getElementById("create-tab").style = "";
     if (await this.settings.getItem("verticalTabs")) {
       const tabContentWidths = this.tabContentHeights;

@@ -1,15 +1,3 @@
-body {
-  overflow: hidden;
-  background-image: var(--background-image);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  height: 100vh;
-  width: 100vw;
-  backdrop-filter: blur(10px);
-  overflow-y: auto;
-}
-
 #gamesGrid {
   display: flex;
   flex-direction: row;

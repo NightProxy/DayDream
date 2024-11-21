@@ -201,7 +201,7 @@ class Proxy {
         let encodedUrl =
           swConfigSettings.config.prefix +
           __uv$config.encodeUrl(this.search(url));
-          location.href = encodedUrl;
+        location.href = encodedUrl;
         break;
       /*case "iframe":
         if (proxySetting == "auto" || proxySetting == "ss") {

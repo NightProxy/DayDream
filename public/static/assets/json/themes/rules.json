@@ -1,6 +1,18 @@
 {
-    "no-tint": {
-      "T-dark": ["background-color", "text-color", "border-color", "hover-text-color", "active-text-color"],
-      "T-light": ["background-color", "text-color", "border-color", "hover-text-color", "active-text-color"]
-    }
+  "no-tint": {
+    "T-dark": [
+      "background-color",
+      "text-color",
+      "border-color",
+      "hover-text-color",
+      "active-text-color"
+    ],
+    "T-light": [
+      "background-color",
+      "text-color",
+      "border-color",
+      "hover-text-color",
+      "active-text-color"
+    ]
   }
+}

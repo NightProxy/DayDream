@@ -1,6 +1,5 @@
 class Windowing {
-  constructor(logger, settings) {
-    this.logger = logger;
+  constructor(settings) {
     this.settings = settings;
   }
 
@@ -12,7 +11,7 @@ class Windowing {
 
   async aboutBlankWindow() {
     if (window === window.top) {
-      const aboutBlankTab = window.open("about:blank");
+      const aboutBlankTab = window.open("about:blank", "_blank");
       const iframe = document.createElement("iframe");
       iframe.src = location.href;
       iframe.style.width = "100%";
@@ -34,7 +33,7 @@ class Windowing {
       aboutBlankTab.document.head.appendChild(link);
       aboutBlankTab.document.body.appendChild(iframe);
     } else {
-      this.logger.createLog("Already in About:Blank or site is in iframe");
+      console.log("already in about:blank or iframe");
     }
   }
 
@@ -58,14 +57,14 @@ class Windowing {
       link.type = "image/x-icon";
       link.href =
         (await this.settings.getItem("favicon")) ||
-        window.location.href + "/assets/imgs/icons/default.ico";
+        location.href + "/assets/imgs/logo.png";
       aboutBlankTab.document.head.appendChild(link);
       aboutBlankTab.document.body.appendChild(iframe);
 
       window.location.href =
         (await this.settings.getItem("redirectUrl")) || "https://google.com";
     } else {
-      this.logger.createLog("Already in About:Blank or site is in iframe");
+      console.log("already in about:blank or iframe");
     }
   }
 

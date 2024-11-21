@@ -23,32 +23,31 @@
 }
 .search-header__input::-webkit-input-placeholder {
   font-family: "Plus Jakarta Sans";
+  font-style: normal;
 }
 
 .search-header__input:-ms-input-placeholder {
   font-family: "Plus Jakarta Sans";
+  font-style: normal;
 }
 
 .search-header__input:-moz-placeholder {
   font-family: "Plus Jakarta Sans";
+  font-style: normal;
 }
 
 .search-header__input::-moz-placeholder {
   font-family: "Plus Jakarta Sans";
+  font-style: normal;
 }
 .search-header__input::placeholder {
   font-family: "Plus Jakarta Sans";
+  font-style: normal;
 }
 
 .search-header__input:focus {
   outline: none;
   background-color: #0a0a0af0;
-}
-
-.search-header__input::-webkit-input-placeholder {
-  font-weight: 200;
-  color: #868686;
-  font-family: "DM Sans";
 }
 
 .search-header__input:focus + .search-header__button {

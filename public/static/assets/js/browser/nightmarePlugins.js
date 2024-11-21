@@ -3,6 +3,7 @@ class NightmarePlugins {
     this.ui = ui;
     this.notification = new Notification(ui);
     this.sidemenu = new SideMenu(ui);
+    this.sidepanel = new SidePanel(ui);
   }
 }
 
@@ -30,7 +31,6 @@ class SideMenu {
 
     this.container = this.ui.createElement("div", { class: "menu-container" });
 
-    // Append custom content to the menu container
     if (typeof content === "function") {
       this.container.appendChild(content(this.ui));
     } else if (Array.isArray(content)) {
@@ -39,12 +39,56 @@ class SideMenu {
       this.container.appendChild(content);
     }
 
-    // Position the menu so its top-right corner aligns with the button's bottom-right corner
     const rect = element.getBoundingClientRect();
     let containRect = this.container.getBoundingClientRect();
     containRect = containRect.width;
     this.container.style.top = `${rect.bottom + window.scrollY}px`;
     this.container.style.left = `${rect.left + rect.width + window.scrollX - 300}px`;
+
+    document.body.appendChild(this.container);
+    this.isOpen = true;
+  }
+
+  closeMenu() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
+    this.isOpen = false;
+  }
+}
+
+class SidePanel {
+  constructor(ui) {
+    this.ui = ui;
+    this.container = null;
+    this.isOpen = false;
+  }
+
+  attachTo(element, content) {
+    if (!element)
+      throw new Error("Please provide a valid element to attach the menu.");
+
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this.isOpen ? this.closeMenu() : this.openMenu(element, content);
+    });
+
+    window.addEventListener("click", () => this.closeMenu());
+  }
+
+  openMenu(element, content) {
+    if (this.isOpen || !element) return;
+
+    this.container = this.ui.createElement("div", { class: "sidepanel" });
+
+    if (typeof content === "function") {
+      this.container.appendChild(content(this.ui));
+    } else if (Array.isArray(content)) {
+      content.forEach((item) => this.container.appendChild(item));
+    } else if (content instanceof HTMLElement) {
+      this.container.appendChild(content);
+    }
 
     document.body.appendChild(this.container);
     this.isOpen = true;

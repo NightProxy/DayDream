@@ -115,15 +115,15 @@ class ExtensionsAPI {
     if (this.extensions[extensionID]) {
       delete this.extensions[extensionID];
       this.extensionLists.installed = this.extensionLists.installed.filter(
-        (id) => id !== extensionID
+        (id) => id !== extensionID,
       );
       this.extensionLists.enabled = this.extensionLists.enabled.filter(
-        (id) => id !== extensionID
+        (id) => id !== extensionID,
       );
       this.extensionLists.disabled = this.extensionLists.disabled.filter(
-        (id) => id !== extensionID
+        (id) => id !== extensionID,
       );
-  
+
       if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
           type: "removeExtension",
@@ -133,12 +133,11 @@ class ExtensionsAPI {
       } else {
         console.error("Service Worker not available.");
       }
-  
+
       await this.saveExtensions();
       console.log(`Extension ${extensionID} removed.`);
     } else {
       console.log(`Extension ${extensionID} not found.`);
     }
   }
-  
 }

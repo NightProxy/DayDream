@@ -2,7 +2,7 @@ importScripts("/assets/js/lib/filerJS/filer.min.js");
 importScripts("/assets/js/lib/JSzip/jszip.min.js");
 
 const fs = new Filer.FileSystem({
-  name: "files"
+  name: "files",
 });
 
 self.addEventListener("install", (event) => {
@@ -37,7 +37,10 @@ async function installExtension(file) {
       Object.keys(zip.files).map(async (filename) => {
         const fileContent = await zip.file(filename).async("arraybuffer");
         const filePath = Path.join(basePath, filename);
-        fs.writeFile(filePath, new Uint8Array(fileContent), (err) => {
+
+        const fileBuffer = Filer.Buffer.from(fileContent);
+
+        await fs.writeFile(filename, fileBuffer, (err) => {
           if (err) console.error(`Failed to write file ${filePath}:`, err);
         });
       }),
@@ -89,7 +92,7 @@ self.addEventListener("fetch", (event) => {
 
     event.respondWith(
       new Promise((resolve) => {
-        fs.readFile(filePath, "arraybuffer", (err, data) => {
+        fs.readFile(filePath, "binary", (err, data) => {
           if (err) {
             console.error(`File not found in SW: ${filePath}`, err);
             resolve(new Response("File not found", { status: 404 }));

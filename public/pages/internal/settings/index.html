@@ -46,12 +46,6 @@
           ><span>Misc</span>
         </li>
       </a>
-      <a href="#Profiles">
-        <li class="settingItem" data-id="accounts">
-          <span class="material-symbols-outlined">manage_accounts</span
-          ><span>Profiles</span>
-        </li>
-      </a>
       <hr />
       <a href="#About">
         <li class="settingItem" data-id="about">
@@ -63,20 +57,60 @@
     <div class="scrollDiv">
       <h1 id="Cloaking">Cloaking</h1>
       <div class="scontent">
-        <h3>About:Blank</h3>
-        <label class="switch">
-          <input type="checkbox" id="abSwitch" />
-          <span class="slider"></span>
-        </label>
-
-        <h3>Blob</h3>
-        <label class="switch">
-          <input type="checkbox" id="blobSwitch" />
-          <span class="slider"></span>
-        </label>
-
-        <h3>Reset</h3>
-        <button id="cloakDisable">Disable Cloaks</button>
+        <div class="section-horiz">
+          <h5>URL Cloak</h5>
+          <div id="URL-cloakDropdown" class="dropdown">
+            <div id="URL-cloakButton" class="dropdown-button">
+              <span class="button-text">Base Theme</span>
+              <span class="material-symbols-outlined">keyboard_arrow_down</span>
+            </div>
+            <ul id="URL-cloakOptions" class="dropdown-options">
+              <li>
+                <a data-value="off">Off</a>
+              </li>
+              <li>
+                <a data-value="a:b">About:Blank</a>
+              </li>
+              <li>
+                <a data-value="blob">Blob</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="section-horiz">
+          <h5>Auto Cloak</h5>
+          <input class="switch" id="autoCloakSwitch" type="checkbox" />
+        </div>
+        <div class="section-horiz">
+          <h5>Tab Cloaking</h5>
+          <div id="tabCloakDropdown" class="dropdown">
+            <div id="tabCloakButton" class="dropdown-button">
+              <span class="button-text">Tab Cloak Presets</span>
+              <span class="material-symbols-outlined">keyboard_arrow_down</span>
+            </div>
+            <ul id="tabCloakOptions" class="dropdown-options">
+              <li>
+                <a data-value="off">Off</a>
+              </li>
+              <li>
+                <a data-value="custom">Custom</a>
+              </li>
+              <li>
+                <a data-value=""></a>
+              </li>
+              <li>
+                <a data-value=""></a>
+              </li>
+              <li>
+                <a data-value=""></a>
+              </li>
+            </ul>
+          </div>
+          <div class="section-vert">
+            <input type="text" id="tabCloakTitle" />
+            <input type="text" id="tabCloakFavicon" />
+          </div>
+        </div>
       </div>
       <h1 id="Themes">Customization</h1>
       <div class="scontent">
@@ -119,10 +153,20 @@
           </div>
           <div class="section-horiz">
             <h5>Background</h5>
-            <img class="bgPreview" id="bgPreview" />
+            <div class="section-vert">
+              <img class="bgPreview" id="bgPreview" />
+              <div class="section-horiz">
+                <button
+                  id="bgUpload"
+                  onclick="document.getElementById('bgInput').click()"
+                >
+                  Upload
+                </button>
+                <button id="bgRemove">Remove</button>
+              </div>
+            </div>
+            <div class="bg-list" id="bgList"></div>
             <input type="file" id="bgInput" style="display: none" />
-            <button id="bgUpload" onclick="document.getElementById('bgInput').click()">Upload</button>
-            <button id="bgReset">Reset</button>
           </div>
         </div>
       </div>
@@ -207,29 +251,22 @@
           </div>
 
           <div id="wispDiv">
-            <label for="wispSetting">Wisp Setting:</label>
-            <input type="text" id="wispSetting" />
-            <br />
-            <button id="saveWispSetting">Save</button>
-            <button id="resetWispSetting">Reset</button>
+            <div class="section-horiz">
+              <h5>Wisp Server</h5>
+              <div class="section-vert">
+                <input type="text" id="wispSetting" />
+                <div class="section-horiz">
+                  <button id="saveWispSetting">Save</button>
+                  <button id="resetWispSetting">Reset</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <h1 id="Misc">Misc</h1>
       <div class="scontent"></div>
-
-      <h1 id="Profiles">Profile Management</h1>
-      <div class="scontent">
-        <input
-          type="file"
-          id="dataInput"
-          style="display: none"
-          onchange="dataExportAPI.importData();"
-        />
-        <button id="exportData">Export Data</button>
-        <button id="importData">Import Data</button>
-      </div>
 
       <h1 id="About">About DayDreamX</h1>
       <div class="scontent">
@@ -262,8 +299,8 @@
           <li>- JS-cookie</li>
           <li>- Dragabilly</li>
           <li>- Localforage</li>
-          <li>- NightmareJS</li>
-          <li>- WorkerWare</li>
+          <li>- NightmareJS (In Development)</li>
+          <li>- Workerware</li>
           <li>- Html2Canvas</li>
           <li>- Sandstone (Modified)</li>
           <li>- Iro.js</li>
@@ -315,6 +352,7 @@
       </div>
     </div>
     <!--Libs-->
+    <script src="/assets/js/lib/Nightmare/nightmare.js"></script>
     <script src="/assets/js/lib/js-cookie/js.cookie.min.js"></script>
     <script src="/assets/js/lib/localforage/localforage.min.js"></script>
     <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>

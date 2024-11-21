@@ -20,7 +20,7 @@ class Themeing {
 
     this.applyThemeFromJsonFile();
 
-    document.addEventListener("theme-custom:template-change", async () => {
+    document.addEventListener("theme:template-change", async () => {
       this.applyThemeFromJsonFile();
     });
 
@@ -29,6 +29,10 @@ class Themeing {
     document.addEventListener("theme:background-change", async () => {
       this.setBackgroundImage();
     });
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/internal/themeing.sw.js");
+    }
   }
 
   async applyThemeFromJsonFile() {
@@ -42,7 +46,8 @@ class Themeing {
 
       const rules = await response2.json();
       const themeName = await this.settings.getItem("themeCustom");
-      const themeColor = await this.settings.getItem("themeColor") || "rgba(128, 0, 128, 1)";
+      const themeColor =
+        (await this.settings.getItem("themeColor")) || "rgba(128, 0, 128, 1)";
 
       if (themeName && themes[themeName]) {
         const theme = themes[themeName];
@@ -64,10 +69,21 @@ class Themeing {
   }
 
   async setBackgroundImage() {
-    document.documentElement.style.setProperty(
-      "--background-image",
-      `url(${await this.settings.getItem("backgroundImage")})`
-    );
+    const bg = await this.settings.getItem("theme:background-image");
+    const fetchBG = await fetch(bg);
+    if (fetchBG.ok) {
+      document.documentElement.style.setProperty(
+        "--background-image",
+        `url(${bg || "/assets/imgs/DDX.bg.jpeg"})`
+      );
+    } 
+    if (!fetchBG.ok) {
+      document.documentElement.style.setProperty(
+        "--background-image",
+        "url(/assets/imgs/DDX.bg.jpeg)"
+      );
+    }
+    console.log("Background image set");
   }
 
   applyColorTint(color, tintColor, tintFactor = 0.5) {
@@ -77,20 +93,19 @@ class Themeing {
     const tintMatch = tintColor.match(
       /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
     );
-  
+
     if (!colorMatch || !tintMatch) return color;
-  
+
     let [r, g, b, a] = colorMatch.slice(1).map(Number);
     let [tr, tg, tb] = tintMatch.slice(1, 4).map(Number);
-  
+
     // Ensure `a` is a valid number, default to 1 if NaN
     a = isNaN(a) ? 1 : a;
-  
+
     r = Math.round(r * (1 - tintFactor) + tr * tintFactor);
     g = Math.round(g * (1 - tintFactor) + tg * tintFactor);
     b = Math.round(b * (1 - tintFactor) + tb * tintFactor);
-  
+
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
-  
 }

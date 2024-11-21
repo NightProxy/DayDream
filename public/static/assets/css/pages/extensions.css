@@ -1,0 +1,83 @@
+.sidenav {
+  list-style-type: none;
+  position: fixed;
+  width: 250px;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  flex-wrap: wrap;
+  border-radius: 15px;
+  padding: 10px 0px;
+}
+
+.sidenav li {
+  margin-bottom: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sidenav li:active {
+  color: var(--active-outline-clr);
+  position: relative;
+  /* add this */
+}
+
+.sidenav li:active:before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 35px;
+}
+
+.sidenav a {
+  text-decoration: none;
+  color: var(--main-color);
+  font-size: 16px;
+  display: block;
+}
+
+.sidenav h1 {
+  margin-top: 0px;
+}
+
+.sidenav .nav_searchbar {
+  display: flex;
+  align-items: center;
+  position: relative;
+  max-width: 100%;
+}
+
+.sidenav .nav_searchbar .input {
+  font-size: 14px;
+  padding: 5px 5px;
+  width: 100%;
+  padding-left: 35px;
+  outline: none;
+  background: #3b3b3b;
+  color: #ffffff;
+  border: 0px solid #c4d1eb;
+  border-radius: 10px;
+  transition: 0.3s ease;
+}
+
+.sidenav .nav_searchbar .input:focus {
+  border: 1px solid #c7c7c7;
+}
+
+.sidenav .nav_searchbar .input::placeholder {
+  color: #acacac;
+}
+
+.sidenav .nav_searchbar .svg_icon {
+  position: absolute;
+  left: 10px;
+  fill: #9b9b9b;
+  width: 14px;
+  height: 14px;
+}

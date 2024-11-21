@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
-  const nightmarePlugins = new NightmarePlugins(nightmare);
 
   const settingsAPI = new SettingsAPI();
   const eventsAPI = new EventSystem();
@@ -80,44 +79,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
     },
   };
-  const windowing = new Windowing(settingsAPI);
-  const globalFunctions = new Global(settingsAPI, windowing);
-  const render = new Render(
-    document.getElementById("browser-container"),
-    nightmare,
-    loggingAPI,
-    settingsAPI
-  );
-  const items = new Items();
-  const utils = new Utils(items, loggingAPI, settingsAPI);
-  const tabs = new Tabs(
-    render,
-    nightmare,
-    utils,
-    items,
-    loggingAPI,
-    settingsAPI,
-    eventsAPI
-  );
-
-  tabs.createTab("daydream://newtab");
-
-  const functions = new Functions(
-    items,
-    nightmare,
-    tabs,
-    loggingAPI,
-    settingsAPI,
-    utils,
-    nightmarePlugins,
-    windowing,
-    eventsAPI,
-    extensionsAPI
-  );
-  const keys = new Keys(tabs, functions, settingsAPI, eventsAPI);
-
-  keys.init();
-
+  const globalFunctions = new Global(settingsAPI);
+  async function getFavicon(url) {
+    try {
+      var googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
+      return googleFaviconUrl;
+    } catch (error) {
+      console.error("Error fetching favicon as data URL:", error);
+      return null;
+    }
+  }
   proxy.registerSW(swConfig[proxySetting]).then(async () => {
     await proxy.setTransports().then(async () => {
       const transport = await proxy.connection.getTransport();
@@ -126,7 +97,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   });
-  const uvSearchBar = items.addressBar;
+  const uvSearchBar = document.querySelector("#newTabSearch");
+
+  document.querySelector(".searchEngineIcon").style.display = "block";
+  switch (await settingsAPI.getItem("search")) {
+    case "https://duckduckgo.com/?q=%s":
+      document.querySelector(".searchEngineIcon").src =
+        "/assets/imgs/b/ddg.webp";
+      document.querySelector(".searchEngineIcon").style.transform =
+        "scale(1.35)";
+      break;
+    case "https://bing.com/search?q=%s":
+      document.querySelector(".searchEngineIcon").src =
+        "/assets/imgs/b/bing.webp";
+      document.querySelector(".searchEngineIcon").style.transform =
+        "scale(1.65)";
+      break;
+    case "https://www.google.com/search?q=%s":
+      document.querySelector(".searchEngineIcon").src =
+        "/assets/imgs/b/google.webp";
+      document.querySelector(".searchEngineIcon").style.transform =
+        "scale(1.2)";
+      break;
+    case "https://search.yahoo.com/search?p=%s":
+      document.querySelector(".searchEngineIcon").src =
+        "/assets/imgs/b/yahoo.webp";
+      document.querySelector(".searchEngineIcon").style.transform =
+        "scale(1.5)";
+      break;
+    default:
+      getFavicon(await settingsAPI.getItem("search")).then((dataUrl) => {
+        if (dataUrl == null || dataUrl.endsWith("null")) {
+          document.querySelector(".searchEngineIcon").src =
+            "/assets/imgs/b/google.webp";
+          document.querySelector(".searchEngineIcon").style.transform =
+            "scale(1.2)";
+        } else {
+          document.querySelector(".searchEngineIcon").src = dataUrl;
+          document.querySelector(".searchEngineIcon").style.transform =
+            "scale(1.2)";
+        }
+      });
+  }
 
   uvSearchBar.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
@@ -136,7 +148,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const searchValue = uvSearchBar.value.trim();
 
       if (searchValue.startsWith("daydream://")) {
-        utils.navigate(searchValue);
+        searchValue = searchValue.replace("daydream://", "/internal/");
+        location.href = searchValue;
       } else {
         if (proxySetting === "auto") {
           const result = await swConfig.auto.func(proxy.search(searchValue));
@@ -169,13 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             let encodedUrl =
               swConfigSettings.config.prefix +
               __uv$config.encodeUrl(proxy.search(searchValue));
-            const activeIframe = document.querySelector("iframe.active");
-            if (activeIframe) {
-              activeIframe.src = encodedUrl;
-            }
-            if (!activeIframe) {
-              tabs.createTab(location.origin + encodedUrl);
-            }
+            location.href = encodedUrl;
             break;
           case "iframe":
             if (proxySetting == "auto" || proxySetting == "ss") {
@@ -192,51 +199,4 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
   });
-
-  functions.init();
-
-  const searchbar = new Search(
-    utils,
-    nightmare,
-    loggingAPI,
-    settingsAPI,
-    proxy,
-    swConfig,
-    proxySetting,
-    eventsAPI
-  );
-  searchbar.init(items.addressBar);
-
-  uvSearchBar.addEventListener("keydown", (e) => {
-    if (e.key == "Enter") {
-      e.preventDefault();
-      setTimeout(() => {
-        searchbar.clearSuggestions();
-        document.querySelector(
-          "#suggestion-list.suggestion-list"
-        ).style.display = "none";
-      }, 30);
-    }
-  });
-
-  window.nightmare = nightmare;
-  window.nightmarePlugins = nightmarePlugins;
-  window.settings = settingsAPI;
-  window.event = eventsAPI;
-  window.extensions = extensionsAPI;
-  window.proxy = proxy;
-  window.logging = loggingAPI;
-  window.profiles = profilesAPI;
-  window.globals = globalFunctions;
-  window.renderer = render;
-  window.items = items;
-  window.utils = utils;
-  window.tabs = tabs;
-  window.windowing = windowing;
-  window.functions = functions;
-  window.keys = keys;
-  window.searchbar = searchbar;
-  window.SWconfig = swConfig;
-  window.SWSettings = swConfigSettings;
-  window.ProxySettings = proxySetting;
 });

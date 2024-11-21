@@ -34,13 +34,23 @@
       file: "/$/sw.js",
       config: __scramjet$config,
       func: async () => {
-        const scramjet = new ScramjetController(__scramjet$config);
-        scramjet.modifyConfig(__scramjet$config);
+        if ((await settingsAPI.getItem("scramjet")) != "fixed") {
+          indexedDB.deleteDatabase("$scramjet");
+          await settingsAPI.setItem("scramjet", "fixed");
+          const scramjet = new ScramjetController(__scramjet$config);
+          scramjet.init("/$/sw.js").then(async () => {
+            await proxy.setTransports();
+          });
 
-        scramjet.init("/$/sw.js").then(async () => {
-          await proxy.setTransports();
-        });
-        console.log("Scramjet Service Worker registered.");
+          console.log("Scramjet Service Worker registered.");
+        } else {
+          const scramjet = new ScramjetController(__scramjet$config);
+          scramjet.init("/$/sw.js").then(async () => {
+            await proxy.setTransports();
+          });
+
+          console.log("Scramjet Service Worker registered.");
+        }
       },
     },
     ec: {
