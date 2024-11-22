@@ -42,7 +42,7 @@
   background-color: var(--utility-background-color);
   border-radius: 4px;
   width: 100%;
-  z-index: auto;
+  z-index: 99999999999999999999999;
   display: none;
   padding: 0;
   border-radius: 8px;
@@ -145,7 +145,6 @@
 .scontent {
   display: block;
   width: calc(100% - 20px);
-  backdrop-filter: blur(50px) brightness(0.5);
   background-color: var(--dark-translucent-bg);
   border-radius: 15px;
   float: left;
