@@ -514,6 +514,7 @@ class Functions {
         ]
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["logout"]),
         this.ui.createElement("span", { class: "menu-label" }, ["Panic"]),
         this.ui.createElement("span", { class: "menu-key", id: "panic-keybind" }, ["~"]),
       ]),

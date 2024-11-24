@@ -91,7 +91,7 @@ class RammerheadProxy extends Proxy {
   constructor({
     loggerGetIP = (req) => req.socket.remoteAddress,
     logger = new RammerheadLogging({ logLevel: "disabled" }),
-    bindingAddress = "127.0.0.1",
+    bindingAddress = "0.0.0.0",
     port = 8080,
     crossDomainPort = 8081,
     dontListen = false,
@@ -475,20 +475,15 @@ class RammerheadProxy extends Proxy {
    * @returns {ServerInfo}
    */
   _rewriteServerInfo(req) {
+    const host = new URL(/*req.headers['x-forwarded-host'] || req.socket.remoteAddress|| */req.headers.host)
     const serverInfo = this.getServerInfo(req);
-    let dom;
-    if (serverInfo.protocol === "https:") {
-      dom = `${serverInfo.protocol}//${serverInfo.host}`;
-    } else {
-      dom = `${serverInfo.protocol}//${serverInfo.hostname}:${serverInfo.port}`;
-    }
     return {
       hostname: serverInfo.hostname,
       port: serverInfo.port,
       crossDomainPort:
         serverInfo.crossDomainPort|| serverInfo.port,
       protocol: serverInfo.protocol,
-      domain: dom,
+      domain: `${serverInfo.protocol}//${host}`,
       cacheRequests: false,
     };
   }

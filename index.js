@@ -44,9 +44,6 @@ app.use("/", routes);
 wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];
 
 server.on("request", (req, res) => {
-  const url = new URL(req.url);
-  console.log(url.host);
-  console.log(url.hostname)
   if (shouldRouteRh(req)) {
     routeRhRequest(
       rh,
