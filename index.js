@@ -10,12 +10,6 @@ import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { server as wisp } from "@mercuryworkshop/wisp-js/server";
-import {
-  createRammerhead,
-  shouldRouteRh,
-  routeRhUpgrade,
-  routeRhRequest,
-} from "./src/RH/index.js";
 
 const server = http.createServer();
 const app = express();
@@ -32,40 +26,15 @@ app.use("/@/", express.static(uvPath));
 app.use("/libcurl/", express.static(libcurlPath));
 app.use("/baremux/", express.static(baremuxPath));
 
-const rh = createRammerhead({
-  logLevel: 'info',
-  reverseProxy: false,
-  disableLocalStorageSync: false,
-  disableHttp2: false,
-})
-
 app.use("/", routes);
 
-wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];
-
 server.on("request", (req, res) => {
-  if (shouldRouteRh(req)) {
-    routeRhRequest(
-      rh,
-      req,
-      res
-    );
-  } else {
-    app(req, res);
-  }
+  app(req, res);
 });
 
 server.on("upgrade", (req, socket, head) => {
   if (req.url.endsWith("/wisp/")) {
     wisp.routeRequest(req, socket, head);
-    console.log("Wisp upgrade request:" + req);
-  } else if (shouldRouteRh(req)) {
-    routeRhUpgrade(
-      rh,
-      req,
-      socket,
-      head
-    );
   }
 });
 
