@@ -41,14 +41,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       config: __scramjet$config,
       func: async () => {
         if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          indexedDB.deleteDatabase("$scramjet");
-          await settingsAPI.setItem("scramjet", "fixed");
           const scramjet = new ScramjetController(__scramjet$config);
+          const registrations =
+            await navigator.serviceWorker.getRegistrations();
+
+          for (const registration of registrations) {
+            if (registration.scope === __scramjet$config.prefix) {
+              console.log(`Unregistering Service Worker with scope: ${scope}`);
+              await registration.unregister();
+              console.log(
+                `Service Worker with scope '${scope}' unregistered successfully.`
+              );
+              return;
+            }
+          }
+          scramjet.init("/$/sw.js").then(async () => {
+            await settingsAPI.deleteDatabase("$scramjet");
+            await proxy.setTransports();
+          });
+
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
 
           console.log("Scramjet Service Worker registered.");
+          await settingsAPI.setItem("scramjet", "fixed");
         } else {
           const scramjet = new ScramjetController(__scramjet$config);
           scramjet.init("/$/sw.js").then(async () => {
@@ -86,7 +103,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("browser-container"),
     nightmare,
     loggingAPI,
-    settingsAPI
+    settingsAPI,
+    eventsAPI
   );
   const items = new Items();
   const utils = new Utils(items, loggingAPI, settingsAPI);
@@ -141,11 +159,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (proxySetting === "auto") {
           const result = await swConfig.auto.func(proxy.search(searchValue));
           swConfigSettings = result;
+          window.SWSettings = swConfigSettings;
         } else {
           swConfigSettings = swConfig[proxySetting];
+          window.SWSettings = swConfigSettings;
         }
 
-        await proxy.registerSW(swConfigSettings);
+        if (typeof swConfigSettings.func === "function" && proxySetting === "sj") {
+          await swConfigSettings.func();
+        }
+
+        await proxy.registerSW(swConfigSettings).then(async () => {
+          await proxy.setTransports();
+        });
 
         console.log("swConfigSettings:", swConfigSettings);
         console.log(
@@ -222,7 +248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.nightmare = nightmare;
   window.nightmarePlugins = nightmarePlugins;
   window.settings = settingsAPI;
-  window.event = eventsAPI;
+  window.eventsAPI = eventsAPI;
   window.extensions = extensionsAPI;
   window.proxy = proxy;
   window.logging = loggingAPI;
@@ -237,6 +263,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.keys = keys;
   window.searchbar = searchbar;
   window.SWconfig = swConfig;
-  window.SWSettings = swConfigSettings;
   window.ProxySettings = proxySetting;
 });

@@ -213,6 +213,17 @@ class Tabs {
         childList: true,
         subtree: true,
       });
+      let check = this.utils.getInternalURL(
+        new URL(iframe.src).pathname
+      );
+      if (check.startsWith("daydream://")) {
+        this.items.addressBar.value = check;
+      } else {
+        let url = new URL(iframe.src).pathname;
+        url = url.replace(window.SWSettings.config.prefix, "");
+        url = __uv$config.decodeUrl(url);
+        this.items.addressBar.value = url;
+      }
     });
 
     const observer = new MutationObserver(() => {
@@ -463,7 +474,7 @@ closeCurrentGroup() {
       this.items.addressBar.value = check;
     } else {
       let url = new URL(tabInfo.iframe.src).pathname;
-      url = url.replace(window.SWconfig[window.ProxySettings].config.prefix, "");
+      url = url.replace(window.SWSettings.config.prefix, "");
       url = __uv$config.decodeUrl(url);
       this.items.addressBar.value = url;
     }
@@ -506,7 +517,7 @@ closeCurrentGroup() {
       const originalTabPositionX = tabPositions[originalIndex];
       const originalTabPositionY = tabPositionsY[originalIndex];
       let axis;
-      if (await this.settings.getItem("verticalTabs")) {
+      if ((await this.settings.getItem("verticalTabs")) == "true") {
         axis = "y";
       } else {
         axis = "x";
@@ -530,7 +541,7 @@ closeCurrentGroup() {
       draggabilly.on("dragEnd", async (_) => {
         this.isDragging = false;
         this.eventsAPI.emit("tab:dragEnd");
-        if (await this.settings.getItem("verticalTabs")) {
+        if ((await this.settings.getItem("verticalTabs")) == "true") {
           const finalTranslateY = parseFloat(tabEl.style.top, 10);
           tabEl.style.transform = `translate3d(0, 0, 0)`;
 
@@ -578,7 +589,7 @@ closeCurrentGroup() {
       draggabilly.on("dragMove", async (event, pointer, moveVector) => {
         const tabEls = this.tabEls;
         const currentIndex = tabEls.indexOf(tabEl);
-        if (await this.settings.getItem("verticalTabs")) {
+        if ((await this.settings.getItem("verticalTabs")) == "true") {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionY,
@@ -659,7 +670,7 @@ closeCurrentGroup() {
   async layoutTabs() {
     this.eventsAPI.emit("tabs:layout");
     document.getElementById("create-tab").style = "";
-    if (await this.settings.getItem("verticalTabs")) {
+    if ((await this.settings.getItem("verticalTabs")) == "true") {
       const tabContentWidths = this.tabContentHeights;
 
       let cumulativeWidth = 0;

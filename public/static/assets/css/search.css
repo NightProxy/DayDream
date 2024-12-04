@@ -3,17 +3,15 @@
   align-items: center;
   justify-content: space-between;
   text-align: center;
-  border-radius: 30px;
 }
 
 .search-header__input {
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
   background-color: var(--input-background-color);
-  border: solid 0.5px var(--border-color);
+  border: none;
   color: var(--text-color);
   padding: 0.7rem 1rem;
-  border-radius: 25px;
   width: 240px;
   height: 20px;
   transition: all ease-in-out 0.5s;

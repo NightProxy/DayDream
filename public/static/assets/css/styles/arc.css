@@ -1,0 +1,45 @@
+.surface.arc {
+  width: 100%;
+}
+
+.tabs.arc .tab .tab-background {
+  border: none;
+  border-radius: 12px;
+}
+
+.tabs.vertical.arc .tab .tab-background {
+  border: none;
+}
+
+.tabs.arc .tab .tab-bottom-border {
+  display: none;
+}
+
+.under-tabs.arc {
+  background-color: var(--background-color);
+}
+
+.under-tabs.arc .tabs-bottom-bar {
+  display: none;
+}
+
+.tabs.vertical.arc #create-tab .title {
+  display: block;
+}
+
+.navbar.arc {
+  opacity: 0;
+  width: 0px;
+  left: -20px;
+  border-image: linear-gradient(to bottom, transparent 5px, transparent 5px);
+  border-image-slice: 1;
+  transition:
+    width 0.5s ease-in-out,
+    border-image 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
+    left 0.5s ease-in-out;
+}
+
+.viewport.arc:not(.vertical) {
+  width: 100%;
+}

@@ -50,7 +50,7 @@ const initializeDropdown = async (
 
   dropdownOptions.addEventListener("click", (event) => {
     if (event.target.tagName === "A") {
-      const selectedValue = event.target.getAttribute("data-value");
+      let selectedValue = event.target.getAttribute("data-value");
       const selectedOption = event.target.textContent;
       buttonText.textContent = selectedOption;
       settingsAPI.setItem(settingsKey, selectedValue);
@@ -255,7 +255,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   //Apperance
-  initializeDropdown("tabLayoutButton", "tabLayoutOptions", "verticalTabs", "false")
+  initializeDropdown(
+    "tabLayoutButton",
+    "tabLayoutOptions",
+    "verticalTabs",
+    "false",
+    () => {
+      eventsAPI.emit("UI:changeLayout");
+      setTimeout(() => {
+        eventsAPI.emit("UI:changeLayout");
+      }, 100);
+    }
+  );
+  initializeDropdown(
+    "UIStyleButton",
+    "UIStyleOptions",
+    "UIStyle",
+    "operagx",
+    () => {
+      eventsAPI.emit("UI:changeStyle");
+      eventsAPI.emit("theme:template-change");
+      setTimeout(() => {
+        eventsAPI.emit("UI:changeStyle");
+        eventsAPI.emit("theme:template-change");
+      }, 100);
+    }
+  );
   var colorPicker = new iro.ColorPicker(".colorPicker", {
     width: 80,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",

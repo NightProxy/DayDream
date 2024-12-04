@@ -70,9 +70,14 @@ class Keys {
             suggestions.classList.remove("vertical");
           }
         }
+        let val;
+        if (isDisabled) {
+          val = "true";
+        } else {
+          val = "false";
+        }
 
-        // Save the current state to this.settings
-        await this.settings.setItem("verticalTabs", isDisabled);
+        await this.settings.setItem("verticalTabs", val);
         this.events.emit("tabs:changeLayout");
       } else if (event.altKey && event.shiftKey && event.key === "S") {
         if ((await this.settings.getItem("verticalTabs")) === "true") {
@@ -88,12 +93,24 @@ class Keys {
             viewport.classList.remove("hidden");
           }
 
+          let val;
+        if (isDisabled) {
+          val = "true";
+        } else {
+          val = "false";
+        }
           // Save the current state to this.settings
-          await this.settings.setItem("verticalTabs-notshowing", isDisabled);
+          await this.settings.setItem("verticalTabs-notshowing", val);
         } else {
           return;
         }
       }
     });
+    /*const iframes = document.querySelectorAll(".iframe-container iframe");
+    iframes.forEach((iframe) => {
+      iframe.contentWindow.addEventListener("keydown", async (event) => {
+        
+      });
+    });*/
   }
 }

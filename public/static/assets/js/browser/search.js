@@ -176,7 +176,6 @@ class Search {
 
     document.body.appendChild(suggestionList);
   
-  let tabs = document.querySelectorAll('.tab');
   let activeIframe = document.querySelector('iframe.active');
   
   activeIframe.addEventListener('load', () => {
@@ -185,7 +184,7 @@ class Search {
           searchbar.value = check;
       } else {
           let url = new URL(activeIframe.src).pathname;
-          url = url.replace(swConfigSettings.prefix, '');
+          url = url.replace(window.SWSettings.config.prefix, '');
           url = __uv$config.decodeUrl(url);
           url = new URL(url).origin;
           searchbar.value = url;

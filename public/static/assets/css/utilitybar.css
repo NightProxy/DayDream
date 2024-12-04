@@ -18,10 +18,9 @@
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
   background-color: var(--input-background-color);
-  border: solid 0.5px var(--border-color);
   color: var(--text-color);
   padding: 0.5rem 1rem;
-  border-radius: 25px;
+  border-radius: 8px;
   width: var(--searchbar-width);
   height: 20px;
   transition: all ease-in-out 0.5s;

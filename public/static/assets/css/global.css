@@ -54,13 +54,8 @@ body {
   position: static !important;
 }
 
-#navactive {
-  background-color: var(--header-active-background-color);
-  border-radius: 7px;
-}
-
 .navbar span:hover {
-  background-color: var(--hover-background-color);
+  background-color: var(--faded-main-color);
   border-radius: 7px;
   transition: 0.12s all ease-in-out;
   cursor: pointer;

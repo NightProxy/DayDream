@@ -48,7 +48,7 @@ class Functions {
   }
 
   async toggleTabs() {
-    if ((await this.settings.getItem("verticalTabs")) != false) {
+    if ((await this.settings.getItem("verticalTabs")) != "false") {
       const tabs = document.querySelector(".tabs");
       const viewport = document.querySelector(".viewport");
       const isDisabled = tabs.classList.toggle("hidden");
@@ -61,7 +61,14 @@ class Functions {
         viewport.classList.remove("hidden");
       }
 
-      await this.settings.setItem("verticalTabs-notshowing", isDisabled);
+      let val;
+        if (isDisabled) {
+          val = "true";
+        } else {
+          val = "false";
+        }
+
+      await this.settings.setItem("verticalTabs-notshowing", val);
     } else {
       return;
     }
@@ -111,7 +118,7 @@ class Functions {
 
       const script = iframeDocument.createElement("script");
       script.type = "text/javascript";
-      script.src = "/assets/js/lib/eruda/eruda.js";
+      script.src = location.origin + "/assets/js/lib/eruda/eruda.js";
       script.onload = () => {
         this.erudaScriptLoaded = true;
         this.erudaScriptInjecting = false;

@@ -8,12 +8,28 @@ class Themeing {
       "--main-color",
       (await this.settings.getItem("themeColor")) || "#aa00ff"
     );
+    const fadedMainColor = this.fadeColor(
+      await this.settings.getItem("themeColor"),
+      "0.26"
+    ) || "rgba(170, 1, 255, 0.26)";
+    document.documentElement.style.setProperty(
+      "--faded-main-color",
+      fadedMainColor || "rgba(170, 1, 255, 0.26)"
+    );
 
     document.addEventListener("theme:color-change", async (event) => {
       await this.settings.setItem("themeColor", event.detail.color);
       document.documentElement.style.setProperty(
         "--main-color",
         (await this.settings.getItem("themeColor")) || "#aa00ff"
+      );
+      const fadedMainColor = this.fadeColor(
+        await this.settings.getItem("themeColor"),
+        "0.26"
+      ) || "rgba(170, 1, 255, 0.26)";
+      document.documentElement.style.setProperty(
+        "--faded-main-color",
+        fadedMainColor || "rgba(170, 1, 255, 0.26)"
       );
       this.applyThemeFromJsonFile();
     });
@@ -31,9 +47,9 @@ class Themeing {
     });
 
     this.setLogo();
-    
+
     document.addEventListener("theme:logo-change", async (event) => {
-     this.setLogo();
+      this.setLogo();
     });
 
     if ("serviceWorker" in navigator) {
@@ -54,17 +70,24 @@ class Themeing {
       const themeName = await this.settings.getItem("themeCustom");
       const themeColor =
         (await this.settings.getItem("themeColor")) || "rgba(128, 0, 128, 1)";
+      const uiStyle = await this.settings.getItem("UIStyle");
 
       if (themeName && themes[themeName]) {
         const theme = themes[themeName];
         const root = document.documentElement;
         const shouldTint = themeName === "T-dark" || themeName === "T-light";
-        const noTintKeys = rules["no-tint"][themeName] || [];
+        const uiStyleRules = rules[uiStyle] || {};
+        const noTintKeys = uiStyleRules["no-tint"]?.[themeName] || [];
+        const tintAmounts = uiStyleRules["tint-amounts"] || {};
 
         Object.keys(theme).forEach((property) => {
           let color = theme[property];
           if (shouldTint && !noTintKeys.includes(property)) {
-            color = this.applyColorTint(color, themeColor, 0.15);
+            color = this.applyColorTint(
+              color,
+              themeColor,
+              tintAmounts[property] || 0.35
+            );
           }
           root.style.setProperty(`--${property}`, color);
         });
@@ -82,7 +105,7 @@ class Themeing {
         "--background-image",
         `url(${bg || "/assets/imgs/DDX.bg.jpeg"})`
       );
-    } 
+    }
     if (!fetchBG.ok) {
       document.documentElement.style.setProperty(
         "--background-image",
@@ -99,7 +122,7 @@ class Themeing {
         "--logo",
         `url(${logo || "/assets/imgs/logo.png"})`
       );
-    } 
+    }
     if (!fetchLogo.ok) {
       document.documentElement.style.setProperty(
         "--logo",
@@ -131,4 +154,27 @@ class Themeing {
 
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
+
+  fadeColor(color, factor) {
+    if (typeof color !== 'string') {
+      console.error("Invalid color input:", color);
+      return color; // Return the original input if it's invalid
+    }
+  
+    const colorMatch = color.match(
+      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
+    );
+  
+    if (!colorMatch) {
+      console.error("Color does not match rgba or rgb format:", color);
+      return color;
+    }
+  
+    let [r, g, b, a] = colorMatch.slice(1).map(Number);
+    a = isNaN(a) ? 1 : a; // Default to 1 if `a` is NaN
+    a = Math.min(1, Math.max(0, a * factor)); // Clamp alpha to valid range
+  
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+  
 }

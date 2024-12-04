@@ -1,0 +1,102 @@
+.tabs.vertical {
+  position: absolute;
+  height: calc(100% - calc(3em + 6px));
+  width: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  left: 0;
+  bottom: 0;
+  transition:
+    width 0.5s ease,
+    height 0.5s ease,
+    position 0.5s ease;
+}
+
+.tabs.vertical.hidden {
+  width: 0px;
+  transition:
+    width 0.5s ease,
+    height 0.5s ease,
+    position 0.5s ease;
+}
+
+.tabs.vertical.hidden .tab {
+  display: none;
+}
+
+.tabs.vertical .bottom-buttons {
+  display: flex;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.tabs.vertical .tabs-content {
+  width: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  overflow: auto;
+  transition: width 0.5s ease;
+}
+
+.tabs.vertical .tab {
+  position: relative;
+  left: none;
+  top: 0;
+  height: 36px;
+  transition: position 0.5s ease;
+}
+
+.tabs.vertical .tab .tab-background {
+  border-bottom-color: var(--main-color);
+  border-radius: 8px;
+  border: 1px solid var(--main-color);
+}
+
+.tabs.vertical .tab .tab-bottom-border {
+  display: none;
+}
+
+.tabs.vertical .tab.active .tab-bottom-border {
+  display: none;
+}
+
+.tabs.vertical .tab:hover .tab-bottom-border {
+  display: none;
+}
+
+.under-tabs.vertical {
+  position: relative;
+  right: 0%;
+  align-self: flex-end;
+  transition: all 0.5s ease;
+}
+
+.under-tabs.vertical .tabs-bottom-bar {
+  display: none;
+}
+
+.tabs.vertical #create-tab {
+  position: static;
+  margin-top: 10px;
+  width: calc(100% - 54px);
+  padding: 10px;
+  border: 1px solid var(--main-color);
+  border-radius: 15px;
+  justify-content: center;
+}
+
+.viewport.vertical {
+  width: calc(100% - 280px);
+  height: calc(100% - 3em);
+  transition:
+    width 0.5s ease,
+    height 0.5s ease;
+}
+
+.viewport.vertical.hidden {
+  width: 100%;
+  transition: width 0.5s ease;
+}
