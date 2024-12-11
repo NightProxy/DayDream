@@ -36,20 +36,6 @@
       func: async () => {
         if ((await settingsAPI.getItem("scramjet")) != "fixed") {
           const scramjet = new ScramjetController(__scramjet$config);
-          const registrations =
-            await navigator.serviceWorker.getRegistrations();
-
-          for (const registration of registrations) {
-            if (registration.scope === __scramjet$config.prefix) {
-              console.log(`Unregistering Service Worker with scope: ${scope}`);
-              await registration.unregister();
-              console.log(
-                `Service Worker with scope '${scope}' unregistered successfully.`
-              );
-              return;
-            }
-          }
-          await settingsAPI.deleteDatabase("$scramjet");
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
@@ -88,8 +74,8 @@
     },
   };
 
-  if (typeof swFunction === "function") {
-    swFunction();
+  if (typeof swConfig[proxySetting].func === "function" && proxySetting === "sj") {
+    await swConfig[proxySetting].func();
   }
 
   proxy.registerSW(swConfig[proxySetting]).then(async () => {
