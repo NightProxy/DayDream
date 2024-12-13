@@ -170,7 +170,7 @@ class Tabs {
       "div",
       { class: "tab", id: `tab-${this.tabCount}` },
       [
-        this.ui.createElement("div", { class: "tab-background" }),
+        this.ui.createElement("div", { class: "tab-background", style: "border: none;" }),
         this.ui.createElement("div", { class: "tab-content" }, [
           this.ui.createElement("div", { class: "tab-group-color" }),
           this.ui.createElement("div", { class: "tab-favicon" }),
@@ -191,7 +191,7 @@ class Tabs {
             ]
           ),
         ]),
-        this.ui.createElement("div", { class: "tab-bottom-border" }),
+        
       ]
     );
 

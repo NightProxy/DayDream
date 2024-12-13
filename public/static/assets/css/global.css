@@ -82,13 +82,7 @@ body {
   text-align: center;
   z-index: 1;
   bottom: 0;
-  border-right: 1px solid transparent;
-  border-image: linear-gradient(
-    to bottom,
-    transparent 50px,
-    var(--main-color) 50px
-  );
-  border-image-slice: 1;
+  border: none;
   transition:
     width 0.5s ease-in-out,
     border-image 0.5s ease-in-out,
@@ -144,6 +138,7 @@ body {
 }
 
 .logo {
+  transform: scale(0.8);
   width: 32px;
   height: 32px;
   transition: 0.3s;

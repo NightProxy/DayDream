@@ -59,7 +59,7 @@ class Render {
         ]
       ),
       this.nightmare.createElement("div", { class: "under-tabs" }, [
-        this.nightmare.createElement("div", { class: "tabs-bottom-bar" }),
+
         this.nightmare.createElement("ul", { class: "utility" }, [
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
@@ -77,7 +77,7 @@ class Render {
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
-              { class: "utilityIcon", id: "home" },
+              { class: "utilityIcon", id: "home", style: "cursor: pointer;" },
               [
                 this.nightmare.createElement(
                   "span",
@@ -90,7 +90,7 @@ class Render {
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
-              { class: "utilityIcon", id: "backward" },
+              { class: "utilityIcon", id: "backward", style: "cursor: pointer;" },
               [
                 this.nightmare.createElement(
                   "span",
@@ -103,7 +103,7 @@ class Render {
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
-              { class: "utilityIcon", id: "reload" },
+              { class: "utilityIcon", id: "reload", style: "cursor: pointer;" },
               [
                 this.nightmare.createElement(
                   "span",
@@ -116,7 +116,7 @@ class Render {
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
-              { class: "utilityIcon", id: "forward" },
+              { class: "utilityIcon", id: "forward", style: "cursor: pointer;" },
               [
                 this.nightmare.createElement(
                   "span",
@@ -161,7 +161,7 @@ class Render {
                       class: "search-header__icon",
                     },
                     [
-                      // this is skid proof; BUT HOW THE FUCK ARE CONTRIBUTORS GONNA DO THIS
+                     
                       this.nightmare.createElement("path", {
                         fill: "#3A3A3A",
                         d: "M7.132 0C3.197 0 0 3.124 0 6.97c0 3.844 3.197 6.969 7.132 6.969 1.557 0 2.995-.49 4.169-1.32L16.82 18 18 16.847l-5.454-5.342a6.846 6.846 0 0 0 1.718-4.536C14.264 3.124 11.067 0 7.132 0zm0 .82c3.48 0 6.293 2.748 6.293 6.15 0 3.4-2.813 6.149-6.293 6.149S.839 10.37.839 6.969C.839 3.568 3.651.82 7.132.82z",

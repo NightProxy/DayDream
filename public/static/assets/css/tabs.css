@@ -13,7 +13,9 @@
     height 0.5s ease,
     position 0.5s ease;
 }
-
+.is-pointer-down{
+  z-index: 99999;
+}
 .tabs * {
   box-sizing: inherit;
 }
@@ -43,6 +45,7 @@
   }*/
 
 .tab {
+  transform: translateY(-5px);
   position: absolute;
   left: 0;
   height: 36px;
@@ -61,23 +64,18 @@
 }
 
 .tab-background {
+  border-radius: 5px;
   position: absolute;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: var(--tab-bg-color);
+  background-color: var(--tab-active);
   pointer-events: none;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
   padding-bottom: 2px;
-  border-width: 1px;
-  border-style: solid;
-  border-top-color: var(--main-color);
-  border-left-color: var(--main-color);
-  border-right-color: var(--main-color);
-  border-bottom: 1px solid var(--tab--color);
 }
-
+.tab:has(.active){
+  transform: translateY(-5px);
+}
 .tab:has(.active) .tab-background {
   background-color: var(--tab-active-bg-color);
   border-bottom: 4px solid var(--tab-active-bg-color);
@@ -309,6 +307,7 @@
 }
 
 .under-tabs {
+  transform: translateY(-3.5px);
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -316,24 +315,7 @@
   position: sticky;
   transition: all 0.5s ease;
 }
-.tabs-bottom-bar {
-  width: calc(100% - calc(2em + 10px));
-  height: 1px;
-  text-align: center;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  position: fixed;
-  right: 0;
-  top: 44px;
-  border-top: 1px solid var(--main-color);
-  transition: width 0.5s ease-in-out;
-}
 
-.tabs-bottom-bar.autohide {
-  width: 100%;
-  transition: width 0.5s ease-in-out;
-}
 
 #create-tab {
   display: flex;
