@@ -41,6 +41,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       func: async () => {
         if ((await settingsAPI.getItem("scramjet")) != "fixed") {
           const scramjet = new ScramjetController(__scramjet$config);
+          const registrations =
+            await navigator.serviceWorker.getRegistrations();
+
+          for (const registration of registrations) {
+            if (registration.scope === __scramjet$config.prefix) {
+              console.log(`Unregistering Service Worker with scope: ${scope}`);
+              await registration.unregister();
+              console.log(
+                `Service Worker with scope '${scope}' unregistered successfully.`
+              );
+              return;
+            }
+          }
+          await settingsAPI.deleteDatabase("$scramjet");
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
@@ -87,10 +101,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Error fetching favicon as data URL:", error);
       return null;
     }
-  }
-
-  if (typeof swConfig[proxySetting].func === "function" && proxySetting === "sj") {
-    await swConfig[proxySetting].func();
   }
   proxy.registerSW(swConfig[proxySetting]).then(async () => {
     await proxy.setTransports().then(async () => {

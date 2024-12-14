@@ -11,10 +11,6 @@ self.__scramjet$config = {
   },
   siteFlags: {
 },
-flags: {
-  serviceworkers: true,
-  rewriterLogs: false,
-},
   codec: {
       encode: `if (!url) return url;
         let result = "";
