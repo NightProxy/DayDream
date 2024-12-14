@@ -206,7 +206,7 @@ class Tabs {
     };
     iframe.addEventListener("load", () => {
       iframe.contentDocument.body.appendChild(script);
-      this.eventsAPI.emit("tab:loaded", { url: iframe.src, iframe: iframe.id });
+      // this.eventsAPI.emit("tab:loaded", { url: iframe.src, iframe: iframe.id });
       updateTabTitle();
       this.utils.setFavicon(tab, iframe);
       observer.observe(iframe.contentDocument.head, {
