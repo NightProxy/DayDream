@@ -189,7 +189,7 @@ class Render {
             this.nightmare.createElement("li", {}, [
               this.nightmare.createElement(
                 "div",
-                { class: "utilityIcon", id: "extensions" },
+                { class: "utilityIcon", class: "coming-soon", id: "extensions" },
                 [
                   this.nightmare.createElement(
                     "span",
@@ -202,7 +202,7 @@ class Render {
             this.nightmare.createElement("li", {}, [
               this.nightmare.createElement(
                 "div",
-                { class: "utilityIcon", id: "profiles" },
+                { class: "utilityIcon", class: "coming-soon", id: "profiles" },
                 [
                   this.nightmare.createElement(
                     "span",
@@ -286,7 +286,7 @@ class Render {
         this.nightmare.createElement("li", {}, [
           this.nightmare.createElement(
             "div",
-            { id: "musicShortcut", title: "Music" },
+            { id: "musicShortcut", class: "coming-soon", title: "Music" },
             [
               this.nightmare.createElement(
                 "span",
