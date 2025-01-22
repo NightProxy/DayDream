@@ -2,7 +2,6 @@ import express from "express";
 import http from "node:http";
 import cors from "cors";
 import path from "node:path";
-import { hostname } from "node:os";
 import chalk from "chalk";
 import routes from "./src/routes.js";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
@@ -10,6 +9,9 @@ import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { server as wisp } from "@mercuryworkshop/wisp-js/server";
+import fs from "node:fs";
+
+const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
 
 const server = http.createServer();
 const app = express();
@@ -56,31 +58,71 @@ server.on("listening", () => {
 `)
     )
   );
-  console.log(
-    `  ${chalk.bold(host("Local System:"))}            http://${address.family === "IPv6" ? `[${address.address}]` : address.address}${address.port === 80 ? "" : ":" + chalk.bold(address.port)}`
-  );
+  console.log(theme("ℹ️  Info:"))
+  console.log(theme("Version: "), chalk.whiteBright(packageJson.version))
 
-  console.log(
-    `  ${chalk.bold(host("Local System:"))}            http://localhost${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`
-  );
-
-  try {
-    console.log(
-      `  ${chalk.bold(host("On Your Network:"))}  http://${hostname()}${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`
-    );
-  } catch (err) {
-    // can't find LAN interface
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    var method = "Replit"
+  } else if (process.env.HOSTNAME && process.env.GITPOD_WORKSPACE_CLUSTER_HOST) {
+    var method = "Gitpod"
+  } else if (
+    process.env.CODESPACE_NAME &&
+    process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
+  ) {
+    var method = "GitHub Codespaces"
+  } else if (process.env.GITPOD_WORKSPACE_CLUSTER_HOST && process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
+    var method = "Gitpod"
+  } else if (process.env.VERCEL && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    var method = "Vercel"
+  } else if (process.env.RENDER && process.env.RENDER_EXTERNAL_HOSTNAME) {
+    var method = "Render"
+  } else if (process.env.KOYEB_APP_NAME && process.env.KOYEB_PUBLIC_DOMAIN) {
+    var method = "Koyeb"
+  } else {
+    var method = "Custom (DNS Deploy?)"
   }
+  console.log(theme("♦️ Deployment Method: "), chalk.whiteBright(method))
+  console.log(host("♦️ Deployment Entrypoints: "))
+  console.log(
+    `  ${chalk.bold(host('Local System:'))}            http://localhost:${PORT}`
+  );
+  console.log(
+    `  ${chalk.bold(host('Local System IPv6:'))}            http://${address.family === 'IPv6' ? `[${address.address}]` : address.address}${address.port === 80 ? '' : ':' + chalk.bold(address.port)}`
+  );
 
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     console.log(
-      `  ${chalk.bold(host("Replit:"))}           https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      `  ${chalk.bold(host('Replit:'))}           https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    );
+  }
+
+  if (
+    process.env.RENDER_EXTERNAL_HOSTNAME && process.env.RENDER
+  ) {
+    console.log(
+      `  ${chalk.bold(host('Render:'))}           https://${RENDER_EXTERNAL_HOSTNAME}`
+    );
+  }
+
+  if (
+    process.env.VERCEL && process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ) {
+    console.log(
+      `  ${chalk.bold(host('Vercel:'))}           https://${VERCEL_PROJECT_PRODUCTION_URL}`
+    );
+  }
+
+  if (
+    process.env.KOYEB_PUBLIC_DOMAIN && process.env.KOYEB_APP_NAME
+  ) {
+    console.log(
+      `  ${chalk.bold(host('Koyeb:'))}           https://${KOYEB_PUBLIC_DOMAIN}`
     );
   }
 
   if (process.env.HOSTNAME && process.env.GITPOD_WORKSPACE_CLUSTER_HOST) {
     console.log(
-      `  ${chalk.bold(host("Gitpod:"))}           https://${PORT}-${process.env.HOSTNAME}.${process.env.GITPOD_WORKSPACE_CLUSTER_HOST}`
+      `  ${chalk.bold(host('Gitpod:'))}           https://${PORT}-${process.env.HOSTNAME}.${process.env.GITPOD_WORKSPACE_CLUSTER_HOST}`
     );
   }
 
@@ -89,7 +131,7 @@ server.on("listening", () => {
     process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
   ) {
     console.log(
-      `  ${chalk.bold(host("Github Codespaces:"))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? "" : address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+      `  ${chalk.bold(host('Github Codespaces:'))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? '' : address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
     );
   }
 });

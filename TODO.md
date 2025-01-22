@@ -1,36 +1,49 @@
-# TODO List:
+# V1:
 
-### APIs:
+> ## APIs:
+> 
+> - History
+> - Bookmarks
+> - iFrameClient
+> - Proxy (stability)
+> - Tie Events API into everyting
+> 
+> ## Internal Pages:
+> 
+> - Settings
+> - New Tab
+> - Bookmarks
+> - History
+>
+> ## UI/UX:
+>
+> - Themes System
+> - Nightmare Rendering and Elements
 
-- History
-- Extensions (finish)
-- iFrameClient
-- Proxy (stability)
-- Tie Events API into everyting
 
-### Internal Pages:
-
-- Settings
-- New Tab
-- Bookmarks
-- History
-- Extensions
-- Profiles
-- Setup
-
-### UI/UX:
-
-- Themes System
-- Nightmare Rendering and Elements
-
-### Tabs Upgrade:
-
-- Tab Pinning
-- Tab Grouping
-- Tab caching
-- easier API based interactivity
-
-### Search Suggestions:
-
-- Calculator
-- AI prompt (maybe)
+# V2:
+> ## APIs:
+>
+> - Extensions (finish)
+> - Profiles (finish)
+>
+> ## Internal Pages:
+>
+> - Extensions
+> - Profiles
+> - Setup
+> 
+> ## UI/UX:
+> 
+> - increase rendering speed
+> 
+> ## Tabs Upgrade:
+> 
+> - Tab Pinning
+> - Tab Grouping
+> - Tab caching
+>
+> ## Search Suggestions:
+>
+> - Calculator
+> - AI prompt (maybe)

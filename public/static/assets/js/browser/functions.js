@@ -214,6 +214,7 @@ class Functions {
   menus() {
     this.extrasMenu(this.items.extrasButton);
     this.extensionsMenu(this.items.extensionsButton);
+    this.profilesMenu(this.items.profilesButton)
   }
 
   goFullscreen() {
@@ -452,28 +453,6 @@ class Functions {
           ]),
         ]
       ),
-      // Screenshot
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "screenshot",
-          onclick: () => {
-            console.log("Screenshot taken");
-          },
-        },
-        [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["content_paste"]
-          ),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Screenshot",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, ["Alt + C"]),
-        ]
-      ),
       //Inspect Element
       this.ui.createElement(
         "div",
@@ -535,7 +514,7 @@ class Functions {
     let content = this.ui.createElement("div", {}, [
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, [
-          "Extensions",
+          "Extensions (SOON)",
         ]),
         this.ui.createElement("div", { class: "menu-right" }, [
           this.ui.createElement(
@@ -559,7 +538,7 @@ class Functions {
             "div",
             {
               class: "menu-item",
-              id: "disableAllExtensions",
+              id: "extensionsSettings",
               onclick: () => {
                 console.log("Disabling all extensions");
               },
@@ -568,7 +547,54 @@ class Functions {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["toggle_off"]
+                ["settings"]
+              ),
+            ]
+          ),
+        ]),
+      ]),
+    ]);
+    this.nightmarePlugins.sidemenu.attachTo(button, content);
+  }
+
+  profilesMenu(button) {
+    let content = this.ui.createElement("div", {}, [
+      this.ui.createElement("div", { class: "menu-row" }, [
+        this.ui.createElement("span", { style: "margin: 0px 20px;" }, [
+          "Profiles (SOON)",
+        ]),
+        this.ui.createElement("div", { class: "menu-right" }, [
+          this.ui.createElement(
+            "div",
+            {
+              class: "menu-item",
+              id: "addProfile",
+              onclick: () => {
+                console.log("Adding Profile");
+              },
+            },
+            [
+              this.ui.createElement(
+                "span",
+                { class: "material-symbols-outlined" },
+                ["person_add"]
+              ),
+            ]
+          ),
+          this.ui.createElement(
+            "div",
+            {
+              class: "menu-item",
+              id: "extensionsSettings",
+              onclick: () => {
+                console.log("Disabling all extensions");
+              },
+            },
+            [
+              this.ui.createElement(
+                "span",
+                { class: "material-symbols-outlined" },
+                ["settings"]
               ),
             ]
           ),

@@ -1,6 +1,6 @@
 {
-  "name": "daydream-x",
-  "description": "The ultimate Opera GX remake!",
+  "name": "daydreamx",
+  "description": "",
   "version": "1.0.0",
   "type": "module",
   "engines": {
@@ -12,7 +12,7 @@
     "format": "prettier --write ."
   },
   "author": "Amplify",
-  "license": "GPL-3.0-or-later",
+  "license": "AGPL-3.0-only",
   "dependencies": {
     "@mercuryworkshop/bare-mux": "^2.1.7",
     "@mercuryworkshop/epoxy-transport": "^2.1.26",
