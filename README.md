@@ -57,7 +57,7 @@ before submitting a pull request. Please check [CONTRIB.md](https://github.com/N
 
 ## Contributors
 
-Thank you to the following people for contributing to Space.
+Thank you to the following people for contributing to DayDreamX.
 
 [![Contributors](https://contrib.rocks/image?repo=nightproxy/space)](https://github.com/NightProxy/DayDreamX/graphs/contributors)
 
