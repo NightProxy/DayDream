@@ -89,7 +89,7 @@
   list-style-type: none;
 }
 
-.dropdown-button.active + .dropdown-options {
+.dropdown-button.active+.dropdown-options {
   display: block;
 }
 
@@ -182,12 +182,26 @@
   transition: all 0.5 ease;
 }
 
-.tabs.vertical ~ .sidepanel {
+.tabs.vertical~.sidepanel {
   top: 3em;
   left: 280px;
-  height: calc(100% - 3em);  
+  height: calc(100% - 3em);
 }
 
 .news {
   display: block;
+}
+
+.click-menu-container {
+  position: fixed;
+  width: 300px;
+  padding: 10px 0px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
 }

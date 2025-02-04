@@ -1,3 +1,10 @@
+if (navigator.userAgent.includes("Firefox")) {
+	Object.defineProperty(globalThis, "crossOriginIsolated", {
+		value: true,
+		writable: false,
+	});
+} // firefox fix
+
 importScripts(
 	"/$/scramjet.wasm.js",
 	"/$/scramjet.shared.js",

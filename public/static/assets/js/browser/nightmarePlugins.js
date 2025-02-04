@@ -4,6 +4,7 @@ class NightmarePlugins {
     this.notification = new Notification(ui);
     this.sidemenu = new SideMenu(ui);
     this.sidepanel = new SidePanel(ui);
+    this.rightclickmenu = new RightClickMenu(ui);
   }
 }
 
@@ -185,4 +186,56 @@ class Notification {
     }
     this.isOpen = false;
   }
+}
+
+class RightClickMenu {
+  constructor(ui) {
+    this.ui = ui;
+    this.container = null;
+    this.isOpen = false;
+  }
+
+  attachTo(element, content) {
+    if (!element)
+      throw new Error("Please provide a valid element to attach the menu.");
+
+    element.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.isOpen ? this.closeMenu() : this.openMenu(element, event, content);
+    });
+
+    window.addEventListener("click", () => this.closeMenu());
+  }
+
+  openMenu(element, event, content) {
+    if (this.isOpen || !element) return;
+
+    this.container = this.ui.createElement("div", { class: "click-menu-container" });
+
+    if (typeof content === "function") {
+      this.container.appendChild(content(this.ui));
+    } else if (Array.isArray(content)) {
+      content.forEach((item) => {
+        this.container.appendChild(item);
+      });
+    } else if (content instanceof HTMLElement) {
+      this.container.appendChild(content);
+    }
+
+    this.container.style.top = `${event.pageY}px`;
+    this.container.style.left = `${event.pageX}px`;
+
+    document.body.appendChild(this.container);
+    this.isOpen = true;
+  }
+
+  closeMenu() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
+    this.isOpen = false;
+  }
+
 }

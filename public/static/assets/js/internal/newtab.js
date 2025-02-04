@@ -202,4 +202,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
   });
+
+  const nightmarePlugins = new NightmarePlugins(nightmare);
+
+  let rightclickmenucontent = nightmare.createElement("div", {}, [
+    nightmare.createElement(
+      "div",
+      {
+        class: "menu-item",
+        id: "settingsButton",
+        onclick: () => {
+          window.parent.tabs.createTab("daydream://settings");
+        },
+      },
+      [
+        nightmare.createElement(
+          "span",
+          { class: "material-symbols-outlined" },
+          ["settings"]
+        ),
+        nightmare.createElement("span", { class: "menu-label" }, [
+          "Settings",
+        ]),
+      ]
+    ),
+    nightmare.createElement(
+      "div",
+      {
+        class: "menu-item",
+        id: "about-blankButton",
+        onclick: () => {
+          window.parent.windowing.aboutBlankWindow();
+        },
+      },
+      [
+        nightmare.createElement(
+          "span",
+          { class: "material-symbols-outlined" },
+          ["visibility_off"]
+        ),
+        nightmare.createElement("span", { class: "menu-label" }, [
+          "About:Blank",
+        ]),
+      ]
+    ),
+  ]);
+
+  nightmarePlugins.rightclickmenu.attachTo(document.querySelector("body"), rightclickmenucontent)
 });

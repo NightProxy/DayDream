@@ -157,6 +157,7 @@ class Proxy {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
     });
+    let swConfigSettings = {};
     if (proxySetting === "auto") {
       const result = await swConfig.auto.func(proxy.search(url));
       swConfigSettings = result;
@@ -190,6 +191,7 @@ class Proxy {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
     });
+    let swConfigSettings = {};
     if (proxySetting === "auto") {
       const result = await swConfig.auto.func(proxy.search(url));
       swConfigSettings = result;
