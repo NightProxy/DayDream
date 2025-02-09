@@ -159,10 +159,10 @@ class Search {
             .then((dataUrl) => {
               if (dataUrl == null || dataUrl.endsWith("null")) {
                 suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-                  "/assets/imgs/b/google.webp";
+                  "/assets/imgs/b/ddg.webp";
                 suggestionList.querySelectorAll(
                   ".searchEngineIcon",
-                )[0].style.transform = "scale(1.2)";
+                )[0].style.transform = "scale(1.35)";
               } else {
                 suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
                   dataUrl;
@@ -175,21 +175,21 @@ class Search {
     });
 
     document.body.appendChild(suggestionList);
-  
-  let activeIframe = document.querySelector('iframe.active');
-  
-  activeIframe.addEventListener('load', () => {
+
+    let activeIframe = document.querySelector('iframe.active');
+
+    activeIframe.addEventListener('load', () => {
       let check = this.utils.getInternalURL(new URL(activeIframe.src).pathname);
       if (check.startsWith('daydream://')) {
-          searchbar.value = check;
+        searchbar.value = check;
       } else {
-          let url = new URL(activeIframe.src).pathname;
-          url = url.replace(window.SWSettings.config.prefix, '');
-          url = __uv$config.decodeUrl(url);
-          url = new URL(url).origin;
-          searchbar.value = url;
+        let url = new URL(activeIframe.src).pathname;
+        url = url.replace(window.SWSettings.config.prefix, '');
+        url = __uv$config.decodeUrl(url);
+        url = new URL(url).origin;
+        searchbar.value = url;
       }
-  });
+    });
   }
 
   createSection(titleText) {

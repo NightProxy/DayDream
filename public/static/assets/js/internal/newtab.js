@@ -132,9 +132,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       getFavicon(await settingsAPI.getItem("search")).then((dataUrl) => {
         if (dataUrl == null || dataUrl.endsWith("null")) {
           document.querySelector(".searchEngineIcon").src =
-            "/assets/imgs/b/google.webp";
+            "/assets/imgs/b/ddg.webp";
           document.querySelector(".searchEngineIcon").style.transform =
-            "scale(1.2)";
+            "scale(1.35)";
         } else {
           document.querySelector(".searchEngineIcon").src = dataUrl;
           document.querySelector(".searchEngineIcon").style.transform =
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         console.log(
           `Using proxy: ${proxySetting}, Settings are: ` +
-            (await swConfigSettings)
+          (await swConfigSettings)
         );
         console.log(swConfigSettings);
 
