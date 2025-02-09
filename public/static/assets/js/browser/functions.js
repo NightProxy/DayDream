@@ -446,7 +446,7 @@ class Functions {
             ["extension"]
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
-            "Extensions",
+            "Extensions (Soon)",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",

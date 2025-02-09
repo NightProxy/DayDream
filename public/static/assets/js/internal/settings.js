@@ -336,7 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "searchButton",
     "searchOptions",
     "search",
-    "https://google.com/search?q=%s"
+    "https://duckduckgo.com/?q=%s"
   );
 
   // Load and handle visibility of wisp and bare settings

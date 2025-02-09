@@ -33,7 +33,7 @@ class Proxy {
   search(input) {
     input = input.trim();
     const searchTemplate =
-      this.searchVar || "https://www.google.com/search?q=%s";
+      this.searchVar || "https://www.duckduckgo.com/?q=%s";
     try {
       return new URL(input).toString();
     } catch (err) {

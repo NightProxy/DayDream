@@ -21,29 +21,29 @@ public/
 │   │   │   │   └── (page-only CSS files, for internal URLs)
 │   │   │   ├── styles/
 │   │   │   │   └── (separated styles for things like vertical tabs)
-│   │   │   ├── (all of the main CSS files)
-│   │   └── imgs/
-│   │       ├── b/
-│   │       │   └── (search engine icons)
-│   │       ├── g/
-│   │       │   └── (game icons)
-│   │       ├── proxies/
-│   │       │   └── (proxy icons)
-│   │       └── (misc images)
-│   ├── js/
-│   │   ├── apis/
-│   │   │   └── (global APIs used across DDX)
-│   │   ├── lib/
-│   │   │   └── (libraries)
-│   │   ├── global/
-│   │   │   └── (files used on all pages, but not an API)
-│   │   ├── browser/
-│   │   │   └── (browser-like APIs, controlling functionality like rendering the browser; not as vital as ../apis/)
-│   │   └── (main files, or uncategorized)
-│   ├── json/
-│   │   ├── themes/
-│   │   │   └── (JSON files for theming)
-│   │   └── (misc JSON files)
+│   │   │   └── (all of the main CSS files)
+│   │   ├── imgs/
+│   │   │   ├── b/
+│   │   │   │   └── (search engine icons)
+│   │   │   ├── g/
+│   │   │   │   └── (game icons)
+│   │   │   ├── proxies/
+│   │   │   │   └── (proxy icons)
+│   │   │   └── (misc images)
+│   │   ├── js/
+│   │   │   ├── apis/
+│   │   │   │   └── (global APIs used across DDX)
+│   │   │   ├── lib/
+│   │   │   │   └── (libraries)
+│   │   │   ├── global/
+│   │   │   │   └── (files used on all pages, but not an API)
+│   │   │   ├── browser/
+│   │   │   │   └── (browser-like APIs, controlling functionality like rendering the browser; not as vital as ../apis/)
+│   │   │   └── (main files, or uncategorized)
+│   │   ├── json/
+│   │   │   ├── themes/
+│   │   │   │   └── (JSON files for theming)
+│   │   │   └── (misc JSON files)
 ```
 
 

@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   sandstone.libcurl.set_websocket(wispUrl);
   var searchVAR =
     (await settingsAPI.getItem("search")) ||
-    "https://www.google.com/search?q=%s";
+    "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
   const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
 
