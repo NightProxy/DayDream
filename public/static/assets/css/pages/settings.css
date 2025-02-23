@@ -1,3 +1,70 @@
+.settings-child{
+  margin-left: 30px;
+}
+.settings-item-one{
+  margin-left: 10px !important;
+  margin-bottom: 10px;
+  margin-top: 5px;
+
+}
+.about-hover {
+  pointer-events: auto;
+  cursor: pointer;
+  display: inline-block;
+  transition: all 0.2s ease;
+  border: 2px solid transparent !important;
+  padding: 5px;
+  color: var(--faded-main-color) !important;
+  border-radius: 9999px;
+  text-decoration: none;
+}
+
+.about-hover:hover{
+
+  border: var(--main-color) 2px solid !important;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  color: var(--main-color) !important;
+  padding: 5px;
+  text-decoration: none;
+
+}
+
+.about-hover:active{
+  border: var(--main-color) 2px solid !important;
+  border-radius: 9999px;
+  background-color: var(--main-color) !important;
+  color: var(--background-color) !important;
+  transition: all 0.2s ease;
+  padding: 5px;
+
+
+}
+
+.a {
+  transition: all 0.2s ease;
+  border: 0px;
+  color: var(--faded-main-color);
+  border-radius: 9999px;
+  
+}
+.a:hover{
+  border: var(--main-color) 2px solid;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  color: var(--faded-main-color);
+  padding: 5px;
+
+}
+.a:active{
+  border: var(--main-color) 2px solid;
+  border-radius: 9999px;
+  background-color: var(--main-color);
+  color: var(--input-background-color);
+  transition: all 0.2s ease;
+  padding: 5px;
+
+}
 .dropdown {
   user-select: none;
   position: relative;
@@ -120,16 +187,21 @@
   align-content: center;
   flex-wrap: wrap;
   border-radius: 15px;
+  transition: all 0.2s ease;
   padding: 10px 0px;
 }
 
 .sideSnav li {
-  margin-bottom: 15px;
+  margin-top: 7.5px;
+  margin-bottom: 7.5px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 5px;
+  border-bottom: 0px;
+  transition: all 0.2s ease;
 }
+
 
 .sideSnav li:active {
   color: var(--active-outline-clr);
@@ -144,6 +216,7 @@
   transform: translateY(-50%);
   width: 3px;
   height: 35px;
+  
 }
 
 .sideSnav a {
@@ -151,6 +224,12 @@
   color: var(--main-color);
   font-size: 16px;
   display: block;
+  transition: all 0.2s ease;
+  border-bottom: transparent solid 0px;
+}
+.sideSnav a:hover{
+  transition: all 0.2s ease;
+  border-bottom: var(--main-color) 1px solid;
 }
 
 .sideSnav h1 {
@@ -159,7 +238,7 @@
 
 .scontent {
   display: block;
-  width: calc(100% - 20px);
+  width: 95%;
   background-color: var(--dark-translucent-bg);
   border-radius: 15px;
   float: left;
@@ -184,7 +263,9 @@
 }
 .scontent h5{
   font-size: 14px;
-  margin-left: 15px;
+  margin-left: 30px;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 .scontent p {
   font-size: 12px;
