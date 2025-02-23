@@ -4,6 +4,8 @@ const eventsAPI = new EventSystem();
 const globalFunctions = new Global(settingsAPI);
 const nightmare = new Nightmare();
 
+// ^ imports / constant defintions / class initializations
+
 const initializeDropdown = async (
   buttonId,
   optionsId,
@@ -43,8 +45,35 @@ const initializeDropdown = async (
   }
 
   dropdownButton.addEventListener("click", () => {
+    document.querySelectorAll(".dropdown-options").forEach((dropdown) => {
+      if (dropdown !== dropdownOptions) {
+        dropdown.style.opacity = "0";
+        dropdown.style.filter = "blur(5px)";
+        setTimeout(() => {
+          dropdown.style.display = "none";
+        }, 200);
+      }
+    });
+    document.querySelectorAll(".dropdown-button.active").forEach((btn) => {
+      if (btn !== dropdownButton) {
+        btn.classList.remove("active");
+      }
+    });
+    
     const isVisible = dropdownOptions.style.display === "block";
-    dropdownOptions.style.display = isVisible ? "none" : "block";
+    if (!isVisible) {
+      dropdownOptions.style.display = "block";
+      setTimeout(() => {
+        dropdownOptions.style.opacity = "1";
+        dropdownOptions.style.filter = "blur(0px)";
+      }, 10);
+    } else {
+      dropdownOptions.style.opacity = "0";
+      dropdownOptions.style.filter = "blur(5px)";
+      setTimeout(() => {
+        dropdownOptions.style.display = "none";
+      }, 200);
+    }
     dropdownButton.classList.toggle("active", !isVisible);
   });
 
@@ -54,13 +83,16 @@ const initializeDropdown = async (
       const selectedOption = event.target.textContent;
       buttonText.textContent = selectedOption;
       settingsAPI.setItem(settingsKey, selectedValue);
-      dropdownOptions.style.display = "none";
+      dropdownOptions.style.opacity = "0";
+      dropdownOptions.style.filter = "blur(5px)";
+      setTimeout(() => {
+        dropdownOptions.style.display = "none";
+      }, 200);
       dropdownButton.classList.remove("active");
 
       if (functions != null ?? undefined) {
         functions();
       }
-
       location.reload();
     }
   });
@@ -72,12 +104,15 @@ document.addEventListener("click", (event) => {
       btn.classList.remove("active");
       const dropdownOptions = btn.nextElementSibling;
       if (dropdownOptions) {
-        dropdownOptions.style.display = "none";
+        dropdownOptions.style.opacity = "0";
+        dropdownOptions.style.filter = "blur(5px)";
+        setTimeout(() => {
+          dropdownOptions.style.display = "none";
+        }, 200);
       }
     });
   }
 });
-
 const initSwitch = async (item, setting, functionToCall) => {
   const switchElement = item;
   if (!switchElement) {

@@ -55,12 +55,27 @@
   display: block;
 }
 
+
+.dropdown-options li:nth-last-child(1){
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+}
+.dropdown-options li:nth-child(1){
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  border-top-right-radius: 8px;
+  border-top-left-radius: 8px;
+}
 .dropdown-options li {
+  border-radius: none;
+  transition: all 0.2s ease;
   list-style-type: none;
   width: 100%;
-  border-radius: 8px;
   backdrop-filter: blur(50px);
   position: relative;
+  
 }
 
 .dropdown-options li:hover {
@@ -155,18 +170,25 @@
 }
 
 .scontent h1 {
+  font-size: 25px;
+  font-weight: 500;
+}
+
+.scontent h2{
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 300;
 }
-
-.scontent h2,
-h3 {
-  font-size: 17px;
-  font-weight: 500;
+.scontent h3{
+  margin-left: 10px;
+  font-size: 16px;
 }
-
-.scontent p {
+.scontent h5{
   font-size: 14px;
+  margin-left: 15px;
+}
+.scontent p {
+  font-size: 12px;
+  
   line-height: 20px;
 }
 
@@ -262,16 +284,22 @@ input[type="text"] {
   background: transparent;
   color: var(--text-color);
   border-radius: 10px;
-  transition: 0.5s ease;
+  transition: 0.2s ease;
+  font-family: "Plus Jakarta Sans";
+}
+input[type="text"]:hover{
+  background: var(--input-hover-background-color);
+  color: var(--hover-text-color);
 }
 
 input[type="text"]:focus {
-  background: var(--faded-main-color);
+  background: var(--input-background-color);
+  color: var(--active-text-color);
 }
 
 input[type="text"]::placeholder {
   color: var(--text-color);
-  font-family: Plus Jakarta Sans;
+  font-family: "Plus Jakarta Sans";
 }
 
 h1 {
@@ -322,7 +350,7 @@ h1 {
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 1);
   box-shadow: 0 3px 10px rgba(100, 116, 139, 0.327);
-  transition: all .3s ease;
+  transition: all .2s ease;
 }
 
 .switch:checked:before {
@@ -337,4 +365,12 @@ button {
   background-color: var(--utility-background-color);
   color: var(--text-color);
   font-family: Plus Jakarta Sans;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+button:hover{
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background-color: var(--hover-background-color);
+  color: var(--hover-text-color)
 }

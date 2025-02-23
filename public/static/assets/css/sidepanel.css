@@ -84,6 +84,7 @@
   border-radius: 4px;
   width: 150px;
   z-index: 1;
+  transition: all 0.2s ease;
   display: none;
   padding: 10px;
   list-style-type: none;
@@ -92,10 +93,24 @@
 .dropdown-button.active+.dropdown-options {
   display: block;
 }
-
+.dropdown-options li:nth-last-child(1){
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+}
+.dropdown-options li:nth-child(1){
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  border-top-right-radius: 8px;
+  border-top-left-radius: 8px;
+}
 .dropdown-options li {
+  border-radius: none;
   list-style-type: none;
   width: 100%;
+  transition: all 0.2s ease;
+  
 }
 
 .dropdown-options li a {

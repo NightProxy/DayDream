@@ -4,7 +4,7 @@
 
 | Version | Supported |
 | ------- | --------- |
-| v1.0.0  | ✅ Yes    |
+| v1.0.0  | ✅ Supported   |
 
 ## Why?
 
@@ -24,5 +24,6 @@ The current version of DDX is **v1.0.0**
 
 If you are having issues with your repository and/or its versions, you can
 submit a discussion or open a ticket in our
-[Discord](https://discord.night-x.com) and we will try to reach you ASAP.
-Thank you for using DayDream X.
+[Discord](https://discord.night-x.com) and we will try to reach you as soon as possible.
+
+Thank you for surfing the web using DayDream X.
