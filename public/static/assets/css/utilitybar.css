@@ -23,6 +23,7 @@
   border-radius: 8px;
   width: var(--searchbar-width);
   height: 20px;
+  border: none;
   transition: all ease-in-out 0.5s;
   margin-right: -2rem;
   opacity: 1;

@@ -1,0 +1,131 @@
+.separator{
+    border-radius: 999px !important;
+    background: var(--border-color) !important;
+    height: 3px !important;
+    margin-left: 30px !important;
+    width: 100% !important;
+}
+.historyContainer {
+    margin-left: 150px;
+    height: 100vh;
+    width: 100vw;
+}
+
+.background {
+    height: 100vh;
+    width: 100vw;
+    z-index: -1;
+    background-color: rgba(58, 58, 58, 0.45);
+    margin-top: -22px;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+}
+
+.history_submit {
+    background: transparent;
+
+}
+
+.search {
+    font-size: 14px;
+    padding: 5px 10px;
+    outline: none;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    transition: 0.2s ease;
+    border: var(--border-color) 1px solid;
+    border-radius: 9999px;
+    font-family: "Plus Jakarta Sans";
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: var(--border-color) 1px solid;
+    padding: 5px;
+    width: fit-content;
+}
+
+.search:hover {
+    background: var(--input-hover-background-color) !important;
+    color: var(--hover-text-color) !important;
+}
+
+.search:focus-within {
+    background: var(--input-background-color) !important;
+    color: var(--active-text-color) !important;
+    border-color: var(--active-border-color) !important;
+}
+
+/* Styling for input inside .search */
+.search input {
+    font-size: 14px;
+    padding: 5px;
+    outline: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    flex: 1;
+}
+.history-window{
+    height: 100vh;
+    background-color: var(--dark-translucent-bg);
+    margin-top: 20px;
+    border: var(--border-color) 1px solid;
+    border-radius: 10px;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+.day_title{
+    font-weight: 100;
+    margin-left: 30px;
+    margin-top: 30px;
+    font-size: 16px;
+}
+.history-entry{
+    
+    margin-left: 30px;
+    margin-top: 30px;
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    font-weight: 600;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+
+}
+.history_favicon{
+    width: 32px;
+    height: 32px;
+    transition: all 0.2s ease;
+}
+.history-entry:hover{
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    transition: all 0.2s ease;
+}
+.history_hostname{
+    color: var(--muted);
+    font-weight: 200;
+    transition: all 0.2s ease;
+
+}
+.history-entry:hover .history_favicon {
+    transform: scale(1.1);
+}
+
+.history-entry:hover .history_hostname {
+    color: var(--active-text-color);
+    transition: color 0.2s ease;
+}
+.deleteHistory{
+    justify-self: right;
+
+    transition: all 0.2s ease;
+   
+}

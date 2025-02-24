@@ -9,6 +9,35 @@
 h1, h2, h3, h4, h5, h6, p {
   cursor: text
 }
+
+input[type="text"] {
+  font-size: 14px;
+  padding: 5px 10px;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  transition: 0.2s ease;
+  border: var(--border-color) 1px solid;
+  border-radius: 9999px;
+  font-family: "Plus Jakarta Sans";
+}
+input[type="text"]:hover{
+  background: var(--input-hover-background-color) !important;
+  color: var(--hover-text-color) !important;
+}
+
+input[type="text"]:focus {
+  background: var(--input-background-color) !important;
+  color: var(--active-text-color) !important;
+  border-color: var(--active-border-color) !important;
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-color) !important;
+  font-family: "Plus Jakarta Sans" !important;
+}
+
 body {
   margin: 0;
   font-family: Plus Jakarta Sans;

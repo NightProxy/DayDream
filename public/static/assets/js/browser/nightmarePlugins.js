@@ -40,24 +40,41 @@ class SideMenu {
       this.container.appendChild(content);
     }
 
+    
     const rect = element.getBoundingClientRect();
-    let containRect = this.container.getBoundingClientRect();
-    containRect = containRect.width;
     this.container.style.top = `${rect.bottom + window.scrollY}px`;
     this.container.style.left = `${rect.left + rect.width + window.scrollX - 300}px`;
 
+    
+    this.container.style.opacity = "0";
+    this.container.style.filter = "blur(5px)";
+
     document.body.appendChild(this.container);
     this.isOpen = true;
+
+    
+    setTimeout(() => {
+      this.container.style.opacity = "1";
+      this.container.style.filter = "blur(0px)";
+    }, 10);
   }
 
   closeMenu() {
     if (this.container) {
-      this.container.remove();
-      this.container = null;
+      
+      this.container.style.opacity = "0";
+      this.container.style.filter = "blur(5px)";
+      setTimeout(() => {
+        if (this.container) {
+          this.container.remove();
+          this.container = null;
+        }
+      }, 200);
     }
     this.isOpen = false;
   }
 }
+
 
 class SidePanel {
   constructor(ui) {

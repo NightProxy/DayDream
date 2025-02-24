@@ -364,9 +364,10 @@ input[type="text"] {
   border: none;
   background: transparent;
   color: var(--text-color);
-  border-radius: 10px;
+  border-radius: 9999px;
   transition: 0.2s ease;
   font-family: "Plus Jakarta Sans";
+  border: var(--border-color) 1px solid;
 }
 input[type="text"]:hover{
   background: var(--input-hover-background-color);
@@ -376,6 +377,7 @@ input[type="text"]:hover{
 input[type="text"]:focus {
   background: var(--input-background-color);
   color: var(--active-text-color);
+  border-color: var(--active-border-color);
 }
 
 input[type="text"]::placeholder {

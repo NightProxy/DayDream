@@ -22,5 +22,6 @@
 
   /* Primary Colors */
   --main-color: rgb(141, 1, 255);
+  --muted: rgb(172, 176, 190);
   --faded-main-color: rgba(170, 1, 255, 0.26);
 }
