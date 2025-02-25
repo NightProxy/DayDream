@@ -110,13 +110,13 @@ try {
       process.env.VERCEL_PROJECT_PRODUCTION_URL
     ) {
       var method = "Vercel";
-      var extLink = ` https://${VERCEL_PROJECT_PRODUCTION_URL}`;
+      var extLink = ` https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
     } else if (process.env.RENDER && process.env.RENDER_EXTERNAL_HOSTNAME) {
       var method = "Render";
-      var extLink = ` https://${RENDER_EXTERNAL_HOSTNAME}`;
+      var extLink = ` https://${process.env.RENDER_EXTERNAL_HOSTNAME}`;
     } else if (process.env.KOYEB_APP_NAME && process.env.KOYEB_PUBLIC_DOMAIN) {
       var method = "Koyeb";
-      var extLink = ` https://${KOYEB_PUBLIC_DOMAIN}`;
+      var extLink = ` https://${process.env.KOYEB_PUBLIC_DOMAIN}`;
     } else {
       var method = "Custom (DNS Deploy?)";
       dns = true;
