@@ -15,7 +15,7 @@ import router from "./srv/router.js";
 import path from "node:path";
 
 // const git_url = (await execSync("git config --get remote.origin.url").toString());  replace the line under this with this before going public, the current repo won't work because its private
-const git_url = "https://github.com/NightProxy/Space.git"; // ^
+const git_url = "https://github.com/NightProxy/DayDreamX.git"; // ^
 const commit = await execSync("git rev-parse HEAD").toString();
 const git = new Git(git_url);
 
