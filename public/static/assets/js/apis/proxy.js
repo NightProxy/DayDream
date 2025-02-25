@@ -218,4 +218,45 @@ class Proxy {
         */
     }
   }
+
+  async fetch(url, params) {
+    await this.setTransports();
+    const client = new BareMux.BareClient();
+
+    const response = await client.fetch(url, params);
+    return await response.text();
+  }
+
+  async getFavicon(url, swConfig, proxySetting) {
+    let page = await this.fetch(url);
+    page = await page.toString();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(page, "text/html");
+
+    let favicon = doc.querySelector("link[rel='icon']") || 
+                  doc.querySelector("link[rel='shortcut icon']");
+
+    if (favicon) {
+        let href = favicon.getAttribute("href");
+        
+        if (!href.startsWith("http")) {
+            let base = new URL(url);
+            href = base.origin + (href.startsWith("/") ? href : "/" + href);
+
+        }
+        this.registerSW(swConfig[proxySetting].file).then(async () => {
+          await this.setTransports();
+        });
+        let swConfigSettings = swConfig[proxySetting];
+        let encodedHref =
+          swConfigSettings.config.prefix +
+          __uv$config.encodeUrl(href);
+
+        return encodedHref;
+    } else {
+      return null;
+    }
+}
+
 }

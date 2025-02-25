@@ -370,7 +370,7 @@ class Functions {
           class: "menu-item",
           id: "openBookmarks",
           onclick: () => {
-            this.tabs.createTab("daydream://bookmarks");
+            alert("disabled while in repair");
           },
         },
         [

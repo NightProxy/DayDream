@@ -6,7 +6,7 @@ class Utils {
   }
 
   setFavicon(tabElement, iframe) {
-    iframe.addEventListener("load", () => {
+    iframe.addEventListener("load", async () => {
       try {
         if (!iframe.contentDocument) {
           console.error(
@@ -28,8 +28,10 @@ class Utils {
         }
 
         if (favicon) {
-          const faviconUrl = favicon.href || favicon.getAttribute("href");
+          let faviconUrl = favicon.href || favicon.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
+
+          faviconUrl = await this.getFavicon(faviconUrl);
 
           if (faviconUrl && faviconImage) {
             faviconImage.style.backgroundImage = `url('${faviconUrl}')`;

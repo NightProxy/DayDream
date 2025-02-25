@@ -8,6 +8,9 @@ class Global {
     this.init();
   }
   async init() {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/internal/icons.sw.js");
+    }
     this.theming.init();
     if (
       window === window.top &&

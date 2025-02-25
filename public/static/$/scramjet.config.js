@@ -15,7 +15,7 @@ flags: {
   serviceworkers: true,
   rewriterLogs: false,
 },
-  codec: {
+/*  codec: {
       encode: `if (!url) return url;
         let result = "";
         for (let i = 0; i < url.length; i++) {
@@ -33,5 +33,19 @@ flags: {
         }
         return result + (search.length ? "?" + search.join("?") : "");
       `,
-    },
+    },*/
+    codec: {
+      encode: `
+        if (!url) return url;
+        url = url.toString();
+    
+        return btoa(encodeURIComponent(url));
+      `,
+      decode: `
+        if (!url) return url;
+        url = url.toString();
+    
+        return decodeURIComponent(atob(url));
+      `,
+    }
 };

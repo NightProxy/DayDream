@@ -1,5 +1,5 @@
 class Tabs {
-  constructor(render, ui, utils, items, logger, settings, eventsAPI) {
+  constructor(render, ui, utils, items, logger, settings, eventsAPI, swConfig, proxySetting) {
     this.render = render;
     this.ui = ui;
     this.utils = utils;

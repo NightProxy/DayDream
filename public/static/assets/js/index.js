@@ -87,7 +87,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     eventsAPI
   );
   const items = new Items();
-  const utils = new Utils(items, loggingAPI, settingsAPI);
+  const utils = new Utils(items, loggingAPI, settingsAPI, proxy);
+  //const history = new History(utils, proxy, swConfig, proxySetting);
   const tabs = new Tabs(
     render,
     nightmare,
@@ -95,7 +96,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     items,
     loggingAPI,
     settingsAPI,
-    eventsAPI
+    eventsAPI,
+//    history
   );
 
   tabs.createTab("daydream://newtab");
@@ -170,7 +172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         console.log(
           `Using proxy: ${proxySetting}, Settings are: ` +
-            (await swConfigSettings)
+          (await swConfigSettings)
         );
         console.log(swConfigSettings);
 

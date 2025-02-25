@@ -161,6 +161,8 @@ function sendMessageToSW(message) {
   });
 }
 
+window.sendMessageToSW = sendMessageToSW;
+
 uploadBGInput.addEventListener("change", () => {
   const file = uploadBGInput.files[0];
   if (!file) {

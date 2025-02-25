@@ -99,14 +99,15 @@ class Themeing {
 
   async setBackgroundImage() {
     const bg = await this.settings.getItem("theme:background-image");
-    const fetchBG = await fetch(bg);
-    if (fetchBG.ok) {
-      document.documentElement.style.setProperty(
-        "--background-image",
-        `url(${bg || "/assets/imgs/DDX.bg.jpeg"})`
-      );
-    }
-    if (!fetchBG.ok) {
+    if (bg !== null) {
+      const fetchBG = await fetch(bg);
+      if (fetchBG.ok) {
+        document.documentElement.style.setProperty(
+          "--background-image",
+          `url(${bg || "/assets/imgs/DDX.bg.jpeg"})`
+        );
+      }
+    } else {
       document.documentElement.style.setProperty(
         "--background-image",
         "url(/assets/imgs/DDX.bg.jpeg)"
@@ -116,14 +117,15 @@ class Themeing {
   }
   async setLogo() {
     const logo = await this.settings.getItem("theme:logo");
-    const fetchLogo = await fetch(logo);
-    if (fetchLogo.ok) {
-      document.documentElement.style.setProperty(
-        "--logo",
-        `url(${logo || "/assets/imgs/logo.png"})`
-      );
-    }
-    if (!fetchLogo.ok) {
+    if (logo !== null) {
+      const fetchLogo = await fetch(logo);
+      if (fetchLogo.ok) {
+        document.documentElement.style.setProperty(
+          "--logo",
+          `url(${logo || "/assets/imgs/logo.png"})`
+        );
+      }
+    } else {
       document.documentElement.style.setProperty(
         "--logo",
         "url(/assets/imgs/logo.png)"
@@ -160,21 +162,21 @@ class Themeing {
       console.error("Invalid color input:", color);
       return color; // Return the original input if it's invalid
     }
-  
+
     const colorMatch = color.match(
       /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
     );
-  
+
     if (!colorMatch) {
       console.error("Color does not match rgba or rgb format:", color);
       return color;
     }
-  
+
     let [r, g, b, a] = colorMatch.slice(1).map(Number);
     a = isNaN(a) ? 1 : a; // Default to 1 if `a` is NaN
     a = Math.min(1, Math.max(0, a * factor)); // Clamp alpha to valid range
-  
+
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
-  
+
 }
