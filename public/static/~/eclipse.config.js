@@ -40,7 +40,7 @@ __webpack_require__.ruid = "bundler=rspack@1.0.14";
 /************************************************************************/
 self.__eclipse$config = {
     prefix: "/~/daydream/",
-    codec: self.__eclipse$codecs.base64,
+    codec: self.__eclipse$codecs.xor,
     codecs: "/~/eclipse.codecs.js",
     config: "/~/eclipse.config.js",
     rewrite: "/~/eclipse.rewrite.js",
