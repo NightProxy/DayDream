@@ -14,9 +14,21 @@ import { execSync } from "child_process";
 import router from "./srv/router.js";
 import path from "node:path";
 
-const git_url = (await execSync("git config --get remote.origin.url").toString()); 
+let git_url = "https://github.com/NightProxy/DayDreamX";
+let commit = "Unable to get this information.";
 
-const commit = await execSync("git rev-parse HEAD").toString();
+try {
+  git_url = execSync("git config --get remote.origin.url").toString().trim();
+} catch (e) {
+  console.log("Unable to get current repo url; using default");
+}
+
+try {
+  commit = execSync("git rev-parse HEAD").toString().trim();
+} catch (e) {
+  console.log("Unable to get commit info");
+}
+
 const git = new Git(git_url);
 
 const server = http.createServer();
@@ -24,6 +36,7 @@ const app = express();
 const packageInfo = JSON.parse(fs.readFileSync("package.json"));
 const PORT = process.env.PORT || 8080;
 
+// Rest of your code remains the same
 logging.set_level(logging.ERROR);
 wisp.options.dns_method = "resolve";
 wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];
