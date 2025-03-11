@@ -47,3 +47,5 @@ class SettingsAPI {
     });
   }
 }
+
+export { SettingsAPI };

@@ -18,3 +18,5 @@ class Items {
     this.historyButton = document.getElementById("history");
   }
 }
+
+export {Items};

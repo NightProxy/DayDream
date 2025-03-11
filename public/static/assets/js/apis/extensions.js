@@ -141,3 +141,5 @@ class ExtensionsAPI {
     }
   }
 }
+
+export { ExtensionsAPI };

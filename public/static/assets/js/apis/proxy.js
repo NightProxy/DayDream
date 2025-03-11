@@ -260,3 +260,5 @@ class Proxy {
 }
 
 }
+
+export { Proxy };

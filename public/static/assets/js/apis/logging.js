@@ -68,3 +68,5 @@ class Logger {
     }
   }
 }
+
+export {Logger};

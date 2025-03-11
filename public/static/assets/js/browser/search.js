@@ -1,9 +1,14 @@
+import { Nightmare as UI } from "/assets/js//lib/Nightmare/nightmare.js";
+import { Utils } from "/assets/js/utils.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+
 class Search {
-  constructor(utils, ui, logger, settings, proxy, swConfig, proxySetting) {
-    this.utils = utils;
-    this.ui = ui;
-    this.data = logger;
-    this.settings = settings;
+  constructor(proxy, swConfig, proxySetting) {
+    this.utils = new Utils();
+    this.ui = new UI();
+    this.data = new Logger();
+    this.settings = new SettingsAPI();
     this.proxy = proxy;
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
@@ -470,3 +475,5 @@ class Search {
     return listItem;
   }
 }
+
+export {Search};

@@ -1,26 +1,27 @@
+import { Items } from "/assets/js/browser/items.js";
+import { Nightmare as UI } from "/assets/js//lib/Nightmare/nightmare.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { Utils } from "/assets/js/utils.js";
+import { NightmarePlugins } from "/assets/js/browser/nightmarePlugins.js";
+import { Windowing } from "/assets/js/browser/windowing.js";
+import { EventSystem } from "/assets/js/apis/events.js";
+import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
+
 class Functions {
   constructor(
-    items,
-    ui,
-    tabs,
-    logger,
-    settings,
-    utils,
-    nightmarePlugins,
-    windowing,
-    eventsAPI,
-    extensionsAPI
+    tabs
   ) {
-    this.items = items;
-    this.ui = ui;
+    this.items = new Items();
+    this.ui = new UI();
     this.tabs = tabs;
-    this.logger = logger;
-    this.settings = settings;
-    this.utils = utils;
-    this.nightmarePlugins = nightmarePlugins;
-    this.windowing = windowing;
-    this.events = eventsAPI;
-    this.extensions = extensionsAPI;
+    this.logger = new Logger();
+    this.settings = new SettingsAPI();
+    this.utils = new Utils();
+    this.nightmarePlugins = new NightmarePlugins();
+    this.windowing = new Windowing();
+    this.events = new EventSystem();
+    this.extensions = new ExtensionsAPI();
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -641,3 +642,5 @@ class Functions {
     });
   }
 }
+
+export {Functions}

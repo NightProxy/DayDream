@@ -295,3 +295,5 @@ class Profiles_DataEncryption {
     return output;
   }
 }
+
+export { ProfilesAPI };

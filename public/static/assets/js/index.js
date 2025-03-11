@@ -1,3 +1,21 @@
+import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
+import { NightmarePlugins } from "/assets/js/browser/nightmarePlugins.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { EventSystem } from "/assets/js/apis/events.js";
+import { ProfilesAPI } from "/assets/js/apis/profiles.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
+import { Proxy } from "/assets/js/apis/proxy.js";
+import { Windowing } from "/assets/js/browser/windowing.js";
+import { Global } from "/assets/js/global/index.js";
+import { Render } from "/assets/js/browser/render.js";
+import { Items } from "/assets/js/browser/items.js";
+import { Utils } from "/assets/js/utils.js";
+import { Tabs } from "/assets/js/browser/tabs.js";
+import { Functions } from "/assets/js/browser/functions.js";
+import { Keys } from "/assets/js/browser/keys.js";
+import { Search } from "/assets/js/browser/search.js";
+
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
   const nightmarePlugins = new NightmarePlugins(nightmare);
@@ -77,44 +95,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
     },
   };
-  const windowing = new Windowing(settingsAPI);
-  const globalFunctions = new Global(settingsAPI, windowing);
+  const windowing = new Windowing();
+  const globalFunctions = new Global();
   const render = new Render(
-    document.getElementById("browser-container"),
-    nightmare,
-    loggingAPI,
-    settingsAPI,
-    eventsAPI
+    document.getElementById("browser-container")
   );
   const items = new Items();
-  const utils = new Utils(items, loggingAPI, settingsAPI, proxy);
+  const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
   const tabs = new Tabs(
-    render,
-    nightmare,
-    utils,
-    items,
-    loggingAPI,
-    settingsAPI,
-    eventsAPI,
-//    history
+    render
   );
 
   tabs.createTab("daydream://newtab");
 
   const functions = new Functions(
-    items,
-    nightmare,
-    tabs,
-    loggingAPI,
-    settingsAPI,
-    utils,
-    nightmarePlugins,
-    windowing,
-    eventsAPI,
-    extensionsAPI
+    tabs
   );
-  const keys = new Keys(tabs, functions, settingsAPI, eventsAPI);
+  const keys = new Keys(tabs, functions);
 
   keys.init();
 
@@ -208,10 +206,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   functions.init();
 
   const searchbar = new Search(
-    utils,
-    nightmare,
-    loggingAPI,
-    settingsAPI,
     proxy,
     swConfig,
     proxySetting,

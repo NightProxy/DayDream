@@ -64,3 +64,5 @@ class EventSystem {
     document.dispatchEvent(new CustomEvent(eventName, { detail: data }));
   }
 }
+
+export { EventSystem };

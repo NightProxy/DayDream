@@ -1,10 +1,12 @@
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { Themeing } from "/assets/js/global/theming.js";
+import { Windowing } from "/assets/js/browser/windowing.js";
+
 class Global {
-  constructor(settings, windowing = null) {
-    this.settings = settings;
-    this.theming = new Themeing(settings);
-    if (windowing != null) {
-      this.windowing = windowing;
-    }
+  constructor() {
+    this.settings = new SettingsAPI();
+    this.theming = new Themeing();
+    this.windowing = new Windowing();
     this.init();
   }
   async init() {
@@ -32,3 +34,4 @@ class Global {
     }
   }
 }
+export { Global };

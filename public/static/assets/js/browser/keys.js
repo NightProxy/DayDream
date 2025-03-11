@@ -1,10 +1,13 @@
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { EventSystem } from "/assets/js/apis/events.js";
+
 class Keys {
-  constructor(tabs, functions, settings, events) {
+  constructor(tabs, functions) {
     this.keys = [];
     this.tabs = tabs;
     this.functions = functions;
-    this.settings = settings;
-    this.events = events;
+    this.settings = new SettingsAPI();
+    this.events = new EventSystem();
   }
 
   init() {
@@ -114,3 +117,5 @@ class Keys {
     });*/
   }
 }
+
+export {Keys};

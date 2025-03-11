@@ -1,6 +1,8 @@
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+
 class Themeing {
-  constructor(settings) {
-    this.settings = settings;
+  constructor() {
+    this.settings = new SettingsAPI();
   }
 
   async init() {
@@ -180,3 +182,5 @@ class Themeing {
   }
 
 }
+
+export { Themeing };

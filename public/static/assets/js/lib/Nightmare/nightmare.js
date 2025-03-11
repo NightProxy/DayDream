@@ -206,3 +206,5 @@ class ContextMenu {
     }
   }
 }
+
+export { Nightmare };

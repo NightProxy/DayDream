@@ -1,8 +1,12 @@
+import { Items } from "/assets/js/browser/items.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+
 class Utils {
-  constructor(items, logger, settings) {
-    this.items = items;
-    this.logger = logger;
-    this.settings = settings;
+  constructor() {
+    this.items = new Items();
+    this.logger = new Logger();
+    this.settings = new SettingsAPI();
   }
 
   setFavicon(tabElement, iframe) {
@@ -142,3 +146,5 @@ class Utils {
     };
   }
 }
+
+export { Utils };

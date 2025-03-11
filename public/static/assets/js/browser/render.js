@@ -1,10 +1,15 @@
+import {Nightmare} from "/assets/js/lib/Nightmare/nightmare.js";
+import {Logger} from "/assets/js/apis/logging.js";
+import {SettingsAPI} from "/assets/js/apis/settings.js";
+import {EventSystem} from "/assets/js/apis/events.js";
+
 class Render {
-  constructor(container, nightmare, logger, settings, events) {
+  constructor(container) {
     this.container = container;
-    this.nightmare = nightmare;
-    this.logger = logger;
-    this.settings = settings;
-    this.events = events;
+    this.nightmare = new Nightmare();
+    this.logger = new Logger();
+    this.settings = new SettingsAPI();
+    this.events = new EventSystem();
     this.init();
   }
 
@@ -452,3 +457,5 @@ class Render {
     });
   }
 }
+
+export { Render };

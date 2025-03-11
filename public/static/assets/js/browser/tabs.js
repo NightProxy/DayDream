@@ -1,12 +1,19 @@
+import {Nightmare as UI} from "/assets/js/lib/Nightmare/nightmare.js";
+import {Utils} from "/assets/js/utils.js";
+import {Items} from "/assets/js/browser/items.js";
+import {Logger} from "/assets/js/apis/logging.js";
+import {SettingsAPI} from "/assets/js/apis/settings.js";
+import {EventSystem} from "/assets/js/apis/events.js";
+
 class Tabs {
-  constructor(render, ui, utils, items, logger, settings, eventsAPI, swConfig, proxySetting) {
+  constructor(render) {
     this.render = render;
-    this.ui = ui;
-    this.utils = utils;
-    this.items = items;
-    this.logger = logger;
-    this.settings = settings;
-    this.eventsAPI = eventsAPI;
+    this.ui = new UI();
+    this.utils = new Utils();
+    this.items = new Items();
+    this.logger = new Logger();
+    this.settings = new SettingsAPI();
+    this.eventsAPI = new EventSystem();
     this.tabCount = 0;
     this.tabs = [];
     this.groups = [];
@@ -737,3 +744,5 @@ closeCurrentGroup() {
     this.logger.createLog(`Rearranged tabs`);
   }
 }
+
+export {Tabs};

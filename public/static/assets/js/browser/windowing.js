@@ -1,6 +1,8 @@
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+
 class Windowing {
-  constructor(settings) {
-    this.settings = settings;
+  constructor() {
+    this.settings = new SettingsAPI();
   }
 
   newWindow() {
@@ -103,3 +105,5 @@ class Windowing {
     }
   }
 }
+
+export { Windowing };

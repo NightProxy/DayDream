@@ -1,10 +1,12 @@
+import { Nightmare } from "/assets/js//lib/Nightmare/nightmare.js";
+
 class NightmarePlugins {
-  constructor(ui) {
-    this.ui = ui;
-    this.notification = new Notification(ui);
-    this.sidemenu = new SideMenu(ui);
-    this.sidepanel = new SidePanel(ui);
-    this.rightclickmenu = new RightClickMenu(ui);
+  constructor() {
+    this.ui = new Nightmare();
+    this.notification = new Notification(this.ui);
+    this.sidemenu = new SideMenu(this.ui);
+    this.sidepanel = new SidePanel(this.ui);
+    this.rightclickmenu = new RightClickMenu(this.ui);
   }
 }
 
@@ -256,3 +258,5 @@ class RightClickMenu {
   }
 
 }
+
+export {NightmarePlugins}
