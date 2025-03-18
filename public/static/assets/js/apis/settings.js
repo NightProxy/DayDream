@@ -34,14 +34,14 @@ class SettingsAPI {
       deleteRequest.onerror = (event) => {
         console.error(
           `Failed to delete database '${dbName}':`,
-          event.target.error
+          event.target.error,
         );
         reject(event.target.error);
       };
 
       deleteRequest.onblocked = () => {
         console.warn(
-          `Database '${dbName}' deletion is blocked. Close other tabs or processes using the database.`
+          `Database '${dbName}' deletion is blocked. Close other tabs or processes using the database.`,
         );
       };
     });

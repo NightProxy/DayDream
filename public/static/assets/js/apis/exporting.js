@@ -188,3 +188,5 @@ class DataExportAPI {
     reader.readAsText(file);
   }
 }
+
+export { DataExportAPI };

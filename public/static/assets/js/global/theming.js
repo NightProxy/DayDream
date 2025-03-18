@@ -8,30 +8,28 @@ class Themeing {
   async init() {
     document.documentElement.style.setProperty(
       "--main-color",
-      (await this.settings.getItem("themeColor")) || "#aa00ff"
+      (await this.settings.getItem("themeColor")) || "#aa00ff",
     );
-    const fadedMainColor = this.fadeColor(
-      await this.settings.getItem("themeColor"),
-      "0.26"
-    ) || "rgba(170, 1, 255, 0.26)";
+    const fadedMainColor =
+      this.fadeColor(await this.settings.getItem("themeColor"), "0.26") ||
+      "rgba(170, 1, 255, 0.26)";
     document.documentElement.style.setProperty(
       "--faded-main-color",
-      fadedMainColor || "rgba(170, 1, 255, 0.26)"
+      fadedMainColor || "rgba(170, 1, 255, 0.26)",
     );
 
     document.addEventListener("theme:color-change", async (event) => {
       await this.settings.setItem("themeColor", event.detail.color);
       document.documentElement.style.setProperty(
         "--main-color",
-        (await this.settings.getItem("themeColor")) || "#aa00ff"
+        (await this.settings.getItem("themeColor")) || "#aa00ff",
       );
-      const fadedMainColor = this.fadeColor(
-        await this.settings.getItem("themeColor"),
-        "0.26"
-      ) || "rgba(170, 1, 255, 0.26)";
+      const fadedMainColor =
+        this.fadeColor(await this.settings.getItem("themeColor"), "0.26") ||
+        "rgba(170, 1, 255, 0.26)";
       document.documentElement.style.setProperty(
         "--faded-main-color",
-        fadedMainColor || "rgba(170, 1, 255, 0.26)"
+        fadedMainColor || "rgba(170, 1, 255, 0.26)",
       );
       this.applyThemeFromJsonFile();
     });
@@ -47,16 +45,6 @@ class Themeing {
     document.addEventListener("theme:background-change", async () => {
       this.setBackgroundImage();
     });
-
-    this.setLogo();
-
-    document.addEventListener("theme:logo-change", async (event) => {
-      this.setLogo();
-    });
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/internal/themeing.sw.js");
-    }
   }
 
   async applyThemeFromJsonFile() {
@@ -88,7 +76,7 @@ class Themeing {
             color = this.applyColorTint(
               color,
               themeColor,
-              tintAmounts[property] || 0.35
+              tintAmounts[property] || 0.35,
             );
           }
           root.style.setProperty(`--${property}`, color);
@@ -102,46 +90,23 @@ class Themeing {
   async setBackgroundImage() {
     const bg = await this.settings.getItem("theme:background-image");
     if (bg !== null) {
-      const fetchBG = await fetch(bg);
-      if (fetchBG.ok) {
-        document.documentElement.style.setProperty(
-          "--background-image",
-          `url(${bg || "/assets/imgs/DDX.bg.jpeg"})`
-        );
-      }
+      const img = bg || "/assets/imgs/DDX.bg.jpeg";
+      document.body.querySelector(".bg-img img").setAttribute("src", img);
     } else {
       document.documentElement.style.setProperty(
         "--background-image",
-        "url(/assets/imgs/DDX.bg.jpeg)"
+        "url(/assets/imgs/DDX.bg.jpeg)",
       );
     }
     console.log("Background image set");
   }
-  async setLogo() {
-    const logo = await this.settings.getItem("theme:logo");
-    if (logo !== null) {
-      const fetchLogo = await fetch(logo);
-      if (fetchLogo.ok) {
-        document.documentElement.style.setProperty(
-          "--logo",
-          `url(${logo || "/assets/imgs/logo.png"})`
-        );
-      }
-    } else {
-      document.documentElement.style.setProperty(
-        "--logo",
-        "url(/assets/imgs/logo.png)"
-      );
-    }
-    console.log("Logo set");
-  }
 
   applyColorTint(color, tintColor, tintFactor = 0.5) {
     const colorMatch = color.match(
-      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
+      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/,
     );
     const tintMatch = tintColor.match(
-      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
+      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/,
     );
 
     if (!colorMatch || !tintMatch) return color;
@@ -160,13 +125,13 @@ class Themeing {
   }
 
   fadeColor(color, factor) {
-    if (typeof color !== 'string') {
+    if (typeof color !== "string") {
       console.error("Invalid color input:", color);
       return color; // Return the original input if it's invalid
     }
 
     const colorMatch = color.match(
-      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/
+      /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/,
     );
 
     if (!colorMatch) {
@@ -180,7 +145,6 @@ class Themeing {
 
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
-
 }
 
 export { Themeing };

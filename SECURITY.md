@@ -2,9 +2,9 @@
 
 > Supported versions of DDX are as followed:
 
-| Version | Supported |
-| ------- | --------- |
-| v1.0.0  | ✅ Supported   |
+| Version | Supported    |
+| ------- | ------------ |
+| v1.0.0  | ✅ Supported |
 
 ## Why?
 

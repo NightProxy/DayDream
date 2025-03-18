@@ -1,6 +1,7 @@
 import express from "express";
 import http from "node:http";
 import cors from "cors";
+import compression from "compression";
 import chalk from "chalk";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
@@ -48,6 +49,7 @@ try {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
+  app.use(compression());
   app.use(express.static(path.join(process.cwd(), "public/static/")));
   app.use("/epoxy/", express.static(epoxyPath));
   app.use("/@/", express.static(uvPath));
@@ -72,7 +74,7 @@ try {
       1: "#8b0ab8",
       2: "#630aba",
       3: "#665e72",
-      4: "#1c1724"
+      4: "#1c1724",
     }; //credits to nebula for the gradient design idea on the title.
     const gitColor = chalk.hex("#00ff95");
     const host = chalk.hex("#0d52bd");

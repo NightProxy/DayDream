@@ -1,9 +1,9 @@
-import {Nightmare as UI} from "/assets/js/lib/Nightmare/nightmare.js";
-import {Utils} from "/assets/js/utils.js";
-import {Items} from "/assets/js/browser/items.js";
-import {Logger} from "/assets/js/apis/logging.js";
-import {SettingsAPI} from "/assets/js/apis/settings.js";
-import {EventSystem} from "/assets/js/apis/events.js";
+import { Nightmare as UI } from "/assets/js/lib/Nightmare/nightmare.js";
+import { Utils } from "/assets/js/utils.js";
+import { Items } from "/assets/js/browser/items.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { EventSystem } from "/assets/js/apis/events.js";
 
 class Tabs {
   constructor(render) {
@@ -57,7 +57,7 @@ class Tabs {
   }
   get unpinedTabEls() {
     return Array.prototype.slice.call(
-      this.el.querySelectorAll(".tab:not(.tab.pinned)")
+      this.el.querySelectorAll(".tab:not(.tab.pinned)"),
     );
   }
 
@@ -193,13 +193,13 @@ class Tabs {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["close"]
+                ["close"],
               ),
-            ]
+            ],
           ),
         ]),
         this.ui.createElement("div", { class: "tab-bottom-border" }),
-      ]
+      ],
     );
 
     const updateTabTitle = () => {
@@ -220,9 +220,7 @@ class Tabs {
         childList: true,
         subtree: true,
       });
-      let check = this.utils.getInternalURL(
-        new URL(iframe.src).pathname
-      );
+      let check = this.utils.getInternalURL(new URL(iframe.src).pathname);
       if (check.startsWith("daydream://")) {
         this.items.addressBar.value = check;
       } else {
@@ -272,7 +270,7 @@ class Tabs {
         { x: e.pageX, y: e.pageY },
         "contextMenu",
         "",
-        "padding: 5px;"
+        "padding: 5px;",
       );
     });
 
@@ -290,6 +288,14 @@ class Tabs {
     this.layoutTabs();
     this.setupDraggabilly();
     this.logger.createLog(`Created tab: ${url}`);
+  }
+
+  updateTabAttributes() {
+    const tabElements = this.items.tabGroupsContainer.querySelectorAll(".tab");
+
+    tabElements.forEach((element, index) => {
+      element.setAttribute("tab", index);
+    });
   }
 
   closeTabById(id) {
@@ -455,7 +461,7 @@ closeCurrentGroup() {
 
   bookmarkCurrentTab() {
     const currentTab = this.tabs.find((tab) =>
-      tab.tab.classList.contains("active")
+      tab.tab.classList.contains("active"),
     );
     if (currentTab) {
       alert(`Bookmarking: ${currentTab.url}`);
@@ -600,11 +606,11 @@ closeCurrentGroup() {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionY,
-            tabPositionsY
+            tabPositionsY,
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget)
+            Math.min(tabEls.length, destinationIndexTarget),
           );
 
           if (currentIndex !== destinationIndex) {
@@ -620,7 +626,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging"
+                  "data-was-not-last-tab-when-started-dragging",
                 )
                 ? moveVector.y - this.tabContentHeights[currentIndex]
                 : moveVector.y
@@ -632,11 +638,11 @@ closeCurrentGroup() {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionX,
-            tabPositions
+            tabPositions,
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget)
+            Math.min(tabEls.length, destinationIndexTarget),
           );
 
           if (currentIndex !== destinationIndex) {
@@ -652,7 +658,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging"
+                  "data-was-not-last-tab-when-started-dragging",
                 )
                 ? moveVector.x - this.tabContentWidths[currentIndex]
                 : moveVector.x
@@ -745,4 +751,4 @@ closeCurrentGroup() {
   }
 }
 
-export {Tabs};
+export { Tabs };

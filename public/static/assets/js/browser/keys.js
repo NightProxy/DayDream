@@ -97,11 +97,11 @@ class Keys {
           }
 
           let val;
-        if (isDisabled) {
-          val = "true";
-        } else {
-          val = "false";
-        }
+          if (isDisabled) {
+            val = "true";
+          } else {
+            val = "false";
+          }
           // Save the current state to this.settings
           await this.settings.setItem("verticalTabs-notshowing", val);
         } else {
@@ -118,4 +118,4 @@ class Keys {
   }
 }
 
-export {Keys};
+export { Keys };

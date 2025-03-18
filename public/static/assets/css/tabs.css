@@ -150,6 +150,7 @@
 .tab-title {
   flex: 1;
   font-family: Poppins;
+  font-size: 12px;
   vertical-align: top;
   overflow: hidden;
   white-space: nowrap;
@@ -213,7 +214,7 @@
 }
 
 .tab-close .material-symbols-outlined {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--text-color);
   /* position: static !important; */
 }
@@ -362,8 +363,6 @@
 #create-tab:hover .title {
   color: var(--main-color);
 }
-
-
 
 .viewport {
   display: flex;

@@ -32,8 +32,7 @@ class Proxy {
 
   search(input) {
     input = input.trim();
-    const searchTemplate =
-      this.searchVar || "https://www.duckduckgo.com/?q=%s";
+    const searchTemplate = this.searchVar || "https://www.duckduckgo.com/?q=%s";
     try {
       return new URL(input).toString();
     } catch (err) {
@@ -174,16 +173,6 @@ class Proxy {
           activeIframe.src = encodedUrl;
         }
         break;
-      case "iframe":
-        if (proxySetting == "auto" || proxySetting == "ss") {
-          let main_frame = new sandstone.controller.ProxyFrame(activeIframe);
-          main_frame.navigate_to(this.search(url));
-
-          main_frame.on_load = async () => {
-            document.getElementById("uv-address").value = main_frame.url.href;
-          };
-        }
-        break;
     }
   }
 
@@ -205,17 +194,6 @@ class Proxy {
           __uv$config.encodeUrl(this.search(url));
         location.href = encodedUrl;
         break;
-      /*case "iframe":
-        if (proxySetting == "auto" || proxySetting == "ss") {
-          let main_frame = new sandstone.controller.ProxyFrame(activeIframe);
-          main_frame.navigate_to(this.search(url));
-
-          main_frame.on_load = async () => {
-            document.getElementById("uv-address").value = main_frame.url.href;
-          };
-        }
-        break;
-        */
     }
   }
 
@@ -234,31 +212,29 @@ class Proxy {
     const parser = new DOMParser();
     const doc = parser.parseFromString(page, "text/html");
 
-    let favicon = doc.querySelector("link[rel='icon']") || 
-                  doc.querySelector("link[rel='shortcut icon']");
+    let favicon =
+      doc.querySelector("link[rel='icon']") ||
+      doc.querySelector("link[rel='shortcut icon']");
 
     if (favicon) {
-        let href = favicon.getAttribute("href");
-        
-        if (!href.startsWith("http")) {
-            let base = new URL(url);
-            href = base.origin + (href.startsWith("/") ? href : "/" + href);
+      let href = favicon.getAttribute("href");
 
-        }
-        this.registerSW(swConfig[proxySetting].file).then(async () => {
-          await this.setTransports();
-        });
-        let swConfigSettings = swConfig[proxySetting];
-        let encodedHref =
-          swConfigSettings.config.prefix +
-          __uv$config.encodeUrl(href);
+      if (!href.startsWith("http")) {
+        let base = new URL(url);
+        href = base.origin + (href.startsWith("/") ? href : "/" + href);
+      }
+      this.registerSW(swConfig[proxySetting].file).then(async () => {
+        await this.setTransports();
+      });
+      let swConfigSettings = swConfig[proxySetting];
+      let encodedHref =
+        swConfigSettings.config.prefix + __uv$config.encodeUrl(href);
 
-        return encodedHref;
+      return encodedHref;
     } else {
       return null;
     }
-}
-
+  }
 }
 
 export { Proxy };

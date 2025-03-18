@@ -9,9 +9,7 @@ import { EventSystem } from "/assets/js/apis/events.js";
 import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
 
 class Functions {
-  constructor(
-    tabs
-  ) {
+  constructor(tabs) {
     this.items = new Items();
     this.ui = new UI();
     this.tabs = tabs;
@@ -44,7 +42,7 @@ class Functions {
     this.navbarfunctions();
 
     this.items.newTab.addEventListener("click", () =>
-      this.tabs.createTab("daydream://newtab")
+      this.tabs.createTab("daydream://newtab"),
     );
   }
 
@@ -63,11 +61,11 @@ class Functions {
       }
 
       let val;
-        if (isDisabled) {
-          val = "true";
-        } else {
-          val = "false";
-        }
+      if (isDisabled) {
+        val = "true";
+      } else {
+        val = "false";
+      }
 
       await this.settings.setItem("verticalTabs-notshowing", val);
     } else {
@@ -80,7 +78,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.history.back();
     this.logger.createLog(
-      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
+      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
     );
   }
 
@@ -89,7 +87,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.history.forward();
     this.logger.createLog(
-      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
+      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
     );
   }
 
@@ -98,7 +96,7 @@ class Functions {
       .querySelector("iframe.active")
       .contentWindow.location.reload();
     this.logger.createLog(
-      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`
+      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
     );
   }
 
@@ -169,7 +167,7 @@ class Functions {
     const iframe = this.items.iframeContainer.querySelector("iframe.active");
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
       );
       return;
     }
@@ -184,7 +182,7 @@ class Functions {
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
       );
       return;
     }
@@ -215,7 +213,7 @@ class Functions {
   menus() {
     this.extrasMenu(this.items.extrasButton);
     this.extensionsMenu(this.items.extensionsButton);
-    this.profilesMenu(this.items.profilesButton)
+    this.profilesMenu(this.items.profilesButton);
   }
 
   goFullscreen() {
@@ -248,13 +246,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["tab"]
+            ["tab"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ]
+        ],
       ),
       //New Window
       this.ui.createElement(
@@ -270,13 +268,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["open_in_new"]
+            ["open_in_new"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ]
+        ],
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -292,7 +290,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["visibility_off"]
+            ["visibility_off"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open About:Blank Window",
@@ -300,7 +298,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -318,14 +316,14 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["remove"]
+              ["remove"],
             ),
-          ]
+          ],
         ),
         this.ui.createElement(
           "span",
           { class: "menu-label", id: "zoom-percentage" },
-          ["100%"]
+          ["100%"],
         ),
         //Zoom In
         this.ui.createElement(
@@ -341,9 +339,9 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["add"]
+              ["add"],
             ),
-          ]
+          ],
         ),
         // Fullscreen
         this.ui.createElement(
@@ -359,9 +357,9 @@ class Functions {
             this.ui.createElement(
               "span",
               { class: "material-symbols-outlined" },
-              ["open_in_full"]
+              ["open_in_full"],
             ),
-          ]
+          ],
         ),
       ]),
       // Bookmarks
@@ -378,13 +376,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["hotel_class"]
+            ["hotel_class"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ]
+        ],
       ),
       // History
       this.ui.createElement(
@@ -400,13 +398,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["history"]
+            ["history"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["History"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ]
+        ],
       ),
       // Games
       this.ui.createElement(
@@ -422,13 +420,13 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["playing_cards"]
+            ["playing_cards"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ]
+        ],
       ),
       // Extensions
       this.ui.createElement(
@@ -444,7 +442,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["extension"]
+            ["extension"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Extensions (Soon)",
@@ -452,7 +450,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ]
+        ],
       ),
       //Inspect Element
       this.ui.createElement(
@@ -468,7 +466,7 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["code"]
+            ["code"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Inspect Element",
@@ -476,7 +474,7 @@ class Functions {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ]
+        ],
       ),
       // Settings
       this.ui.createElement(
@@ -492,18 +490,24 @@ class Functions {
           this.ui.createElement(
             "span",
             { class: "material-symbols-outlined" },
-            ["settings"]
+            ["settings"],
           ),
           this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, ["logout"]),
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, [
+          "logout",
+        ]),
         this.ui.createElement("span", { class: "menu-label" }, ["Panic"]),
-        this.ui.createElement("span", { class: "menu-key", id: "panic-keybind" }, ["~"]),
+        this.ui.createElement(
+          "span",
+          { class: "menu-key", id: "panic-keybind" },
+          ["~"],
+        ),
       ]),
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
@@ -531,9 +535,9 @@ class Functions {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["refresh"]
+                ["refresh"],
               ),
-            ]
+            ],
           ),
           this.ui.createElement(
             "div",
@@ -548,9 +552,9 @@ class Functions {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"]
+                ["settings"],
               ),
-            ]
+            ],
           ),
         ]),
       ]),
@@ -578,9 +582,9 @@ class Functions {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["person_add"]
+                ["person_add"],
               ),
-            ]
+            ],
           ),
           this.ui.createElement(
             "div",
@@ -595,9 +599,9 @@ class Functions {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"]
+                ["settings"],
               ),
-            ]
+            ],
           ),
         ]),
       ]),
@@ -625,7 +629,7 @@ class Functions {
     const content = this.ui.createElement(
       "iframe",
       { class: "news", src: "https://night-network.changelogfy.com/" },
-      []
+      [],
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);
 
@@ -643,4 +647,4 @@ class Functions {
   }
 }
 
-export {Functions}
+export { Functions };

@@ -1,3 +1,13 @@
+import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
+import { NightmarePlugins } from "/assets/js/browser/nightmarePlugins.js";
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { EventSystem } from "/assets/js/apis/events.js";
+import { ProfilesAPI } from "/assets/js/apis/profiles.js";
+import { Logger } from "/assets/js/apis/logging.js";
+import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
+import { Proxy } from "/assets/js/apis/proxy.js";
+import { Global } from "/assets/js/global/index.js";
+
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
 
@@ -18,10 +28,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     location.host +
     "/wisp/";
   var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
-  sandstone.libcurl.set_websocket(wispUrl);
   var searchVAR =
-    (await settingsAPI.getItem("search")) ||
-    "https://www.duckduckgo.com/?q=%s";
+    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
   const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
 
@@ -89,7 +97,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  if (typeof swConfig[proxySetting].func === "function" && proxySetting === "sj") {
+  if (
+    typeof swConfig[proxySetting].func === "function" &&
+    proxySetting === "sj"
+  ) {
     await swConfig[proxySetting].func();
   }
   proxy.registerSW(swConfig[proxySetting]).then(async () => {
@@ -166,7 +177,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("swConfigSettings:", swConfigSettings);
         console.log(
           "swConfigSettings.func exists:",
-          typeof swConfigSettings.func === "function"
+          typeof swConfigSettings.func === "function",
         );
         if (typeof swConfigSettings.func === "function") {
           swConfigSettings.func();
@@ -176,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         console.log(
           `Using proxy: ${proxySetting}, Settings are: ` +
-          (await swConfigSettings)
+            (await swConfigSettings),
         );
         console.log(swConfigSettings);
 
@@ -187,17 +198,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               __uv$config.encodeUrl(proxy.search(searchValue));
             location.href = encodedUrl;
             break;
-          case "iframe":
-            if (proxySetting == "auto" || proxySetting == "ss") {
-              let main_frame = new sandstone.controller.ProxyFrame(
-                document.querySelector("iframe.active")
-              );
-              main_frame.navigate_to(proxy.search(searchValue));
-
-              main_frame.on_load = async () => {
-                uvSearchBar.value = main_frame.url.href;
-              };
-            }
         }
       }
     }
@@ -219,12 +219,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         nightmare.createElement(
           "span",
           { class: "material-symbols-outlined" },
-          ["settings"]
+          ["settings"],
         ),
-        nightmare.createElement("span", { class: "menu-label" }, [
-          "Settings",
-        ]),
-      ]
+        nightmare.createElement("span", { class: "menu-label" }, ["Settings"]),
+      ],
     ),
     nightmare.createElement(
       "div",
@@ -239,14 +237,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         nightmare.createElement(
           "span",
           { class: "material-symbols-outlined" },
-          ["visibility_off"]
+          ["visibility_off"],
         ),
         nightmare.createElement("span", { class: "menu-label" }, [
           "About:Blank",
         ]),
-      ]
+      ],
     ),
   ]);
 
-  nightmarePlugins.rightclickmenu.attachTo(document.querySelector("body"), rightclickmenucontent)
+  nightmarePlugins.rightclickmenu.attachTo(
+    document.querySelector("body"),
+    rightclickmenucontent,
+  );
 });

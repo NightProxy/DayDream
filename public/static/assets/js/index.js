@@ -37,10 +37,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     location.host +
     "/wisp/";
   var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
-  sandstone.libcurl.set_websocket(wispUrl);
   var searchVAR =
-    (await settingsAPI.getItem("search")) ||
-    "https://www.duckduckgo.com/?q=%s";
+    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
   const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
 
@@ -97,26 +95,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   const windowing = new Windowing();
   const globalFunctions = new Global();
-  const render = new Render(
-    document.getElementById("browser-container")
-  );
+  const render = new Render(document.getElementById("browser-container"));
   const items = new Items();
   const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
-  const tabs = new Tabs(
-    render
-  );
+  const tabs = new Tabs(render);
 
   tabs.createTab("daydream://newtab");
 
-  const functions = new Functions(
-    tabs
-  );
+  const functions = new Functions(tabs);
   const keys = new Keys(tabs, functions);
 
   keys.init();
 
-  if (typeof swConfig[proxySetting].func === "function" && proxySetting === "sj") {
+  if (
+    typeof swConfig[proxySetting].func === "function" &&
+    proxySetting === "sj"
+  ) {
     await swConfig[proxySetting].func();
   }
 
@@ -149,7 +144,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           window.SWSettings = swConfigSettings;
         }
 
-        if (typeof swConfigSettings.func === "function" && proxySetting === "sj") {
+        if (
+          typeof swConfigSettings.func === "function" &&
+          proxySetting === "sj"
+        ) {
           await swConfigSettings.func();
         }
 
@@ -160,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("swConfigSettings:", swConfigSettings);
         console.log(
           "swConfigSettings.func exists:",
-          typeof swConfigSettings.func === "function"
+          typeof swConfigSettings.func === "function",
         );
         if (typeof swConfigSettings.func === "function") {
           swConfigSettings.func();
@@ -170,7 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         console.log(
           `Using proxy: ${proxySetting}, Settings are: ` +
-          (await swConfigSettings)
+            (await swConfigSettings),
         );
         console.log(swConfigSettings);
 
@@ -187,17 +185,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               tabs.createTab(location.origin + encodedUrl);
             }
             break;
-          case "iframe":
-            if (proxySetting == "auto" || proxySetting == "ss") {
-              let main_frame = new sandstone.controller.ProxyFrame(
-                document.querySelector("iframe.active")
-              );
-              main_frame.navigate_to(proxy.search(searchValue));
-
-              main_frame.on_load = async () => {
-                uvSearchBar.value = main_frame.url.href;
-              };
-            }
         }
       }
     }
@@ -205,12 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   functions.init();
 
-  const searchbar = new Search(
-    proxy,
-    swConfig,
-    proxySetting,
-    eventsAPI
-  );
+  const searchbar = new Search(proxy, swConfig, proxySetting, eventsAPI);
   searchbar.init(items.addressBar);
 
   uvSearchBar.addEventListener("keydown", (e) => {
@@ -219,7 +201,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => {
         searchbar.clearSuggestions();
         document.querySelector(
-          "#suggestion-list.suggestion-list"
+          "#suggestion-list.suggestion-list",
         ).style.display = "none";
       }, 30);
     }

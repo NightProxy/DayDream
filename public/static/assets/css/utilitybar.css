@@ -75,16 +75,11 @@
   right: 0px;
 }
 
-.utility .right {
-  position: relative;
-  right: 0;
-}
-
 .utility li {
-  display: inline-block;
   margin-left: 2px;
   margin-right: 2px;
   transition: 0.2s all ease-in-out;
+  padding: 2px;
 }
 
 .utility li:first-child {
@@ -130,7 +125,6 @@
 .backButton,
 .forwardButton {
   transition: transform 0.2s ease-in-out;
-  opacity: 0.5;
 }
 
 .refreshButton:hover {

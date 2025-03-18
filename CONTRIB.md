@@ -6,7 +6,9 @@ First of all, thanks for taking interest in the project!
 > Please use prettier with our provided config to all your changes, failure to do so will result in your changes getting rejected. Simply run `npm format` to format the code with our config
 
 ## Frontend Contributions
+
 All frontend contributions should use the provided files, and should avoid creating new ones. There are of course exceptions, but try to fit and organize your changes across the files. Heres a guide for the purpose of the frontend files and path chart:
+
 ```
 public/
 ├── pages/
@@ -46,12 +48,12 @@ public/
 │   │   │   └── (misc JSON files)
 ```
 
-
-
 ## Backend Contributions
+
 All backend changes should be reviewed by at least one or two team members to ensure compatibility and stability. If you create extra files for your changes without reason (adding a new proxy would be a good reason for extra files), then your changes will likely get rejected
 
 ## Adding Games and Apps
+
 This should be a pretty straight forward process, simply add an entry to the end of the corresponding json file.
 
 - g.json for games
@@ -59,18 +61,17 @@ This should be a pretty straight forward process, simply add an entry to the end
 Put your addition at the bottom of the list as they will automatically be alphabetically sorted on render.
 
 The json files should follow this format:
+
 ```json
 {
-    "name": "game name",
-    "link": "game url that will get proxied",
-    "image": "/assets/imgs/g/{name of the game without spaces}.webp",
-    "categories": ["all", "cat1", "cat2"]
+  "name": "game name",
+  "link": "game url that will get proxied",
+  "image": "/assets/imgs/g/{name of the game without spaces}.webp",
+  "categories": ["all", "cat1", "cat2"]
 }
 ```
 
-
 When you add a game or app img, add the webp version to the corresponding directory: public/static/(image path)
-
 
 > [!NOTE]
 > The all category is required on all additions, however more descriptive ones are optional.

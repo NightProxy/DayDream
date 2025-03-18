@@ -8,11 +8,18 @@
     <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
     <link rel="stylesheet" href="/assets/css/imports.css" />
     <link rel="stylesheet" type="text/css" href="/assets/css/vars.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/pages/internalBase.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/pages/newtab.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/assets/css/pages/internalBase.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/assets/css/pages/newtab.css"
+    />
 
     <style>
-      
       @keyframes scaleBlurFade {
         0% {
           transform: scale(0);
@@ -46,7 +53,6 @@
         display: inline-block;
       }
 
-
       .shortcutcontainer::after {
         content: "";
         position: absolute;
@@ -56,9 +62,7 @@
         height: 100%;
         pointer-events: none;
         box-sizing: border-box;
-        
 
-        
         clip-path: polygon(
           20px 0,
           100% 0,
@@ -69,7 +73,6 @@
         );
       }
 
-      
       .shortcut {
         width: 150px;
         display: block;
@@ -81,7 +84,7 @@
           0 100%,
           0 20px
         );
-        
+
         max-width: 100%;
         height: auto;
       }
@@ -89,14 +92,15 @@
   </head>
 
   <body>
+    <div class="bg-img">
+      <img src="/assets/imgs/DDX.bg.jpeg" />
+    </div>
     <div>
       <div class="banner">
-        
         <div class="banner__image animate logo"></div>
         <h1 class="banner__title animate title">DayDream X</h1>
       </div>
 
-      
       <div class="search-header animate search" style="margin-top: 30px">
         <img id="searchEngineIcon" src="" class="searchEngineIcon" />
         <input
@@ -122,7 +126,6 @@
         </button>
       </div>
 
-      
       <div class="shortcutcontainer">
         <img src="/assets/imgs/g/vscs.png" alt="Shortcut" class="shortcut" />
       </div>
@@ -141,21 +144,9 @@
     <script src="/$/scramjet.controller.js"></script>
     <script src="/~/eclipse.codecs.js"></script>
     <script src="/~/eclipse.config.js"></script>
-    <script src="/&/sandstone.js"></script>
-    <!--APIs-->
-    <script src="/assets/js/apis/events.js"></script>
-    <script src="/assets/js/apis/logging.js"></script>
-    <script src="/assets/js/apis/profiles.js"></script>
-    <script src="/assets/js/apis/settings.js"></script>
-    <script src="/assets/js/apis/extensions.js"></script>
-    <script src="/assets/js/apis/versions.js"></script>
-    <script src="/assets/js/apis/exporting.js"></script>
-    <script src="/assets/js/apis/proxy.js"></script>
     <!--Other Files-->
     <script src="/assets/js/browser/nightmarePlugins.js"></script>
     <!--Main Scripts-->
-    <script src="/assets/js/global/theming.js"></script>
-    <script src="/assets/js/global/index.js"></script>
-    <script src="/assets/js/internal/newtab.js"></script>
+    <script type="module" src="/assets/js/internal/newtab.js"></script>
   </body>
 </html>

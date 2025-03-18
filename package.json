@@ -21,6 +21,7 @@
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "axios": "^1.7.2",
     "chalk": "^5.2.0",
+    "compression": "^1.8.0",
     "content-type": "^1.0.5",
     "cors": "^2.8.5",
     "express": "^4.18.2",

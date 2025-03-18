@@ -1,4 +1,4 @@
-import { Nightmare } from "/assets/js//lib/Nightmare/nightmare.js";
+import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
 
 class NightmarePlugins {
   constructor() {
@@ -24,6 +24,7 @@ class SideMenu {
     element.addEventListener("click", (event) => {
       event.stopPropagation();
       this.isOpen ? this.closeMenu() : this.openMenu(element, content);
+      lucide.createIcons();
     });
 
     window.addEventListener("click", () => this.closeMenu());
@@ -42,19 +43,16 @@ class SideMenu {
       this.container.appendChild(content);
     }
 
-    
     const rect = element.getBoundingClientRect();
     this.container.style.top = `${rect.bottom + window.scrollY}px`;
     this.container.style.left = `${rect.left + rect.width + window.scrollX - 300}px`;
 
-    
     this.container.style.opacity = "0";
     this.container.style.filter = "blur(5px)";
 
     document.body.appendChild(this.container);
     this.isOpen = true;
 
-    
     setTimeout(() => {
       this.container.style.opacity = "1";
       this.container.style.filter = "blur(0px)";
@@ -63,7 +61,6 @@ class SideMenu {
 
   closeMenu() {
     if (this.container) {
-      
       this.container.style.opacity = "0";
       this.container.style.filter = "blur(5px)";
       setTimeout(() => {
@@ -76,7 +73,6 @@ class SideMenu {
     this.isOpen = false;
   }
 }
-
 
 class SidePanel {
   constructor(ui) {
@@ -92,6 +88,7 @@ class SidePanel {
     element.addEventListener("click", (event) => {
       event.stopPropagation();
       this.isOpen ? this.closeMenu() : this.openMenu(element, content);
+      lucide.createIcons();
     });
 
     window.addEventListener("click", () => this.closeMenu());
@@ -230,7 +227,9 @@ class RightClickMenu {
   openMenu(element, event, content) {
     if (this.isOpen || !element) return;
 
-    this.container = this.ui.createElement("div", { class: "click-menu-container" });
+    this.container = this.ui.createElement("div", {
+      class: "click-menu-container",
+    });
 
     if (typeof content === "function") {
       this.container.appendChild(content(this.ui));
@@ -256,7 +255,6 @@ class RightClickMenu {
     }
     this.isOpen = false;
   }
-
 }
 
-export {NightmarePlugins}
+export { NightmarePlugins };

@@ -15,14 +15,17 @@
   window.open = async function (url, isDDXURL = false) {
     try {
       // Check if it's an HTTP(S) URL
-      if (url.startsWith("http://") || url.startsWith("https://") && isDDXURL === false) {
+      if (
+        url.startsWith("http://") ||
+        (url.startsWith("https://") && isDDXURL === false)
+      ) {
         const launch = async (link) => {
           let swConfigSettings;
 
           // Determine service worker configuration
           if (window.parent.ProxySettings === "auto") {
             swConfigSettings = await window.parent.SWConfig.auto.func(
-              window.parent.px.search(link)
+              window.parent.px.search(link),
             );
           } else {
             swConfigSettings =

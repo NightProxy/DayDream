@@ -206,11 +206,11 @@ self.addEventListener("fetch", (event) => {
                   "accept-ranges": "bytes",
                   connection: "keep-alive",
                 },
-              })
+              }),
             );
           }
         });
-      })
+      }),
     );
   } else if (url.pathname.startsWith("/internal/themes/logos/")) {
     const filename = url.pathname.replace("/internal/themes/logos/", "");
@@ -241,11 +241,11 @@ self.addEventListener("fetch", (event) => {
                   "accept-ranges": "bytes",
                   connection: "keep-alive",
                 },
-              })
+              }),
             );
           }
         });
-      })
+      }),
     );
   }
 });

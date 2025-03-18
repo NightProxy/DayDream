@@ -181,15 +181,15 @@ class Search {
 
     document.body.appendChild(suggestionList);
 
-    let activeIframe = document.querySelector('iframe.active');
+    let activeIframe = document.querySelector("iframe.active");
 
-    activeIframe.addEventListener('load', () => {
+    activeIframe.addEventListener("load", () => {
       let check = this.utils.getInternalURL(new URL(activeIframe.src).pathname);
-      if (check.startsWith('daydream://')) {
+      if (check.startsWith("daydream://")) {
         searchbar.value = check;
       } else {
         let url = new URL(activeIframe.src).pathname;
-        url = url.replace(window.SWSettings.config.prefix, '');
+        url = url.replace(window.SWSettings.config.prefix, "");
         url = __uv$config.decodeUrl(url);
         url = new URL(url).origin;
         searchbar.value = url;
@@ -476,4 +476,4 @@ class Search {
   }
 }
 
-export {Search};
+export { Search };

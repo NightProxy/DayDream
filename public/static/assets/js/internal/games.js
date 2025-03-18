@@ -13,10 +13,8 @@
     location.host +
     "/wisp/";
   var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
-  sandstone.libcurl.set_websocket(wispUrl);
   var searchVAR =
-    (await settingsAPI.getItem("search")) ||
-    "https://www.duckduckgo.com/?q=%s";
+    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
   const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
 
@@ -74,7 +72,10 @@
     },
   };
 
-  if (typeof swConfig[proxySetting].func === "function" && proxySetting === "sj") {
+  if (
+    typeof swConfig[proxySetting].func === "function" &&
+    proxySetting === "sj"
+  ) {
     await swConfig[proxySetting].func();
   }
 

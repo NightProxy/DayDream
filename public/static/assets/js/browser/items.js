@@ -19,4 +19,4 @@ class Items {
   }
 }
 
-export {Items};
+export { Items };

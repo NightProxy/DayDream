@@ -1,7 +1,13 @@
+import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { EventSystem } from "/assets/js/apis/events.js";
+import { DataExportAPI } from "/assets/js/apis/exporting.js";
+import { Global } from "/assets/js/global/index.js";
+import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
+
 const settingsAPI = new SettingsAPI();
 const dataExportAPI = new DataExportAPI();
 const eventsAPI = new EventSystem();
-const globalFunctions = new Global(settingsAPI);
+const globalFunctions = new Global();
 const nightmare = new Nightmare();
 
 // ^ imports / constant defintions / class initializations
@@ -11,7 +17,7 @@ const initializeDropdown = async (
   optionsId,
   settingsKey,
   defaultValue,
-  functions = null
+  functions = null,
 ) => {
   const dropdownButton = document.getElementById(buttonId);
   const dropdownOptions = document.getElementById(optionsId);
@@ -27,20 +33,20 @@ const initializeDropdown = async (
   }
   if (!buttonText) {
     console.error(
-      `Button text element not found within dropdown button with id "${buttonId}".`
+      `Button text element not found within dropdown button with id "${buttonId}".`,
     );
     return;
   }
 
   const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
   const selectedOption = dropdownOptions.querySelector(
-    `[data-value="${savedValue}"]`
+    `[data-value="${savedValue}"]`,
   );
   if (selectedOption) {
     buttonText.textContent = selectedOption.textContent;
   } else {
     console.warn(
-      `No option found for value "${savedValue}" in dropdown with id "${optionsId}".`
+      `No option found for value "${savedValue}" in dropdown with id "${optionsId}".`,
     );
   }
 
@@ -59,7 +65,7 @@ const initializeDropdown = async (
         btn.classList.remove("active");
       }
     });
-    
+
     const isVisible = dropdownOptions.style.display === "block";
     if (!isVisible) {
       dropdownOptions.style.display = "block";
@@ -128,156 +134,23 @@ const initSwitch = async (item, setting, functionToCall) => {
   });
 };
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/internal/themeing.sw.js");
-}
-
 const uploadBGInput = document.getElementById("bgInput");
 const uploadBGButton = document.getElementById("bgUpload");
-const removeBGButton = document.getElementById("bgRemove");
-const bgList = document.getElementById("bgList");
-const selectedBgPreview = document.getElementById("bgPreview");
-const uploadLogoInput = document.getElementById("logoInput");
-const uploadLogoButton = document.getElementById("logoUpload");
-const removeLogoButton = document.getElementById("logoRemove");
-const logoList = document.getElementById("logoList");
-const selectedLogoPreview = document.getElementById("logoPreview");
 
-function sendMessageToSW(message) {
-  return new Promise((resolve, reject) => {
-    if (!navigator.serviceWorker.controller) {
-      reject(new Error("No active Service Worker to handle the message."));
-      return;
-    }
-
-    const messageChannel = new MessageChannel();
-    messageChannel.port1.onmessage = (event) => {
-      resolve(event.data);
-    };
-
-    navigator.serviceWorker.controller.postMessage(message, [
-      messageChannel.port2,
-    ]);
-  });
-}
-
-window.sendMessageToSW = sendMessageToSW;
-
-uploadBGInput.addEventListener("change", () => {
-  const file = uploadBGInput.files[0];
-  if (!file) {
-    alert("Please select a file to upload.");
-    return;
-  }
-
-  sendMessageToSW({ type: "uploadBG", file }).then(() => {
-    alert("Background uploaded successfully.");
-    listBackgrounds();
-  });
-  settingsAPI.setItem(
-    "theme:background-image",
-    `/internal/themes/backgrounds/${file.name}`
-  );
-  eventsAPI.emit("theme:background-change");
+uploadBGButton.addEventListener("click", function () {
+  uploadBGInput.click();
 });
 
-uploadLogoInput.addEventListener("change", () => {
-  const file = uploadLogoInput.files[0];
-  if (!file) {
-    alert("Please select a file to upload.");
-    return;
-  }
-
-  sendMessageToSW({ type: "uploadLogo", file }).then(() => {
-    alert("Logo uploaded successfully.");
-    listLogos();
-  });
-  settingsAPI.setItem("theme:logo", `/internal/themes/logos/${file.name}`);
-  eventsAPI.emit("theme:logo-change");
+uploadBGInput.addEventListener("change", function (event) {
+  var file = event.target.files[0];
+  var reader = new FileReader();
+  reader.onload = async function (e) {
+    var backgroundImage = e.target.result;
+    await settingsAPI.setItem("theme:background-image", backgroundImage);
+    eventsAPI.emit("theme:background-change");
+  };
+  reader.readAsDataURL(file);
 });
-
-removeLogoButton.addEventListener("click", async () => {
-  sendMessageToSW({
-    type: "removeLogo",
-    file: (await settingsAPI.getItem("theme:logo")).replace(
-      "/internal/themes/logos/",
-      ""
-    ),
-  }).then(() => {
-    alert("Logo removed.");
-    setTimeout(() => {
-      listLogos();
-    }, 100);
-  });
-});
-
-removeBGButton.addEventListener("click", async () => {
-  sendMessageToSW({
-    type: "removeBG",
-    file: (await settingsAPI.getItem("theme:background-image")).replace(
-      "/internal/themes/backgrounds/",
-      ""
-    ),
-  }).then(() => {
-    alert("All backgrounds removed.");
-    setTimeout(() => {
-      listBackgrounds();
-    }, 100);
-  });
-});
-
-async function listBackgrounds() {
-  const { filenames } = await sendMessageToSW({ type: "listBG" });
-  console.log(filenames);
-  bgList.innerHTML = "";
-  filenames.forEach((filename) => {
-    const listItem = document.createElement("div");
-    listItem.className = "bg-list-item";
-
-    const text = document.createElement("span");
-    text.textContent = filename;
-
-    const selectButton = document.createElement("button");
-    selectButton.textContent = "Select";
-    selectButton.addEventListener("click", () => {
-      selectedBgPreview.src = `/internal/themes/backgrounds/${filename}`;
-      settingsAPI.setItem(
-        "theme:background-image",
-        `/internal/themes/backgrounds/${filename}`
-      );
-      eventsAPI.emit("theme:background-change");
-    });
-
-    listItem.appendChild(text);
-    listItem.appendChild(selectButton);
-    bgList.appendChild(listItem);
-  });
-}
-
-async function listLogos() {
-  const { logoFilenames } = await sendMessageToSW({ type: "listLogos" });
-  console.log(logoFilenames);
-  logoList.innerHTML = "";
-  logoFilenames.forEach((filename) => {
-    const listItem = document.createElement("div");
-    listItem.className = "bg-list-item";
-
-    const text = document.createElement("span");
-    text.textContent = filename;
-
-    const selectButton = document.createElement("button");
-    selectButton.textContent = "Select";
-    selectButton.addEventListener("click", () => {
-      selectedBgPreview.src = `/internal/themes/logos/${filename}`;
-      settingsAPI.setItem("theme:logo", `/internal/themes/logos/${filename}`);
-      eventsAPI.emit("theme:logo-change");
-    });
-
-    listItem.appendChild(text);
-    listItem.appendChild(selectButton);
-    logoList.appendChild(listItem);
-  });
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   //Cloaking
@@ -288,7 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "autoCloak",
     function () {
       eventsAPI.emit("cloaking:auto-toggle");
-    }
+    },
   );
 
   //Apperance
@@ -302,7 +175,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => {
         eventsAPI.emit("UI:changeLayout");
       }, 100);
-    }
+    },
   );
   initializeDropdown(
     "UIStyleButton",
@@ -316,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         eventsAPI.emit("UI:changeStyle");
         eventsAPI.emit("theme:template-change");
       }, 100);
-    }
+    },
   );
   var colorPicker = new iro.ColorPicker(".colorPicker", {
     width: 80,
@@ -350,16 +223,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => {
         eventsAPI.emit("theme:template-change");
       }, 100);
-    }
+    },
   );
-
-  listBackgrounds();
-  listLogos();
-  selectedBgPreview.src =
-    (await settingsAPI.getItem("theme:background-image")) ||
-    "/assets/imgs/DDX.bg.jpeg";
-  selectedLogoPreview.src =
-    (await settingsAPI.getItem("theme:logo")) || "/assets/imgs/logo.png";
 
   // Searching
   initializeDropdown("proxyButton", "proxyOptions", "proxy", "uv");
@@ -367,13 +232,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     "transportButton",
     "transportOptions",
     "transports",
-    "libcurl"
+    "libcurl",
   );
   initializeDropdown(
     "searchButton",
     "searchOptions",
     "search",
-    "https://duckduckgo.com/?q=%s"
+    "https://duckduckgo.com/?q=%s",
   );
 
   // Load and handle visibility of wisp and bare settings
@@ -425,7 +290,7 @@ function saveInputValueAsButton(button, input, key) {
 saveInputValueAsButton(
   document.getElementById("saveWispSetting"),
   document.getElementById("wispSetting"),
-  "wisp"
+  "wisp",
 );
 
 document

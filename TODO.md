@@ -1,15 +1,15 @@
 # V1:
 
 > ## APIs:
-> 
+>
 > - History
 > - Bookmarks
 > - iFrameClient
 > - Proxy (stability)
 > - Tie Events API into everyting
-> 
+>
 > ## Internal Pages:
-> 
+>
 > - Settings
 > - New Tab
 > - Bookmarks
@@ -20,8 +20,8 @@
 > - Themes System
 > - Nightmare Rendering and Elements
 
-
 # V2:
+
 > ## APIs:
 >
 > - Extensions (finish)
@@ -32,13 +32,13 @@
 > - Extensions
 > - Profiles
 > - Setup
-> 
+>
 > ## UI/UX:
-> 
+>
 > - increase rendering speed
-> 
+>
 > ## Tabs Upgrade:
-> 
+>
 > - Tab Pinning
 > - Tab Grouping
 > - Tab caching
