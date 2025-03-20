@@ -99,7 +99,7 @@
   transition: color ease-in-out 0.5s;
   text-overflow: ellipsis;
   padding-right: 32px;
-  padding-left: 40px;
+  padding-left: 36px;
 }
 
 #gointospace {
@@ -145,11 +145,7 @@
 
 .webSecurityIcon {
   position: absolute !important;
-  top: 19px !important;
-  left: 165px !important;
   color: var(--hover-text-color);
-  height: 16px !important;
-  width: 16px !important;
   font-size: 16px !important;
 }
 

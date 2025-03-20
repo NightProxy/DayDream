@@ -23,6 +23,9 @@ class Functions {
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
+    this.zoomLevel = 1;
+    this.zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+    this.currentStep = 4;
   }
   init() {
     this.items.toggleTabsButton.addEventListener("click", () => {
@@ -98,6 +101,31 @@ class Functions {
     this.logger.createLog(
       `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
     );
+  }
+
+   zoomIn() {
+    if (this.currentStep < this.zoomSteps.length - 1) {
+      this.currentStep++;
+    }
+    this.zoomLevel = this.zoomSteps[this.currentStep];
+    this.scaleIframeContent();
+  }
+  
+   zoomOut() {
+    if (this.currentStep > 0) {
+      this.currentStep--;
+    }
+    this.zoomLevel = this.zoomSteps[this.currentStep];
+    this.scaleIframeContent();
+  }
+
+  scaleIframeContent() {
+    const iframe = document.querySelector("iframe.active");
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    const contentContainer = iframeDoc.body;
+    contentContainer.style.transform = `scale(${this.zoomLevel})`;
+    contentContainer.style.transformOrigin = 'top left';
+    iframeDoc.body.style.overflow = 'auto';
   }
 
   injectErudaScript(iframeDocument) {
@@ -243,11 +271,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["tab"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "square-plus" }, []),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Tab",
           ]),
@@ -265,11 +289,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["open_in_new"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "copy-plus" }, []),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open New Window",
           ]),
@@ -287,11 +307,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["visibility_off"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "eye-off" }, []),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Open About:Blank Window",
           ]),
@@ -309,21 +325,10 @@ class Functions {
             class: "menu-item",
             id: "zoom-out",
             onclick: () => {
-              this.tabs.createTab("daydream://newtab");
+              this.zoomOut();
             },
           },
-          [
-            this.ui.createElement(
-              "span",
-              { class: "material-symbols-outlined" },
-              ["remove"],
-            ),
-          ],
-        ),
-        this.ui.createElement(
-          "span",
-          { class: "menu-label", id: "zoom-percentage" },
-          ["100%"],
+          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
         ),
         //Zoom In
         this.ui.createElement(
@@ -332,16 +337,10 @@ class Functions {
             class: "menu-item",
             id: "zoom-in",
             onclick: () => {
-              this.tabs.createTab("daydream://newtab");
+              this.zoomIn()
             },
           },
-          [
-            this.ui.createElement(
-              "span",
-              { class: "material-symbols-outlined" },
-              ["add"],
-            ),
-          ],
+          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
         ),
         // Fullscreen
         this.ui.createElement(
@@ -353,13 +352,7 @@ class Functions {
               this.goFullscreen();
             },
           },
-          [
-            this.ui.createElement(
-              "span",
-              { class: "material-symbols-outlined" },
-              ["open_in_full"],
-            ),
-          ],
+          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
         ),
       ]),
       // Bookmarks
@@ -373,11 +366,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["hotel_class"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "folder-heart" }, []),
           this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
@@ -395,11 +384,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["history"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "history" }, []),
           this.ui.createElement("span", { class: "menu-label" }, ["History"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
@@ -417,11 +402,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["playing_cards"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "joystick" }, []),
           this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
@@ -439,11 +420,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["extension"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "blocks" }, []),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Extensions (Soon)",
           ]),
@@ -463,11 +440,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["code"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "code-xml" }, []),
           this.ui.createElement("span", { class: "menu-label" }, [
             "Inspect Element",
           ]),
@@ -487,11 +460,7 @@ class Functions {
           },
         },
         [
-          this.ui.createElement(
-            "span",
-            { class: "material-symbols-outlined" },
-            ["settings"],
-          ),
+          this.ui.createElement("i", { "data-lucide": "settings" }, []),
           this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
@@ -499,9 +468,7 @@ class Functions {
         ],
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
-        this.ui.createElement("span", { class: "material-symbols-outlined" }, [
-          "logout",
-        ]),
+        this.ui.createElement("i", { "data-lucide": "log-out" }, []),
         this.ui.createElement("span", { class: "menu-label" }, ["Panic"]),
         this.ui.createElement(
           "span",

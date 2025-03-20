@@ -223,11 +223,22 @@ class Tabs {
       let check = this.utils.getInternalURL(new URL(iframe.src).pathname);
       if (check.startsWith("daydream://")) {
         this.items.addressBar.value = check;
+        document.querySelector(".webSecurityIcon").innerHTML =
+          `<span class="material-symbols-outlined">lock_open</span>`;
       } else {
         let url = new URL(iframe.src).pathname;
         url = url.replace(window.SWSettings.config.prefix, "");
         url = __uv$config.decodeUrl(url);
         this.items.addressBar.value = url;
+        url = new URL(url);
+        console.log(url.protocol);
+        if (url.protocol == "https:") {
+          document.querySelector(".webSecurityIcon").innerHTML =
+            `<span class="material-symbols-outlined">lock</span>`;
+        } else {
+          document.querySelector(".webSecurityIcon").innerHTML =
+            `<span class="material-symbols-outlined">lock_open</span>`;
+        }
       }
     });
 
