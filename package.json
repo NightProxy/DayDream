@@ -1,33 +1,31 @@
 {
   "name": "daydreamx",
-  "description": "",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=16.0.0"
-  },
   "scripts": {
-    "start": "node index.js",
-    "format": "prettier --write ."
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "author": "Amplify",
-  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "vite": "^6.2.0"
+  },
   "dependencies": {
+    "@jaames/iro": "^5.5.2",
     "@mercuryworkshop/bare-mux": "^2.1.7",
     "@mercuryworkshop/epoxy-transport": "^2.1.27",
     "@mercuryworkshop/libcurl-transport": "^1.4.0",
     "@mercuryworkshop/wisp-js": "^0.3.3",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
-    "axios": "^1.7.2",
-    "chalk": "^5.2.0",
+    "axios": "^1.8.4",
+    "chalk": "^5.4.1",
     "compression": "^1.8.0",
     "content-type": "^1.0.5",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "gradient-string": "^3.0.0"
-  },
-  "devDependencies": {
-    "prettier": "3.2.1"
+    "express": "^4.21.2",
+    "filer": "^1.4.1",
+    "gradient-string": "^3.0.0",
+    "jszip": "^3.10.1",
+    "localforage": "^1.10.0"
   }
 }
