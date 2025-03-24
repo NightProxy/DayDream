@@ -1,26 +1,71 @@
+import Cookies from 'js-cookie'; 
+// declare const Cookies: CookiesInterface;
+
+interface Profile {
+  name: string;
+  data: string;
+  date: string;
+}
+
+interface CookieCollection {
+  [cookieName: string]: string;
+}
+
+interface IDBItem {
+  key?: IDBValidKey;
+  value: any;
+}
+
+interface IDBStoreData {
+  [storeName: string]: IDBItem[];
+}
+
+interface IDBDataExport {
+  name: string;
+  data: IDBStoreData;
+}
+
+interface ExportedData {
+  idbData: string;
+  localStorageData: string;
+  cookies: CookieCollection;
+}
+
+// Define the Cookies interface based on usage
+interface CookiesInterface {
+  get(): CookieCollection;
+  set(name: string, value: string, options?: any): void;
+  remove(name: string, options?: any): void;
+}
+
 class ProfilesAPI {
+  private PROFILE_DB_NAME: string;
+  private PROFILE_STORE_NAME: string;
+  private cookies: CookiesInterface;
+  private encryption: Profiles_DataEncryption;
+
   constructor() {
     this.PROFILE_DB_NAME = "profilesDB";
     this.PROFILE_STORE_NAME = "profiles";
-    this.cookies = Cookies;
+    this.cookies = Cookies as CookiesInterface; // we are assuming the Cookies object is relating to js-cookie. if not, meaning it is injected via a script tag or whatever, remove the import and uncomment the declare.
     this.encryption = new Profiles_DataEncryption();
   }
 
-  async openDB(dbName, storeName) {
+  async openDB(dbName: string, storeName: string): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName);
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
+      const request: IDBOpenDBRequest = indexedDB.open(dbName);
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(storeName)) {
           db.createObjectStore(storeName);
         }
       };
-      request.onsuccess = (event) => resolve(event.target.result);
-      request.onerror = (event) => reject(event.target.error);
+      request.onsuccess = (event: Event) => resolve((event.target as IDBOpenDBRequest).result);
+      request.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
     });
   }
 
-  async init() {
+  async init(): Promise<void> {
     const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
     const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
@@ -35,12 +80,12 @@ class ProfilesAPI {
     db.close();
   }
 
-  async createProfile(profileName, autoSelect = false) {
+  async createProfile(profileName: string, autoSelect: boolean = false): Promise<Profile> {
     const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
     const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
 
-    const profile = {
+    const profile: Profile = {
       name: profileName,
       data: "",
       date: new Date().toISOString(),
@@ -57,7 +102,7 @@ class ProfilesAPI {
     return profile;
   }
 
-  async getProfile(profileName) {
+  async getProfile(profileName: string): Promise<Profile | null> {
     const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
     const tx = db.transaction(this.PROFILE_STORE_NAME, "readonly");
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
@@ -69,7 +114,7 @@ class ProfilesAPI {
     return profile || null;
   }
 
-  async setActiveProfile(profileName) {
+  async setActiveProfile(profileName: string): Promise<void> {
     const profile = await this.getProfile(profileName);
     if (!profile) {
       throw new Error(`Profile "${profileName}" does not exist.`);
@@ -88,19 +133,19 @@ class ProfilesAPI {
     await this.importData(profile.data);
   }
 
-  async getActiveProfile() {
+  async getActiveProfile(): Promise<Profile | null> {
     const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
     const tx = db.transaction(this.PROFILE_STORE_NAME, "readonly");
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
 
     const request = store.get("activeProfile");
-    const activeProfileName = await this._waitForRequest(request);
+    const activeProfileName = await this._waitForRequest(request) as string | null;
 
     db.close();
     return activeProfileName ? await this.getProfile(activeProfileName) : null;
   }
 
-  async saveCurrentProfileData() {
+  async saveCurrentProfileData(): Promise<void> {
     let activeProfile = await this.getActiveProfile();
     console.log(activeProfile);
     if (activeProfile) {
@@ -120,18 +165,18 @@ class ProfilesAPI {
     }
   }
 
-  async clearAllData() {
+  async clearAllData(): Promise<void> {
     localStorage.clear();
     const dbNames = await indexedDB.databases();
     for (const { name } of dbNames) {
-      if (name !== this.PROFILE_DB_NAME) {
+      if (name !== this.PROFILE_DB_NAME && name) {
         await indexedDB.deleteDatabase(name);
       }
     }
     this.clearCookies();
   }
 
-  clearCookies() {
+  clearCookies(): void {
     const allCookies = this.cookies.get();
     Object.keys(allCookies).forEach((cookieName) => {
       this.cookies.remove(cookieName, { path: "/" });
@@ -139,34 +184,35 @@ class ProfilesAPI {
     console.log("All cookies have been cleared!");
   }
 
-  extractCookies() {
-    let cookies = {};
+  extractCookies(): CookieCollection {
+    let cookies: CookieCollection = {};
     document.cookie.split(";").forEach((c) => {
       let parts = c.split("=");
-      cookies[parts.shift().trim()] = decodeURI(parts.join("="));
+      cookies[parts.shift()?.trim() || ""] = decodeURI(parts.join("="));
     });
     return cookies;
   }
 
-  async getIDBData(databaseName) {
+  async getIDBData(databaseName: string): Promise<IDBDataExport> {
     return new Promise((resolve, reject) => {
-      let dbRequest = indexedDB.open(databaseName);
+      let dbRequest: IDBOpenDBRequest = indexedDB.open(databaseName);
 
-      dbRequest.onsuccess = (event) => {
-        let db = event.target.result;
-        let transaction = db.transaction(db.objectStoreNames, "readonly");
-        let data = {};
+      dbRequest.onsuccess = (event: Event) => {
+        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
+        let transaction: IDBTransaction = db.transaction(db.objectStoreNames, "readonly");
+        let data: IDBStoreData = {};
 
         transaction.oncomplete = () => resolve({ name: databaseName, data });
-        transaction.onerror = (event) => reject(event.target.error);
+        transaction.onerror = (event: Event) => reject((event.target as IDBTransaction).error);
 
-        for (let storeName of db.objectStoreNames) {
+        for (let i = 0; i < db.objectStoreNames.length; i++) {
+          let storeName = db.objectStoreNames[i];
           let objectStore = transaction.objectStore(storeName);
           let request = objectStore.openCursor();
           data[storeName] = [];
 
-          request.onsuccess = (event) => {
-            let cursor = event.target.result;
+          request.onsuccess = (event: Event) => {
+            let cursor: IDBCursorWithValue | null = (event.target as IDBRequest).result;
             if (cursor) {
               data[storeName].push({
                 key: cursor.primaryKey,
@@ -176,28 +222,28 @@ class ProfilesAPI {
             }
           };
 
-          request.onerror = (event) => reject(event.target.error);
+          request.onerror = (event: Event) => reject((event.target as IDBRequest).error);
         }
       };
 
-      dbRequest.onerror = (event) => reject(event.target.error);
+      dbRequest.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
     });
   }
 
-  async getAllIDBData() {
+  async getAllIDBData(): Promise<IDBDataExport[]> {
     const databases = await indexedDB.databases();
     let promises = databases
-      .filter((dbInfo) => dbInfo.name !== this.PROFILE_DB_NAME)
-      .map((dbInfo) => this.getIDBData(dbInfo.name));
+      .filter((dbInfo) => dbInfo.name !== this.PROFILE_DB_NAME && dbInfo.name)
+      .map((dbInfo) => this.getIDBData(dbInfo.name!));
 
     return Promise.all(promises);
   }
 
-  async exportData() {
+  async exportData(): Promise<string> {
     const idbData = await this.getAllIDBData();
-    let data = {
+    let data: ExportedData = {
       idbData: JSON.stringify(idbData),
-      localStorageData: JSON.stringify(localStorage),
+      localStorageData: JSON.stringify({ ...localStorage }),
       cookies: this.extractCookies(),
     };
 
@@ -206,12 +252,12 @@ class ProfilesAPI {
     return encryptedData;
   }
 
-  async importData(input) {
+  async importData(input: string): Promise<void> {
     try {
       let decryptedDataJSON = this.encryption.base6xorDecrypt(input);
-      let decryptedData = JSON.parse(decryptedDataJSON);
+      let decryptedData = JSON.parse(decryptedDataJSON) as ExportedData;
 
-      let idbData = JSON.parse(decryptedData.idbData);
+      let idbData = JSON.parse(decryptedData.idbData) as IDBDataExport[];
       let idbPromises = idbData.map((dbInfo) => {
         return this._importIDBData(dbInfo);
       });
@@ -219,8 +265,9 @@ class ProfilesAPI {
       await Promise.all(idbPromises);
 
       localStorage.clear();
-      Object.keys(decryptedData.localStorageData).forEach((key) => {
-        localStorage.setItem(key, decryptedData.localStorageData[key]);
+      let localStorageData = JSON.parse(decryptedData.localStorageData) as Record<string, string>;
+      Object.keys(localStorageData).forEach((key) => {
+        localStorage.setItem(key, localStorageData[key]);
       });
 
       this.clearCookies();
@@ -234,38 +281,68 @@ class ProfilesAPI {
     }
   }
 
-  async _importIDBData(dbInfo) {
+  async _importIDBData(dbInfo: IDBDataExport): Promise<void> {
     return new Promise((resolve, reject) => {
-      let dbRequest = indexedDB.open(dbInfo.name);
+      let dbRequest: IDBOpenDBRequest = indexedDB.open(dbInfo.name);
 
-      dbRequest.onsuccess = (event) => {
-        let db = event.target.result;
-        let transaction = db.transaction(db.objectStoreNames, "readwrite");
+      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
+        
+        // Create object stores that exist in the export but not in the current DB
+        Object.keys(dbInfo.data).forEach(storeName => {
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName);
+          }
+        });
+      };
+
+      dbRequest.onsuccess = (event: Event) => {
+        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
+        
+        // Get all store names from the data that we're importing
+        const storeNames = Object.keys(dbInfo.data);
+        if (storeNames.length === 0) {
+          resolve();
+          return;
+        }
+        
+        // Filter for only the store names that exist in the database
+        const existingStoreNames = storeNames.filter(name => 
+          db.objectStoreNames.contains(name)
+        );
+        
+        if (existingStoreNames.length === 0) {
+          resolve();
+          return;
+        }
+
+        let transaction: IDBTransaction = db.transaction(existingStoreNames, "readwrite");
 
         transaction.oncomplete = () => resolve();
-        transaction.onerror = (event) => reject(event.target.error);
+        transaction.onerror = (event: Event) => reject((event.target as IDBTransaction).error);
 
-        for (let storeName of db.objectStoreNames) {
+        existingStoreNames.forEach(storeName => {
           let objectStore = transaction.objectStore(storeName);
           let storeData = dbInfo.data[storeName];
 
-          objectStore.clear().onsuccess = () => {
+          const clearRequest = objectStore.clear();
+          clearRequest.onsuccess = () => {
             storeData.forEach((item) => {
-              if (item.key) {
+              if (item.key !== undefined) {
                 objectStore.put(item.value, item.key);
               } else {
                 objectStore.add(item.value);
               }
             });
           };
-        }
+        });
       };
 
-      dbRequest.onerror = (event) => reject(event.target.error);
+      dbRequest.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
     });
   }
 
-  async _waitForRequest(request) {
+  async _waitForRequest<T>(request: IDBRequest<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -276,7 +353,7 @@ class ProfilesAPI {
 class Profiles_DataEncryption {
   constructor() {}
 
-  base6xorEncrypt(text) {
+  base6xorEncrypt(text: string): string {
     let output = "";
     for (let i = 0; i < text.length; i++) {
       let charCode = text.charCodeAt(i) ^ 2;
@@ -285,7 +362,7 @@ class Profiles_DataEncryption {
     return btoa(encodeURIComponent(output));
   }
 
-  base6xorDecrypt(encryptedData) {
+  base6xorDecrypt(encryptedData: string): string {
     let decodedData = decodeURIComponent(atob(encryptedData));
     let output = "";
     for (let i = 0; i < decodedData.length; i++) {

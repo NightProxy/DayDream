@@ -2,12 +2,14 @@
   "name": "daydreamx",
   "version": "1.1.0",
   "type": "module",
+  "packageManager": "bun@1.2.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
     "vite": "^6.2.0"
   },
   "dependencies": {
@@ -23,8 +25,10 @@
     "content-type": "^1.0.5",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "express-serve-static-core": "^0.1.1",
     "filer": "^1.4.1",
     "gradient-string": "^3.0.0",
+    "js-cookie": "^3.0.5",
     "jszip": "^3.10.1",
     "localforage": "^1.10.0"
   }
