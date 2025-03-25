@@ -30,6 +30,7 @@
     "gradient-string": "^3.0.0",
     "js-cookie": "^3.0.5",
     "jszip": "^3.10.1",
-    "localforage": "^1.10.0"
+    "localforage": "^1.10.0",
+    "lucide": "^0.483.0"
   }
 }

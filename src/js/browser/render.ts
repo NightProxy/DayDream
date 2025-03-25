@@ -1,10 +1,25 @@
-import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { EventSystem } from "/assets/js/apis/events.js";
+import { Nightmare } from "@libs/Nightmare/nightmare";
+import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
+import { EventSystem } from "@apis/events";
+import lucide from "lucide";
 
-class Render {
-  constructor(container) {
+interface renderInterface {
+  container: HTMLElement;
+  nightmare: Nightmare;
+  logger: Logger;
+  settings: SettingsAPI;
+  events: EventSystem;
+}
+
+class Render implements renderInterface{
+  container: HTMLElement;
+  nightmare: Nightmare;
+  logger: Logger;
+  settings: SettingsAPI;
+  events: EventSystem;
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.nightmare = new Nightmare();
     this.logger = new Logger();
@@ -14,7 +29,7 @@ class Render {
   }
 
   async init() {
-    this.HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
+    const HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
       this.nightmare.createElement(
         "div",
         { class: "tabs", style: "--tab-content-margin: 9px" },
@@ -189,8 +204,7 @@ class Render {
             this.nightmare.createElement(
               "div",
               {
-                class: "utilityIcon",
-                class: "coming-soon",
+                class: "utilityIcon coming-soon",
                 id: "extensions",
               },
               [
@@ -205,7 +219,7 @@ class Render {
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
-              { class: "utilityIcon", class: "coming-soon", id: "profiles" },
+              { class: "utilityIcon coming-soon", id: "profiles" },
               [
                 this.nightmare.createElement(
                   "i",
@@ -238,7 +252,7 @@ class Render {
       ]),
     ]);
 
-    this.navbar = this.nightmare.createElement("ul", { class: "navbar" }, [
+    const navbar = this.nightmare.createElement("ul", { class: "navbar" }, [
       this.nightmare.createElement("div", {
         class: "logo",
       }),
@@ -317,8 +331,8 @@ class Render {
         ]),
       ]),
     ]);
-    this.container.appendChild(this.HTMLcode);
-    this.container.appendChild(this.navbar);
+    this.container.appendChild(HTMLcode);
+    this.container.appendChild(navbar);
     lucide.createIcons();
     const sidebar = document.querySelector(".navbar");
     const browser = document.querySelector(".surface");
@@ -328,50 +342,50 @@ class Render {
 
     const isDisabled = await this.settings.getItem("verticalTabs");
     if (isDisabled == "true") {
-      sidebar.classList.add("autohide");
-      browser.classList.add("autohide");
-      tabs.classList.add("vertical");
-      bar.classList.add("vertical");
-      IFcontainer.classList.add("vertical");
+      sidebar!.classList.add("autohide");
+      browser!.classList.add("autohide");
+      tabs!.classList.add("vertical");
+      bar!.classList.add("vertical");
+      IFcontainer!.classList.add("vertical");
       if ((await this.settings.getItem("verticalTabs-notshowing")) == "true") {
-        tabs.classList.add("hidden");
-        IFcontainer.classList.add("hidden");
+        tabs!.classList.add("hidden");
+        IFcontainer!.classList.add("hidden");
       }
     } else {
-      sidebar.classList.remove("autohide");
-      browser.classList.remove("autohide");
-      tabs.classList.remove("vertical");
-      bar.classList.remove("vertical");
-      IFcontainer.classList.remove("vertical");
+      sidebar!.classList.remove("autohide");
+      browser!.classList.remove("autohide");
+      tabs!.classList.remove("vertical");
+      bar!.classList.remove("vertical");
+      IFcontainer!.classList.remove("vertical");
     }
 
     const style = await this.settings.getItem("UIStyle");
     if (style != null) {
-      sidebar.classList.remove("operagx");
-      sidebar.classList.remove("opera");
-      sidebar.classList.remove("arc");
-      sidebar.classList.remove("vivaldi");
-      browser.classList.remove("operagx");
-      browser.classList.remove("opera");
-      browser.classList.remove("arc");
-      browser.classList.remove("vivaldi");
-      tabs.classList.remove("operagx");
-      tabs.classList.remove("opera");
-      tabs.classList.remove("arc");
-      tabs.classList.remove("vivaldi");
-      bar.classList.remove("operagx");
-      bar.classList.remove("opera");
-      bar.classList.remove("arc");
-      bar.classList.remove("vivaldi");
-      IFcontainer.classList.remove("operagx");
-      IFcontainer.classList.remove("opera");
-      IFcontainer.classList.remove("arc");
-      IFcontainer.classList.remove("vivaldi");
-      sidebar.classList.add(style);
-      browser.classList.add(style);
-      tabs.classList.add(style);
-      bar.classList.add(style);
-      IFcontainer.classList.add(style);
+      sidebar!.classList.remove("operagx");
+      sidebar!.classList.remove("opera");
+      sidebar!.classList.remove("arc");
+      sidebar!.classList.remove("vivaldi");
+      browser!.classList.remove("operagx");
+      browser!.classList.remove("opera");
+      browser!.classList.remove("arc");
+      browser!.classList.remove("vivaldi");
+      tabs!.classList.remove("operagx");
+      tabs!.classList.remove("opera");
+      tabs!.classList.remove("arc");
+      tabs!.classList.remove("vivaldi");
+      bar!.classList.remove("operagx");
+      bar!.classList.remove("opera");
+      bar!.classList.remove("arc");
+      bar!.classList.remove("vivaldi");
+      IFcontainer!.classList.remove("operagx");
+      IFcontainer!.classList.remove("opera");
+      IFcontainer!.classList.remove("arc");
+      IFcontainer!.classList.remove("vivaldi");
+      sidebar!.classList.add(style);
+      browser!.classList.add(style);
+      tabs!.classList.add(style);
+      bar!.classList.add(style);
+      IFcontainer!.classList.add(style);
     }
 
     this.logger.createLog("Rendered Browser");
@@ -384,25 +398,25 @@ class Render {
 
       const isDisabled = await this.settings.getItem("verticalTabs");
       if (isDisabled === "true") {
-        sidebar.classList.add("autohide");
-        browser.classList.add("autohide");
-        tabs.classList.add("vertical");
-        bar.classList.add("vertical");
-        IFcontainer.classList.add("vertical");
+        sidebar!.classList.add("autohide");
+        browser!.classList.add("autohide");
+        tabs!.classList.add("vertical");
+        bar!.classList.add("vertical");
+        IFcontainer!.classList.add("vertical");
         if (
           (await this.settings.getItem("verticalTabs-notshowing")) == "true"
         ) {
-          tabs.classList.add("hidden");
-          IFcontainer.classList.add("hidden");
+          tabs!.classList.add("hidden");
+          IFcontainer!.classList.add("hidden");
         }
       } else {
-        sidebar.classList.remove("autohide");
-        browser.classList.remove("autohide");
-        tabs.classList.remove("vertical");
-        bar.classList.remove("vertical");
-        IFcontainer.classList.remove("vertical");
+        sidebar!.classList.remove("autohide");
+        browser!.classList.remove("autohide");
+        tabs!.classList.remove("vertical");
+        bar!.classList.remove("vertical");
+        IFcontainer!.classList.remove("vertical");
       }
-      this.events.emit("tabs:changeLayout");
+      this.events.emit("tabs:changeLayout", null);
       this.logger.createLog("Changed Tab Layout");
     });
     document.addEventListener("UI:changeStyle", async () => {
@@ -414,31 +428,31 @@ class Render {
 
       const style = await this.settings.getItem("UIStyle");
       if (style != null) {
-        sidebar.classList.remove("operagx");
-        sidebar.classList.remove("opera");
-        sidebar.classList.remove("arc");
-        sidebar.classList.remove("vivaldi");
-        browser.classList.remove("operagx");
-        browser.classList.remove("opera");
-        browser.classList.remove("arc");
-        browser.classList.remove("vivaldi");
-        tabs.classList.remove("operagx");
-        tabs.classList.remove("opera");
-        tabs.classList.remove("arc");
-        tabs.classList.remove("vivaldi");
-        bar.classList.remove("operagx");
-        bar.classList.remove("opera");
-        bar.classList.remove("arc");
-        bar.classList.remove("vivaldi");
-        IFcontainer.classList.remove("operagx");
-        IFcontainer.classList.remove("opera");
-        IFcontainer.classList.remove("arc");
-        IFcontainer.classList.remove("vivaldi");
-        sidebar.classList.add(style);
-        browser.classList.add(style);
-        tabs.classList.add(style);
-        bar.classList.add(style);
-        IFcontainer.classList.add(style);
+        sidebar!.classList.remove("operagx");
+        sidebar!.classList.remove("opera");
+        sidebar!.classList.remove("arc");
+        sidebar!.classList.remove("vivaldi");
+        browser!.classList.remove("operagx");
+        browser!.classList.remove("opera");
+        browser!.classList.remove("arc");
+        browser!.classList.remove("vivaldi");
+        tabs!.classList.remove("operagx");
+        tabs!.classList.remove("opera");
+        tabs!.classList.remove("arc");
+        tabs!.classList.remove("vivaldi");
+        bar!.classList.remove("operagx");
+        bar!.classList.remove("opera");
+        bar!.classList.remove("arc");
+        bar!.classList.remove("vivaldi");
+        IFcontainer!.classList.remove("operagx");
+        IFcontainer!.classList.remove("opera");
+        IFcontainer!.classList.remove("arc");
+        IFcontainer!.classList.remove("vivaldi");
+        sidebar!.classList.add(style);
+        browser!.classList.add(style);
+        tabs!.classList.add(style);
+        bar!.classList.add(style);
+        IFcontainer!.classList.add(style);
       }
 
       this.logger.createLog("Swapped Style");

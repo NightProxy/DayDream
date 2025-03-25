@@ -1,15 +1,25 @@
-import { Items } from "/assets/js/browser/items.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { Items } from "@browser/items";
+import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
 
-class Utils {
+interface utilsInteface {
+  items: Items;
+  logger: Logger;
+  settings: SettingsAPI;
+}
+
+class Utils implements utilsInteface{
+  items: Items;
+  logger: Logger;
+  settings: SettingsAPI;
+
   constructor() {
     this.items = new Items();
     this.logger = new Logger();
     this.settings = new SettingsAPI();
   }
 
-  setFavicon(tabElement, iframe) {
+  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement) {
     iframe.addEventListener("load", async () => {
       try {
         if (!iframe.contentDocument) {
@@ -25,7 +35,7 @@ class Utils {
 
         for (let i = 0; i < nodeList.length; i++) {
           const relAttr = nodeList[i].getAttribute("rel");
-          if (relAttr.includes("icon")) {
+          if (relAttr!.includes("icon")) {
             favicon = nodeList[i];
             break;
           }

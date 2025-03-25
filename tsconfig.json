@@ -5,6 +5,14 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@browser/*": ["js/browser/*"],
+      "@apis/*": ["js/apis/*"],
+      "@css/*": ["css/*"],
+      "@libs/*": ["js/lib/*"],
+      "@js/*": ["js/*"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -18,7 +26,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "allowJs": true,
+    "esModuleInterop": true
   },
   "include": ["src"]
 }

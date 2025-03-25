@@ -1,50 +1,49 @@
-import { Items } from "/src/js/browser/items.ts";
-import { Nightmare as UI } from "/src/js/lib/Nightmare/nightmare.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { Utils } from "/assets/js/utils.js";
-import { NightmarePlugins } from "/assets/js/browser/nightmarePlugins.js";
-import { Windowing } from "/assets/js/browser/windowing.js";
-import { EventSystem } from "/assets/js/apis/events.js";
-import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
+import { Items } from "@browser/items";
+import { Nightmare as UI } from "@libs/Nightmare/nightmare";
+import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
+import { Utils } from "@js/utils";
+import { NightmarePlugins } from "@browser/nightmarePlugins";
+import { Windowing } from "@browser/windowing";
+import { EventSystem } from "@apis/events";
+import { ExtensionsAPI } from "@apis/extensions";
 
 interface FuncInterface {
   tabs: any;
   items: Items;
   ui: UI;
-  logger: Logger
-  settings: SettingsAPI
-  utils: Utils
-  nightmarePlugins: NightmarePlugins
-  windowing: Windowing
-  events: EventSystem
-  extensions: ExtensionsAPI
-  devToggle: boolean
+  logger: Logger;
+  settings: SettingsAPI;
+  utils: Utils;
+  nightmarePlugins: NightmarePlugins;
+  windowing: Windowing;
+  events: EventSystem;
+  extensions: ExtensionsAPI;
+  devToggle: boolean;
 
-  erudaScriptLoaded: boolean
-  erudaScriptInjecting: boolean
-  zoomLevel: number
-  zoomSteps: Array<number>
-  currentStep: number
-
+  erudaScriptLoaded: boolean;
+  erudaScriptInjecting: boolean;
+  zoomLevel: number;
+  zoomSteps: Array<number>;
+  currentStep: number;
 }
 class Functions implements FuncInterface {
   tabs: any;
   items: Items;
   ui: UI;
-  logger: Logger
-  settings: SettingsAPI
-  utils: Utils
-  nightmarePlugins: NightmarePlugins
-  windowing: Windowing
-  events: EventSystem
-  extensions: ExtensionsAPI
-  devToggle: boolean
-  erudaScriptLoaded: boolean
-  erudaScriptInjecting: boolean
-  zoomLevel: number
-  zoomSteps: Array<number>
-  currentStep: number
+  logger: Logger;
+  settings: SettingsAPI;
+  utils: Utils;
+  nightmarePlugins: NightmarePlugins;
+  windowing: Windowing;
+  events: EventSystem;
+  extensions: ExtensionsAPI;
+  devToggle: boolean;
+  erudaScriptLoaded: boolean;
+  erudaScriptInjecting: boolean;
+  zoomLevel: number;
+  zoomSteps: Array<number>;
+  currentStep: number;
   constructor(tabs: any) {
     this.items = new Items();
     this.ui = new UI();
@@ -65,24 +64,24 @@ class Functions implements FuncInterface {
   }
 
   init() {
-    this.items.toggleTabsButton.addEventListener("click", () => {
+    this.items.toggleTabsButton!.addEventListener("click", () => {
       this.toggleTabs();
     });
-    this.items.backButton.addEventListener("click", () => {
+    this.items.backButton!.addEventListener("click", () => {
       this.backward();
     });
-    this.items.reloadButton.addEventListener("click", () => {
+    this.items.reloadButton!.addEventListener("click", () => {
       this.refresh();
     });
-    this.items.forwardButton.addEventListener("click", () => {
+    this.items.forwardButton!.addEventListener("click", () => {
       this.forward();
     });
 
     this.menus();
     this.navbarfunctions();
 
-    this.items.newTab.addEventListener("click", () =>
-      this.tabs.createTab("daydream://newtab"),
+    this.items.newTab!.addEventListener("click", () =>
+      this.tabs.createTab("daydream://newtab")
     );
   }
 
@@ -90,57 +89,51 @@ class Functions implements FuncInterface {
     if ((await this.settings.getItem("verticalTabs")) != "false") {
       const tabs = document.querySelector(".tabs");
       const viewport = document.querySelector(".viewport");
-      if (tabs && viewport){
+      if (tabs && viewport) {
         const isDisabled = tabs.classList.toggle("hidden");
-      
-      if (isDisabled) {
-        tabs.classList.add("hidden");
-        viewport.classList.add("hidden");
-      } else {
-        tabs.classList.remove("hidden");
-        viewport.classList.remove("hidden");
-      }
 
-      let val;
-      if (isDisabled) {
-        val = "true";
-      } else {
-        val = "false";
-      }
+        if (isDisabled) {
+          tabs.classList.add("hidden");
+          viewport.classList.add("hidden");
+        } else {
+          tabs.classList.remove("hidden");
+          viewport.classList.remove("hidden");
+        }
 
-      await this.settings.setItem("verticalTabs-notshowing", val);
-    } else {
-      return;
+        let val;
+        if (isDisabled) {
+          val = "true";
+        } else {
+          val = "false";
+        }
+
+        await this.settings.setItem("verticalTabs-notshowing", val);
+      } else {
+        return;
+      }
     }
-      }
-      
   }
 
   backward() {
-    this.items.iframeContainer
-      .querySelector("iframe.active")
-      .contentWindow.history.back();
-    this.logger.createLog(
-      `Navigated back to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
-    );
+    const iframe = this.items.iframeContainer!.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement;
+    iframe?.contentWindow?.history.back();
   }
 
   forward() {
-    this.items.iframeContainer
-      .querySelector("iframe.active")
-      .contentWindow.history.forward();
-    this.logger.createLog(
-      `Navigated forward to ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
-    );
+    const iframe = this.items.iframeContainer!.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement;
+    iframe?.contentWindow?.history.forward();
   }
 
   refresh() {
-    this.items.iframeContainer
-      .querySelector("iframe.active")
-      .contentWindow.location.reload();
-    this.logger.createLog(
-      `Reloaded page ${this.items.iframeContainer.querySelector("iframe.active").contentWindow.location.href}`,
-    );
+    const iframe = this.items.iframeContainer!.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement;
+
+    iframe?.contentWindow?.location.reload();
   }
 
   zoomIn() {
@@ -160,26 +153,26 @@ class Functions implements FuncInterface {
   }
 
   scaleIframeContent() {
-    let iframe: HTMLIFrameElement | null
+    let iframe: HTMLIFrameElement | null;
     iframe = document.querySelector("iframe.active");
-    if (iframe){
-      const iframeDoc = iframe.contentDocument: H || iframe.contentWindow.document;    contentContainer.style.transform = `scale(${this.zoomLevel})`;
-      contentContainer.style.transformOrigin = "top left";
-    iframeDoc.body.style.overflow = "auto";
+    if (iframe) {
+      const iframeDoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      iframeDoc!.body.style.transform = `scale(${this.zoomLevel})`;
+      iframeDoc!.body.style.transformOrigin = "top left";
+      iframeDoc!.body.style.overflow = "auto";
     }
-    
   }
 
-  injectErudaScript(iframeDocument: Document) {
+  injectErudaScript(iframeDocument: Document): Promise<string> {
     return new Promise((resolve, reject) => {
       if (this.erudaScriptLoaded) {
-        resolve();
+        resolve("Loaded!");
         return;
       }
 
       if (this.erudaScriptInjecting) {
         console.warn("Eruda script is already being injected.");
-        resolve();
+        resolve("Already Injecting!");
         return;
       }
 
@@ -191,17 +184,17 @@ class Functions implements FuncInterface {
       script.onload = () => {
         this.erudaScriptLoaded = true;
         this.erudaScriptInjecting = false;
-        resolve();
+        resolve("Injected!");
       };
-      script.onerror = (event) => {
+      script.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
         this.erudaScriptInjecting = false;
-        reject(new Error("Failed to load Eruda script:", event));
+        reject(new Error(`Failed to load Eruda script: ${event}`));
       };
       iframeDocument.body.appendChild(script);
     });
   }
 
-  injectShowScript(iframeDocument) {
+  injectShowScript(iframeDocument: Document): Promise<void>{
     return new Promise((resolve) => {
       const script = iframeDocument.createElement("script");
       script.type = "text/javascript";
@@ -221,7 +214,7 @@ class Functions implements FuncInterface {
     });
   }
 
-  injectHideScript(iframeDocument) {
+  injectHideScript(iframeDocument: Document): Promise<void> {
     return new Promise((resolve) => {
       const script = iframeDocument.createElement("script");
       script.type = "text/javascript";
@@ -234,10 +227,10 @@ class Functions implements FuncInterface {
     });
   }
   inspectElement() {
-    const iframe = this.items.iframeContainer.querySelector("iframe.active");
+    const iframe = this.items.iframeContainer!.querySelector("iframe.active") as HTMLIFrameElement;
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
       );
       return;
     }
@@ -245,14 +238,14 @@ class Functions implements FuncInterface {
     const iframeDocument = iframe.contentWindow.document;
 
     const forbiddenSrcs = ["about:blank", null, "a%60owt8bnalk", "a`owt8bnalk"];
-    if (iframe.contentWindow.location.href.includes(forbiddenSrcs)) {
+    if (forbiddenSrcs.includes(iframe.contentWindow.location.href)) {
       console.warn("Iframe src is forbidden, skipping.");
       return;
     }
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
       );
       return;
     }
@@ -277,30 +270,30 @@ class Functions implements FuncInterface {
       this.erudaScriptInjecting = false;
       console.log("Iframe navigation detected, Eruda toggle reset.");
     });
-    this.logger.loggger.createLog("Toggled Inspect Element");
+    this.logger.createLog("Toggled Inspect Element");
   }
 
   menus() {
-    this.extrasMenu(this.items.extrasButton);
-    this.extensionsMenu(this.items.extensionsButton);
-    this.profilesMenu(this.items.profilesButton);
+    this.extrasMenu(this.items.extrasButton!);
+    this.extensionsMenu(this.items.extensionsButton!);
+    this.profilesMenu(this.items.profilesButton!);
   }
 
   goFullscreen() {
-    const iframe = document.querySelector("iframe.active");
+    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement;
 
     if (iframe.requestFullscreen) {
       iframe.requestFullscreen();
-    } else if (iframe.mozRequestFullScreen) {
-      iframe.mozRequestFullScreen();
-    } else if (iframe.webkitRequestFullscreen) {
-      iframe.webkitRequestFullscreen();
-    } else if (iframe.msRequestFullscreen) {
-      iframe.msRequestFullscreen();
+    } else if ((iframe as any).mozRequestFullScreen) {
+      (iframe as any).mozRequestFullScreen();
+    } else if ((iframe as any).webkitRequestFullscreen) {
+      (iframe as any).webkitRequestFullscreen();
+    } else if ((iframe as any).msRequestFullscreen) {
+      (iframe as any).msRequestFullscreen();
     }
   }
 
-  extrasMenu(button) {
+  extrasMenu(button: HTMLButtonElement) {
     let content = this.ui.createElement("div", {}, [
       //New Tab
       this.ui.createElement(
@@ -318,7 +311,7 @@ class Functions implements FuncInterface {
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ],
+        ]
       ),
       //New Window
       this.ui.createElement(
@@ -336,7 +329,7 @@ class Functions implements FuncInterface {
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ],
+        ]
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -356,7 +349,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ],
+        ]
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -370,7 +363,7 @@ class Functions implements FuncInterface {
               this.zoomOut();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])]
         ),
         //Zoom In
         this.ui.createElement(
@@ -382,7 +375,7 @@ class Functions implements FuncInterface {
               this.zoomIn();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])]
         ),
         // Fullscreen
         this.ui.createElement(
@@ -394,7 +387,7 @@ class Functions implements FuncInterface {
               this.goFullscreen();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])]
         ),
       ]),
       // Bookmarks
@@ -413,7 +406,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ],
+        ]
       ),
       // History
       this.ui.createElement(
@@ -431,7 +424,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ],
+        ]
       ),
       // Games
       this.ui.createElement(
@@ -449,7 +442,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ],
+        ]
       ),
       // Extensions
       this.ui.createElement(
@@ -469,7 +462,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ],
+        ]
       ),
       //Inspect Element
       this.ui.createElement(
@@ -489,7 +482,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ],
+        ]
       ),
       // Settings
       this.ui.createElement(
@@ -507,7 +500,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ],
+        ]
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
         this.ui.createElement("i", { "data-lucide": "log-out" }, []),
@@ -515,14 +508,14 @@ class Functions implements FuncInterface {
         this.ui.createElement(
           "span",
           { class: "menu-key", id: "panic-keybind" },
-          ["~"],
+          ["~"]
         ),
       ]),
     ]);
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
 
-  extensionsMenu(button) {
+  extensionsMenu(button: HTMLButtonElement) {
     let extensionsList = [];
 
     let content = this.ui.createElement("div", {}, [
@@ -544,9 +537,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["refresh"],
+                ["refresh"]
               ),
-            ],
+            ]
           ),
           this.ui.createElement(
             "div",
@@ -561,9 +554,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"],
+                ["settings"]
               ),
-            ],
+            ]
           ),
         ]),
       ]),
@@ -571,7 +564,7 @@ class Functions implements FuncInterface {
     this.nightmarePlugins.sidemenu.attachTo(button, content);
   }
 
-  profilesMenu(button) {
+  profilesMenu(button: HTMLButtonElement) {
     let content = this.ui.createElement("div", {}, [
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, [
@@ -591,9 +584,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["person_add"],
+                ["person_add"]
               ),
-            ],
+            ]
           ),
           this.ui.createElement(
             "div",
@@ -608,9 +601,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"],
+                ["settings"]
               ),
-            ],
+            ]
           ),
         ]),
       ]),
@@ -620,37 +613,37 @@ class Functions implements FuncInterface {
 
   navbarfunctions() {
     const navbar = document.querySelector(".navbar");
-    const games = navbar.querySelector("#gamesShortcut");
-    const ai = navbar.querySelector("#aiShortcut");
-    const chat = navbar.querySelector("#chatShortcut");
-    const music = navbar.querySelector("#musicShortcut");
-    const history = navbar.querySelector("#historyShortcut");
-    const settings = navbar.querySelector("#settShortcut");
+    const games = navbar!.querySelector("#gamesShortcut");
+    const ai = navbar!.querySelector("#aiShortcut");
+    const chat = navbar!.querySelector("#chatShortcut");
+    const music = navbar!.querySelector("#musicShortcut");
+    const history = navbar!.querySelector("#historyShortcut");
+    const settings = navbar!.querySelector("#settShortcut");
 
-    games.addEventListener("click", () => {
+    games!.addEventListener("click", () => {
       this.utils.navigate("daydream://games");
     });
 
-    ai.addEventListener("click", () => {
+    ai!.addEventListener("click", () => {
       alert("This feature is coming soon!");
     });
 
     const content = this.ui.createElement(
       "iframe",
       { class: "news", src: "https://night-network.changelogfy.com/" },
-      [],
+      []
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);
 
-    music.addEventListener("click", () => {
+    music!.addEventListener("click", () => {
       console.log("opening music");
     });
 
-    history.addEventListener("click", () => {
+    history!.addEventListener("click", () => {
       this.utils.navigate("daydream://history");
     });
 
-    settings.addEventListener("click", () => {
+    settings!.addEventListener("click", () => {
       this.utils.navigate("daydream://settings");
     });
   }

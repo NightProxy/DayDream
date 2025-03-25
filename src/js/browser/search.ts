@@ -1,7 +1,7 @@
-import { Nightmare as UI } from "/assets/js//lib/Nightmare/nightmare.js";
-import { Utils } from "/assets/js/utils.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { Nightmare as UI } from "@libs/Nightmare/nightmare";
+import { Utils } from "@js/utils";
+import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
 
 class Search {
   constructor(proxy, swConfig, proxySetting) {
