@@ -42,13 +42,14 @@ class Utils implements utilsInteface{
         }
 
         if (favicon) {
-          let faviconUrl = favicon.href || favicon.getAttribute("href");
+          const f = favicon as HTMLLinkElement;
+          let faviconUrl = f.href || f.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
 
           faviconUrl = await this.getFavicon(faviconUrl);
 
           if (faviconUrl && faviconImage) {
-            faviconImage.style.backgroundImage = `url('${faviconUrl}')`;
+            faviconImage.setAttribute("style", `background-image: url('${faviconUrl}');`);
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }
@@ -63,7 +64,7 @@ class Utils implements utilsInteface{
     });
   }
 
-  async getFavicon(url) {
+  async getFavicon(url: string) {
     try {
       var googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
       return googleFaviconUrl;
@@ -73,7 +74,7 @@ class Utils implements utilsInteface{
     }
   }
 
-  processUrl(url) {
+  processUrl(url: string) {
     let js = "";
     if (url.startsWith("daydream://")) {
       const path = url.replace("daydream://", "");
@@ -87,13 +88,14 @@ class Utils implements utilsInteface{
       return url;
     } else if (url.startsWith("javascript:")) {
       js = url.replace("javascript:", "");
-      document.querySelector("iframe.active").contentWindow.eval(js);
+      const iframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+      iframe.contentWindow!.eval(js);
     } else {
       return `/internal/${url}`;
     }
   }
 
-  getInternalURL(url) {
+  getInternalURL(url: string) {
     if (url.startsWith("/internal/")) {
       const path = url.replace("/internal/", "");
       return `daydream://${path}`;
@@ -111,11 +113,11 @@ class Utils implements utilsInteface{
     }
   }
 
-  navigate(url) {
-    const processedUrl = this.processUrl(url);
-    const iframe = this.items.iframeContainer.querySelector("iframe.active");
+  navigate(url: string) {
+    const processedUrl = this.processUrl(url) as string;
+    const iframe = this.items.iframeContainer!.querySelector("iframe.active") as HTMLIFrameElement;
     if (iframe) {
-      iframe.src = processedUrl;
+      iframe.setAttribute("src", processedUrl);
       this.logger.createLog(`Navigated to: ${processedUrl}`);
     }
   }

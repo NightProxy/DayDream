@@ -3,8 +3,52 @@ import { Utils } from "@js/utils";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 
-class Search {
-  constructor(proxy, swConfig, proxySetting) {
+interface Section {
+  section: HTMLElement;
+  searchResults: HTMLElement;
+}
+
+interface GameData {
+  name: string;
+  image: string;
+  link: string;
+}
+
+interface SearchInterface {
+  utils: Utils;
+  ui: UI;
+  data: Logger;
+  settings: SettingsAPI;
+  proxy: any;
+  swConfig: any;
+  proxySetting: string;
+  currentSectionIndex: number;
+  maxInitialResults: number;
+  maxExpandedResults: number;
+  appsData: GameData[];
+  sections: Record<string, Section>;
+  selectedSuggestionIndex: number;
+  currentMaxResults: number;
+}
+
+class Search implements SearchInterface {
+  utils: Utils;
+  ui: UI;
+  data: Logger;
+  settings: SettingsAPI;
+  proxy: any;
+  swConfig: any;
+  proxySetting: string;
+  currentSectionIndex: number;
+  maxInitialResults: number;
+  maxExpandedResults: number;
+  appsData: GameData[];
+  sections: Record<string, Section>;
+  selectedSuggestionIndex: number;
+  currentMaxResults: number;
+  searchbar: HTMLInputElement | null = null;
+
+  constructor(proxy: any, swConfig: any, proxySetting: string) {
     this.utils = new Utils();
     this.ui = new UI();
     this.data = new Logger();
@@ -21,9 +65,12 @@ class Search {
     this.currentMaxResults = this.maxInitialResults;
   }
 
-  async init(searchbar) {
-    let suggestionList;
-    if ((await this.settings.getItem("verticalTabs")) === "true") {
+  async init(searchbar: HTMLInputElement) {
+    this.searchbar = searchbar;
+    let suggestionList: HTMLElement;
+    const verticalTabsSetting =
+      (await this.settings.getItem("verticalTabs")) ?? "false";
+    if (verticalTabsSetting === "true") {
       suggestionList = this.ui.createElement("div", {
         class: "suggestion-list vertical",
         id: "suggestion-list",
@@ -42,14 +89,18 @@ class Search {
       games: this.createSection("Games"),
     };
 
-    Object.values(this.sections).forEach(({ section }) =>
-      suggestionList.appendChild(section),
+    // Type the section object explicitly so that TS knows the shape
+    Object.values(this.sections).forEach((sectionObj: Section) =>
+      suggestionList.appendChild(sectionObj.section)
     );
 
-    searchbar.addEventListener("input", async (event) => {
+    searchbar.addEventListener("input", async (event: Event) => {
       suggestionList.style.display = "flex";
-      const query = event.target.value.trim();
-      if (query === "" && event.inputType === "deleteContentBackward") {
+      const target = event.target as HTMLInputElement | null;
+      if (!target) return;
+      const query = target.value.trim();
+      const inputEvent = event as InputEvent;
+      if (query === "" && inputEvent.inputType === "deleteContentBackward") {
         this.clearSuggestions();
         suggestionList.style.display = "none";
         return;
@@ -57,19 +108,18 @@ class Search {
 
       let cleanedQuery = query.replace(
         /^(daydream:\/\/|daydream:\/|daydream:)/,
-        "",
+        ""
       );
       const response = await fetch(`/results/${cleanedQuery}`).then((res) =>
-        res.json(),
+        res.json()
       );
-      const suggestions = response.map((item) => item.phrase);
+      const suggestions: string[] = response.map((item: any) => item.phrase);
 
       this.clearSuggestions();
-
       await this.populateSections(suggestions, searchbar.value);
     });
 
-    window.addEventListener("keydown", async (event) => {
+    window.addEventListener("keydown", async (event: KeyboardEvent) => {
       if (
         event.key === "Escape" ||
         event.ctrlKey ||
@@ -85,8 +135,8 @@ class Search {
       if (event.key === "ArrowDown") {
         event.preventDefault();
         if (this.selectedSuggestionIndex + 1 >= numSuggestions) {
-          this.moveToNextSection(); // Move to next section when the last suggestion is selected
-          this.selectedSuggestionIndex = 0; // Select the first item in the next section
+          this.moveToNextSection();
+          this.selectedSuggestionIndex = 0;
         } else {
           this.selectedSuggestionIndex =
             (this.selectedSuggestionIndex + 1) % numSuggestions;
@@ -95,7 +145,7 @@ class Search {
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
         if (this.selectedSuggestionIndex === 0) {
-          this.moveToPreviousSection(); // Move to the previous section when the first suggestion is selected
+          this.moveToPreviousSection();
         } else {
           this.selectedSuggestionIndex =
             (this.selectedSuggestionIndex - 1 + numSuggestions) %
@@ -107,18 +157,22 @@ class Search {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text",
-            ).textContent;
-          searchbar.value = selectedSuggestion;
+              ".suggestion-text"
+            )?.textContent;
+          if (selectedSuggestion) {
+            searchbar.value = selectedSuggestion;
+          }
         }
       } else if (event.key === "ArrowRight") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text",
-            ).textContent;
-          searchbar.value = selectedSuggestion;
+              ".suggestion-text"
+            )?.textContent;
+          if (selectedSuggestion) {
+            searchbar.value = selectedSuggestion;
+          }
         }
       } else if (event.key === "Backspace") {
         if (searchbar.value === "") {
@@ -127,53 +181,54 @@ class Search {
         }
       }
 
-      suggestionList.querySelectorAll(".searchEngineIcon")[0].style.display =
-        "block";
-      switch (await this.settings.getItem("search")) {
+      const engineIconElem = suggestionList.querySelectorAll(
+        ".searchEngineIcon"
+      )[0] as HTMLImageElement | null;
+      if (engineIconElem) {
+        engineIconElem.style.display = "block";
+      }
+      const searchSetting =
+        (await this.settings.getItem("search")) ??
+        "https://duckduckgo.com/?q=%s";
+      switch (searchSetting) {
         case "https://duckduckgo.com/?q=%s":
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            "/assets/imgs/b/ddg.webp";
-          suggestionList.querySelectorAll(
-            ".searchEngineIcon",
-          )[0].style.transform = "scale(1.35)";
+          if (engineIconElem) {
+            engineIconElem.src = "/assets/imgs/b/ddg.webp";
+            engineIconElem.style.transform = "scale(1.35)";
+          }
           break;
         case "https://bing.com/search?q=%s":
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            "/assets/imgs/b/bing.webp";
-          suggestionList.querySelectorAll(
-            ".searchEngineIcon",
-          )[0].style.transform = "scale(1.65)";
+          if (engineIconElem) {
+            engineIconElem.src = "/assets/imgs/b/bing.webp";
+            engineIconElem.style.transform = "scale(1.65)";
+          }
           break;
         case "https://www.google.com/search?q=%s":
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            "/assets/imgs/b/google.webp";
-          suggestionList.querySelectorAll(
-            ".searchEngineIcon",
-          )[0].style.transform = "scale(1.2)";
+          if (engineIconElem) {
+            engineIconElem.src = "/assets/imgs/b/google.webp";
+            engineIconElem.style.transform = "scale(1.2)";
+          }
           break;
         case "https://search.yahoo.com/search?p=%s":
-          suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-            "/assets/imgs/b/yahoo.webp";
-          suggestionList.querySelectorAll(
-            ".searchEngineIcon",
-          )[0].style.transform = "scale(1.5)";
+          if (engineIconElem) {
+            engineIconElem.src = "/assets/imgs/b/yahoo.webp";
+            engineIconElem.style.transform = "scale(1.5)";
+          }
           break;
         default:
           this.utils
-            .getFavicon(await this.settings.getItem("search"))
-            .then((dataUrl) => {
+            .getFavicon(searchSetting)
+            .then((dataUrl: string | null) => {
               if (dataUrl == null || dataUrl.endsWith("null")) {
-                suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-                  "/assets/imgs/b/ddg.webp";
-                suggestionList.querySelectorAll(
-                  ".searchEngineIcon",
-                )[0].style.transform = "scale(1.35)";
+                if (engineIconElem) {
+                  engineIconElem.src = "/assets/imgs/b/ddg.webp";
+                  engineIconElem.style.transform = "scale(1.35)";
+                }
               } else {
-                suggestionList.querySelectorAll(".searchEngineIcon")[0].src =
-                  dataUrl;
-                suggestionList.querySelectorAll(
-                  ".searchEngineIcon",
-                )[0].style.transform = "scale(1.2)";
+                if (engineIconElem) {
+                  engineIconElem.src = dataUrl;
+                  engineIconElem.style.transform = "scale(1.2)";
+                }
               }
             });
       }
@@ -181,44 +236,31 @@ class Search {
 
     document.body.appendChild(suggestionList);
 
-    let activeIframe = document.querySelector("iframe.active");
-
-    activeIframe.addEventListener("load", () => {
-      let check = this.utils.getInternalURL(new URL(activeIframe.src).pathname);
-      if (check.startsWith("daydream://")) {
-        searchbar.value = check;
-      } else {
-        let url = new URL(activeIframe.src).pathname;
-        url = url.replace(window.SWSettings.config.prefix, "");
-        url = __uv$config.decodeUrl(url);
-        url = new URL(url).origin;
-        searchbar.value = url;
-      }
-    });
+    const activeIframe = document.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement | null;
+    if (activeIframe) {
+      activeIframe.addEventListener("load", () => {
+        let check = this.utils.getInternalURL(
+          new URL(activeIframe.src).pathname
+        );
+        if (check.startsWith("daydream://")) {
+          searchbar.value = check;
+        } else {
+          let url = new URL(activeIframe.src).pathname;
+          url = url.replace(
+            window.SWSettings ? window.SWSettings.config.prefix : "",
+            ""
+          );
+          url = (window as any).window.__uv$config.decodeUrl(url);
+          url = new URL(url).origin;
+          searchbar.value = url;
+        }
+      });
+    }
   }
 
-  createSection(titleText) {
-    /*const section = document.createElement("div");
-    section.classList.add("search-section");
-
-    const searchTitle = document.createElement("div");
-    searchTitle.classList.add("search-title");
-
-    const icon = document.createElement("img");
-    icon.classList.add("searchEngineIcon");
-    icon.src = "/assets/imgs/logo.png";
-
-    const title = document.createElement("span");
-    title.textContent = titleText;
-
-    searchTitle.appendChild(icon);
-    searchTitle.appendChild(title);
-
-    const searchResults = document.createElement("div");
-    searchResults.classList.add("search-results");
-
-    section.appendChild(searchTitle);
-    section.appendChild(searchResults);*/
+  createSection(titleText: string): Section {
     const section = this.ui.createElement("div", { class: "search-section" }, [
       this.ui.createElement("div", { class: "search-title" }, [
         this.ui.createElement("img", {
@@ -229,23 +271,23 @@ class Search {
       ]),
       this.ui.createElement("div", { class: "search-results" }),
     ]);
-    const searchResults = section.querySelector(".search-results");
-
+    const searchResults = section.querySelector(
+      ".search-results"
+    ) as HTMLElement;
     return { section, searchResults };
   }
 
-  getCurrentSuggestionItems() {
+  getCurrentSuggestionItems(): NodeListOf<HTMLDivElement> {
     return Object.values(this.sections)[
       this.currentSectionIndex
     ].searchResults.querySelectorAll("div");
   }
 
-  moveToPreviousSection() {
+  moveToPreviousSection(): void {
     const sectionsArray = Object.values(this.sections);
     this.currentSectionIndex =
       (this.currentSectionIndex - 1 + sectionsArray.length) %
       sectionsArray.length;
-
     while (
       sectionsArray[this.currentSectionIndex].searchResults.children.length ===
       0
@@ -254,14 +296,12 @@ class Search {
         (this.currentSectionIndex - 1 + sectionsArray.length) %
         sectionsArray.length;
     }
-
     const previousSectionItems = this.getCurrentSuggestionItems();
     this.selectedSuggestionIndex = previousSectionItems.length - 1;
-
     this.updateSelectedSuggestion();
   }
 
-  moveToNextSection() {
+  moveToNextSection(): void {
     this.currentSectionIndex =
       (this.currentSectionIndex + 1) % Object.values(this.sections).length;
     while (
@@ -275,7 +315,7 @@ class Search {
     this.updateSelectedSuggestion();
   }
 
-  updateSelectedSuggestion() {
+  updateSelectedSuggestion(): void {
     const suggestionItems = this.getCurrentSuggestionItems();
     document
       .querySelectorAll(".search-results div.selected")
@@ -283,58 +323,62 @@ class Search {
         item.classList.remove("selected");
       });
     suggestionItems.forEach((item, index) => {
-      item.classList.toggle("selected", index === this.selectedSuggestionIndex);
+      if (index === this.selectedSuggestionIndex) {
+        item.classList.add("selected");
+      } else {
+        item.classList.remove("selected");
+      }
     });
   }
 
-  async generatePredictedUrls(query) {
+  async generatePredictedUrls(query: string): Promise<string[]> {
     try {
       const response = await fetch(`/results/${query}`);
-      if (!response.ok) throw new Error("Network response was not ok");
+      if (!response || !response.ok)
+        throw new Error("Network response was not ok");
       const data = await response.json();
-      return data.map((item) => item.phrase);
+      return data.map((item: any) => item.phrase);
     } catch (error) {
       console.error("Error fetching predicted URLs:", error);
       return [];
     }
   }
 
-  clearSuggestions() {
+  clearSuggestions(): void {
     Object.values(this.sections).forEach(({ searchResults }) => {
       searchResults.innerHTML = "";
-      searchResults.parentElement.style.display = "none";
+      if (searchResults.parentElement) {
+        searchResults.parentElement.style.display = "none";
+      }
     });
   }
 
-  async populateSections(suggestions, e) {
+  async populateSections(suggestions: string[], e: string): Promise<void> {
     const searchResultsSuggestions = suggestions.slice(
       0,
-      this.maxExpandedResults,
+      this.maxExpandedResults
     );
     this.populateSearchResults(searchResultsSuggestions);
-
     await this.populateOtherPages(suggestions);
-
-    //    await this.populateSettings(suggestions);
-
+    // Uncomment and adjust if you want to populate settings:
+    // await this.populateSettings(this.searchbar!);
     await this.populateGames(e);
   }
 
-  populateSearchResults(suggestions) {
+  populateSearchResults(suggestions: string[]): void {
     const { searchResults, section } = this.sections.searchResults;
     if (suggestions.length > 0) {
       section.style.display = "block";
-      suggestions.forEach((suggestion) => {
+      suggestions.forEach((suggestion: string) => {
         const listItem = this.createSuggestionItem(suggestion);
         searchResults.appendChild(listItem);
       });
     }
   }
 
-  async populateOtherPages(query) {
+  async populateOtherPages(query: string[]): Promise<void> {
     const { searchResults, section } = this.sections.otherPages;
     let hasResults = false;
-
     console.log("Query:", query);
     for (let url of query) {
       url = url.replace(/ /g, "");
@@ -343,10 +387,9 @@ class Search {
       const response = await fetch(internalUrl, { method: "HEAD" }).catch(
         (error) => {
           this.data.createLog("Failed to Fetch:" + error);
-        },
+        }
       );
-
-      if (response.ok) {
+      if (response && response.ok) {
         const listItem = this.createSuggestionItem(url);
         searchResults.appendChild(listItem);
         hasResults = true;
@@ -355,30 +398,26 @@ class Search {
     section.style.display = hasResults ? "block" : "none";
   }
 
-  async populateSettings() {
+  async populateSettings(searchbar: HTMLInputElement): Promise<void> {
     const { searchResults, section } = this.sections.settings;
     let hasResults = false;
-
     let query = searchbar.value;
     query = query.replace(/^(daydream:\/\/|daydream:\/|daydream:)/, "");
-
     const predictedUrls = this.generatePredictedSettingsUrls(query);
     for (let url of predictedUrls) {
       const response = await fetch(url, { method: "HEAD" });
-
       if (response.ok) {
         const listItem = this.createSuggestionItem(url);
         searchResults.appendChild(listItem);
         hasResults = true;
       } else if (!response.ok) {
-        return null;
+        return;
       }
     }
-
     section.style.display = hasResults ? "block" : "none";
   }
 
-  generatePredictedSettingsUrls(query) {
+  generatePredictedSettingsUrls(query: string): string[] {
     const basePaths = [
       "settings",
       "settings/about",
@@ -391,41 +430,37 @@ class Search {
     return basePaths.map((base) => `${base}${query ? `/${query}` : ""}`);
   }
 
-  async populateGames(query) {
+  async populateGames(query: string): Promise<void> {
     const { searchResults, section } = this.sections.games;
     let hasResults = false;
-
     if (this.appsData.length === 0) {
       await this.fetchAppData();
     }
-
     const lowerQuery = query.toLowerCase();
     const filteredGames = this.appsData
       .filter((app) => app.name.toLowerCase().includes(lowerQuery))
       .slice(0, 10);
-
     if (filteredGames.length > 0) {
       section.style.display = "block";
-      filteredGames.forEach((game) => {
+      filteredGames.forEach((game: GameData) => {
         const listItem = this.createGameItem(game);
         searchResults.appendChild(listItem);
         hasResults = true;
       });
     }
-
     section.style.display = hasResults ? "block" : "none";
   }
 
-  async fetchAppData() {
+  async fetchAppData(): Promise<void> {
     try {
       const response = await fetch("/assets/json/g.json");
-      this.appsData = await response.json(); // Use this.appsData
+      this.appsData = await response.json();
     } catch (error) {
       console.error("Error fetching JSON data:", error);
     }
   }
 
-  createSuggestionItem(suggestion) {
+  createSuggestionItem(suggestion: string): HTMLElement {
     const listItem = document.createElement("div");
     const listIcon = document.createElement("span");
     const listSuggestion = document.createElement("span");
@@ -437,8 +472,12 @@ class Search {
     listItem.appendChild(listSuggestion);
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
-      document.querySelector("#suggestion-list.suggestion-list").style.display =
-        "none";
+      const suggestionListElem = document.querySelector(
+        "#suggestion-list.suggestion-list"
+      ) as HTMLElement | null;
+      if (suggestionListElem) {
+        suggestionListElem.style.display = "none";
+      }
       if (suggestion.startsWith("daydream")) {
         const link = this.utils.processUrl(suggestion);
         if (link.startsWith("/internal/")) {
@@ -451,7 +490,7 @@ class Search {
     return listItem;
   }
 
-  createGameItem(game) {
+  createGameItem(game: GameData): HTMLElement {
     const listItem = document.createElement("div");
     const listIcon = document.createElement("img");
     listIcon.classList.add("game-icon");
@@ -460,8 +499,12 @@ class Search {
     listItem.innerHTML += game.name;
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
-      document.querySelector("#suggestion-list.suggestion-list").style.display =
-        "none";
+      const suggestionListElem = document.querySelector(
+        "#suggestion-list.suggestion-list"
+      ) as HTMLElement | null;
+      if (suggestionListElem) {
+        suggestionListElem.style.display = "none";
+      }
       if (game.link.startsWith("daydream")) {
         const link = this.utils.processUrl(game.link);
         if (link.startsWith("/internal/")) {
@@ -471,7 +514,6 @@ class Search {
         this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
       }
     });
-
     return listItem;
   }
 }

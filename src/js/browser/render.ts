@@ -5,7 +5,7 @@ import { EventSystem } from "@apis/events";
 import lucide from "lucide";
 
 interface renderInterface {
-  container: HTMLElement;
+  container: HTMLDivElement;
   nightmare: Nightmare;
   logger: Logger;
   settings: SettingsAPI;
@@ -13,13 +13,13 @@ interface renderInterface {
 }
 
 class Render implements renderInterface{
-  container: HTMLElement;
+  container: HTMLDivElement;
   nightmare: Nightmare;
   logger: Logger;
   settings: SettingsAPI;
   events: EventSystem;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLDivElement) {
     this.container = container;
     this.nightmare = new Nightmare();
     this.logger = new Logger();

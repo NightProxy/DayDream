@@ -1,8 +1,18 @@
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { Themeing } from "/assets/js/global/theming.js";
-import { Windowing } from "/assets/js/browser/windowing.js";
+import { SettingsAPI } from "@apis/settings";
+import { Themeing } from "@js/global/theming";
+import { Windowing } from "@browser/windowing";
 
-class Global {
+interface GlobalInterface {
+  settings: SettingsAPI;
+  theming: Themeing;
+  windowing: Windowing;
+  init: () => Promise<void>;
+}
+
+class Global implements GlobalInterface {
+  settings: SettingsAPI;
+  theming: Themeing;
+  windowing: Windowing;
   constructor() {
     this.settings = new SettingsAPI();
     this.theming = new Themeing();

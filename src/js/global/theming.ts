@@ -1,6 +1,20 @@
-import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { SettingsAPI } from "@apis/settings";
 
-class Themeing {
+interface ThemeingInterface {
+  settings: SettingsAPI;
+  init: () => Promise<void>;
+  applyThemeFromJsonFile: () => Promise<void>;
+  setBackgroundImage: () => Promise<void>;
+  applyColorTint: (
+    color: string,
+    tintColor: string,
+    tintFactor?: number,
+  ) => string;
+  fadeColor: (color: string, factor: number) => string;
+}
+
+class Themeing implements ThemeingInterface {
+  settings: SettingsAPI;
   constructor() {
     this.settings = new SettingsAPI();
   }
@@ -11,7 +25,7 @@ class Themeing {
       (await this.settings.getItem("themeColor")) || "#aa00ff",
     );
     const fadedMainColor =
-      this.fadeColor(await this.settings.getItem("themeColor"), "0.26") ||
+      this.fadeColor(await this.settings.getItem("themeColor"), 0.26) ||
       "rgba(170, 1, 255, 0.26)";
     document.documentElement.style.setProperty(
       "--faded-main-color",
@@ -25,7 +39,7 @@ class Themeing {
         (await this.settings.getItem("themeColor")) || "#aa00ff",
       );
       const fadedMainColor =
-        this.fadeColor(await this.settings.getItem("themeColor"), "0.26") ||
+        this.fadeColor(await this.settings.getItem("themeColor"), 0.26) ||
         "rgba(170, 1, 255, 0.26)";
       document.documentElement.style.setProperty(
         "--faded-main-color",
@@ -91,7 +105,7 @@ class Themeing {
     const bg = await this.settings.getItem("theme:background-image");
     if (bg !== null) {
       const img = bg || "/assets/imgs/DDX.bg.jpeg";
-      document.body.querySelector(".bg-img img").setAttribute("src", img);
+      document.body.querySelector(".bg-img img")!.setAttribute("src", img);
     } else {
       document.documentElement.style.setProperty(
         "--background-image",
@@ -101,7 +115,7 @@ class Themeing {
     console.log("Background image set");
   }
 
-  applyColorTint(color, tintColor, tintFactor = 0.5) {
+  applyColorTint(color: string, tintColor: string, tintFactor: number = 0.5) {
     const colorMatch = color.match(
       /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d\.]+)?\)/,
     );
@@ -124,7 +138,7 @@ class Themeing {
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
 
-  fadeColor(color, factor) {
+  fadeColor(color: string, factor: number) {
     if (typeof color !== "string") {
       console.error("Invalid color input:", color);
       return color; // Return the original input if it's invalid

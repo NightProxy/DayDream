@@ -1,24 +1,51 @@
-import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
-import { NightmarePlugins } from "/assets/js/browser/nightmarePlugins.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { EventSystem } from "/assets/js/apis/events.js";
-import { ProfilesAPI } from "/assets/js/apis/profiles.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { ExtensionsAPI } from "/assets/js/apis/extensions.js";
-import { Proxy } from "/assets/js/apis/proxy.js";
-import { Windowing } from "/assets/js/browser/windowing.js";
-import { Global } from "/assets/js/global/index.js";
-import { Render } from "/assets/js/browser/render.js";
-import { Items } from "/assets/js/browser/items.js";
-import { Utils } from "/assets/js/utils.js";
-import { Tabs } from "/assets/js/browser/tabs.js";
-import { Functions } from "/assets/js/browser/functions.js";
-import { Keys } from "/assets/js/browser/keys.js";
-import { Search } from "/assets/js/browser/search.js";
+import { Nightmare } from "@libs/Nightmare/nightmare";
+import { NightmarePlugins } from "@browser/nightmarePlugins";
+import { SettingsAPI } from "@apis/settings";
+import { EventSystem } from "@apis/events";
+import { ProfilesAPI } from "@apis/profiles";
+import { Logger } from "@apis/logging";
+import { ExtensionsAPI } from "@apis/extensions";
+import { Proxy } from "@apis/proxy";
+import { Windowing } from "@browser/windowing";
+import { Global } from "@js/global/index";
+import { Render } from "@browser/render";
+import { Items } from "@browser/items";
+import { Utils } from "@js/utils";
+import { Tabs } from "@browser/tabs";
+import { Functions } from "@browser/functions";
+import { Keys } from "@browser/keys";
+import { Search } from "@browser/search";
+
+declare global {
+  interface Window {
+    __uv$config: any;
+    __scramjet$config: any;
+    __eclipse$config: any;
+    nightmare: Nightmare;
+    nightmarePlugins: NightmarePlugins;
+    settings: SettingsAPI;
+    eventsAPI: EventSystem;
+    extensions: ExtensionsAPI;
+    proxy: Proxy;
+    logging: Logger;
+    profiles: ProfilesAPI;
+    globals: Global;
+    renderer: Render;
+    items: Items;
+    utils: Utils;
+    tabs: Tabs;
+    windowing: Windowing;
+    functions: Functions;
+    keys: Keys;
+    searchbar: Search;
+    SWconfig: any;
+    ProxySettings: string;
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
-  const nightmarePlugins = new NightmarePlugins(nightmare);
+  const nightmarePlugins = new NightmarePlugins();
 
   const settingsAPI = new SettingsAPI();
   const eventsAPI = new EventSystem();
@@ -48,22 +75,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     uv: {
       type: "sw",
       file: "/@/sw.js",
-      config: __uv$config,
+      config: window.__uv$config,
       func: null,
     },
     sj: {
       type: "sw",
       file: "/$/sw.js",
-      config: __scramjet$config,
+      config: window.__scramjet$config,
       func: async () => {
         if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          const scramjet = new ScramjetController(__scramjet$config);
+          const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
           await settingsAPI.setItem("scramjet", "fixed");
         } else {
-          const scramjet = new ScramjetController(__scramjet$config);
+          const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
@@ -75,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ec: {
       type: "sw",
       file: "/~/sw.js",
-      config: __eclipse$config,
+      config: window.__eclipse$config,
       func: null,
     },
     auto: {
@@ -89,7 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   const windowing = new Windowing();
   const globalFunctions = new Global();
-  const render = new Render(document.getElementById("browser-container"));
+  const render = new Render(document.getElementById("browser-container") as HTMLDivElement);
   const items = new Items();
   const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
@@ -119,12 +146,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   const uvSearchBar = items.addressBar;
 
-  uvSearchBar.addEventListener("keydown", async (e) => {
+  uvSearchBar!.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       console.log("Searching...");
 
-      const searchValue = uvSearchBar.value.trim();
+      const searchValue = uvSearchBar!.value.trim();
 
       if (searchValue.startsWith("daydream://")) {
         utils.navigate(searchValue);
@@ -170,8 +197,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           case "sw":
             let encodedUrl =
               swConfigSettings.config.prefix +
-              __uv$config.encodeUrl(proxy.search(searchValue));
-            const activeIframe = document.querySelector("iframe.active");
+              window.__uv$config.encodeUrl(proxy.search(searchValue));
+            const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
             if (activeIframe) {
               activeIframe.src = encodedUrl;
             }
@@ -186,17 +213,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   functions.init();
 
-  const searchbar = new Search(proxy, swConfig, proxySetting, eventsAPI);
-  searchbar.init(items.addressBar);
+  const searchbar = new Search(proxy, swConfig, proxySetting);
+  searchbar.init(items.addressBar!);
 
-  uvSearchBar.addEventListener("keydown", (e) => {
+  uvSearchBar!.addEventListener("keydown", (e) => {
     if (e.key == "Enter") {
       e.preventDefault();
       setTimeout(() => {
         searchbar.clearSuggestions();
         document.querySelector(
           "#suggestion-list.suggestion-list",
-        ).style.display = "none";
+        )!.setAttribute("style", "display:none;")
       }, 30);
     }
   });

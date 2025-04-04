@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
+    "@types/sortablejs": "^1.15.8",
     "vite": "^6.2.0"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "js-cookie": "^3.0.5",
     "jszip": "^3.10.1",
     "localforage": "^1.10.0",
-    "lucide": "^0.483.0"
+    "lucide": "^0.483.0",
+    "sortablejs": "^1.15.6"
   }
 }

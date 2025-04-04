@@ -1,6 +1,11 @@
-import { SettingsAPI } from "/assets/js/apis/settings.js";
+import { SettingsAPI } from "@apis/settings";
 
-class Windowing {
+interface WindowingInterface {
+  settings: SettingsAPI
+}
+
+class Windowing implements WindowingInterface {
+  settings: SettingsAPI;
   constructor() {
     this.settings = new SettingsAPI();
   }
@@ -16,24 +21,16 @@ class Windowing {
       const aboutBlankTab = window.open("about:blank", "_blank");
       const iframe = document.createElement("iframe");
       iframe.src = location.href;
-      iframe.style.width = "100%";
-      iframe.style.height = "100%";
-      iframe.style.border = "none";
-      iframe.style.frameborder = "0";
-      iframe.style.marginwidth = "0";
-      iframe.style.position = "fixed";
-      iframe.style.inset = "0px";
-      iframe.style.outline = "none";
-      iframe.style.scrolling = "auto";
-      aboutBlankTab.document.title = document.title;
-      const link = aboutBlankTab.document.createElement("link");
+      iframe.setAttribute("style", "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;");
+      aboutBlankTab!.document.title = document.title;
+      const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
         (await this.settings.getItem("favicon")) ||
         location.href + "/assets/imgs/logo.png";
-      aboutBlankTab.document.head.appendChild(link);
-      aboutBlankTab.document.body.appendChild(iframe);
+      aboutBlankTab!.document.head.appendChild(link);
+      aboutBlankTab!.document.body.appendChild(iframe);
     } else {
       console.log("already in about:blank or iframe");
     }
@@ -44,24 +41,16 @@ class Windowing {
       const aboutBlankTab = window.open("about:blank");
       const iframe = document.createElement("iframe");
       iframe.src = location.href;
-      iframe.style.width = "100%";
-      iframe.style.height = "100%";
-      iframe.style.border = "none";
-      iframe.style.frameborder = "0";
-      iframe.style.marginwidth = "0";
-      iframe.style.position = "fixed";
-      iframe.style.inset = "0px";
-      iframe.style.outline = "none";
-      iframe.style.scrolling = "auto";
-      aboutBlankTab.document.title = document.title;
-      const link = aboutBlankTab.document.createElement("link");
+      iframe.setAttribute("style", "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;");
+      aboutBlankTab!.document.title = document.title;
+      const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
         (await this.settings.getItem("favicon")) ||
         location.href + "/assets/imgs/logo.png";
-      aboutBlankTab.document.head.appendChild(link);
-      aboutBlankTab.document.body.appendChild(iframe);
+      aboutBlankTab!.document.head.appendChild(link);
+      aboutBlankTab!.document.body.appendChild(iframe);
 
       window.location.href =
         (await this.settings.getItem("redirectUrl")) || "https://google.com";

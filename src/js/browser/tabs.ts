@@ -1,12 +1,44 @@
-import { Nightmare as UI } from "/assets/js/lib/Nightmare/nightmare.js";
-import { Utils } from "/assets/js/utils.js";
-import { Items } from "/assets/js/browser/items.js";
-import { Logger } from "/assets/js/apis/logging.js";
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { EventSystem } from "/assets/js/apis/events.js";
+import { Nightmare as UI } from "@libs/Nightmare/nightmare.js";
+import { Utils } from "@js/utils";
+import { Items } from "@browser/items";
+import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
+import { EventSystem } from "@apis/events";
+import Sortable from "sortablejs";
 
-class Tabs {
-  constructor(render) {
+interface TabsInterface {
+  render: any;
+  ui: UI;
+  utils: Utils;
+  items: Items;
+  logger: Logger;
+  settings: SettingsAPI;
+  eventsAPI: EventSystem;
+  tabCount: number;
+  tabs: any[];
+  groups: any[];
+  draggabillies: any[];
+  el: HTMLDivElement;
+  instanceId: number;
+  styleEl: HTMLStyleElement;
+}
+
+class Tabs implements TabsInterface {
+  render: any;
+  ui: UI;
+  utils: Utils;
+  items: Items;
+  logger: Logger;
+  settings: SettingsAPI;
+  eventsAPI: EventSystem;
+  tabCount: number;
+  tabs: any[];
+  groups: any[];
+  draggabillies: any[];
+  el: HTMLDivElement;
+  instanceId: number;
+  styleEl: HTMLStyleElement;
+  constructor(render: any) {
     this.render = render;
     this.ui = new UI();
     this.utils = new Utils();
@@ -34,18 +66,9 @@ class Tabs {
       console.log("changing layout");
       setTimeout(() => {
         this.layoutTabs();
-        this.setupDraggabilly();
+        this.setupSortable();
       }, 200);
     });
-
-    this.el.addEventListener("dblclick", (event) => {
-      if (
-        [this.el, this.el.querySelector(".tabs-content")].includes(event.target)
-      )
-        this.createTab("daydream://newtab");
-    });
-
-    this.tabEls.forEach((tabEl) => this.setTabCloseEventListener(tabEl));
   }
 
   get tabEls() {
@@ -57,13 +80,14 @@ class Tabs {
   }
   get unpinedTabEls() {
     return Array.prototype.slice.call(
-      this.el.querySelectorAll(".tab:not(.tab.pinned)"),
+      this.el.querySelectorAll(".tab:not(.tab.pinned)")
     );
   }
 
   get tabContentWidths() {
     const numberOfTabs = this.tabEls.length;
-    const tabsContentWidth = this.el.querySelector(".tabs-content").clientWidth;
+    const tabsContentWidth =
+      this.el.querySelector(".tabs-content")!.clientWidth;
     const tabsCumulativeOverlappedWidth = (numberOfTabs - 1) * 1;
     const targetWidth =
       (tabsContentWidth - 2 * 9 + tabsCumulativeOverlappedWidth) / numberOfTabs;
@@ -88,7 +112,7 @@ class Tabs {
   }
 
   get tabContentPositions() {
-    const positions = [];
+    const positions: any[] = [];
     const tabContentWidths = this.tabContentWidths;
 
     let position = 9;
@@ -102,7 +126,7 @@ class Tabs {
   }
 
   get tabPositions() {
-    const positions = [];
+    const positions: any[] = [];
 
     this.tabContentPositions.forEach((contentPosition) => {
       positions.push(contentPosition);
@@ -114,7 +138,7 @@ class Tabs {
   get tabContentHeights() {
     const numberOfTabs = this.tabEls.length;
     const tabsContentHeight =
-      this.el.querySelector(".tabs-content").clientHeight;
+      this.el.querySelector(".tabs-content")!.clientHeight;
     const tabsCumulativeOverlappedHeight = (numberOfTabs - 1) * 1; // Adjust for slight overlap
     const targetHeight =
       (tabsContentHeight + tabsCumulativeOverlappedHeight) / numberOfTabs;
@@ -139,7 +163,7 @@ class Tabs {
   }
 
   get tabContentPositionsY() {
-    const positions = [];
+    const positions: any[] = [];
     const tabContentHeights = this.tabContentHeights;
 
     let position = 9;
@@ -153,7 +177,7 @@ class Tabs {
   }
 
   get tabPositionsY() {
-    const positions = [];
+    const positions: any[] = [];
 
     this.tabContentPositionsY.forEach((contentPosition) => {
       positions.push(contentPosition);
@@ -162,7 +186,7 @@ class Tabs {
     return positions;
   }
 
-  createTab(url, updateSrc = true) {
+  createTab(url: string) {
     this.tabCount++;
     const id = `tab-${this.tabCount}`;
     const iframe = this.ui.createElement("iframe", {
@@ -193,13 +217,13 @@ class Tabs {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["close"],
+                ["close"]
               ),
-            ],
+            ]
           ),
         ]),
         this.ui.createElement("div", { class: "tab-bottom-border" }),
-      ],
+      ]
     );
 
     const updateTabTitle = () => {
@@ -222,22 +246,24 @@ class Tabs {
       });
       let check = this.utils.getInternalURL(new URL(iframe.src).pathname);
       if (check.startsWith("daydream://")) {
-        this.items.addressBar.value = check;
-        document.querySelector(".webSecurityIcon").innerHTML =
-          `<span class="material-symbols-outlined">lock_open</span>`;
+        this.items.addressBar!.value = check;
+        document.querySelector(
+          ".webSecurityIcon"
+        )!.innerHTML = `<span class="material-symbols-outlined">lock_open</span>`;
       } else {
-        let url = new URL(iframe.src).pathname;
-        url = url.replace(window.SWSettings.config.prefix, "");
-        url = __uv$config.decodeUrl(url);
-        this.items.addressBar.value = url;
-        url = new URL(url);
-        console.log(url.protocol);
-        if (url.protocol == "https:") {
-          document.querySelector(".webSecurityIcon").innerHTML =
-            `<span class="material-symbols-outlined">lock</span>`;
+        let IFurl = new URL(iframe.src).pathname;
+        IFurl = IFurl.replace(window.SWSettings.config.prefix, "");
+        IFurl = window.__uv$config.decodeUrl(IFurl);
+        this.items.addressBar!.value = IFurl;
+        const fURL = new URL(IFurl);
+        if (fURL.protocol == "https:") {
+          document.querySelector(
+            ".webSecurityIcon"
+          )!.innerHTML = `<span class="material-symbols-outlined">lock</span>`;
         } else {
-          document.querySelector(".webSecurityIcon").innerHTML =
-            `<span class="material-symbols-outlined">lock_open</span>`;
+          document.querySelector(
+            ".webSecurityIcon"
+          )!.innerHTML = `<span class="material-symbols-outlined">lock_open</span>`;
         }
       }
     });
@@ -251,9 +277,9 @@ class Tabs {
       this.selectTab({ tab, iframe, url });
     });
 
-    tab.addEventListener("contextmenu", (e) => {
+    /*tab.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      this.ui.contextMenu.create(
+      this.ui.contextMenu!.create(
         [
           {
             text: "Add to Group",
@@ -281,39 +307,36 @@ class Tabs {
         { x: e.pageX, y: e.pageY },
         "contextMenu",
         "",
-        "padding: 5px;",
+        "padding: 5px;"
       );
-    });
+    });*/
 
     tab.querySelector(`#close-${id}`).addEventListener("click", () => {
       this.closeTabById(id);
     });
 
-    this.items.tabGroupsContainer.appendChild(tab);
-    this.items.iframeContainer.appendChild(iframe);
+    this.items.tabGroupsContainer!.appendChild(tab);
+    this.items.iframeContainer!.appendChild(iframe);
 
     this.tabs.push({ id, tab, iframe, url });
 
     this.selectTab({ tab, iframe, url });
 
     this.layoutTabs();
-    this.setupDraggabilly();
+    this.setupSortable();
     this.logger.createLog(`Created tab: ${url}`);
   }
 
   updateTabAttributes() {
-    const tabElements = this.items.tabGroupsContainer.querySelectorAll(".tab");
+    const tabElements = this.items.tabGroupsContainer!.querySelectorAll(".tab");
 
     tabElements.forEach((element, index) => {
-      element.setAttribute("tab", index);
+      element.setAttribute("tab", index.toString());
     });
   }
 
-  closeTabById(id) {
+  closeTabById(id: string) {
     const tabInfo = this.tabs.find((tab) => tab.id === id);
-    console.log(tabInfo);
-    console.log(id);
-    console.log(`tab-${parseInt(id.replace("tab-", "") - 1)}`);
     if (tabInfo) {
       this.eventsAPI.emit("tab:closed", {
         url: tabInfo.iframe.src,
@@ -329,7 +352,9 @@ class Tabs {
 
   closeCurrentTab() {
     const activeTab = document.querySelector(".tab.active");
-    const activeIFrame = document.querySelector("iframe.active");
+    const activeIFrame = document.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement;
     const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
       const currentTabId = parseInt(activeIFrame.id.replace("tab-", ""));
@@ -342,8 +367,8 @@ class Tabs {
 
       const remainingTabs = document.querySelectorAll(".tab");
       if (remainingTabs.length > 0) {
-        const previousTab = document.getElementById(`tab-${currentTabId - 1}`);
-        const nextTab = document.getElementById(`tab-${currentTabId + 1}`);
+        const previousTab = document.getElementById(`tab-${currentTabId - 1}`) as HTMLDivElement;
+        const nextTab = document.getElementById(`tab-${currentTabId + 1}`) as HTMLDivElement;
         (
           previousTab ||
           nextTab ||
@@ -360,7 +385,7 @@ class Tabs {
       tab.remove();
     });
     document
-      .querySelector(".iframe-container")
+      .querySelector(".iframe-container")!
       .querySelectorAll("iframe")
       .forEach((page) => {
         page.remove();
@@ -464,22 +489,8 @@ closeCurrentGroup() {
       this.groups = this.groups.filter((group) => group.id !== currentGroup.id);
     }
   }*/
-  duplicateTab(url) {
-    if (tab) {
-      this.createTab(url);
-    }
-  }
 
-  bookmarkCurrentTab() {
-    const currentTab = this.tabs.find((tab) =>
-      tab.tab.classList.contains("active"),
-    );
-    if (currentTab) {
-      alert(`Bookmarking: ${currentTab.url}`);
-    }
-  }
-
-  selectTab(tabInfo) {
+  selectTab(tabInfo: any) {
     this.tabs.forEach(({ tab, iframe }) => {
       tab.classList.remove("active");
       iframe.classList.remove("active");
@@ -495,30 +506,23 @@ closeCurrentGroup() {
 
     let check = this.utils.getInternalURL(new URL(tabInfo.iframe.src).pathname);
     if (check.startsWith("daydream://")) {
-      this.items.addressBar.value = check;
+      this.items.addressBar!.value = check;
     } else {
       let url = new URL(tabInfo.iframe.src).pathname;
       url = url.replace(window.SWSettings.config.prefix, "");
-      url = __uv$config.decodeUrl(url);
-      this.items.addressBar.value = url;
+      url = window.__uv$config.decodeUrl(url);
+      this.items.addressBar!.value = url;
     }
 
-    this.currentTab = tabInfo;
     this.logger.createLog(`Selected tab: ${tabInfo.url}`);
   }
 
-  selectTabById(id) {
-    document.getElementById(id).click();
+  selectTabById(id: string) {
+    document.getElementById(id)!.click();
     this.logger.createLog(`Selected tab: tab-${id}`);
   }
 
-  updateTabOrder() {
-    this.tabs.forEach((tab, index) => {
-      tab.tab.classList.toggle("active", index === this.currentTabIndex);
-    });
-  }
-
-  setupDraggabilly() {
+  /* setupSortable() {
     const tabEls = this.tabEls;
     const tabPositions = this.tabPositions;
     const tabPositionsY = this.tabPositionsY;
@@ -582,7 +586,7 @@ closeCurrentGroup() {
                 tabEl.style.transform = "";
 
                 this.layoutTabs();
-                this.setupDraggabilly();
+                this.setupSortable();
               });
             });
           });
@@ -603,7 +607,7 @@ closeCurrentGroup() {
                 tabEl.style.transform = "";
 
                 this.layoutTabs();
-                this.setupDraggabilly();
+                this.setupSortable();
               });
             });
           });
@@ -643,7 +647,7 @@ closeCurrentGroup() {
                 : moveVector.y
               : 0) +
             16;
-          document.querySelector("#create-tab").style.transform =
+          document.querySelector("#create-tab")!.style.transform =
             `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`;
         } else {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
@@ -675,7 +679,7 @@ closeCurrentGroup() {
                 : moveVector.x
               : 0) +
             16;
-          document.querySelector("#create-tab").style.transform =
+          document.querySelector("#create-tab")!.style.transform =
             `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`;
         }
       });
@@ -691,9 +695,30 @@ closeCurrentGroup() {
     }
     this.layoutTabs();
   }
+*/
+
+  async setupSortable() {
+    new Sortable(this.items.tabGroupsContainer!, {
+      forceFallback: true,
+      animation: 200,
+      direction:
+        (await this.settings.getItem("verticalTabs")) == "true"
+          ? "vertical"
+          : "horizontal",
+      dragClass: "dragging",
+      handle: ".tab-drag-handle",
+      filter: ".tab-close",
+      onSort: () => {
+        this.layoutTabs();
+      },
+      onEnd: () => {
+        this.layoutTabs();
+      },
+    });
+  }
   async layoutTabs() {
-    this.eventsAPI.emit("tabs:layout");
-    document.getElementById("create-tab").style = "";
+    this.eventsAPI.emit("tabs:layout", null);
+    document.getElementById("create-tab")!.setAttribute("style", "");;
     if ((await this.settings.getItem("verticalTabs")) == "true") {
       const tabContentWidths = this.tabContentHeights;
 
@@ -704,7 +729,7 @@ closeCurrentGroup() {
         return cumulativeWidth;
       });
 
-      this.tabEls.forEach((tabEl, i) => {
+      this.tabEls.forEach((tabEl) => {
         tabEl.style.width = null;
       });
 
@@ -712,15 +737,20 @@ closeCurrentGroup() {
       let lastPos = 0;
       this.tabPositionsY.forEach((position, i) => {
         styleHTML += `
-        .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
+        .${
+          document.querySelector(".tab")!.parentElement!.className
+        } .tab:nth-child(${i + 1}) {
           transform: translate3d(0, ${position}px, 0)
         }
       `;
         lastPos = position;
       });
       this.styleEl.innerHTML = styleHTML;
-      document.getElementById("create-tab").style.transform =
-        `translate3d(0, ${lastPos + tabContentWidths[tabContentWidths.length - 1] + 20}px), 0`;
+      document.getElementById(
+        "create-tab"
+      )!.style.transform = `translate3d(0, ${
+        lastPos + tabContentWidths[tabContentWidths.length - 1] + 20
+      }px), 0`;
     } else {
       const tabContentWidths = this.tabContentWidths;
 
@@ -748,15 +778,18 @@ closeCurrentGroup() {
       let lastPos = 0;
       this.tabPositions.forEach((position, i) => {
         styleHTML += `
-        .${document.querySelector(".tab").parentElement.className} .tab:nth-child(${i + 1}) {
+        .${
+          document.querySelector(".tab")!.parentElement!.className
+        } .tab:nth-child(${i + 1}) {
           transform: translate3d(${position}px, 0, 0)
         }
       `;
         lastPos = position;
       });
       this.styleEl.innerHTML = styleHTML;
-      document.getElementById("create-tab").style.transform =
-        `translate(${lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20}px)`;
+      document.getElementById("create-tab")!.style.transform = `translate(${
+        lastPos + this.tabContentWidths[this.tabContentWidths.length - 1] + 20
+      }px)`;
     }
     this.logger.createLog(`Rearranged tabs`);
   }

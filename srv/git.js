@@ -1,26 +1,9 @@
-import axios, { AxiosResponse } from "axios";
-
-// typed by dust 
-
-interface CommitterInfo {
-  date: string;
-}
-
-interface CommitInfo {
-  committer: CommitterInfo;
-}
-
-interface CommitData {
-  sha: string;
-  commit: CommitInfo;
-}
+import axios from "axios";
 
 //creds to crllect for writing the og commit date function from space v1
 
 class Git {
-  private repo: string;
-
-  constructor(githubRepo: string) {
+  constructor(githubRepo) {
     let github = githubRepo.trim();
     github = github.replace(
       "https://github.com/",
@@ -34,9 +17,9 @@ class Git {
     this.repo = github;
   }
 
-  async fetchLastCommitDate(): Promise<string | null> {
+  async fetchLastCommitDate() {
     try {
-      const response: AxiosResponse<CommitData[]> = await axios.get(this.repo);
+      const response = await axios.get(this.repo);
       const commits = response.data;
       const lastCommitDate = new Date(commits[0].commit.committer.date);
       const formattedDate = lastCommitDate.toLocaleDateString("en-US", {
@@ -51,9 +34,9 @@ class Git {
     }
   }
 
-  async fetchLastCommitID(): Promise<string | null> {
+  async fetchLastCommitID() {
     try {
-      const response: AxiosResponse<CommitData[]> = await axios.get(this.repo);
+      const response = await axios.get(this.repo);
       const commits = response.data;
       const commitSha = commits[0].sha;
       const commitId = commitSha.slice(0, 7);
