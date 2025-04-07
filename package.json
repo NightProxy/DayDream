@@ -2,7 +2,6 @@
   "name": "daydreamx",
   "version": "1.1.0",
   "type": "module",
-  "packageManager": "bun@1.2.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -33,6 +32,7 @@
     "jszip": "^3.10.1",
     "localforage": "^1.10.0",
     "lucide": "^0.483.0",
-    "sortablejs": "^1.15.6"
+    "sortablejs": "^1.15.6",
+    "typescript": "^5.8.3"
   }
 }
