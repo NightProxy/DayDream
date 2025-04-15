@@ -55,9 +55,8 @@ class Logger {
   async exportLogs() {
     const logs = await this.store.keys();
     const exportData: Record<any, string> = {};
-    
+
     for (const logId of logs) {
-      
       exportData[logId] = await this.getLog(logId as string);
     }
     return exportData;

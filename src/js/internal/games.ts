@@ -1,25 +1,27 @@
+import { Nightmare } from "@libs/Nightmare/nightmare";
+import { SettingsAPI } from "@apis/settings";
+import { Global } from "@js/global";
+import { Proxy } from "@apis/proxy";
+
 (async () => {
   const nightmare = new Nightmare();
 
   const settingsAPI = new SettingsAPI();
-  const eventsAPI = new EventSystem();
-  const loggingAPI = new Logger();
 
-  const global = new Global(settingsAPI);
+  // @ts-expect-error
+  const global = new Global();
 
-  var defWisp =
-    (location.protocol === "https:" ? "wss" : "ws") +
-    "://" +
-    location.host +
-    "/wisp/";
-  var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
+  var wispUrl = (await settingsAPI.getItem("wisp")) || ((location.protocol === "https:" ? "wss" : "ws") +
+  "://" +
+  location.host +
+  "/wisp/");
   var searchVAR =
     (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
-  const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
+  const proxy = new Proxy(searchVAR, transVAR, wispUrl);
 
   const proxySetting = (await settingsAPI.getItem("proxy")) ?? "uv";
-  let swConfigSettings = {};
+  let swConfigSettings: Record<string, any> = {};
   const swConfig = {
     uv: {
       type: "sw",
@@ -30,10 +32,10 @@
     sj: {
       type: "sw",
       file: "/$/sw.js",
-      config: __scramjet$config,
+      config: window.__scramjet$config,
       func: async () => {
         if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          const scramjet = new ScramjetController(__scramjet$config);
+          const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
@@ -41,7 +43,7 @@
           console.log("Scramjet Service Worker registered.");
           await settingsAPI.setItem("scramjet", "fixed");
         } else {
-          const scramjet = new ScramjetController(__scramjet$config);
+          const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init("/$/sw.js").then(async () => {
             await proxy.setTransports();
           });
@@ -50,37 +52,22 @@
         }
       },
     },
-    ec: {
-      type: "sw",
-      file: "/~/sw.js",
-      config: __eclipse$config,
-      func: null,
-    },
-    ss: {
-      type: "iframe",
-      file: null,
-      config: null,
-      func: null,
-    },
     auto: {
       type: "multi",
       file: null,
       config: null,
-      func: async (input) => {
-        return await proxy.automatic(input);
-      },
+      func: null
     },
   };
 
   if (
-    typeof swConfig[proxySetting].func === "function" &&
+    typeof swConfig[proxySetting as keyof typeof swConfig].func === "function" &&
     proxySetting === "sj"
   ) {
-    await swConfig[proxySetting].func();
+    await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
   }
-
-  proxy.registerSW(swConfig[proxySetting]).then(async () => {
-    await proxy.setTransports().then(async () => {
+  proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]).then(async () => {
+    await proxy.setTransports().then(async () => { 
       const transport = await proxy.connection.getTransport();
       if (transport == null) {
         proxy.setTransports();
@@ -89,9 +76,9 @@
   });
 
   // Simplified Rendering System based on the one I wrote for Light. (Im Lazy)
-  let appsData = [];
+  let appsData: any[];
 
-  function getAppElement(app) {
+  function getAppElement(app: any) {
     const appElement = nightmare.createElement(
       "div",
       {
@@ -111,21 +98,21 @@
     return appElement;
   }
 
-  function renderApps(filteredApps = []) {
+  function renderApps(filteredApps: any[] = []) {
     const appsGrid = document.getElementById("gamesGrid");
-    appsGrid.innerHTML = "";
+    appsGrid!.innerHTML = "";
 
-    filteredApps.sort((a, b) => a.name.localeCompare(b.name));
+    filteredApps.sort((a: any, b: any) => a.name.localeCompare(b.name));
 
     filteredApps.forEach((app) => {
       const appElement = getAppElement(app);
-      appsGrid.appendChild(appElement);
+      appsGrid!.appendChild(appElement);
     });
   }
 
   async function fetchAppData() {
     try {
-      const response = await fetch("/assets/json/g.json");
+      const response = await fetch("/json/g.json");
       appsData = await response.json();
       return appsData;
     } catch (error) {
@@ -141,12 +128,12 @@
 
   initializePage();
 
-  async function launch(link) {
+  async function launch(link: string) {
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(proxy.search(link));
+      const result = await proxy.automatic(proxy.search(link), swConfig) as Record<string, any>;
       swConfigSettings = result;
     } else {
-      swConfigSettings = swConfig[proxySetting];
+      swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];
     }
 
     await proxy.registerSW(swConfigSettings).then(async () => {
@@ -155,7 +142,7 @@
 
     let encodedUrl =
       swConfigSettings.config.prefix +
-      __uv$config.encodeUrl(proxy.search(link));
+      window.__uv$config.encodeUrl(proxy.search(link));
     location.href = encodedUrl;
   }
 })();

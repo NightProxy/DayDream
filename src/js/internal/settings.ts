@@ -1,23 +1,20 @@
-import { SettingsAPI } from "/assets/js/apis/settings.js";
-import { EventSystem } from "/assets/js/apis/events.js";
-import { DataExportAPI } from "/assets/js/apis/exporting.js";
-import { Global } from "/assets/js/global/index.js";
-import { Nightmare } from "/assets/js/lib/Nightmare/nightmare.js";
+import { SettingsAPI } from "@apis/settings";
+import { EventSystem } from "@apis/events";
+import { Global } from "@js/global";
+import iro from "@jaames/iro";
 
 const settingsAPI = new SettingsAPI();
-const dataExportAPI = new DataExportAPI();
 const eventsAPI = new EventSystem();
+// @ts-expect-error
 const globalFunctions = new Global();
-const nightmare = new Nightmare();
 
-// ^ imports / constant defintions / class initializations
 
 const initializeDropdown = async (
-  buttonId,
-  optionsId,
-  settingsKey,
-  defaultValue,
-  functions = null,
+  buttonId: string,
+  optionsId: string,
+  settingsKey: string,
+  defaultValue: string,
+  functions: Function | null = null,
 ) => {
   const dropdownButton = document.getElementById(buttonId);
   const dropdownOptions = document.getElementById(optionsId);
@@ -51,15 +48,16 @@ const initializeDropdown = async (
   }
 
   dropdownButton.addEventListener("click", () => {
-    document.querySelectorAll(".dropdown-options").forEach((dropdown) => {
+    const DO = document.querySelectorAll(".dropdown-options");
+    DO.forEach((dropdown) => {
       if (dropdown !== dropdownOptions) {
-        dropdown.style.opacity = "0";
-        dropdown.style.filter = "blur(5px)";
+        dropdown.setAttribute("style", "opacity:0;filter:blur(5px);")
         setTimeout(() => {
-          dropdown.style.display = "none";
+          dropdown.setAttribute("style", "display:none;opacity:0;filter:blur(5px);")
         }, 200);
       }
     });
+
     document.querySelectorAll(".dropdown-button.active").forEach((btn) => {
       if (btn !== dropdownButton) {
         btn.classList.remove("active");
@@ -83,7 +81,7 @@ const initializeDropdown = async (
     dropdownButton.classList.toggle("active", !isVisible);
   });
 
-  dropdownOptions.addEventListener("click", (event) => {
+  dropdownOptions.addEventListener("click", (event: any) => {
     if (event.target.tagName === "A") {
       let selectedValue = event.target.getAttribute("data-value");
       const selectedOption = event.target.textContent;
@@ -96,30 +94,27 @@ const initializeDropdown = async (
       }, 200);
       dropdownButton.classList.remove("active");
 
-      if (functions != null ?? undefined) {
-        functions();
-      }
+      functions?.();
       location.reload();
     }
   });
 };
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", (event: any) => {
   if (!event.target.closest(".dropdown")) {
     document.querySelectorAll(".dropdown-button.active").forEach((btn) => {
       btn.classList.remove("active");
       const dropdownOptions = btn.nextElementSibling;
       if (dropdownOptions) {
-        dropdownOptions.style.opacity = "0";
-        dropdownOptions.style.filter = "blur(5px)";
+        dropdownOptions.setAttribute("style", "opacity:0;filter:blur(5px);")
         setTimeout(() => {
-          dropdownOptions.style.display = "none";
+          dropdownOptions.setAttribute("style", "display:none;opacity:0;filter:blur(5px);")
         }, 200);
       }
     });
   }
 });
-const initSwitch = async (item, setting, functionToCall) => {
+const initSwitch = async (item: HTMLInputElement, setting: string, functionToCall: Function | null) => {
   const switchElement = item;
   if (!switchElement) {
     console.error(`Switch element at ${item} not found.`);
@@ -137,17 +132,17 @@ const initSwitch = async (item, setting, functionToCall) => {
 const uploadBGInput = document.getElementById("bgInput");
 const uploadBGButton = document.getElementById("bgUpload");
 
-uploadBGButton.addEventListener("click", function () {
-  uploadBGInput.click();
+uploadBGButton!.addEventListener("click", function () {
+  uploadBGInput!.click();
 });
 
-uploadBGInput.addEventListener("change", function (event) {
+uploadBGInput!.addEventListener("change", function (event: any) {
   var file = event.target.files[0];
   var reader = new FileReader();
   reader.onload = async function (e) {
-    var backgroundImage = e.target.result;
-    await settingsAPI.setItem("theme:background-image", backgroundImage);
-    eventsAPI.emit("theme:background-change");
+    var backgroundImage = e.target!.result;
+    await settingsAPI.setItem("theme:background-image", backgroundImage as string);
+    eventsAPI.emit("theme:background-change", null);
   };
   reader.readAsDataURL(file);
 });
@@ -157,10 +152,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   initializeDropdown("tabCloakButton", "tabCloakOptions", "tabCloak", "off");
   initializeDropdown("URL-cloakButton", "URL-cloakOptions", "URL_Cloak", "off");
   initSwitch(
-    document.getElementById("autoCloakSwitch"),
+    document.getElementById("autoCloakSwitch") as HTMLInputElement,
     "autoCloak",
     function () {
-      eventsAPI.emit("cloaking:auto-toggle");
+      eventsAPI.emit("cloaking:auto-toggle", null);
     },
   );
 
@@ -171,9 +166,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     "verticalTabs",
     "false",
     () => {
-      eventsAPI.emit("UI:changeLayout");
+      eventsAPI.emit("UI:changeLayout", null);
       setTimeout(() => {
-        eventsAPI.emit("UI:changeLayout");
+        eventsAPI.emit("UI:changeLayout", null);
       }, 100);
     },
   );
@@ -183,15 +178,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     "UIStyle",
     "operagx",
     () => {
-      eventsAPI.emit("UI:changeStyle");
-      eventsAPI.emit("theme:template-change");
+      eventsAPI.emit("UI:changeStyle", null);
+      eventsAPI.emit("theme:template-change", null);
       setTimeout(() => {
-        eventsAPI.emit("UI:changeStyle");
-        eventsAPI.emit("theme:template-change");
+        eventsAPI.emit("UI:changeStyle", null);
+        eventsAPI.emit("theme:template-change", null);
       }, 100);
     },
   );
-  var colorPicker = new iro.ColorPicker(".colorPicker", {
+  var colorPicker = new (iro.ColorPicker as any)(".colorPicker", {
     width: 80,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
     borderWidth: 0,
@@ -209,7 +204,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ],
   });
 
-  colorPicker.on("input:change", async function (color) {
+  colorPicker.on("input:change", async function (color: any) {
     eventsAPI.emit("theme:color-change", { color: color.rgbaString });
   });
 
@@ -219,9 +214,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     "themeCustom",
     "dark",
     function () {
-      eventsAPI.emit("theme:template-change");
+      eventsAPI.emit("theme:template-change", null);
       setTimeout(() => {
-        eventsAPI.emit("theme:template-change");
+        eventsAPI.emit("theme:template-change", null);
       }, 100);
     },
   );
@@ -242,7 +237,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   // Load and handle visibility of wisp and bare settings
-  const wispSetting = document.getElementById("wispSetting");
+  const wispSetting = document.getElementById("wispSetting") as HTMLInputElement;
   if (wispSetting) {
     wispSetting.value =
       (await settingsAPI.getItem("wisp")) ||
@@ -252,13 +247,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         "/wisp/";
   }
 
-  // Add event listener to save wisp and bare settings
-  const saveInputValue = (inputId, settingsKey) => {
-    const inputElement = document.getElementById(inputId);
-    if (!inputElement) {
-      console.error(`Input element with id "${inputId}" not found.`);
-      return;
-    }
+  const saveInputValue = (inputId: string, settingsKey: string) => {
+    const inputElement = document.getElementById(inputId) as HTMLInputElement;
 
     inputElement.addEventListener("change", async () => {
       await settingsAPI.setItem(settingsKey, inputElement.value);
@@ -275,11 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   saveInputValue("wispSetting", "wisp");
 });
 
-function saveInputValueAsButton(button, input, key) {
-  if (!input) {
-    console.error(`Input element with id "${id}" not found.`);
-    return;
-  }
+function saveInputValueAsButton(button: HTMLButtonElement, input: HTMLInputElement, key: string) {
 
   button.addEventListener("click", async () => {
     await settingsAPI.setItem(key, input.value);
@@ -288,13 +274,13 @@ function saveInputValueAsButton(button, input, key) {
 }
 
 saveInputValueAsButton(
-  document.getElementById("saveWispSetting"),
-  document.getElementById("wispSetting"),
+  document.getElementById("saveWispSetting")as HTMLButtonElement,
+  document.getElementById("wispSetting") as HTMLInputElement,
   "wisp",
 );
 
 document
-  .getElementById("resetWispSetting")
+  .getElementById("resetWispSetting")!
   .addEventListener("click", async () => {
     await settingsAPI.removeItem("wisp");
     location.reload();

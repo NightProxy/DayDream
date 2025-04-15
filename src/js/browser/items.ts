@@ -34,21 +34,41 @@ class Items implements ItemsInterface {
   historyButton: HTMLButtonElement | null;
 
   constructor() {
-    this.toggleTabsButton = document.getElementById("toggleTabs") as HTMLButtonElement;
+    this.toggleTabsButton = document.getElementById(
+      "toggleTabs",
+    ) as HTMLButtonElement;
     this.homeButton = document.getElementById("home") as HTMLButtonElement;
     this.backButton = document.getElementById("backward") as HTMLButtonElement;
     this.reloadButton = document.getElementById("reload") as HTMLButtonElement;
-    this.forwardButton = document.getElementById("forward") as HTMLButtonElement;
+    this.forwardButton = document.getElementById(
+      "forward",
+    ) as HTMLButtonElement;
     this.addressBar = document.getElementById("uv-address") as HTMLInputElement;
-    this.bookmarkButton = document.getElementById("bookmark") as HTMLButtonElement;
-    this.extensionsButton = document.getElementById("extensions") as HTMLButtonElement;
-    this.profilesButton = document.getElementById("profiles") as HTMLButtonElement;
-    this.extrasButton = document.getElementById("more-options") as HTMLButtonElement;
-    this.tabGroupsContainer = document.getElementById("tab-groups") as HTMLDivElement;
+    this.bookmarkButton = document.getElementById(
+      "bookmark",
+    ) as HTMLButtonElement;
+    this.extensionsButton = document.getElementById(
+      "extensions",
+    ) as HTMLButtonElement;
+    this.profilesButton = document.getElementById(
+      "profiles",
+    ) as HTMLButtonElement;
+    this.extrasButton = document.getElementById(
+      "more-options",
+    ) as HTMLButtonElement;
+    this.tabGroupsContainer = document.getElementById(
+      "tab-groups",
+    ) as HTMLDivElement;
     this.newTab = document.getElementById("create-tab") as HTMLButtonElement;
-    this.iframeContainer = document.querySelector(".iframe-container") as HTMLDivElement;
-    this.activeTabIframe = this.iframeContainer?.querySelector("iframe.active") as HTMLIFrameElement;
-    this.historyButton = document.getElementById("history") as HTMLButtonElement;
+    this.iframeContainer = document.querySelector(
+      ".iframe-container",
+    ) as HTMLDivElement;
+    this.activeTabIframe = this.iframeContainer?.querySelector(
+      "iframe.active",
+    ) as HTMLIFrameElement;
+    this.historyButton = document.getElementById(
+      "history",
+    ) as HTMLButtonElement;
   }
 }
 

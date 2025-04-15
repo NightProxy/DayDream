@@ -1,10 +1,12 @@
 import * as BareMux from "@mercuryworkshop/bare-mux";
+import { Logger } from "@apis/logging";
+
 interface ProxyInterface {
   connection: BareMux.BareMuxConnection;
   searchVar: string;
   transportVar: string;
   wispUrl: string;
-  logging: any;
+  logging: Logger;
   setTransports(): Promise<void>;
   search(input: string): string;
   registerSW(swConfig: any): Promise<void>;
@@ -14,19 +16,35 @@ interface ProxyInterface {
   getDomainFromUrl(url: string): string | null;
   determineProxy(domain: string): Promise<string>;
   automatic(input: string, swConfig: Record<any, any>): Promise<any>;
-  redirect(swConfig: Record<any, any>, proxySetting: string, url: string): Promise<void>;
-  inFrame_Redirect(swConfig: Record<any, any>, proxySetting: string, url: string): Promise<void>;
+  redirect(
+    swConfig: Record<any, any>,
+    proxySetting: string,
+    url: string,
+  ): Promise<void>;
+  inFrame_Redirect(
+    swConfig: Record<any, any>,
+    proxySetting: string,
+    url: string,
+  ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
-  getFavicon(url: string, swConfig: Record<any, any>, proxySetting: string): Promise<string | null>;
+  getFavicon(
+    url: string,
+    swConfig: Record<any, any>,
+    proxySetting: string,
+  ): Promise<string | null>;
 }
 class Proxy implements ProxyInterface {
   connection!: BareMux.BareMuxConnection;
   searchVar!: string;
   transportVar!: string;
   wispUrl!: string;
-  logging!: any;
+  logging!: Logger;
 
-  constructor(searchVar: string, transportVar: string, wispUrl: string, logging: any) {
+  constructor(
+    searchVar: string,
+    transportVar: string,
+    wispUrl: string,
+  ) {
     if (!searchVar || !transportVar || !wispUrl) {
       console.error("Proxy, search, and transport variables are required.");
       return;
@@ -43,7 +61,7 @@ class Proxy implements ProxyInterface {
     this.searchVar = searchVar;
     this.transportVar = transportVar;
     this.wispUrl = wispUrl;
-    this.logging = logging;
+    this.logging = new Logger();
   }
 
   async setTransports() {
@@ -102,7 +120,7 @@ class Proxy implements ProxyInterface {
   }
 
   updateSW() {
-    const self = this
+    const self = this;
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       registrations.forEach((registration) => {
         registration.update();
@@ -114,7 +132,7 @@ class Proxy implements ProxyInterface {
   }
 
   uninstallSW() {
-    const self = this
+    const self = this;
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       registrations.forEach((registration) => {
         registration.unregister();
@@ -127,7 +145,7 @@ class Proxy implements ProxyInterface {
 
   async fetchProxyMapping() {
     try {
-      const response = await fetch("/assets/json/proxy.json");
+      const response = await fetch("//json/proxy.json");
       if (!response.ok) throw new Error("Failed to load proxy mappings.");
       return await response.json();
     } catch (error) {
@@ -163,10 +181,10 @@ class Proxy implements ProxyInterface {
         file: swFile,
         config: swConfigSettings,
         func: swFunction,
-      } = swConfig[selectedProxy] ?? { // where is this being defined in the function (im talking bout swConfig)
+      } = swConfig[selectedProxy] ?? {
         type: "sw",
         file: "/@/sw.js",
-        config: __uv$config, // amp is this normal? its saying that its no tfound
+        config: window.__uv$config,
         func: null,
       };
 
@@ -181,9 +199,8 @@ class Proxy implements ProxyInterface {
 
       return { type: swType, file: swFile, config: swConfigSettings };
     } else {
-      return null
+      return null;
     }
-
   }
 
   async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
@@ -197,24 +214,27 @@ class Proxy implements ProxyInterface {
     } else {
       swConfigSettings = swConfig[proxySetting];
     }
-    let activeIframe: HTMLIFrameElement | null
+    let activeIframe: HTMLIFrameElement | null;
     activeIframe = document.querySelector("iframe.active");
     if (activeIframe) {
       switch (swConfigSettings.type) {
         case "sw":
           let encodedUrl =
             swConfigSettings.config.prefix +
-            __uv$config.encodeUrl(this.search(url));
+            window.__uv$config.encodeUrl(this.search(url));
           if (activeIframe) {
             activeIframe.src = encodedUrl;
           }
           break;
       }
     }
-
   }
 
-  async inFrame_Redirect(swConfig: Record<any, any>, proxySetting: string, url: string) {
+  async inFrame_Redirect(
+    swConfig: Record<any, any>,
+    proxySetting: string,
+    url: string,
+  ) {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
     });
@@ -229,7 +249,7 @@ class Proxy implements ProxyInterface {
       case "sw":
         let encodedUrl =
           swConfigSettings.config.prefix +
-          __uv$config.encodeUrl(this.search(url));
+          window.__uv$config.encodeUrl(this.search(url));
         location.href = encodedUrl;
         break;
     }
@@ -239,17 +259,21 @@ class Proxy implements ProxyInterface {
     await this.setTransports();
     const client = new BareMux.BareClient();
     let response: Response;
-    
+
     if (params) {
       response = await client.fetch(url, params);
     } else {
       response = await client.fetch(url);
     }
-    
+
     return await response.text();
   }
 
-  async getFavicon(url: string, swConfig: Record<any, any>, proxySetting: string) {
+  async getFavicon(
+    url: string,
+    swConfig: Record<any, any>,
+    proxySetting: string,
+  ) {
     let page = await this.fetch(url);
     page = await page.toString();
 
@@ -261,7 +285,7 @@ class Proxy implements ProxyInterface {
       doc.querySelector("link[rel='shortcut icon']");
 
     if (favicon) {
-      let href: string | null
+      let href: string | null;
       href = favicon.getAttribute("href");
       if (typeof href == "string") {
         if (!href.startsWith("http")) {
@@ -273,14 +297,13 @@ class Proxy implements ProxyInterface {
         });
         let swConfigSettings = swConfig[proxySetting];
         let encodedHref =
-          swConfigSettings.config.prefix + __uv$config.encodeUrl(href);
+          swConfigSettings.config.prefix + window.__uv$config.encodeUrl(href);
 
         return encodedHref;
       } else {
         return null;
       }
     }
-
   }
 }
 

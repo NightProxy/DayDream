@@ -6,7 +6,6 @@ import { Utils } from "@js/utils";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Windowing } from "@browser/windowing";
 import { EventSystem } from "@apis/events";
-import { ExtensionsAPI } from "@apis/extensions";
 
 interface FuncInterface {
   tabs: any;
@@ -18,7 +17,6 @@ interface FuncInterface {
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
   events: EventSystem;
-  extensions: ExtensionsAPI;
   devToggle: boolean;
 
   erudaScriptLoaded: boolean;
@@ -37,7 +35,6 @@ class Functions implements FuncInterface {
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
   events: EventSystem;
-  extensions: ExtensionsAPI;
   devToggle: boolean;
   erudaScriptLoaded: boolean;
   erudaScriptInjecting: boolean;
@@ -54,7 +51,6 @@ class Functions implements FuncInterface {
     this.nightmarePlugins = new NightmarePlugins();
     this.windowing = new Windowing();
     this.events = new EventSystem();
-    this.extensions = new ExtensionsAPI();
     this.devToggle = false;
     this.erudaScriptLoaded = false;
     this.erudaScriptInjecting = false;
@@ -81,7 +77,7 @@ class Functions implements FuncInterface {
     this.navbarfunctions();
 
     this.items.newTab!.addEventListener("click", () =>
-      this.tabs.createTab("daydream://newtab")
+      this.tabs.createTab("daydream://newtab"),
     );
   }
 
@@ -116,21 +112,21 @@ class Functions implements FuncInterface {
 
   backward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.back();
   }
 
   forward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.forward();
   }
 
   refresh() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
 
     iframe?.contentWindow?.location.reload();
@@ -156,7 +152,8 @@ class Functions implements FuncInterface {
     let iframe: HTMLIFrameElement | null;
     iframe = document.querySelector("iframe.active");
     if (iframe) {
-      const iframeDoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      const iframeDoc =
+        iframe?.contentDocument || iframe?.contentWindow?.document;
       iframeDoc!.body.style.transform = `scale(${this.zoomLevel})`;
       iframeDoc!.body.style.transformOrigin = "top left";
       iframeDoc!.body.style.overflow = "auto";
@@ -186,7 +183,9 @@ class Functions implements FuncInterface {
         this.erudaScriptInjecting = false;
         resolve("Injected!");
       };
-      script.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
+      script.onerror = (
+        event: Event | string,
+      ) => {
         this.erudaScriptInjecting = false;
         reject(new Error(`Failed to load Eruda script: ${event}`));
       };
@@ -194,7 +193,7 @@ class Functions implements FuncInterface {
     });
   }
 
-  injectShowScript(iframeDocument: Document): Promise<void>{
+  injectShowScript(iframeDocument: Document): Promise<void> {
     return new Promise((resolve) => {
       const script = iframeDocument.createElement("script");
       script.type = "text/javascript";
@@ -227,10 +226,12 @@ class Functions implements FuncInterface {
     });
   }
   inspectElement() {
-    const iframe = this.items.iframeContainer!.querySelector("iframe.active") as HTMLIFrameElement;
+    const iframe = this.items.iframeContainer!.querySelector(
+      "iframe.active",
+    ) as HTMLIFrameElement;
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
       );
       return;
     }
@@ -245,7 +246,7 @@ class Functions implements FuncInterface {
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
       );
       return;
     }
@@ -311,7 +312,7 @@ class Functions implements FuncInterface {
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ]
+        ],
       ),
       //New Window
       this.ui.createElement(
@@ -329,7 +330,7 @@ class Functions implements FuncInterface {
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ]
+        ],
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -349,7 +350,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -363,7 +364,7 @@ class Functions implements FuncInterface {
               this.zoomOut();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
         ),
         //Zoom In
         this.ui.createElement(
@@ -375,7 +376,7 @@ class Functions implements FuncInterface {
               this.zoomIn();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
         ),
         // Fullscreen
         this.ui.createElement(
@@ -387,7 +388,7 @@ class Functions implements FuncInterface {
               this.goFullscreen();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
         ),
       ]),
       // Bookmarks
@@ -406,7 +407,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ]
+        ],
       ),
       // History
       this.ui.createElement(
@@ -424,7 +425,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ]
+        ],
       ),
       // Games
       this.ui.createElement(
@@ -442,7 +443,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ]
+        ],
       ),
       // Extensions
       this.ui.createElement(
@@ -462,7 +463,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ]
+        ],
       ),
       //Inspect Element
       this.ui.createElement(
@@ -482,7 +483,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ]
+        ],
       ),
       // Settings
       this.ui.createElement(
@@ -500,7 +501,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
         this.ui.createElement("i", { "data-lucide": "log-out" }, []),
@@ -508,7 +509,7 @@ class Functions implements FuncInterface {
         this.ui.createElement(
           "span",
           { class: "menu-key", id: "panic-keybind" },
-          ["~"]
+          ["~"],
         ),
       ]),
     ]);
@@ -516,8 +517,6 @@ class Functions implements FuncInterface {
   }
 
   extensionsMenu(button: HTMLButtonElement) {
-    let extensionsList = [];
-
     let content = this.ui.createElement("div", {}, [
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, [
@@ -537,9 +536,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["refresh"]
+                ["refresh"],
               ),
-            ]
+            ],
           ),
           this.ui.createElement(
             "div",
@@ -554,9 +553,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"]
+                ["settings"],
               ),
-            ]
+            ],
           ),
         ]),
       ]),
@@ -584,9 +583,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["person_add"]
+                ["person_add"],
               ),
-            ]
+            ],
           ),
           this.ui.createElement(
             "div",
@@ -601,9 +600,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"]
+                ["settings"],
               ),
-            ]
+            ],
           ),
         ]),
       ]),
@@ -615,7 +614,7 @@ class Functions implements FuncInterface {
     const navbar = document.querySelector(".navbar");
     const games = navbar!.querySelector("#gamesShortcut");
     const ai = navbar!.querySelector("#aiShortcut");
-    const chat = navbar!.querySelector("#chatShortcut");
+    const chat = navbar!.querySelector("#chatShortcut") as HTMLButtonElement;
     const music = navbar!.querySelector("#musicShortcut");
     const history = navbar!.querySelector("#historyShortcut");
     const settings = navbar!.querySelector("#settShortcut");
@@ -631,7 +630,7 @@ class Functions implements FuncInterface {
     const content = this.ui.createElement(
       "iframe",
       { class: "news", src: "https://night-network.changelogfy.com/" },
-      []
+      [],
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);
 

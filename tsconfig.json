@@ -30,6 +30,6 @@
     "allowJs": true,
     "esModuleInterop": true
   },
-  "include": ["src"],
+  "include": ["src", "public/core/client.js"],
   "exclude": ["node_modules", "dist", "src/js/lib/**"]
 }

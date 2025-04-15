@@ -42,7 +42,10 @@ class EventSystem {
     }
   }
 
-  addEventListener(eventName: string, callback: EventListenerOrEventListenerObject) {
+  addEventListener(
+    eventName: string,
+    callback: EventListenerOrEventListenerObject,
+  ) {
     if (!this.eventListeners[eventName]) {
       this.eventListeners[eventName] = [];
     }
@@ -51,7 +54,10 @@ class EventSystem {
   }
 
   // event listener type is just basicall
-  removeEventListener(eventName: string, callback: EventListenerOrEventListenerObject) {
+  removeEventListener(
+    eventName: string,
+    callback: EventListenerOrEventListenerObject,
+  ) {
     if (this.eventListeners[eventName]) {
       this.eventListeners[eventName] = this.eventListeners[eventName].filter(
         (cb: any) => cb !== callback,
@@ -62,7 +68,9 @@ class EventSystem {
 
   dispatchEvent(eventName: string, data: any) {
     if (this.eventListeners[eventName]) {
-      this.eventListeners[eventName].forEach((callback: Function) => callback(data));
+      this.eventListeners[eventName].forEach((callback: Function) =>
+        callback(data),
+      );
     }
     document.dispatchEvent(new CustomEvent(eventName, { detail: data }));
   }

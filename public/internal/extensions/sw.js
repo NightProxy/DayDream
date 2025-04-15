@@ -1,6 +1,7 @@
 importScripts("/assets/js/lib/filerJS/filer.min.js");
 importScripts("/assets/js/lib/JSzip/jszip.min.js");
 
+const Path = Filer.Path;
 const fs = new Filer.FileSystem({
   name: "files",
 });
@@ -40,8 +41,13 @@ async function installExtension(file) {
 
         const fileBuffer = Filer.Buffer.from(fileContent);
 
-        await fs.writeFile(filename, fileBuffer, (err) => {
-          if (err) console.error(`Failed to write file ${filePath}:`, err);
+        return new Promise((resolve) => {
+          fs.writeFile(filePath, fileBuffer, (err) => {
+            if (err) {
+              console.error(`Failed to write file ${filePath}:`, err);
+            }
+            resolve();
+          });
         });
       }),
     );

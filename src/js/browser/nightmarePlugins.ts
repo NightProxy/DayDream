@@ -25,8 +25,14 @@ interface SideMenuInterface {
   ui: Nightmare;
   container: HTMLElement | null;
   isOpen: boolean;
-  attachTo: (element: HTMLButtonElement, content: Function | HTMLElement) => void;
-  openMenu: (element: HTMLButtonElement, content: Function | HTMLElement) => void;
+  attachTo: (
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+  ) => void;
+  openMenu: (
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+  ) => void;
   closeMenu: () => void;
 }
 
@@ -101,8 +107,14 @@ interface SidePanelInterface {
   ui: Nightmare;
   container: HTMLElement | null;
   isOpen: boolean;
-  attachTo: (element: HTMLButtonElement, content: Function | HTMLElement) => void;
-  openMenu: (element: HTMLButtonElement, content: Function | HTMLElement) => void;
+  attachTo: (
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+  ) => void;
+  openMenu: (
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+  ) => void;
   closeMenu: () => void;
 }
 
@@ -116,7 +128,7 @@ class SidePanel implements SidePanelInterface {
     this.isOpen = false;
   }
 
-  attachTo(element:HTMLButtonElement, content: Function | HTMLElement) {
+  attachTo(element: HTMLButtonElement, content: Function | HTMLElement) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 
@@ -129,7 +141,7 @@ class SidePanel implements SidePanelInterface {
     window.addEventListener("click", () => this.closeMenu());
   }
 
-  openMenu(element:HTMLButtonElement, content: Function | HTMLElement) {
+  openMenu(element: HTMLButtonElement, content: Function | HTMLElement) {
     if (this.isOpen || !element) return;
 
     this.container = this.ui.createElement("div", { class: "sidepanel" });
@@ -160,7 +172,11 @@ interface RightClickMenuInterface {
   container: HTMLElement | null;
   isOpen: boolean;
   attachTo: (element: HTMLElement, content: Function | HTMLElement) => void;
-  openMenu: (element: HTMLElement, event: MouseEvent, content: Function | HTMLElement) => void;
+  openMenu: (
+    element: HTMLElement,
+    event: MouseEvent,
+    content: Function | HTMLElement,
+  ) => void;
   closeMenu: () => void;
 }
 
@@ -174,7 +190,7 @@ class RightClickMenu implements RightClickMenuInterface {
     this.isOpen = false;
   }
 
-  attachTo(element:HTMLElement, content: Function | HTMLElement) {
+  attachTo(element: HTMLElement, content: Function | HTMLElement) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 
@@ -187,7 +203,11 @@ class RightClickMenu implements RightClickMenuInterface {
     window.addEventListener("click", () => this.closeMenu());
   }
 
-  openMenu(element: HTMLElement, event:MouseEvent, content: Function | HTMLElement) {
+  openMenu(
+    element: HTMLElement,
+    event: MouseEvent,
+    content: Function | HTMLElement,
+  ) {
     if (this.isOpen || !element) return;
 
     this.container = this.ui.createElement("div", {

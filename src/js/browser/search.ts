@@ -89,9 +89,8 @@ class Search implements SearchInterface {
       games: this.createSection("Games"),
     };
 
-    // Type the section object explicitly so that TS knows the shape
     Object.values(this.sections).forEach((sectionObj: Section) =>
-      suggestionList.appendChild(sectionObj.section)
+      suggestionList.appendChild(sectionObj.section),
     );
 
     searchbar.addEventListener("input", async (event: Event) => {
@@ -108,10 +107,10 @@ class Search implements SearchInterface {
 
       let cleanedQuery = query.replace(
         /^(daydream:\/\/|daydream:\/|daydream:)/,
-        ""
+        "",
       );
       const response = await fetch(`/results/${cleanedQuery}`).then((res) =>
-        res.json()
+        res.json(),
       );
       const suggestions: string[] = response.map((item: any) => item.phrase);
 
@@ -157,7 +156,7 @@ class Search implements SearchInterface {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text"
+              ".suggestion-text",
             )?.textContent;
           if (selectedSuggestion) {
             searchbar.value = selectedSuggestion;
@@ -168,7 +167,7 @@ class Search implements SearchInterface {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text"
+              ".suggestion-text",
             )?.textContent;
           if (selectedSuggestion) {
             searchbar.value = selectedSuggestion;
@@ -182,7 +181,7 @@ class Search implements SearchInterface {
       }
 
       const engineIconElem = suggestionList.querySelectorAll(
-        ".searchEngineIcon"
+        ".searchEngineIcon",
       )[0] as HTMLImageElement | null;
       if (engineIconElem) {
         engineIconElem.style.display = "block";
@@ -193,25 +192,25 @@ class Search implements SearchInterface {
       switch (searchSetting) {
         case "https://duckduckgo.com/?q=%s":
           if (engineIconElem) {
-            engineIconElem.src = "/assets/imgs/b/ddg.webp";
+            engineIconElem.src = "/res/b/ddg.webp";
             engineIconElem.style.transform = "scale(1.35)";
           }
           break;
         case "https://bing.com/search?q=%s":
           if (engineIconElem) {
-            engineIconElem.src = "/assets/imgs/b/bing.webp";
+            engineIconElem.src = "/res/b/bing.webp";
             engineIconElem.style.transform = "scale(1.65)";
           }
           break;
         case "https://www.google.com/search?q=%s":
           if (engineIconElem) {
-            engineIconElem.src = "/assets/imgs/b/google.webp";
+            engineIconElem.src = "/res/b/google.webp";
             engineIconElem.style.transform = "scale(1.2)";
           }
           break;
         case "https://search.yahoo.com/search?p=%s":
           if (engineIconElem) {
-            engineIconElem.src = "/assets/imgs/b/yahoo.webp";
+            engineIconElem.src = "/res/b/yahoo.webp";
             engineIconElem.style.transform = "scale(1.5)";
           }
           break;
@@ -221,7 +220,7 @@ class Search implements SearchInterface {
             .then((dataUrl: string | null) => {
               if (dataUrl == null || dataUrl.endsWith("null")) {
                 if (engineIconElem) {
-                  engineIconElem.src = "/assets/imgs/b/ddg.webp";
+                  engineIconElem.src = "/res/b/ddg.webp";
                   engineIconElem.style.transform = "scale(1.35)";
                 }
               } else {
@@ -237,12 +236,12 @@ class Search implements SearchInterface {
     document.body.appendChild(suggestionList);
 
     const activeIframe = document.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement | null;
     if (activeIframe) {
       activeIframe.addEventListener("load", () => {
         let check = this.utils.getInternalURL(
-          new URL(activeIframe.src).pathname
+          new URL(activeIframe.src).pathname,
         );
         if (check.startsWith("daydream://")) {
           searchbar.value = check;
@@ -250,7 +249,7 @@ class Search implements SearchInterface {
           let url = new URL(activeIframe.src).pathname;
           url = url.replace(
             window.SWSettings ? window.SWSettings.config.prefix : "",
-            ""
+            "",
           );
           url = (window as any).window.__uv$config.decodeUrl(url);
           url = new URL(url).origin;
@@ -265,14 +264,14 @@ class Search implements SearchInterface {
       this.ui.createElement("div", { class: "search-title" }, [
         this.ui.createElement("img", {
           class: "searchEngineIcon",
-          src: "/assets/imgs/logo.png",
+          src: "/res/logo.png",
         }),
         this.ui.createElement("span", {}, [titleText]),
       ]),
       this.ui.createElement("div", { class: "search-results" }),
     ]);
     const searchResults = section.querySelector(
-      ".search-results"
+      ".search-results",
     ) as HTMLElement;
     return { section, searchResults };
   }
@@ -356,12 +355,10 @@ class Search implements SearchInterface {
   async populateSections(suggestions: string[], e: string): Promise<void> {
     const searchResultsSuggestions = suggestions.slice(
       0,
-      this.maxExpandedResults
+      this.maxExpandedResults,
     );
     this.populateSearchResults(searchResultsSuggestions);
     await this.populateOtherPages(suggestions);
-    // Uncomment and adjust if you want to populate settings:
-    // await this.populateSettings(this.searchbar!);
     await this.populateGames(e);
   }
 
@@ -383,11 +380,11 @@ class Search implements SearchInterface {
     for (let url of query) {
       url = url.replace(/ /g, "");
       url = "daydream://" + url;
-      const internalUrl = this.utils.processUrl(url);
+      const internalUrl = this.utils.processUrl(url) as string;
       const response = await fetch(internalUrl, { method: "HEAD" }).catch(
         (error) => {
           this.data.createLog("Failed to Fetch:" + error);
-        }
+        },
       );
       if (response && response.ok) {
         const listItem = this.createSuggestionItem(url);
@@ -453,7 +450,7 @@ class Search implements SearchInterface {
 
   async fetchAppData(): Promise<void> {
     try {
-      const response = await fetch("/assets/json/g.json");
+      const response = await fetch("/json/g.json");
       this.appsData = await response.json();
     } catch (error) {
       console.error("Error fetching JSON data:", error);
@@ -473,14 +470,14 @@ class Search implements SearchInterface {
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
       const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list"
+        "#suggestion-list.suggestion-list",
       ) as HTMLElement | null;
       if (suggestionListElem) {
         suggestionListElem.style.display = "none";
       }
       if (suggestion.startsWith("daydream")) {
         const link = this.utils.processUrl(suggestion);
-        if (link.startsWith("/internal/")) {
+        if (link!.startsWith("/internal/")) {
           this.utils.navigate(suggestion);
         }
       } else {
@@ -500,14 +497,14 @@ class Search implements SearchInterface {
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
       const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list"
+        "#suggestion-list.suggestion-list",
       ) as HTMLElement | null;
       if (suggestionListElem) {
         suggestionListElem.style.display = "none";
       }
       if (game.link.startsWith("daydream")) {
         const link = this.utils.processUrl(game.link);
-        if (link.startsWith("/internal/")) {
+        if (link!.startsWith("/internal/")) {
           this.utils.navigate(game.link);
         }
       } else {

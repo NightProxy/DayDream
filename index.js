@@ -37,7 +37,6 @@ const app = express();
 const packageInfo = JSON.parse(fs.readFileSync("package.json"));
 const PORT = process.env.PORT || 8080;
 
-// Rest of your code remains the same
 logging.set_level(logging.ERROR);
 wisp.options.dns_method = "resolve";
 wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];

@@ -1,7 +1,7 @@
 import { SettingsAPI } from "@apis/settings";
 
 interface WindowingInterface {
-  settings: SettingsAPI
+  settings: SettingsAPI;
 }
 
 class Windowing implements WindowingInterface {
@@ -21,14 +21,17 @@ class Windowing implements WindowingInterface {
       const aboutBlankTab = window.open("about:blank", "_blank");
       const iframe = document.createElement("iframe");
       iframe.src = location.href;
-      iframe.setAttribute("style", "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;");
+      iframe.setAttribute(
+        "style",
+        "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;",
+      );
       aboutBlankTab!.document.title = document.title;
       const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
         (await this.settings.getItem("favicon")) ||
-        location.href + "/assets/imgs/logo.png";
+        location.href + "/res/logo.png";
       aboutBlankTab!.document.head.appendChild(link);
       aboutBlankTab!.document.body.appendChild(iframe);
     } else {
@@ -41,14 +44,17 @@ class Windowing implements WindowingInterface {
       const aboutBlankTab = window.open("about:blank");
       const iframe = document.createElement("iframe");
       iframe.src = location.href;
-      iframe.setAttribute("style", "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;");
+      iframe.setAttribute(
+        "style",
+        "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;",
+      );
       aboutBlankTab!.document.title = document.title;
       const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
         (await this.settings.getItem("favicon")) ||
-        location.href + "/assets/imgs/logo.png";
+        location.href + "/res/logo.png";
       aboutBlankTab!.document.head.appendChild(link);
       aboutBlankTab!.document.body.appendChild(iframe);
 

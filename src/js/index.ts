@@ -4,7 +4,6 @@ import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import { ProfilesAPI } from "@apis/profiles";
 import { Logger } from "@apis/logging";
-import { ExtensionsAPI } from "@apis/extensions";
 import { Proxy } from "@apis/proxy";
 import { Windowing } from "@browser/windowing";
 import { Global } from "@js/global/index";
@@ -16,33 +15,6 @@ import { Functions } from "@browser/functions";
 import { Keys } from "@browser/keys";
 import { Search } from "@browser/search";
 
-declare global {
-  interface Window {
-    __uv$config: any;
-    __scramjet$config: any;
-    __eclipse$config: any;
-    nightmare: Nightmare;
-    nightmarePlugins: NightmarePlugins;
-    settings: SettingsAPI;
-    eventsAPI: EventSystem;
-    extensions: ExtensionsAPI;
-    proxy: Proxy;
-    logging: Logger;
-    profiles: ProfilesAPI;
-    globals: Global;
-    renderer: Render;
-    items: Items;
-    utils: Utils;
-    tabs: Tabs;
-    windowing: Windowing;
-    functions: Functions;
-    keys: Keys;
-    searchbar: Search;
-    SWconfig: any;
-    ProxySettings: string;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
   const nightmarePlugins = new NightmarePlugins();
@@ -51,12 +23,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventsAPI = new EventSystem();
   const profilesAPI = new ProfilesAPI();
   const loggingAPI = new Logger();
-  const extensionsAPI = new ExtensionsAPI();
 
   profilesAPI.init();
-
-  await extensionsAPI.registerSW();
-  await extensionsAPI.loadExtensions();
 
   var defWisp =
     (location.protocol === "https:" ? "wss" : "ws") +
@@ -67,10 +35,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   var searchVAR =
     (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
   var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
-  const proxy = new Proxy(searchVAR, transVAR, wispUrl, loggingAPI);
+  const proxy = new Proxy(searchVAR, transVAR, wispUrl);
 
   const proxySetting = (await settingsAPI.getItem("proxy")) ?? "uv";
-  let swConfigSettings = {};
+  let swConfigSettings: Record<string, any> = {};
   const swConfig = {
     uv: {
       type: "sw",
@@ -99,24 +67,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       },
     },
-    ec: {
-      type: "sw",
-      file: "/~/sw.js",
-      config: window.__eclipse$config,
-      func: null,
-    },
     auto: {
       type: "multi",
       file: null,
       config: null,
-      func: async (input) => {
-        return await proxy.automatic(input);
-      },
+      func: null
     },
   };
   const windowing = new Windowing();
   const globalFunctions = new Global();
-  const render = new Render(document.getElementById("browser-container") as HTMLDivElement);
+  const render = new Render(
+    document.getElementById("browser-container") as HTMLDivElement,
+  );
   const items = new Items();
   const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
@@ -130,20 +92,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   keys.init();
 
   if (
-    typeof swConfig[proxySetting].func === "function" &&
-    proxySetting === "sj"
+    proxySetting === "sj" &&
+    swConfig[proxySetting as keyof typeof swConfig] &&
+    typeof swConfig[proxySetting as keyof typeof swConfig].func === "function"
   ) {
-    await swConfig[proxySetting].func();
+    await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
   }
 
-  proxy.registerSW(swConfig[proxySetting]).then(async () => {
-    await proxy.setTransports().then(async () => {
-      const transport = await proxy.connection.getTransport();
-      if (transport == null) {
-        proxy.setTransports();
-      }
+  proxy
+    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
+    .then(async () => {
+      await proxy.setTransports().then(async () => {
+        const transport = await proxy.connection.getTransport();
+        if (transport == null) {
+          proxy.setTransports();
+        }
+      });
     });
-  });
   const uvSearchBar = items.addressBar;
 
   uvSearchBar!.addEventListener("keydown", async (e) => {
@@ -157,17 +122,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         utils.navigate(searchValue);
       } else {
         if (proxySetting === "auto") {
-          const result = await swConfig.auto.func(proxy.search(searchValue));
+          const result = (await proxy.automatic(
+            proxy.search(searchValue), swConfig
+          )) as Record<string, any>;
           swConfigSettings = result;
           window.SWSettings = swConfigSettings;
         } else {
-          swConfigSettings = swConfig[proxySetting];
+          swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];
           window.SWSettings = swConfigSettings;
         }
 
         if (
-          typeof swConfigSettings.func === "function" &&
-          proxySetting === "sj"
+          proxySetting === "sj" &&
+          swConfigSettings &&
+          typeof swConfigSettings.func === "function"
         ) {
           await swConfigSettings.func();
         }
@@ -181,7 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "swConfigSettings.func exists:",
           typeof swConfigSettings.func === "function",
         );
-        if (typeof swConfigSettings.func === "function") {
+        if (swConfigSettings && typeof swConfigSettings.func === "function") {
           swConfigSettings.func();
         } else {
           console.warn("No function to execute in swConfigSettings.func");
@@ -193,19 +161,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
         console.log(swConfigSettings);
 
-        switch (swConfigSettings.type) {
-          case "sw":
-            let encodedUrl =
-              swConfigSettings.config.prefix +
-              window.__uv$config.encodeUrl(proxy.search(searchValue));
-            const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
-            if (activeIframe) {
-              activeIframe.src = encodedUrl;
-            }
-            if (!activeIframe) {
-              tabs.createTab(location.origin + encodedUrl);
-            }
-            break;
+        if (swConfigSettings && swConfigSettings.type) {
+          switch (swConfigSettings.type) {
+            case "sw":
+              let encodedUrl =
+                swConfigSettings.config.prefix +
+                window.__uv$config.encodeUrl(proxy.search(searchValue));
+              const activeIframe = document.querySelector(
+                "iframe.active",
+              ) as HTMLIFrameElement;
+              if (activeIframe) {
+                activeIframe.src = encodedUrl;
+              }
+              if (!activeIframe) {
+                tabs.createTab(location.origin + encodedUrl);
+              }
+              break;
+          }
         }
       }
     }
@@ -221,9 +193,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       e.preventDefault();
       setTimeout(() => {
         searchbar.clearSuggestions();
-        document.querySelector(
-          "#suggestion-list.suggestion-list",
-        )!.setAttribute("style", "display:none;")
+        document
+          .querySelector("#suggestion-list.suggestion-list")!
+          .setAttribute("style", "display:none;");
       }, 30);
     }
   });
@@ -232,7 +204,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.nightmarePlugins = nightmarePlugins;
   window.settings = settingsAPI;
   window.eventsAPI = eventsAPI;
-  window.extensions = extensionsAPI;
   window.proxy = proxy;
   window.logging = loggingAPI;
   window.profiles = profilesAPI;

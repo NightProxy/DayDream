@@ -32,7 +32,7 @@ class Themeing implements ThemeingInterface {
       fadedMainColor || "rgba(170, 1, 255, 0.26)",
     );
 
-    document.addEventListener("theme:color-change", async (event) => {
+    document.addEventListener("theme:color-change", async (event: any) => {
       await this.settings.setItem("themeColor", event.detail.color);
       document.documentElement.style.setProperty(
         "--main-color",
@@ -63,11 +63,11 @@ class Themeing implements ThemeingInterface {
 
   async applyThemeFromJsonFile() {
     try {
-      const response1 = await fetch("/assets/json/themes/modes.json");
+      const response1 = await fetch("/json/themes/modes.json");
       if (!response1.ok) throw new Error("Failed to load themes.json");
 
       const themes = await response1.json();
-      const response2 = await fetch("/assets/json/themes/rules.json");
+      const response2 = await fetch("/json/themes/rules.json");
       if (!response2.ok) throw new Error("Failed to load rules.json");
 
       const rules = await response2.json();
@@ -104,12 +104,12 @@ class Themeing implements ThemeingInterface {
   async setBackgroundImage() {
     const bg = await this.settings.getItem("theme:background-image");
     if (bg !== null) {
-      const img = bg || "/assets/imgs/DDX.bg.jpeg";
+      const img = bg || "/res/DDX.bg.jpeg";
       document.body.querySelector(".bg-img img")!.setAttribute("src", img);
     } else {
       document.documentElement.style.setProperty(
         "--background-image",
-        "url(/assets/imgs/DDX.bg.jpeg)",
+        "url(/res/DDX.bg.jpeg)",
       );
     }
     console.log("Background image set");
@@ -128,7 +128,6 @@ class Themeing implements ThemeingInterface {
     let [r, g, b, a] = colorMatch.slice(1).map(Number);
     let [tr, tg, tb] = tintMatch.slice(1, 4).map(Number);
 
-    // Ensure `a` is a valid number, default to 1 if NaN
     a = isNaN(a) ? 1 : a;
 
     r = Math.round(r * (1 - tintFactor) + tr * tintFactor);
@@ -141,7 +140,7 @@ class Themeing implements ThemeingInterface {
   fadeColor(color: string, factor: number) {
     if (typeof color !== "string") {
       console.error("Invalid color input:", color);
-      return color; // Return the original input if it's invalid
+      return color;
     }
 
     const colorMatch = color.match(
@@ -154,8 +153,8 @@ class Themeing implements ThemeingInterface {
     }
 
     let [r, g, b, a] = colorMatch.slice(1).map(Number);
-    a = isNaN(a) ? 1 : a; // Default to 1 if `a` is NaN
-    a = Math.min(1, Math.max(0, a * factor)); // Clamp alpha to valid range
+    a = isNaN(a) ? 1 : a;
+    a = Math.min(1, Math.max(0, a * factor));
 
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }

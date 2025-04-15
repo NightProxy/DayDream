@@ -33,30 +33,40 @@ class Keys implements keysInterface {
       } else if (event.altKey && event.key === "w") {
         this.tabs.closeCurrentTab();
       } else if (event.altKey && event.key === "ArrowLeft") {
-        const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+        const activeIframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement;
         if (activeIframe) {
           activeIframe?.contentWindow?.history.back();
         }
         // Go Next
       } else if (event.altKey && event.key === "ArrowRight") {
-        const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+        const activeIframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement;
         if (activeIframe) {
           activeIframe?.contentWindow?.history.forward();
         }
         // Reload page
       } else if (event.altKey && event.key === "r") {
-        const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+        const activeIframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement;
         if (activeIframe) {
           activeIframe?.contentWindow?.location.reload();
         }
       } else if (event.altKey && event.keyCode === 116) {
-        const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+        const activeIframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement;
         if (activeIframe) {
           activeIframe?.contentWindow?.location.reload();
         }
       } else if (event.altKey && event.shiftKey && event.key === "I") {
         event.preventDefault();
-        const activeIframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+        const activeIframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement;
         if (activeIframe) {
           this.functions.inspectElement();
         }

@@ -1,5 +1,5 @@
-@import url("/assets/css/imports.css");
-@import url("/assets/css/sidepanel.css");
+@import url("/src/css/imports.css");
+@import url("/src/css/sidepanel.css");
 
 body {
   overflow: hidden;

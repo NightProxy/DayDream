@@ -1,32 +1,24 @@
 import express from "express";
-import { Request, Response, NextFunction, Router } from "express-serve-static-core";
 import path from "path";
 import axios, { AxiosResponse } from "axios";
 import { URL } from "url";
 import contentType from "content-type";
 
-const router: Router = express.Router();
-const __dirname: string = process.cwd();
+const router = express.Router();
+const __dirname = process.cwd();
 
-// typed (meaning typescript) by dust
-
-interface DuckDuckGoSuggestion {
-  phrase: string;
-  [key: string]: any;
-}
-
-router.get("/", (req: Request, res: Response): void => {
+router.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/pages/index.html"));
 });
 
-router.get("/results/:query", async (req: Request, res: Response): Promise<void> => {
+router.get("/results/:query", async (req, res) => {
   const { query } = req.params;
 
   try {
     const response = await fetch(
-      `http://api.duckduckgo.com/ac?q=${query}&format=json`
+      `http://api.duckduckgo.com/ac?q=${query}&format=json`,
     );
-    const reply: DuckDuckGoSuggestion[] = await response.json();
+    const reply = await response.json();
     res.send(reply);
   } catch (error) {
     console.error("Error fetching search results:", error);
@@ -36,17 +28,17 @@ router.get("/results/:query", async (req: Request, res: Response): Promise<void>
 
 router.use(
   "/internal/",
-  express.static(path.join(__dirname, "public/pages/internal/"))
+  express.static(path.join(__dirname, "public/pages/internal/")),
 );
 
-router.use("/internal/icons/:url(*)", async (req: Request, res: Response): Promise<void> => {
+router.use("/internal/icons/:url(*)", async (req, res) => {
   let { url } = req.params;
   url = url.replace("https:/", "");
   url = url.replace("http:/", "");
   url = url.replace("https://", "");
   url = url.replace("http://", "");
-  let proxiedUrl: string;
-  
+  let proxiedUrl;
+
   try {
     proxiedUrl = "https://icon.horse/icon/" + url;
   } catch (err) {
@@ -57,12 +49,12 @@ router.use("/internal/icons/:url(*)", async (req: Request, res: Response): Promi
 
   try {
     const assetUrl = new URL(proxiedUrl);
-    const assetResponse: AxiosResponse<ArrayBuffer> = await axios.get(assetUrl.toString(), {
+    const assetResponse = await axios.get(assetUrl.toString(), {
       responseType: "arraybuffer",
     });
 
-    const contentTypeHeader: string | undefined = assetResponse.headers["content-type"] as string | undefined;
-    const parsedContentType: string = contentTypeHeader
+    const contentTypeHeader = assetResponse.headers["content-type"];
+    const parsedContentType = contentTypeHeader
       ? contentType.parse(contentTypeHeader).type
       : "";
 
@@ -77,7 +69,7 @@ router.use("/internal/icons/:url(*)", async (req: Request, res: Response): Promi
   }
 });
 
-router.use((req: Request, res: Response): void => {
+router.use((req, res) => {
   res.status(404);
   res.sendFile(path.join(__dirname, "public/pages/internal/error/index.html"));
 });

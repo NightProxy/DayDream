@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
     "@types/sortablejs": "^1.15.8",
-    "vite": "^6.2.0"
+    "prettier": "^3.5.3",
+    "vite": "^6.2.6"
   },
   "dependencies": {
     "@jaames/iro": "^5.5.2",

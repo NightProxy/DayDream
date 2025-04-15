@@ -1,38 +1,70 @@
 class DataExportAPI {
   constructor() {}
-  extractCookies() {
-    let cookies = {};
+
+  base6xorEncrypt(text: string): string {
+    let output = "";
+    for (let i = 0; i < text.length; i++) {
+      let charCode = text.charCodeAt(i) ^ 2;
+      output += String.fromCharCode(charCode);
+    }
+    return btoa(encodeURIComponent(output));
+  }
+
+  base6xorDecrypt(encryptedData: string): string {
+    let decodedData = decodeURIComponent(atob(encryptedData));
+    let output = "";
+    for (let i = 0; i < decodedData.length; i++) {
+      let charCode = decodedData.charCodeAt(i) ^ 2;
+      output += String.fromCharCode(charCode);
+    }
+    return output;
+  }
+  extractCookies(): { [key: string]: string } {
+    const cookies: { [key: string]: string } = {};
     document.cookie.split(";").forEach((c) => {
-      let parts = c.split("=");
-      cookies[parts.shift().trim()] = decodeURI(parts.join("="));
+      const parts = c.split("=");
+      const key = parts.shift()?.trim() ?? "";
+      cookies[key] = decodeURI(parts.join("="));
     });
     return cookies;
   }
 
-  async getIDBData(databaseName) {
+  async getIDBData(databaseName: string): Promise<{
+    name: string;
+    data: { [storeName: string]: Array<{ key: IDBValidKey; value: any }> };
+  }> {
     return new Promise((resolve, reject) => {
-      let dbRequest = indexedDB.open(databaseName);
+      const dbRequest = indexedDB.open(databaseName);
 
-      dbRequest.onsuccess = (event) => {
-        let db = event.target.result;
-        let transaction = db.transaction(db.objectStoreNames, "readonly");
-        let data = {};
+      dbRequest.onsuccess = (event: Event) => {
+        const target = event.target as IDBOpenDBRequest;
+        if (!target) {
+          reject(new Error("No event target"));
+          return;
+        }
+        const db = target.result;
+        const transaction = db.transaction(db.objectStoreNames, "readonly");
+        const data: {
+          [storeName: string]: Array<{ key: IDBValidKey; value: any }>;
+        } = {};
 
         transaction.oncomplete = () => {
           resolve({ name: databaseName, data });
         };
 
-        transaction.onerror = (event) => {
-          reject(event.target.error);
+        transaction.onerror = (event: Event) => {
+          const target = event.target as IDBTransaction;
+          reject(target?.error);
         };
 
-        for (let storeName of db.objectStoreNames) {
-          let objectStore = transaction.objectStore(storeName);
-          let request = objectStore.openCursor();
+        for (const storeName of db.objectStoreNames) {
+          const objectStore = transaction.objectStore(storeName);
+          const request = objectStore.openCursor();
           data[storeName] = [];
 
-          request.onsuccess = (event) => {
-            let cursor = event.target.result;
+          request.onsuccess = (event: Event) => {
+            const cursor = (event.target as IDBRequest)
+              .result as IDBCursorWithValue | null;
             if (cursor) {
               data[storeName].push({
                 key: cursor.primaryKey,
@@ -42,50 +74,59 @@ class DataExportAPI {
             }
           };
 
-          request.onerror = (event) => {
-            reject(event.target.error);
+          request.onerror = (event: Event) => {
+            const target = event.target as IDBRequest;
+            reject(target?.error);
           };
         }
       };
 
-      dbRequest.onerror = (event) => {
-        reject(event.target.error);
+      dbRequest.onerror = (event: Event) => {
+        const target = event.target as IDBOpenDBRequest;
+        reject(target?.error);
       };
     });
   }
 
-  decodeBase64(dataUrl) {
+  decodeBase64(dataUrl: string): string {
     const base64String = dataUrl.split(",")[1];
     return window.atob(base64String);
   }
 
-  getAllIDBData() {
+  getAllIDBData(): Promise<
+    Array<{
+      name: string;
+      data: { [storeName: string]: Array<{ key: IDBValidKey; value: any }> };
+    }>
+  > {
     return indexedDB.databases().then((databases) => {
-      let promises = databases.map((dbInfo) => this.getIDBData(dbInfo.name));
+      const promises = databases.map((dbInfo) => this.getIDBData(dbInfo.name!));
       return Promise.all(promises);
     });
   }
 
-  exportData(fileName) {
+  exportData(fileName: string): void {
     this.getAllIDBData()
       .then((idbData) => {
-        let data = {
+        const data = {
           idbData: JSON.stringify(idbData),
-          localStorageData: JSON.stringify(localStorage),
+          localStorageData: JSON.stringify({ ...localStorage }),
           cookies: this.extractCookies(),
         };
 
-        let jsonData = JSON.stringify(data);
-        let encryptedData = this.base6xorEncrypt(jsonData);
+        const jsonData = JSON.stringify(data);
+        const encryptedData = this.base6xorEncrypt(jsonData);
 
-        let blob = new Blob([encryptedData], {
+        const blob = new Blob([encryptedData], {
           type: "application/octet-stream",
         });
 
-        if (window.navigator.msSaveOrOpenBlob) {
-          window.navigator.msSaveBlob(blob, fileName);
+        // @ts-ignore: msSaveOrOpenBlob is IE/Edge only
+        if ((window.navigator as any).msSaveOrOpenBlob) {
+          // @ts-ignore: msSaveBlob is IE/Edge only
+          (window.navigator as any).msSaveBlob(blob, fileName);
         } else {
-          let a = document.createElement("a");
+          const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = fileName;
           document.body.appendChild(a);
@@ -98,24 +139,32 @@ class DataExportAPI {
       });
   }
 
-  importData(input) {
-    let fileInput = input;
-    let file = fileInput.files[0];
-    let reader = new FileReader();
+  importData(input: HTMLInputElement): void {
+    const fileInput = input;
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
-        let decryptedDataJSON = this.base6xorDecrypt(e.target.result);
-        let decryptedData = JSON.parse(decryptedDataJSON);
+        const result = e.target?.result;
+        if (typeof result !== "string") throw new Error("File read error");
+        const decryptedDataJSON = this.base6xorDecrypt(result);
+        const decryptedData = JSON.parse(decryptedDataJSON);
 
-        let idbData = JSON.parse(decryptedData.idbData);
-        let idbPromises = idbData.map((dbInfo) => {
-          return new Promise((resolve, reject) => {
-            let dbRequest = indexedDB.open(dbInfo.name);
+        const idbData = JSON.parse(decryptedData.idbData);
+        const idbPromises = idbData.map((dbInfo: any) => {
+          return new Promise<void>((resolve, reject) => {
+            const dbRequest = indexedDB.open(dbInfo.name);
 
-            dbRequest.onsuccess = (event) => {
-              let db = event.target.result;
-              let transaction = db.transaction(
+            dbRequest.onsuccess = (event: Event) => {
+              const target = event.target as IDBOpenDBRequest;
+              if (!target) {
+                reject(new Error("No event target"));
+                return;
+              }
+              const db = target.result;
+              const transaction = db.transaction(
                 db.objectStoreNames,
                 "readwrite",
               );
@@ -124,35 +173,39 @@ class DataExportAPI {
                 resolve();
               };
 
-              transaction.onerror = (event) => {
-                reject(event.target.error);
+              transaction.onerror = (event: Event) => {
+                const target = event.target as IDBTransaction;
+                reject(target?.error);
               };
 
-              for (let storeName of db.objectStoreNames) {
-                let objectStore = transaction.objectStore(storeName);
-                let storeData = dbInfo.data[storeName];
+              for (const storeName of db.objectStoreNames) {
+                const objectStore = transaction.objectStore(storeName);
+                const storeData = dbInfo.data[storeName];
 
                 objectStore.clear().onsuccess = () => {
-                  storeData.forEach((item) => {
-                    if (item.key) {
-                      objectStore.put(item.value, item.key);
-                    } else {
-                      objectStore.add(item.value);
-                    }
-                  });
+                  storeData.forEach(
+                    (item: { key?: IDBValidKey; value: any }) => {
+                      if (item.key !== undefined) {
+                        objectStore.put(item.value, item.key);
+                      } else {
+                        objectStore.add(item.value);
+                      }
+                    },
+                  );
                 };
               }
             };
 
-            dbRequest.onerror = (event) => {
-              reject(event.target.error);
+            dbRequest.onerror = (event: Event) => {
+              const target = event.target as IDBOpenDBRequest;
+              reject(target?.error);
             };
           });
         });
 
         localStorage.clear();
-        let localStorageData = JSON.parse(decryptedData.localStorageData);
-        for (let key in localStorageData) {
+        const localStorageData = JSON.parse(decryptedData.localStorageData);
+        for (const key in localStorageData) {
           localStorage.setItem(key, localStorageData[key]);
         }
 
@@ -165,8 +218,8 @@ class DataExportAPI {
             );
         });
 
-        let cookieData = decryptedData.cookies;
-        for (let key in cookieData) {
+        const cookieData = decryptedData.cookies;
+        for (const key in cookieData) {
           document.cookie = key + "=" + cookieData[key] + ";path=/";
         }
 

@@ -1,5 +1,4 @@
-import Cookies from 'js-cookie'; 
-// declare const Cookies: CookiesInterface;
+import Cookies from "js-cookie";
 
 interface Profile {
   name: string;
@@ -31,7 +30,6 @@ interface ExportedData {
   cookies: CookieCollection;
 }
 
-// Define the Cookies interface based on usage
 interface CookiesInterface {
   get(): CookieCollection;
   set(name: string, value: string, options?: any): void;
@@ -47,7 +45,7 @@ class ProfilesAPI {
   constructor() {
     this.PROFILE_DB_NAME = "profilesDB";
     this.PROFILE_STORE_NAME = "profiles";
-    this.cookies = Cookies as CookiesInterface; // we are assuming the Cookies object is relating to js-cookie. if not, meaning it is injected via a script tag or whatever, remove the import and uncomment the declare.
+    this.cookies = Cookies as CookiesInterface;
     this.encryption = new Profiles_DataEncryption();
   }
 
@@ -60,8 +58,10 @@ class ProfilesAPI {
           db.createObjectStore(storeName);
         }
       };
-      request.onsuccess = (event: Event) => resolve((event.target as IDBOpenDBRequest).result);
-      request.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
+      request.onsuccess = (event: Event) =>
+        resolve((event.target as IDBOpenDBRequest).result);
+      request.onerror = (event: Event) =>
+        reject((event.target as IDBOpenDBRequest).error);
     });
   }
 
@@ -80,7 +80,10 @@ class ProfilesAPI {
     db.close();
   }
 
-  async createProfile(profileName: string, autoSelect: boolean = false): Promise<Profile> {
+  async createProfile(
+    profileName: string,
+    autoSelect: boolean = false,
+  ): Promise<Profile> {
     const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
     const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
@@ -139,7 +142,9 @@ class ProfilesAPI {
     const store = tx.objectStore(this.PROFILE_STORE_NAME);
 
     const request = store.get("activeProfile");
-    const activeProfileName = await this._waitForRequest(request) as string | null;
+    const activeProfileName = (await this._waitForRequest(request)) as
+      | string
+      | null;
 
     db.close();
     return activeProfileName ? await this.getProfile(activeProfileName) : null;
@@ -199,11 +204,15 @@ class ProfilesAPI {
 
       dbRequest.onsuccess = (event: Event) => {
         let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-        let transaction: IDBTransaction = db.transaction(db.objectStoreNames, "readonly");
+        let transaction: IDBTransaction = db.transaction(
+          db.objectStoreNames,
+          "readonly",
+        );
         let data: IDBStoreData = {};
 
         transaction.oncomplete = () => resolve({ name: databaseName, data });
-        transaction.onerror = (event: Event) => reject((event.target as IDBTransaction).error);
+        transaction.onerror = (event: Event) =>
+          reject((event.target as IDBTransaction).error);
 
         for (let i = 0; i < db.objectStoreNames.length; i++) {
           let storeName = db.objectStoreNames[i];
@@ -212,7 +221,8 @@ class ProfilesAPI {
           data[storeName] = [];
 
           request.onsuccess = (event: Event) => {
-            let cursor: IDBCursorWithValue | null = (event.target as IDBRequest).result;
+            let cursor: IDBCursorWithValue | null = (event.target as IDBRequest)
+              .result;
             if (cursor) {
               data[storeName].push({
                 key: cursor.primaryKey,
@@ -222,11 +232,13 @@ class ProfilesAPI {
             }
           };
 
-          request.onerror = (event: Event) => reject((event.target as IDBRequest).error);
+          request.onerror = (event: Event) =>
+            reject((event.target as IDBRequest).error);
         }
       };
 
-      dbRequest.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
+      dbRequest.onerror = (event: Event) =>
+        reject((event.target as IDBOpenDBRequest).error);
     });
   }
 
@@ -265,7 +277,9 @@ class ProfilesAPI {
       await Promise.all(idbPromises);
 
       localStorage.clear();
-      let localStorageData = JSON.parse(decryptedData.localStorageData) as Record<string, string>;
+      let localStorageData = JSON.parse(
+        decryptedData.localStorageData,
+      ) as Record<string, string>;
       Object.keys(localStorageData).forEach((key) => {
         localStorage.setItem(key, localStorageData[key]);
       });
@@ -287,9 +301,8 @@ class ProfilesAPI {
 
       dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
         let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-        
-        // Create object stores that exist in the export but not in the current DB
-        Object.keys(dbInfo.data).forEach(storeName => {
+
+        Object.keys(dbInfo.data).forEach((storeName) => {
           if (!db.objectStoreNames.contains(storeName)) {
             db.createObjectStore(storeName);
           }
@@ -298,30 +311,32 @@ class ProfilesAPI {
 
       dbRequest.onsuccess = (event: Event) => {
         let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-        
-        // Get all store names from the data that we're importing
+
         const storeNames = Object.keys(dbInfo.data);
         if (storeNames.length === 0) {
           resolve();
           return;
         }
-        
-        // Filter for only the store names that exist in the database
-        const existingStoreNames = storeNames.filter(name => 
-          db.objectStoreNames.contains(name)
+
+        const existingStoreNames = storeNames.filter((name) =>
+          db.objectStoreNames.contains(name),
         );
-        
+
         if (existingStoreNames.length === 0) {
           resolve();
           return;
         }
 
-        let transaction: IDBTransaction = db.transaction(existingStoreNames, "readwrite");
+        let transaction: IDBTransaction = db.transaction(
+          existingStoreNames,
+          "readwrite",
+        );
 
         transaction.oncomplete = () => resolve();
-        transaction.onerror = (event: Event) => reject((event.target as IDBTransaction).error);
+        transaction.onerror = (event: Event) =>
+          reject((event.target as IDBTransaction).error);
 
-        existingStoreNames.forEach(storeName => {
+        existingStoreNames.forEach((storeName) => {
           let objectStore = transaction.objectStore(storeName);
           let storeData = dbInfo.data[storeName];
 
@@ -338,7 +353,8 @@ class ProfilesAPI {
         });
       };
 
-      dbRequest.onerror = (event: Event) => reject((event.target as IDBOpenDBRequest).error);
+      dbRequest.onerror = (event: Event) =>
+        reject((event.target as IDBOpenDBRequest).error);
     });
   }
 

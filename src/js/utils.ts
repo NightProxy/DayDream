@@ -2,13 +2,13 @@ import { Items } from "@browser/items";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 
-interface utilsInteface {
+interface UtilsInterface {
   items: Items;
   logger: Logger;
   settings: SettingsAPI;
 }
 
-class Utils implements utilsInteface{
+class Utils implements UtilsInterface {
   items: Items;
   logger: Logger;
   settings: SettingsAPI;
@@ -19,7 +19,7 @@ class Utils implements utilsInteface{
     this.settings = new SettingsAPI();
   }
 
-  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement) {
+  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement): void {
     iframe.addEventListener("load", async () => {
       try {
         if (!iframe.contentDocument) {
@@ -29,27 +29,30 @@ class Utils implements utilsInteface{
           return;
         }
 
-        let favicon = null;
-        const nodeList =
-          iframe.contentDocument.querySelectorAll("link[rel~='icon']");
+        let favicon: HTMLLinkElement | null = null;
+        const nodeList = iframe.contentDocument.querySelectorAll(
+          "link[rel~='icon']",
+        );
 
         for (let i = 0; i < nodeList.length; i++) {
           const relAttr = nodeList[i].getAttribute("rel");
-          if (relAttr!.includes("icon")) {
-            favicon = nodeList[i];
+          if (relAttr && relAttr.includes("icon")) {
+            favicon = nodeList[i] as HTMLLinkElement;
             break;
           }
         }
 
         if (favicon) {
-          const f = favicon as HTMLLinkElement;
-          let faviconUrl = f.href || f.getAttribute("href");
+          let faviconUrl = favicon.href || favicon.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
 
-          faviconUrl = await this.getFavicon(faviconUrl);
+          faviconUrl = await this.getFavicon(faviconUrl as string);
 
           if (faviconUrl && faviconImage) {
-            faviconImage.setAttribute("style", `background-image: url('${faviconUrl}');`);
+            faviconImage.setAttribute(
+              "style",
+              `background-image: url('${faviconUrl}');`,
+            );
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }
@@ -64,9 +67,9 @@ class Utils implements utilsInteface{
     });
   }
 
-  async getFavicon(url: string) {
+  async getFavicon(url: string): Promise<string | null> {
     try {
-      var googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
+      const googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
       return googleFaviconUrl;
     } catch (error) {
       console.error("Error fetching favicon as data URL:", error);
@@ -74,7 +77,7 @@ class Utils implements utilsInteface{
     }
   }
 
-  processUrl(url: string) {
+  processUrl(url: string): string | void {
     let js = "";
     if (url.startsWith("daydream://")) {
       const path = url.replace("daydream://", "");
@@ -88,14 +91,17 @@ class Utils implements utilsInteface{
       return url;
     } else if (url.startsWith("javascript:")) {
       js = url.replace("javascript:", "");
-      const iframe = document.querySelector("iframe.active") as HTMLIFrameElement;
-      iframe.contentWindow!.eval(js);
+      const iframe = document.querySelector(
+        "iframe.active",
+      ) as HTMLIFrameElement | null;
+      if (iframe && iframe.contentWindow) {
+        (iframe.contentWindow as any).eval(js);      }
     } else {
       return `/internal/${url}`;
     }
   }
 
-  getInternalURL(url: string) {
+  getInternalURL(url: string): string {
     if (url.startsWith("/internal/")) {
       const path = url.replace("/internal/", "");
       return `daydream://${path}`;
@@ -113,47 +119,49 @@ class Utils implements utilsInteface{
     }
   }
 
-  navigate(url: string) {
-    const processedUrl = this.processUrl(url) as string;
-    const iframe = this.items.iframeContainer!.querySelector("iframe.active") as HTMLIFrameElement;
-    if (iframe) {
-      iframe.setAttribute("src", processedUrl);
-      this.logger.createLog(`Navigated to: ${processedUrl}`);
+  navigate(url: string): void {
+    const processedUrl = this.processUrl(url);
+    if (processedUrl) {
+      const iframe = this.items.iframeContainer?.querySelector(
+        "iframe.active",
+      ) as HTMLIFrameElement | null;
+      if (iframe) {
+        iframe.setAttribute("src", processedUrl);
+        this.logger.createLog(`Navigated to: ${processedUrl}`);
+      }
     }
   }
 
-  closest(value, array) {
+  closest(value: number, array: number[]): number {
     let closest = Infinity;
     let closestIndex = -1;
-
+  
     array.forEach((v, i) => {
       if (Math.abs(value - v) < closest) {
         closest = Math.abs(value - v);
         closestIndex = i;
       }
     });
-
+  
     return closestIndex;
   }
 
-  throttle(func, limit) {
-    let lastFunc;
-    let lastRan;
-    return function (...args) {
+  throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
+    let lastFunc: ReturnType<typeof setTimeout> | null = null;
+    let lastRan: number | null = null;
+  
+    return function (...args: Parameters<T>) {
       if (!lastRan) {
-        func.apply(this, args);
+        func(...args);
         lastRan = Date.now();
       } else {
-        clearTimeout(lastFunc);
-        lastFunc = setTimeout(
-          () => {
-            if (Date.now() - lastRan >= limit) {
-              func.apply(this, args);
-              lastRan = Date.now();
-            }
-          },
-          limit - (Date.now() - lastRan),
-        );
+        clearTimeout(lastFunc!);
+        lastFunc = setTimeout(() => {
+          if (Date.now() - lastRan! >= limit) {
+            func(...args);
+            lastRan = Date.now();
+          }
+        }, limit - (Date.now() - lastRan!));
       }
     };
   }

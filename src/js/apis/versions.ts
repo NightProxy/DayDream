@@ -32,4 +32,4 @@ class VersionsAPI {
   }
 }
 
-export {VersionsAPI};
+export { VersionsAPI };
