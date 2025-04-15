@@ -2,22 +2,18 @@
 <html lang="en">
   <head>
     <title>New Tab</title>
-    <link rel="icon" type="icon/x-icon" href="/assets/imgs/logo.png" />
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="UTF-8" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/global.css" />
-    <link rel="stylesheet" href="/assets/css/imports.css" />
-    <link rel="stylesheet" type="text/css" href="/assets/css/vars.css" />
+    <link rel="stylesheet" type="text/css" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/imports.css" />
+    <link rel="stylesheet" type="text/css" href="/src/css/vars.css" />
     <link
       rel="stylesheet"
       type="text/css"
-      href="/assets/css/pages/internalBase.css"
+      href="/src/css/pages/internalBase.css"
     />
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="/assets/css/pages/newtab.css"
-    />
+    <link rel="stylesheet" type="text/css" href="/src/css/pages/newtab.css" />
 
     <style>
       @keyframes scaleBlurFade {
@@ -89,11 +85,15 @@
         height: auto;
       }
     </style>
+    <script src="/@/uv.bundle.js" defer></script>
+    <script src="/@/uv.config.js" defer></script>
+    <script src="/$/scramjet.config.js" defer></script>
+    <script src="/$/scramjet.controller.js" defer></script>
   </head>
 
   <body>
     <div class="bg-img">
-      <img src="/assets/imgs/DDX.bg.jpeg" />
+      <img src="/res/DDX.bg.jpeg" />
     </div>
     <div>
       <div class="banner">
@@ -127,24 +127,10 @@
       </div>
 
       <div class="shortcutcontainer">
-        <img src="/assets/imgs/g/vscs.png" alt="Shortcut" class="shortcut" />
+        <img src="/res/g/vscs.png" alt="Shortcut" class="shortcut" />
       </div>
     </div>
-
-    <!-- Scripts -->
-    <script src="/assets/js/lib/js-cookie/js.cookie.min.js"></script>
-    <script src="/assets/js/lib/localforage/localforage.min.js"></script>
-    <script src="/assets/js/lib/wisp-client-js/wisp-client.js"></script>
-    <script src="/assets/js/lib/draggability/draggabilly.pkgd.js"></script>
-    <script src="/assets/js/lib/Nightmare/nightmare.js"></script>
-    <script src="/baremux/index.js"></script>
-    <script src="/@/uv.bundle.js"></script>
-    <script src="/@/uv.config.js"></script>
-    <script src="/$/scramjet.config.js"></script>
-    <script src="/$/scramjet.controller.js"></script>
-    <!--Other Files-->
-    <script src="/assets/js/browser/nightmarePlugins.js"></script>
     <!--Main Scripts-->
-    <script type="module" src="/assets/js/internal/newtab.js"></script>
+    <script type="module" src="/src/js/internal/newtab.ts"></script>
   </body>
 </html>
