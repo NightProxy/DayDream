@@ -1,0 +1,10 @@
+{
+  "id": "example-theme-123",
+  "name": "Example Theme",
+  "type": "theme",
+  "version": "1.0.0",
+  "description": "A simple example theme.",
+  "author": "Your Name",
+  "colors": {},
+  "icon": "icon.png"
+}

@@ -13,17 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   profilesAPI.init();
 
-
-  var defWisp =
-    (location.protocol === "https:" ? "wss" : "ws") +
-    "://" +
-    location.host +
-    "/wisp/";
-  var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
-  var searchVAR =
-    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
-  var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
-  const proxy = new Proxy(searchVAR, transVAR, wispUrl);
+  const proxy = new Proxy();
 
   const proxySetting = (await settingsAPI.getItem("proxy")) ?? "uv";
   let swConfigSettings: Record<string, any> = {};
@@ -61,10 +51,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       type: "multi",
       file: null,
       config: null,
-      func: null
+      func: null,
     },
   };
-  
+
   // @ts-expect-error
   const globalFunctions = new Global();
 
@@ -79,20 +69,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (
-    typeof swConfig[proxySetting as keyof typeof swConfig].func === "function" &&
+    typeof swConfig[proxySetting as keyof typeof swConfig].func ===
+      "function" &&
     proxySetting === "sj"
   ) {
     await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
   }
-  proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]).then(async () => {
-    await proxy.setTransports().then(async () => { 
-      const transport = await proxy.connection.getTransport();
-      if (transport == null) {
-        proxy.setTransports();
-      }
+  proxy
+    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
+    .then(async () => {
+      await proxy.setTransports().then(async () => {
+        const transport = await proxy.connection.getTransport();
+        if (transport == null) {
+          proxy.setTransports();
+        }
+      });
     });
-  });
-  const uvSearchBar = document.querySelector("#newTabSearch") as HTMLInputElement;
+  const uvSearchBar = document.querySelector(
+    "#newTabSearch",
+  ) as HTMLInputElement;
 
   const engineIconElem = document.querySelector(
     ".searchEngineIcon",
@@ -100,40 +95,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   engineIconElem!.style.display = "block";
   switch (await settingsAPI.getItem("search")) {
     case "https://duckduckgo.com/?q=%s":
-      engineIconElem!.src =
-        "/res/b/ddg.webp";
-      engineIconElem!.style.transform =
-        "scale(1.35)";
+      engineIconElem!.src = "/res/b/ddg.webp";
+      engineIconElem!.style.transform = "scale(1.35)";
       break;
     case "https://bing.com/search?q=%s":
-      engineIconElem!.src =
-        "/res/b/bing.webp";
-      engineIconElem!.style.transform =
-        "scale(1.65)";
+      engineIconElem!.src = "/res/b/bing.webp";
+      engineIconElem!.style.transform = "scale(1.65)";
       break;
     case "https://www.google.com/search?q=%s":
-      engineIconElem!.src =
-        "/res/b/google.webp";
-      engineIconElem!.style.transform =
-        "scale(1.2)";
+      engineIconElem!.src = "/res/b/google.webp";
+      engineIconElem!.style.transform = "scale(1.2)";
       break;
     case "https://search.yahoo.com/search?p=%s":
-      engineIconElem!.src =
-        "/res/b/yahoo.webp";
-      engineIconElem!.style.transform =
-        "scale(1.5)";
+      engineIconElem!.src = "/res/b/yahoo.webp";
+      engineIconElem!.style.transform = "scale(1.5)";
       break;
     default:
       getFavicon(await settingsAPI.getItem("search")).then((dataUrl) => {
         if (dataUrl == null || dataUrl.endsWith("null")) {
-          engineIconElem!.src =
-            "/res/b/ddg.webp";
-          engineIconElem!.style.transform =
-            "scale(1.35)";
+          engineIconElem!.src = "/res/b/ddg.webp";
+          engineIconElem!.style.transform = "scale(1.35)";
         } else {
           engineIconElem!.src = dataUrl;
-          engineIconElem!.style.transform =
-            "scale(1.2)";
+          engineIconElem!.style.transform = "scale(1.2)";
         }
       });
   }
@@ -151,7 +135,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         if (proxySetting === "auto") {
           const result = (await proxy.automatic(
-            proxy.search(searchValue), swConfig
+            proxy.search(searchValue),
+            swConfig,
           )) as Record<string, any>;
           swConfigSettings = result;
         } else {

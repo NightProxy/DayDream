@@ -26,16 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   profilesAPI.init();
 
-  var defWisp =
-    (location.protocol === "https:" ? "wss" : "ws") +
-    "://" +
-    location.host +
-    "/wisp/";
-  var wispUrl = (await settingsAPI.getItem("wisp")) || defWisp;
-  var searchVAR =
-    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
-  var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
-  const proxy = new Proxy(searchVAR, transVAR, wispUrl);
+  const proxy = new Proxy();
 
   const proxySetting = (await settingsAPI.getItem("proxy")) ?? "uv";
   let swConfigSettings: Record<string, any> = {};
@@ -71,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       type: "multi",
       file: null,
       config: null,
-      func: null
+      func: null,
     },
   };
   const windowing = new Windowing();
@@ -82,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const items = new Items();
   const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
-  const tabs = new Tabs(render);
+  const tabs = new Tabs(render, swConfig, proxySetting);
 
   tabs.createTab("daydream://newtab");
 
@@ -123,7 +114,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         if (proxySetting === "auto") {
           const result = (await proxy.automatic(
-            proxy.search(searchValue), swConfig
+            proxy.search(searchValue),
+            swConfig,
           )) as Record<string, any>;
           swConfigSettings = result;
           window.SWSettings = swConfigSettings;

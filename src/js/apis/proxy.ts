@@ -1,5 +1,6 @@
 import * as BareMux from "@mercuryworkshop/bare-mux";
 import { Logger } from "@apis/logging";
+import { SettingsAPI } from "@apis/settings";
 
 interface ProxyInterface {
   connection: BareMux.BareMuxConnection;
@@ -7,6 +8,7 @@ interface ProxyInterface {
   transportVar: string;
   wispUrl: string;
   logging: Logger;
+  settings: SettingsAPI;
   setTransports(): Promise<void>;
   search(input: string): string;
   registerSW(swConfig: any): Promise<void>;
@@ -38,30 +40,23 @@ class Proxy implements ProxyInterface {
   searchVar!: string;
   transportVar!: string;
   wispUrl!: string;
+  settings!: SettingsAPI;
   logging!: Logger;
 
-  constructor(
-    searchVar: string,
-    transportVar: string,
-    wispUrl: string,
-  ) {
-    if (!searchVar || !transportVar || !wispUrl) {
-      console.error("Proxy, search, and transport variables are required.");
-      return;
-    }
-
+  constructor() {
     this.connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
-    console.log("Proxy variables:", {
-      searchVar,
-      transportVar,
-      wispUrl,
-    });
-
-    this.searchVar = searchVar;
-    this.transportVar = transportVar;
-    this.wispUrl = wispUrl;
+    this.settings = new SettingsAPI();
+    (async () => {
+    this.searchVar = (await this.settings.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
+    this.transportVar = (await this.settings.getItem("transports")) || "libcurl";
+    this.wispUrl = (await this.settings.getItem("wisp")) ||
+    (location.protocol === "https:" ? "wss" : "ws") +
+      "://" +
+      location.host +
+      "/wisp/";
     this.logging = new Logger();
+    })();
   }
 
   async setTransports() {

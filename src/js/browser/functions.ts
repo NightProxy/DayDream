@@ -183,9 +183,7 @@ class Functions implements FuncInterface {
         this.erudaScriptInjecting = false;
         resolve("Injected!");
       };
-      script.onerror = (
-        event: Event | string,
-      ) => {
+      script.onerror = (event: Event | string) => {
         this.erudaScriptInjecting = false;
         reject(new Error(`Failed to load Eruda script: ${event}`));
       };

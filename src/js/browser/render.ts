@@ -2,7 +2,7 @@ import { Nightmare } from "@libs/Nightmare/nightmare";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
-import { createIcons, icons } from 'lucide';
+import { createIcons, icons } from "lucide";
 
 interface renderInterface {
   container: HTMLDivElement;
@@ -305,7 +305,7 @@ class Render implements renderInterface {
     ]);
     this.container.appendChild(HTMLcode);
     this.container.appendChild(navbar);
-    createIcons({ icons });;
+    createIcons({ icons });
     const sidebar = document.querySelector(".navbar");
     const browser = document.querySelector(".surface");
     const tabs = document.querySelector(".tabs");

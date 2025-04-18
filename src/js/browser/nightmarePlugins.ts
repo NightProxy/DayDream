@@ -1,5 +1,5 @@
 import { Nightmare } from "@libs/Nightmare/nightmare";
-import { createIcons, icons } from 'lucide';
+import { createIcons, icons } from "lucide";
 
 interface NPInterface {
   ui: Nightmare;
@@ -53,7 +53,7 @@ class SideMenu implements SideMenuInterface {
     element.addEventListener("click", (event) => {
       event.stopPropagation();
       this.isOpen ? this.closeMenu() : this.openMenu(element, content);
-      createIcons({icons});
+      createIcons({ icons });
     });
 
     window.addEventListener("click", () => this.closeMenu());
@@ -135,7 +135,7 @@ class SidePanel implements SidePanelInterface {
     element.addEventListener("click", (event) => {
       event.stopPropagation();
       this.isOpen ? this.closeMenu() : this.openMenu(element, content);
-      createIcons({ icons });;
+      createIcons({ icons });
     });
 
     window.addEventListener("click", () => this.closeMenu());

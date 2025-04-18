@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "node index.js"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",

@@ -8,7 +8,6 @@ const eventsAPI = new EventSystem();
 // @ts-expect-error
 const globalFunctions = new Global();
 
-
 const initializeDropdown = async (
   buttonId: string,
   optionsId: string,
@@ -51,9 +50,12 @@ const initializeDropdown = async (
     const DO = document.querySelectorAll(".dropdown-options");
     DO.forEach((dropdown) => {
       if (dropdown !== dropdownOptions) {
-        dropdown.setAttribute("style", "opacity:0;filter:blur(5px);")
+        dropdown.setAttribute("style", "opacity:0;filter:blur(5px);");
         setTimeout(() => {
-          dropdown.setAttribute("style", "display:none;opacity:0;filter:blur(5px);")
+          dropdown.setAttribute(
+            "style",
+            "display:none;opacity:0;filter:blur(5px);",
+          );
         }, 200);
       }
     });
@@ -106,15 +108,22 @@ document.addEventListener("click", (event: any) => {
       btn.classList.remove("active");
       const dropdownOptions = btn.nextElementSibling;
       if (dropdownOptions) {
-        dropdownOptions.setAttribute("style", "opacity:0;filter:blur(5px);")
+        dropdownOptions.setAttribute("style", "opacity:0;filter:blur(5px);");
         setTimeout(() => {
-          dropdownOptions.setAttribute("style", "display:none;opacity:0;filter:blur(5px);")
+          dropdownOptions.setAttribute(
+            "style",
+            "display:none;opacity:0;filter:blur(5px);",
+          );
         }, 200);
       }
     });
   }
 });
-const initSwitch = async (item: HTMLInputElement, setting: string, functionToCall: Function | null) => {
+const initSwitch = async (
+  item: HTMLInputElement,
+  setting: string,
+  functionToCall: Function | null,
+) => {
   const switchElement = item;
   if (!switchElement) {
     console.error(`Switch element at ${item} not found.`);
@@ -141,7 +150,10 @@ uploadBGInput!.addEventListener("change", function (event: any) {
   var reader = new FileReader();
   reader.onload = async function (e) {
     var backgroundImage = e.target!.result;
-    await settingsAPI.setItem("theme:background-image", backgroundImage as string);
+    await settingsAPI.setItem(
+      "theme:background-image",
+      backgroundImage as string,
+    );
     eventsAPI.emit("theme:background-change", null);
   };
   reader.readAsDataURL(file);
@@ -237,7 +249,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   // Load and handle visibility of wisp and bare settings
-  const wispSetting = document.getElementById("wispSetting") as HTMLInputElement;
+  const wispSetting = document.getElementById(
+    "wispSetting",
+  ) as HTMLInputElement;
   if (wispSetting) {
     wispSetting.value =
       (await settingsAPI.getItem("wisp")) ||
@@ -265,8 +279,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   saveInputValue("wispSetting", "wisp");
 });
 
-function saveInputValueAsButton(button: HTMLButtonElement, input: HTMLInputElement, key: string) {
-
+function saveInputValueAsButton(
+  button: HTMLButtonElement,
+  input: HTMLInputElement,
+  key: string,
+) {
   button.addEventListener("click", async () => {
     await settingsAPI.setItem(key, input.value);
     location.reload();
@@ -274,7 +291,7 @@ function saveInputValueAsButton(button: HTMLButtonElement, input: HTMLInputEleme
 }
 
 saveInputValueAsButton(
-  document.getElementById("saveWispSetting")as HTMLButtonElement,
+  document.getElementById("saveWispSetting") as HTMLButtonElement,
   document.getElementById("wispSetting") as HTMLInputElement,
   "wisp",
 );

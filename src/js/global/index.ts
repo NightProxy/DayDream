@@ -21,7 +21,7 @@ class Global implements GlobalInterface {
   }
   async init() {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/internal/icons.sw.js");
+      navigator.serviceWorker.register("/core/icons.sw.js");
     }
     this.theming.init();
     if (

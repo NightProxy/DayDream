@@ -24,13 +24,18 @@ class Themeing implements ThemeingInterface {
       "--main-color",
       (await this.settings.getItem("themeColor")) || "#aa00ff",
     );
-    const fadedMainColor =
-      this.fadeColor(await this.settings.getItem("themeColor"), 0.26) ||
-      "rgba(170, 1, 255, 0.26)";
-    document.documentElement.style.setProperty(
-      "--faded-main-color",
-      fadedMainColor || "rgba(170, 1, 255, 0.26)",
-    );
+    if (
+      (await this.settings.getItem("themeColor")) != null ||
+      (await this.settings.getItem("themeColor")) != undefined
+    ) {
+      const fadedMainColor =
+        this.fadeColor(await this.settings.getItem("themeColor"), 0.26) ||
+        "rgba(170, 1, 255, 0.26)";
+      document.documentElement.style.setProperty(
+        "--faded-main-color",
+        fadedMainColor || "rgba(170, 1, 255, 0.26)",
+      );
+    }
 
     document.addEventListener("theme:color-change", async (event: any) => {
       await this.settings.setItem("themeColor", event.detail.color);

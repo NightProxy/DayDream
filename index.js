@@ -49,7 +49,7 @@ try {
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
   app.use(compression());
-  app.use(express.static(path.join(process.cwd(), "public/static/")));
+  app.use(express.static(path.join(process.cwd(), "dist/")));
   app.use("/epoxy/", express.static(epoxyPath));
   app.use("/@/", express.static(uvPath));
   app.use("/libcurl/", express.static(libcurlPath));

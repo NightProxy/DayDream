@@ -30,9 +30,8 @@ class Utils implements UtilsInterface {
         }
 
         let favicon: HTMLLinkElement | null = null;
-        const nodeList = iframe.contentDocument.querySelectorAll(
-          "link[rel~='icon']",
-        );
+        const nodeList =
+          iframe.contentDocument.querySelectorAll("link[rel~='icon']");
 
         for (let i = 0; i < nodeList.length; i++) {
           const relAttr = nodeList[i].getAttribute("rel");
@@ -95,7 +94,8 @@ class Utils implements UtilsInterface {
         "iframe.active",
       ) as HTMLIFrameElement | null;
       if (iframe && iframe.contentWindow) {
-        (iframe.contentWindow as any).eval(js);      }
+        (iframe.contentWindow as any).eval(js);
+      }
     } else {
       return `/internal/${url}`;
     }
@@ -135,33 +135,39 @@ class Utils implements UtilsInterface {
   closest(value: number, array: number[]): number {
     let closest = Infinity;
     let closestIndex = -1;
-  
+
     array.forEach((v, i) => {
       if (Math.abs(value - v) < closest) {
         closest = Math.abs(value - v);
         closestIndex = i;
       }
     });
-  
+
     return closestIndex;
   }
 
-  throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
+  throttle<T extends (...args: any[]) => any>(
+    func: T,
+    limit: number,
+  ): (...args: Parameters<T>) => void {
     let lastFunc: ReturnType<typeof setTimeout> | null = null;
     let lastRan: number | null = null;
-  
+
     return function (...args: Parameters<T>) {
       if (!lastRan) {
         func(...args);
         lastRan = Date.now();
       } else {
         clearTimeout(lastFunc!);
-        lastFunc = setTimeout(() => {
-          if (Date.now() - lastRan! >= limit) {
-            func(...args);
-            lastRan = Date.now();
-          }
-        }, limit - (Date.now() - lastRan!));
+        lastFunc = setTimeout(
+          () => {
+            if (Date.now() - lastRan! >= limit) {
+              func(...args);
+              lastRan = Date.now();
+            }
+          },
+          limit - (Date.now() - lastRan!),
+        );
       }
     };
   }

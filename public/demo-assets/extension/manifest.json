@@ -1,0 +1,15 @@
+{
+  "id": "example-extension-123",
+  "name": "Example Extension",
+  "version": "1.0.0",
+  "type": "extension",
+  "description": "A simple example extension.",
+  "author": "Amplify",
+  "permissions": ["window"],
+  "extType": "plugin",
+  "url": "discord.com",
+  "icon": "./icon.png",
+  "scripts": {
+    "content": "index.js"
+  }
+}

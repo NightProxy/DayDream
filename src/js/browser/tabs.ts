@@ -5,6 +5,7 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import Sortable from "sortablejs";
+import { Proxy } from "@apis/proxy";
 
 interface TabsInterface {
   render: any;
@@ -21,6 +22,9 @@ interface TabsInterface {
   el: HTMLDivElement;
   instanceId: number;
   styleEl: HTMLStyleElement;
+  proxy : Proxy;
+  swConfig: any;
+  proxySetting: string;
 }
 
 class Tabs implements TabsInterface {
@@ -38,7 +42,10 @@ class Tabs implements TabsInterface {
   el: HTMLDivElement;
   instanceId: number;
   styleEl: HTMLStyleElement;
-  constructor(render: any) {
+  proxy: Proxy;
+  swConfig: any;
+  proxySetting: string;
+  constructor(render: any, swConfig: any, proxySetting: string) {
     this.render = render;
     this.ui = new UI();
     this.utils = new Utils();
@@ -51,6 +58,9 @@ class Tabs implements TabsInterface {
     this.groups = [];
     this.draggabillies = [];
     this.el = render.container;
+    this.proxy = new Proxy();
+    this.swConfig = swConfig;
+    this.proxySetting = proxySetting;
 
     this.instanceId = 0;
     this.instanceId += 1;
@@ -196,6 +206,7 @@ class Tabs implements TabsInterface {
       src: "/core/client.js",
     });
     iframe.id = `iframe-${this.tabCount}`;
+    iframe.title = `Iframe #${this.tabCount}`;
 
     const tab = this.ui.createElement(
       "div",
@@ -239,7 +250,7 @@ class Tabs implements TabsInterface {
       iframe.contentDocument!.body.appendChild(script);
       // this.eventsAPI.emit("tab:loaded", { url: iframe.src, iframe: iframe.id });
       updateTabTitle();
-      this.utils.setFavicon(tab, iframe);
+      this.setFavicon(tab, iframe);
       observer.observe(iframe.contentDocument!.head, {
         childList: true,
         subtree: true,
@@ -393,6 +404,54 @@ class Tabs implements TabsInterface {
       });
     this.logger.createLog(`Closed all tabs`);
   }
+
+  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement): void {
+    iframe.addEventListener("load", async () => {
+      try {
+        if (!iframe.contentDocument) {
+          console.error(
+            "Unable to access iframe content due to cross-origin restrictions.",
+          );
+          return;
+        }
+
+        let favicon: HTMLLinkElement | null = null;
+        const nodeList =
+          iframe.contentDocument.querySelectorAll("link[rel~='icon']");
+
+        for (let i = 0; i < nodeList.length; i++) {
+          const relAttr = nodeList[i].getAttribute("rel");
+          if (relAttr && relAttr.includes("icon")) {
+            favicon = nodeList[i] as HTMLLinkElement;
+            break;
+          }
+        }
+
+        if (favicon) {
+          let faviconUrl = favicon.href || favicon.getAttribute("href");
+          const faviconImage = tabElement.querySelector(".tab-favicon");
+
+          faviconUrl = await this.proxy.getFavicon(faviconUrl as string, this.swConfig, this.proxySetting);
+
+          if (faviconUrl && faviconImage) {
+            faviconImage.setAttribute(
+              "style",
+              `background-image: url('${faviconUrl}');`,
+            );
+          } else {
+            console.error("Favicon URL or favicon element is missing.");
+          }
+        } else {
+          console.error(
+            "No favicon link element found within the iframe document.",
+          );
+        }
+      } catch (error) {
+        console.error("An error occurred while setting the favicon:", error);
+      }
+    });
+  }
+
   /*
   createGroup(name) {
     const existingGroup = this.groups.find(

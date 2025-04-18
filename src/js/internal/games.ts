@@ -11,14 +11,7 @@ import { Proxy } from "@apis/proxy";
   // @ts-expect-error
   const global = new Global();
 
-  var wispUrl = (await settingsAPI.getItem("wisp")) || ((location.protocol === "https:" ? "wss" : "ws") +
-  "://" +
-  location.host +
-  "/wisp/");
-  var searchVAR =
-    (await settingsAPI.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
-  var transVAR = (await settingsAPI.getItem("transports")) || "libcurl";
-  const proxy = new Proxy(searchVAR, transVAR, wispUrl);
+  const proxy = new Proxy();
 
   const proxySetting = (await settingsAPI.getItem("proxy")) ?? "uv";
   let swConfigSettings: Record<string, any> = {};
@@ -56,24 +49,27 @@ import { Proxy } from "@apis/proxy";
       type: "multi",
       file: null,
       config: null,
-      func: null
+      func: null,
     },
   };
 
   if (
-    typeof swConfig[proxySetting as keyof typeof swConfig].func === "function" &&
+    typeof swConfig[proxySetting as keyof typeof swConfig].func ===
+      "function" &&
     proxySetting === "sj"
   ) {
     await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
   }
-  proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]).then(async () => {
-    await proxy.setTransports().then(async () => { 
-      const transport = await proxy.connection.getTransport();
-      if (transport == null) {
-        proxy.setTransports();
-      }
+  proxy
+    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
+    .then(async () => {
+      await proxy.setTransports().then(async () => {
+        const transport = await proxy.connection.getTransport();
+        if (transport == null) {
+          proxy.setTransports();
+        }
+      });
     });
-  });
 
   // Simplified Rendering System based on the one I wrote for Light. (Im Lazy)
   let appsData: any[];
@@ -130,7 +126,10 @@ import { Proxy } from "@apis/proxy";
 
   async function launch(link: string) {
     if (proxySetting === "auto") {
-      const result = await proxy.automatic(proxy.search(link), swConfig) as Record<string, any>;
+      const result = (await proxy.automatic(
+        proxy.search(link),
+        swConfig,
+      )) as Record<string, any>;
       swConfigSettings = result;
     } else {
       swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];

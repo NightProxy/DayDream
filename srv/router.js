@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { URL } from "url";
 import contentType from "content-type";
 
@@ -8,7 +8,7 @@ const router = express.Router();
 const __dirname = process.cwd();
 
 router.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/pages/index.html"));
+  res.sendFile(path.join(__dirname, "dist/index.html"));
 });
 
 router.get("/results/:query", async (req, res) => {
@@ -28,7 +28,7 @@ router.get("/results/:query", async (req, res) => {
 
 router.use(
   "/internal/",
-  express.static(path.join(__dirname, "public/pages/internal/")),
+  express.static(path.join(__dirname, "dist/internal/")),
 );
 
 router.use("/internal/icons/:url(*)", async (req, res) => {
@@ -71,7 +71,7 @@ router.use("/internal/icons/:url(*)", async (req, res) => {
 
 router.use((req, res) => {
   res.status(404);
-  res.sendFile(path.join(__dirname, "public/pages/internal/error/index.html"));
+  res.sendFile(path.join(__dirname, "dist/internal/error/index.html"));
 });
 
 export default router;
