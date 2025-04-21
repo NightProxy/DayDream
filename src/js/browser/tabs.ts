@@ -22,7 +22,7 @@ interface TabsInterface {
   el: HTMLDivElement;
   instanceId: number;
   styleEl: HTMLStyleElement;
-  proxy : Proxy;
+  proxy: Proxy;
   swConfig: any;
   proxySetting: string;
 }
@@ -72,7 +72,7 @@ class Tabs implements TabsInterface {
       this.layoutTabs();
     });
 
-    document.addEventListener("tabs:changeLayout", (_) => {
+    this.eventsAPI.addEventListener("tabs:changeLayout", (_) => {
       console.log("changing layout");
       setTimeout(() => {
         this.layoutTabs();
@@ -431,7 +431,11 @@ class Tabs implements TabsInterface {
           let faviconUrl = favicon.href || favicon.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
 
-          faviconUrl = await this.proxy.getFavicon(faviconUrl as string, this.swConfig, this.proxySetting);
+          faviconUrl = await this.proxy.getFavicon(
+            faviconUrl as string,
+            this.swConfig,
+            this.proxySetting,
+          );
 
           if (faviconUrl && faviconImage) {
             faviconImage.setAttribute(

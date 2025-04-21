@@ -1,6 +1,7 @@
 class EventSystem {
   eventListeners: any;
   channel: any;
+
   constructor() {
     this.eventListeners = {};
     this.channel = new BroadcastChannel("global-events");
@@ -22,10 +23,6 @@ class EventSystem {
     }
 
     this.channel.postMessage({ eventName, data });
-
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ eventName, data });
-    }
   }
 
   handleMessage(event: any) {
@@ -53,7 +50,6 @@ class EventSystem {
     document.addEventListener(eventName, callback);
   }
 
-  // event listener type is just basicall
   removeEventListener(
     eventName: string,
     callback: EventListenerOrEventListenerObject,

@@ -48,14 +48,18 @@ class Proxy implements ProxyInterface {
 
     this.settings = new SettingsAPI();
     (async () => {
-    this.searchVar = (await this.settings.getItem("search")) || "https://www.duckduckgo.com/?q=%s";
-    this.transportVar = (await this.settings.getItem("transports")) || "libcurl";
-    this.wispUrl = (await this.settings.getItem("wisp")) ||
-    (location.protocol === "https:" ? "wss" : "ws") +
-      "://" +
-      location.host +
-      "/wisp/";
-    this.logging = new Logger();
+      this.searchVar =
+        (await this.settings.getItem("search")) ||
+        "https://www.duckduckgo.com/?q=%s";
+      this.transportVar =
+        (await this.settings.getItem("transports")) || "libcurl";
+      this.wispUrl =
+        (await this.settings.getItem("wisp")) ||
+        (location.protocol === "https:" ? "wss" : "ws") +
+          "://" +
+          location.host +
+          "/wisp/";
+      this.logging = new Logger();
     })();
   }
 

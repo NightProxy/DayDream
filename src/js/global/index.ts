@@ -1,9 +1,11 @@
 import { SettingsAPI } from "@apis/settings";
 import { Themeing } from "@js/global/theming";
 import { Windowing } from "@browser/windowing";
+import { EventSystem } from "@apis/events";
 
 interface GlobalInterface {
   settings: SettingsAPI;
+  events: EventSystem;
   theming: Themeing;
   windowing: Windowing;
   init: () => Promise<void>;
@@ -11,17 +13,27 @@ interface GlobalInterface {
 
 class Global implements GlobalInterface {
   settings: SettingsAPI;
+  events: EventSystem;
   theming: Themeing;
   windowing: Windowing;
   constructor() {
     this.settings = new SettingsAPI();
+    this.events = new EventSystem();
     this.theming = new Themeing();
     this.windowing = new Windowing();
     this.init();
   }
   async init() {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/core/icons.sw.js");
+      await navigator.serviceWorker.register("/core.sw.js", { scope: "/" });
+      this.events.addEventListener("ddx.cache:reset", () => {
+        navigator.serviceWorker.getRegistration("/").then((reg) => {
+          reg?.active?.postMessage("reset");
+        });
+      });
+      this.events.addEventListener("ddx.cache:offline", () => {
+        console.log("We are offline")
+      })
     }
     this.theming.init();
     if (

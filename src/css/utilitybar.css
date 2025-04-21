@@ -20,7 +20,7 @@
   background-color: var(--input-background-color);
   color: var(--text-color);
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   width: var(--searchbar-width);
   height: 20px;
   border: none;
@@ -147,6 +147,11 @@
   position: absolute !important;
   color: var(--hover-text-color);
   font-size: 16px !important;
+}
+
+.utilityIcon#bookmark {
+  margin-right: 8px;
+  padding: 4px;
 }
 
 .utility .coming-soon::after {

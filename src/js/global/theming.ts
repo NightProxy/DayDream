@@ -1,7 +1,9 @@
 import { SettingsAPI } from "@apis/settings";
+import { EventSystem } from "@apis/events";
 
 interface ThemeingInterface {
   settings: SettingsAPI;
+  events: EventSystem;
   init: () => Promise<void>;
   applyThemeFromJsonFile: () => Promise<void>;
   setBackgroundImage: () => Promise<void>;
@@ -15,8 +17,10 @@ interface ThemeingInterface {
 
 class Themeing implements ThemeingInterface {
   settings: SettingsAPI;
+  events: EventSystem;
   constructor() {
     this.settings = new SettingsAPI();
+    this.events = new EventSystem();
   }
 
   async init() {
@@ -37,7 +41,7 @@ class Themeing implements ThemeingInterface {
       );
     }
 
-    document.addEventListener("theme:color-change", async (event: any) => {
+    this.events.addEventListener("theme:color-change", async (event: any) => {
       await this.settings.setItem("themeColor", event.detail.color);
       document.documentElement.style.setProperty(
         "--main-color",
@@ -55,13 +59,13 @@ class Themeing implements ThemeingInterface {
 
     this.applyThemeFromJsonFile();
 
-    document.addEventListener("theme:template-change", async () => {
+    this.events.addEventListener("theme:template-change", async () => {
       this.applyThemeFromJsonFile();
     });
 
     this.setBackgroundImage();
 
-    document.addEventListener("theme:background-change", async () => {
+    this.events.addEventListener("theme:background-change", async () => {
       this.setBackgroundImage();
     });
   }

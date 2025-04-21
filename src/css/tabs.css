@@ -1,4 +1,29 @@
+.top-bar {
+  display: flex;
+  align-items: center;
+  width: auto;
+}
+
+.top-bar .profiles-box {
+  background-color: var(--background-color);
+  border-radius: 8px;
+  border: 1px solid var(--main-color);
+  width: 32px;
+  height: 32px;
+  margin: 0px 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.top-bar .profiles-box .profile-picture {
+  height: 100%;
+  width: auto;
+}
+
 .tabs {
+  width: calc(100% - 36px);
   box-sizing: border-box;
   position: relative;
   font-size: 12px;

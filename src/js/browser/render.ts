@@ -30,50 +30,67 @@ class Render implements renderInterface {
 
   async init() {
     const HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
-      this.nightmare.createElement(
-        "div",
-        { class: "tabs", style: "--tab-content-margin: 9px" },
-        [
-          this.nightmare.createElement("div", { class: "bottom-buttons" }, [
+      this.nightmare.createElement("div", { class: "top-bar" }, [
+        this.nightmare.createElement(
+          "div",
+          { id: "profilesButton", class: "profiles-box" },
+          [
+            this.nightmare.createElement(
+              "img",
+              { class: "profile-picture", src: "/res/default-profile.png" },
+              [],
+            ),
+          ],
+        ),
+        this.nightmare.createElement(
+          "div",
+          { class: "tabs", style: "--tab-content-margin: 9px" },
+          [
+            this.nightmare.createElement("div", { class: "bottom-buttons" }, [
+              this.nightmare.createElement(
+                "div",
+                { class: "bottom-button", id: "settings" },
+                [
+                  this.nightmare.createElement(
+                    "span",
+                    { class: "material-symbols-outlined" },
+                    ["construction"],
+                  ),
+                ],
+              ),
+              this.nightmare.createElement(
+                "div",
+                { class: "bottom-button", id: "closeAllTabs" },
+                [
+                  this.nightmare.createElement(
+                    "span",
+                    { class: "material-symbols-outlined" },
+                    ["tab_close"],
+                  ),
+                ],
+              ),
+            ]),
+            this.nightmare.createElement("div", {
+              class: "tabs-content",
+              id: "tab-groups",
+            }),
             this.nightmare.createElement(
               "div",
-              { class: "bottom-button", id: "settings" },
+              { class: "browser-button", id: "create-tab" },
               [
                 this.nightmare.createElement(
-                  "span",
-                  { class: "material-symbols-outlined" },
-                  ["construction"],
+                  "i",
+                  { "data-lucide": "plus" },
+                  [],
                 ),
+                this.nightmare.createElement("span", { class: "title" }, [
+                  "New Tab",
+                ]),
               ],
             ),
-            this.nightmare.createElement(
-              "div",
-              { class: "bottom-button", id: "closeAllTabs" },
-              [
-                this.nightmare.createElement(
-                  "span",
-                  { class: "material-symbols-outlined" },
-                  ["tab_close"],
-                ),
-              ],
-            ),
-          ]),
-          this.nightmare.createElement("div", {
-            class: "tabs-content",
-            id: "tab-groups",
-          }),
-          this.nightmare.createElement(
-            "div",
-            { class: "browser-button", id: "create-tab" },
-            [
-              this.nightmare.createElement("i", { "data-lucide": "plus" }, []),
-              this.nightmare.createElement("span", { class: "title" }, [
-                "New Tab",
-              ]),
-            ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ]),
       this.nightmare.createElement("div", { class: "under-tabs" }, [
         this.nightmare.createElement("div", { class: "tabs-bottom-bar" }),
         this.nightmare.createElement("ul", { class: "utility" }, [
@@ -157,22 +174,20 @@ class Render implements renderInterface {
                 autocomplete: "off",
               }),
               this.nightmare.createElement("div", { class: "webSecurityIcon" }),
+              this.nightmare.createElement(
+                "div",
+                { class: "utilityIcon", id: "bookmark" },
+                [
+                  this.nightmare.createElement(
+                    "i",
+                    { "data-lucide": "star", class: "bookmarkButton" },
+                    [],
+                  ),
+                ],
+              ),
             ],
           ),
-          this.nightmare.createElement("li", {}, [
-            this.nightmare.createElement(
-              "div",
-              { class: "utilityIcon", id: "bookmark" },
-              [
-                this.nightmare.createElement(
-                  "i",
-                  { "data-lucide": "bookmark", class: "bookmarkButton" },
-                  [],
-                ),
-              ],
-            ),
-          ]),
-          this.nightmare.createElement("li", {}, [
+          /*this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
               {
@@ -200,7 +215,7 @@ class Render implements renderInterface {
                 ),
               ],
             ),
-          ]),
+          ]),*/
           this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
@@ -361,7 +376,7 @@ class Render implements renderInterface {
     }
 
     this.logger.createLog("Rendered Browser");
-    document.addEventListener("UI:changeLayout", async () => {
+    this.events.addEventListener("UI:changeLayout", async () => {
       const sidebar = document.querySelector(".navbar");
       const browser = document.querySelector(".surface");
       const tabs = document.querySelector(".tabs");
@@ -391,7 +406,7 @@ class Render implements renderInterface {
       this.events.emit("tabs:changeLayout", null);
       this.logger.createLog("Changed Tab Layout");
     });
-    document.addEventListener("UI:changeStyle", async () => {
+    this.events.addEventListener("UI:changeStyle", async () => {
       const sidebar = document.querySelector(".navbar");
       const browser = document.querySelector(".surface");
       const tabs = document.querySelector(".tabs");

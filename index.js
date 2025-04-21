@@ -51,6 +51,29 @@ try {
   app.use(compression());
   app.use(express.static(path.join(process.cwd(), "dist/")));
   app.use("/epoxy/", express.static(epoxyPath));
+  app.use("/@/:fileName", (req, res, next) => {
+    const filenameMapping = {
+      "bundle.js": "uv.bundle.js",
+      "handler.js": "uv.handler.js",
+      "client.js": "uv.client.js",
+      "config.js": "uv.config.js",
+      "sww.js": "uv.sw.js",
+    };
+    const requestedFile = req.params.fileName;
+    const mappedFileName = filenameMapping[requestedFile];
+
+    if (mappedFileName) {
+      const filePath = path.join(uvPath, mappedFileName);
+
+      if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+      } else {
+        return res.status(404).send("File not found.");
+      }
+    } else {
+      next();
+    }
+  });
   app.use("/@/", express.static(uvPath));
   app.use("/libcurl/", express.static(libcurlPath));
   app.use("/baremux/", express.static(baremuxPath)); // proxy stuff
