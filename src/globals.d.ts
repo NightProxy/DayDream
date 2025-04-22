@@ -1,5 +1,3 @@
-import { IndentIncrease } from "lucide";
-
 declare global {
   interface Window {
     __uv$config: UVConfig;
@@ -11,6 +9,7 @@ declare global {
     eventsAPI: EventSystem;
     extensions: ExtensionsAPI;
     proxy: Proxy;
+    protocols: Protocols;
     logging: Logger;
     profiles: ProfilesAPI;
     globals: Global;

@@ -2,6 +2,7 @@ import { Items } from "@browser/items";
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
+import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Windowing } from "@browser/windowing";
@@ -13,6 +14,7 @@ interface FuncInterface {
   ui: UI;
   logger: Logger;
   settings: SettingsAPI;
+  proto: Protocols;
   utils: Utils;
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
@@ -31,6 +33,7 @@ class Functions implements FuncInterface {
   ui: UI;
   logger: Logger;
   settings: SettingsAPI;
+  proto: Protocols;
   utils: Utils;
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
@@ -41,12 +44,13 @@ class Functions implements FuncInterface {
   zoomLevel: number;
   zoomSteps: Array<number>;
   currentStep: number;
-  constructor(tabs: any) {
+  constructor(tabs: any, proto: any) {
     this.items = new Items();
     this.ui = new UI();
     this.tabs = tabs!;
     this.logger = new Logger();
     this.settings = new SettingsAPI();
+    this.proto = proto;
     this.utils = new Utils();
     this.nightmarePlugins = new NightmarePlugins();
     this.windowing = new Windowing();
@@ -618,7 +622,7 @@ class Functions implements FuncInterface {
     const settings = navbar!.querySelector("#settShortcut");
 
     games!.addEventListener("click", () => {
-      this.utils.navigate("daydream://games");
+      this.proto.navigate("daydream://games");
     });
 
     ai!.addEventListener("click", () => {
@@ -637,11 +641,11 @@ class Functions implements FuncInterface {
     });
 
     history!.addEventListener("click", () => {
-      this.utils.navigate("daydream://history");
+      this.proto.navigate("daydream://history");
     });
 
     settings!.addEventListener("click", () => {
-      this.utils.navigate("daydream://settings");
+      this.proto.navigate("daydream://settings");
     });
   }
 }

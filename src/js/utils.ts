@@ -76,62 +76,6 @@ class Utils implements UtilsInterface {
     }
   }
 
-  processUrl(url: string): string | void {
-    let js = "";
-    if (url.startsWith("daydream://")) {
-      const path = url.replace("daydream://", "");
-      return `/internal/${path}`;
-    } else if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("/") ||
-      url.startsWith("data:")
-    ) {
-      return url;
-    } else if (url.startsWith("javascript:")) {
-      js = url.replace("javascript:", "");
-      const iframe = document.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      if (iframe && iframe.contentWindow) {
-        (iframe.contentWindow as any).eval(js);
-      }
-    } else {
-      return `/internal/${url}`;
-    }
-  }
-
-  getInternalURL(url: string): string {
-    if (url.startsWith("/internal/")) {
-      const path = url.replace("/internal/", "");
-      return `daydream://${path}`;
-    } else if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("daydream://") ||
-      url.startsWith("data:") ||
-      url.startsWith("javascript:") ||
-      (url.startsWith("/") && !url.startsWith("/internal/"))
-    ) {
-      return url;
-    } else {
-      return `daydream://${url}`;
-    }
-  }
-
-  navigate(url: string): void {
-    const processedUrl = this.processUrl(url);
-    if (processedUrl) {
-      const iframe = this.items.iframeContainer?.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      if (iframe) {
-        iframe.setAttribute("src", processedUrl);
-        this.logger.createLog(`Navigated to: ${processedUrl}`);
-      }
-    }
-  }
-
   closest(value: number, array: number[]): number {
     let closest = Infinity;
     let closestIndex = -1;

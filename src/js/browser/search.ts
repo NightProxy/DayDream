@@ -1,4 +1,5 @@
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
+import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
@@ -15,6 +16,7 @@ interface GameData {
 }
 
 interface SearchInterface {
+  proto: Protocols;
   utils: Utils;
   ui: UI;
   data: Logger;
@@ -32,6 +34,7 @@ interface SearchInterface {
 }
 
 class Search implements SearchInterface {
+  proto: Protocols;
   utils: Utils;
   ui: UI;
   data: Logger;
@@ -48,7 +51,13 @@ class Search implements SearchInterface {
   currentMaxResults: number;
   searchbar: HTMLInputElement | null = null;
 
-  constructor(proxy: any, swConfig: any, proxySetting: string) {
+  constructor(
+    proxy: any,
+    swConfig: any,
+    proxySetting: string,
+    proto: Protocols
+  ) {
+    this.proto = proto;
     this.utils = new Utils();
     this.ui = new UI();
     this.data = new Logger();
@@ -90,7 +99,7 @@ class Search implements SearchInterface {
     };
 
     Object.values(this.sections).forEach((sectionObj: Section) =>
-      suggestionList.appendChild(sectionObj.section),
+      suggestionList.appendChild(sectionObj.section)
     );
 
     searchbar.addEventListener("input", async (event: Event) => {
@@ -107,10 +116,10 @@ class Search implements SearchInterface {
 
       let cleanedQuery = query.replace(
         /^(daydream:\/\/|daydream:\/|daydream:)/,
-        "",
+        ""
       );
       const response = await fetch(`/results/${cleanedQuery}`).then((res) =>
-        res.json(),
+        res.json()
       );
       const suggestions: string[] = response.map((item: any) => item.phrase);
 
@@ -156,7 +165,7 @@ class Search implements SearchInterface {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text",
+              ".suggestion-text"
             )?.textContent;
           if (selectedSuggestion) {
             searchbar.value = selectedSuggestion;
@@ -167,7 +176,7 @@ class Search implements SearchInterface {
           event.preventDefault();
           const selectedSuggestion =
             suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text",
+              ".suggestion-text"
             )?.textContent;
           if (selectedSuggestion) {
             searchbar.value = selectedSuggestion;
@@ -181,7 +190,7 @@ class Search implements SearchInterface {
       }
 
       const engineIconElem = suggestionList.querySelectorAll(
-        ".searchEngineIcon",
+        ".searchEngineIcon"
       )[0] as HTMLImageElement | null;
       if (engineIconElem) {
         engineIconElem.style.display = "block";
@@ -236,20 +245,20 @@ class Search implements SearchInterface {
     document.body.appendChild(suggestionList);
 
     const activeIframe = document.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement | null;
     if (activeIframe) {
-      activeIframe.addEventListener("load", () => {
-        let check = this.utils.getInternalURL(
-          new URL(activeIframe.src).pathname,
+      activeIframe.addEventListener("load", async () => {
+        let check = await this.proto.getInternalURL(
+          new URL(activeIframe.src).pathname
         );
-        if (check.startsWith("daydream://")) {
+        if (typeof check === "string" && check.startsWith("daydream://")) {
           searchbar.value = check;
         } else {
           let url = new URL(activeIframe.src).pathname;
           url = url.replace(
             window.SWSettings ? window.SWSettings.config.prefix : "",
-            "",
+            ""
           );
           url = (window as any).window.__uv$config.decodeUrl(url);
           url = new URL(url).origin;
@@ -271,7 +280,7 @@ class Search implements SearchInterface {
       this.ui.createElement("div", { class: "search-results" }),
     ]);
     const searchResults = section.querySelector(
-      ".search-results",
+      ".search-results"
     ) as HTMLElement;
     return { section, searchResults };
   }
@@ -355,7 +364,7 @@ class Search implements SearchInterface {
   async populateSections(suggestions: string[], e: string): Promise<void> {
     const searchResultsSuggestions = suggestions.slice(
       0,
-      this.maxExpandedResults,
+      this.maxExpandedResults
     );
     this.populateSearchResults(searchResultsSuggestions);
     await this.populateOtherPages(suggestions);
@@ -380,16 +389,21 @@ class Search implements SearchInterface {
     for (let url of query) {
       url = url.replace(/ /g, "");
       url = "daydream://" + url;
-      const internalUrl = this.utils.processUrl(url) as string;
-      const response = await fetch(internalUrl, { method: "HEAD" }).catch(
-        (error) => {
-          this.data.createLog("Failed to Fetch:" + error);
-        },
-      );
-      if (response && response.ok) {
-        const listItem = this.createSuggestionItem(url);
-        searchResults.appendChild(listItem);
-        hasResults = true;
+      const internalUrl = await this.proto.processUrl(url);
+      if (typeof internalUrl === "string") {
+        const tofetchUrl = new URL(internalUrl);
+        const response = await fetch(tofetchUrl, { method: "HEAD" }).catch(
+          (error) => {
+            this.data.createLog("Failed to Fetch: " + error);
+          }
+        );
+        if (response && response.ok) {
+          const listItem = this.createSuggestionItem(url);
+          searchResults.appendChild(listItem);
+          hasResults = true;
+        }
+      } else {
+        this.data.createLog("processUrl returned nothing for: " + url);
       }
     }
     section.style.display = hasResults ? "block" : "none";
@@ -467,18 +481,18 @@ class Search implements SearchInterface {
     listSuggestion.classList.add("suggestion-text");
     listSuggestion.textContent = suggestion;
     listItem.appendChild(listSuggestion);
-    listItem.addEventListener("click", () => {
+    listItem.addEventListener("click", async () => {
       this.clearSuggestions();
       const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list",
+        "#suggestion-list.suggestion-list"
       ) as HTMLElement | null;
       if (suggestionListElem) {
         suggestionListElem.style.display = "none";
       }
       if (suggestion.startsWith("daydream")) {
-        const link = this.utils.processUrl(suggestion);
+        const link = await this.proto.processUrl(suggestion);
         if (link!.startsWith("/internal/")) {
-          this.utils.navigate(suggestion);
+          this.proto.navigate(suggestion);
         }
       } else {
         this.proxy.redirect(this.swConfig, this.proxySetting, suggestion);
@@ -497,19 +511,12 @@ class Search implements SearchInterface {
     listItem.addEventListener("click", () => {
       this.clearSuggestions();
       const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list",
+        "#suggestion-list.suggestion-list"
       ) as HTMLElement | null;
       if (suggestionListElem) {
         suggestionListElem.style.display = "none";
       }
-      if (game.link.startsWith("daydream")) {
-        const link = this.utils.processUrl(game.link);
-        if (link!.startsWith("/internal/")) {
-          this.utils.navigate(game.link);
-        }
-      } else {
-        this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
-      }
+      this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
     });
     return listItem;
   }

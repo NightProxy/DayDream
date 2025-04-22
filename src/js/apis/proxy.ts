@@ -21,18 +21,18 @@ interface ProxyInterface {
   redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string,
+    url: string
   ): Promise<void>;
   inFrame_Redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string,
+    url: string
   ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(
     url: string,
     swConfig: Record<any, any>,
-    proxySetting: string,
+    proxySetting: string
   ): Promise<string | null>;
 }
 class Proxy implements ProxyInterface {
@@ -124,7 +124,7 @@ class Proxy implements ProxyInterface {
       registrations.forEach((registration) => {
         registration.update();
         self.logging.createLog(
-          `Service Worker at ${registration.scope} Updated`,
+          `Service Worker at ${registration.scope} Updated`
         );
       });
     });
@@ -136,7 +136,7 @@ class Proxy implements ProxyInterface {
       registrations.forEach((registration) => {
         registration.unregister();
         self.logging.createLog(
-          `Service Worker at ${registration.scope} Unregistered`,
+          `Service Worker at ${registration.scope} Unregistered`
         );
       });
     });
@@ -232,7 +232,7 @@ class Proxy implements ProxyInterface {
   async inFrame_Redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string,
+    url: string
   ) {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
@@ -254,6 +254,27 @@ class Proxy implements ProxyInterface {
     }
   }
 
+  async convertURL(
+    swConfig: Record<any, any>,
+    proxySetting: string,
+    url: string
+  ) {
+    this.registerSW(swConfig[proxySetting].file).then(async () => {
+      await this.setTransports();
+    });
+    let swConfigSettings: Record<any, any>;
+    if (proxySetting === "auto") {
+      const result = await swConfig.auto.func(this.search(url));
+      swConfigSettings = result;
+    } else {
+      swConfigSettings = swConfig[proxySetting];
+    }
+    let encodedUrl =
+      swConfigSettings.config.prefix +
+      window.__uv$config.encodeUrl(this.search(url));
+    return encodedUrl;
+  }
+
   async fetch(url: any, params?: any) {
     await this.setTransports();
     const client = new BareMux.BareClient();
@@ -271,7 +292,7 @@ class Proxy implements ProxyInterface {
   async getFavicon(
     url: string,
     swConfig: Record<any, any>,
-    proxySetting: string,
+    proxySetting: string
   ) {
     let page = await this.fetch(url);
     page = await page.toString();

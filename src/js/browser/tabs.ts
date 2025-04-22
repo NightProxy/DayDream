@@ -1,4 +1,5 @@
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
+import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Items } from "@browser/items";
 import { Logger } from "@apis/logging";
@@ -10,6 +11,7 @@ import { Proxy } from "@apis/proxy";
 interface TabsInterface {
   render: any;
   ui: UI;
+  proto: Protocols;
   utils: Utils;
   items: Items;
   logger: Logger;
@@ -30,6 +32,7 @@ interface TabsInterface {
 class Tabs implements TabsInterface {
   render: any;
   ui: UI;
+  proto: Protocols;
   utils: Utils;
   items: Items;
   logger: Logger;
@@ -45,9 +48,10 @@ class Tabs implements TabsInterface {
   proxy: Proxy;
   swConfig: any;
   proxySetting: string;
-  constructor(render: any, swConfig: any, proxySetting: string) {
+  constructor(render: any, proto: any, swConfig: any, proxySetting: string) {
     this.render = render;
     this.ui = new UI();
+    this.proto = proto;
     this.utils = new Utils();
     this.items = new Items();
     this.logger = new Logger();
@@ -90,7 +94,7 @@ class Tabs implements TabsInterface {
   }
   get unpinedTabEls() {
     return Array.prototype.slice.call(
-      this.el.querySelectorAll(".tab:not(.tab.pinned)"),
+      this.el.querySelectorAll(".tab:not(.tab.pinned)")
     );
   }
 
@@ -196,14 +200,12 @@ class Tabs implements TabsInterface {
     return positions;
   }
 
-  createTab(url: string) {
+  createTab(url: string, prox: boolean = false) {
     this.tabCount++;
+    console.log(prox)
     const id = `tab-${this.tabCount}`;
     const iframe = this.ui.createElement("iframe", {
-      src: this.utils.processUrl(url),
-    });
-    const script = this.ui.createElement("script", {
-      src: "/core/client.js",
+      src: this.proto.processUrl(url),
     });
     iframe.id = `iframe-${this.tabCount}`;
     iframe.title = `Iframe #${this.tabCount}`;
@@ -228,13 +230,13 @@ class Tabs implements TabsInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["close"],
+                ["close"]
               ),
-            ],
+            ]
           ),
         ]),
         this.ui.createElement("div", { class: "tab-bottom-border" }),
-      ],
+      ]
     );
 
     const updateTabTitle = () => {
@@ -246,8 +248,8 @@ class Tabs implements TabsInterface {
         }
       }
     };
-    iframe.addEventListener("load", () => {
-      iframe.contentDocument!.body.appendChild(script);
+    iframe.addEventListener("load", async () => {
+      this.pageClient(iframe);
       // this.eventsAPI.emit("tab:loaded", { url: iframe.src, iframe: iframe.id });
       updateTabTitle();
       this.setFavicon(tab, iframe);
@@ -255,8 +257,8 @@ class Tabs implements TabsInterface {
         childList: true,
         subtree: true,
       });
-      let check = this.utils.getInternalURL(new URL(iframe.src).pathname);
-      if (check.startsWith("daydream://")) {
+      let check = await this.proto.getInternalURL(new URL(iframe.src).pathname);
+      if (typeof check === "string" && check.startsWith("daydream://")) {
         this.items.addressBar!.value = check;
         document.querySelector(".webSecurityIcon")!.innerHTML =
           `<span class="material-symbols-outlined">lock_open</span>`;
@@ -278,7 +280,7 @@ class Tabs implements TabsInterface {
 
     const observer = new MutationObserver(() => {
       updateTabTitle();
-      this.utils.setFavicon(tab, iframe);
+      this.setFavicon(tab, iframe);
     });
 
     tab.addEventListener("click", () => {
@@ -361,7 +363,7 @@ class Tabs implements TabsInterface {
   closeCurrentTab() {
     const activeTab = document.querySelector(".tab.active");
     const activeIFrame = document.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement;
     const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
@@ -376,10 +378,10 @@ class Tabs implements TabsInterface {
       const remainingTabs = document.querySelectorAll(".tab");
       if (remainingTabs.length > 0) {
         const previousTab = document.getElementById(
-          `tab-${currentTabId - 1}`,
+          `tab-${currentTabId - 1}`
         ) as HTMLDivElement;
         const nextTab = document.getElementById(
-          `tab-${currentTabId + 1}`,
+          `tab-${currentTabId + 1}`
         ) as HTMLDivElement;
         (
           previousTab ||
@@ -410,7 +412,7 @@ class Tabs implements TabsInterface {
       try {
         if (!iframe.contentDocument) {
           console.error(
-            "Unable to access iframe content due to cross-origin restrictions.",
+            "Unable to access iframe content due to cross-origin restrictions."
           );
           return;
         }
@@ -434,20 +436,20 @@ class Tabs implements TabsInterface {
           faviconUrl = await this.proxy.getFavicon(
             faviconUrl as string,
             this.swConfig,
-            this.proxySetting,
+            this.proxySetting
           );
 
           if (faviconUrl && faviconImage) {
             faviconImage.setAttribute(
               "style",
-              `background-image: url('${faviconUrl}');`,
+              `background-image: url('${faviconUrl}');`
             );
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }
         } else {
           console.error(
-            "No favicon link element found within the iframe document.",
+            "No favicon link element found within the iframe document."
           );
         }
       } catch (error) {
@@ -554,7 +556,7 @@ closeCurrentGroup() {
     }
   }*/
 
-  selectTab(tabInfo: any) {
+  async selectTab(tabInfo: any) {
     this.tabs.forEach(({ tab, iframe }) => {
       tab.classList.remove("active");
       iframe.classList.remove("active");
@@ -568,8 +570,10 @@ closeCurrentGroup() {
       iframe: tabInfo.iframe.id,
     });
 
-    let check = this.utils.getInternalURL(new URL(tabInfo.iframe.src).pathname);
-    if (check.startsWith("daydream://")) {
+    let check = await this.proto.getInternalURL(
+      new URL(tabInfo.iframe.src).pathname
+    );
+    if (typeof check === "string" && check.startsWith("daydream://")) {
       this.items.addressBar!.value = check;
     } else {
       let url = new URL(tabInfo.iframe.src).pathname;
@@ -855,6 +859,12 @@ closeCurrentGroup() {
       }px)`;
     }
     this.logger.createLog(`Rearranged tabs`);
+  }
+  pageClient(iframe: HTMLIFrameElement) {
+    iframe.contentWindow!.window.open = function (url?: string | URL) {
+      window.parent.tabs.createTab(url!.toString(), false);
+      return null;
+    };
   }
 }
 

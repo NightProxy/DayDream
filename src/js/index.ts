@@ -9,6 +9,7 @@ import { Windowing } from "@browser/windowing";
 import { Global } from "@js/global/index";
 import { Render } from "@browser/render";
 import { Items } from "@browser/items";
+import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
@@ -65,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       func: null,
     },
   };
+  const proto = new Protocols(swConfig, proxySetting);
   const windowing = new Windowing();
   const globalFunctions = new Global();
   const render = new Render(
@@ -73,11 +75,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const items = new Items();
   const utils = new Utils();
   //const history = new History(utils, proxy, swConfig, proxySetting);
-  const tabs = new Tabs(render, swConfig, proxySetting);
+  const tabs = new Tabs(render, proto, swConfig, proxySetting);
 
   tabs.createTab("daydream://newtab");
 
-  const functions = new Functions(tabs);
+  const functions = new Functions(tabs, proto);
   const keys = new Keys(tabs, functions);
 
   keys.init();
@@ -110,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const searchValue = uvSearchBar!.value.trim();
 
       if (searchValue.startsWith("daydream://")) {
-        utils.navigate(searchValue);
+        proto.navigate(searchValue);
       } else {
         if (proxySetting === "auto") {
           const result = (await proxy.automatic(
@@ -177,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   functions.init();
 
-  const searchbar = new Search(proxy, swConfig, proxySetting);
+  const searchbar = new Search(proxy, swConfig, proxySetting, proto);
   searchbar.init(items.addressBar!);
 
   uvSearchBar!.addEventListener("keydown", (e) => {
@@ -196,6 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.nightmarePlugins = nightmarePlugins;
   window.settings = settingsAPI;
   window.eventsAPI = eventsAPI;
+  window.protocols = proto;
   window.proxy = proxy;
   window.logging = loggingAPI;
   window.profiles = profilesAPI;
