@@ -278,8 +278,8 @@ class Functions implements FuncInterface {
 
   menus() {
     this.extrasMenu(this.items.extrasButton!);
-    this.extensionsMenu(this.items.extensionsButton!);
-    this.profilesMenu(this.items.profilesButton!);
+    /*this.extensionsMenu(this.items.extensionsButton!);
+    this.profilesMenu(this.items.profilesButton!);*/
   }
 
   goFullscreen() {
@@ -621,8 +621,12 @@ class Functions implements FuncInterface {
     const history = navbar!.querySelector("#historyShortcut");
     const settings = navbar!.querySelector("#settShortcut");
 
-    games!.addEventListener("click", () => {
-      this.proto.navigate("daydream://games");
+    games!.addEventListener("click", async () => {
+      const url = (await this.proto.processUrl("daydream://games")) || "/internal/error/";
+      const iframe = this.items.iframeContainer!.querySelector(
+        "iframe.active"
+      ) as HTMLIFrameElement | null;
+      iframe!.setAttribute("src", url);
     });
 
     ai!.addEventListener("click", () => {
@@ -640,12 +644,20 @@ class Functions implements FuncInterface {
       console.log("opening music");
     });
 
-    history!.addEventListener("click", () => {
-      this.proto.navigate("daydream://history");
+    history!.addEventListener("click", async () => {
+      const url = (await this.proto.processUrl("daydream://history")) || "/internal/error/";
+      const iframe = this.items.iframeContainer!.querySelector(
+        "iframe.active"
+      ) as HTMLIFrameElement | null;
+      iframe!.setAttribute("src", url);
     });
 
-    settings!.addEventListener("click", () => {
-      this.proto.navigate("daydream://settings");
+    settings!.addEventListener("click", async () => {
+      const url = (await this.proto.processUrl("daydream://settings")) || "/internal/error/";
+      const iframe = this.items.iframeContainer!.querySelector(
+        "iframe.active"
+      ) as HTMLIFrameElement | null;
+      iframe!.setAttribute("src", url);
     });
   }
 }

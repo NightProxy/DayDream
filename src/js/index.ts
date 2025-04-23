@@ -112,7 +112,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const searchValue = uvSearchBar!.value.trim();
 
       if (searchValue.startsWith("daydream://")) {
-        proto.navigate(searchValue);
+        const url = (await proto.processUrl(searchValue)) || "/internal/error/";
+        const iframe = items.iframeContainer!.querySelector(
+          "iframe.active"
+        ) as HTMLIFrameElement | null;
+        iframe!.setAttribute("src", url);
       } else {
         if (proxySetting === "auto") {
           const result = (await proxy.automatic(

@@ -50,7 +50,9 @@ class Protocols implements ProtoInterface {
   processUrl(url: string): Promise<string | void> {
     if (url.startsWith("javascript:")) {
       const js = url.slice("javascript:".length);
-      const iframe = document.querySelector("iframe.active") as HTMLIFrameElement | null;
+      const iframe = document.querySelector(
+        "iframe.active"
+      ) as HTMLIFrameElement | null;
       if (iframe?.contentWindow) {
         (iframe.contentWindow as any).eval(js);
       }
@@ -71,16 +73,28 @@ class Protocols implements ProtoInterface {
           const wildcard = protoRoutes.get("*");
           if (wildcard) {
             const fullUrl = this.joinURL(wildcard.url, path);
-            return Promise.resolve(wildcard.proxy
-              ? this.proxy.convertURL(this.swConfig, this.proxySetting, fullUrl)
-              : fullUrl);
+            return Promise.resolve(
+              wildcard.proxy
+                ? this.proxy.convertURL(
+                    this.swConfig,
+                    this.proxySetting,
+                    fullUrl
+                  )
+                : fullUrl
+            );
           }
         }
 
         if (resolved) {
-          return Promise.resolve(resolved.proxy
-            ? this.proxy.convertURL(this.swConfig, this.proxySetting, resolved.url)
-            : resolved.url);
+          return Promise.resolve(
+            resolved.proxy
+              ? this.proxy.convertURL(
+                  this.swConfig,
+                  this.proxySetting,
+                  resolved.url
+                )
+              : resolved.url
+          );
         }
       }
     }
@@ -121,14 +135,16 @@ class Protocols implements ProtoInterface {
   }
 
   async navigate(url: string): Promise<void> {
-    const processedUrl = await this.processUrl(url);
-    if (processedUrl) {
-      const iframe = this.items.iframeContainer?.querySelector("iframe.active") as HTMLIFrameElement | null;
-      if (iframe) {
-        iframe.setAttribute("src", processedUrl);
-        this.logging.createLog(`Navigated to: ${processedUrl}`);
-      }
+    const processedUrl = (await this.processUrl(url)) || "/internal/error/";
+    if (!this.items.iframeContainer) {
+      this.logging.createLog('iframeContainer is not available.');
+      return;
     }
+    const iframe = this.items.iframeContainer!.querySelector(
+      "iframe.active"
+    ) as HTMLIFrameElement | null;
+    iframe!.setAttribute("src", processedUrl);
+    this.logging.createLog(`Navigated to: ${processedUrl}`);
   }
 
   private joinURL(base: string, path: string): string {

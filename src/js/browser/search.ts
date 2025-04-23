@@ -492,7 +492,11 @@ class Search implements SearchInterface {
       if (suggestion.startsWith("daydream")) {
         const link = await this.proto.processUrl(suggestion);
         if (link!.startsWith("/internal/")) {
-          this.proto.navigate(suggestion);
+          const url = (link) || "/internal/error/";
+          const iframe = document.querySelector(
+            "iframe.active"
+          ) as HTMLIFrameElement | null;
+          iframe!.setAttribute("src", url);
         }
       } else {
         this.proxy.redirect(this.swConfig, this.proxySetting, suggestion);
