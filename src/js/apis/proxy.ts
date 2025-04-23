@@ -144,7 +144,7 @@ class Proxy implements ProxyInterface {
 
   async fetchProxyMapping() {
     try {
-      const response = await fetch("//json/proxy.json");
+      const response = await fetch("/json/proxy.json");
       if (!response.ok) throw new Error("Failed to load proxy mappings.");
       return await response.json();
     } catch (error) {

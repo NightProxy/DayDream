@@ -80,8 +80,8 @@ class Functions implements FuncInterface {
     this.menus();
     this.navbarfunctions();
 
-    this.items.newTab!.addEventListener("click", () =>
-      this.tabs.createTab("daydream://newtab"),
+    this.items.newTab!.addEventListener("click", async () =>
+      await this.tabs.createTab("daydream://newtab"),
     );
   }
 

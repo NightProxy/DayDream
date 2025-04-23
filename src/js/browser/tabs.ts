@@ -7,6 +7,8 @@ import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import Sortable from "sortablejs";
 import { Proxy } from "@apis/proxy";
+// @ts-expect-error
+import Draggabilly from "draggabilly";
 
 interface TabsInterface {
   render: any;
@@ -200,12 +202,12 @@ class Tabs implements TabsInterface {
     return positions;
   }
 
-  createTab(url: string, prox: boolean = false) {
+  async createTab(url: string, prox: boolean = false) {
     this.tabCount++;
-    console.log(prox)
+    console.log(prox);
     const id = `tab-${this.tabCount}`;
     const iframe = this.ui.createElement("iframe", {
-      src: this.proto.processUrl(url),
+      src: await this.proto.processUrl(url),
     });
     iframe.id = `iframe-${this.tabCount}`;
     iframe.title = `Iframe #${this.tabCount}`;
@@ -590,7 +592,7 @@ closeCurrentGroup() {
     this.logger.createLog(`Selected tab: tab-${id}`);
   }
 
-  /* setupSortable() {
+  /*setupSortable() {
     const tabEls = this.tabEls;
     const tabPositions = this.tabPositions;
     const tabPositionsY = this.tabPositionsY;
@@ -602,7 +604,7 @@ closeCurrentGroup() {
       this.draggabillyDragging.element.style.transform = "";
       this.draggabillyDragging.dragEnd();
       this.draggabillyDragging.isDragging = false;
-      this.draggabillyDragging.positionDrag = (_) => {}; // Prevent Draggabilly from updating tabEl.style.transform in later frames
+      this.draggabillyDragging.positionDrag = (_: any) => {}; // Prevent Draggabilly from updating tabEl.style.transform in later frames
       this.draggabillyDragging.destroy();
       this.draggabillyDragging = null;
     }
@@ -612,16 +614,16 @@ closeCurrentGroup() {
     tabEls.forEach(async (tabEl, originalIndex) => {
       const originalTabPositionX = tabPositions[originalIndex];
       const originalTabPositionY = tabPositionsY[originalIndex];
-      let axis;
+      let ax;
       if ((await this.settings.getItem("verticalTabs")) == "true") {
-        axis = "y";
+        ax = "y";
       } else {
-        axis = "x";
+        ax = "x";
       }
       const draggabilly = new Draggabilly(tabEl, {
-        axis: axis,
+        axis: ax,
         handle: ".tab-drag-handle",
-        containment: this.el.querySelector(".tabs-content"),
+        containment: this.el.querySelector(".tabs-content")!,
       });
 
       this.draggabillies.push(draggabilly);
@@ -631,12 +633,12 @@ closeCurrentGroup() {
         this.draggabillyDragging = draggabilly;
         tabEl.classList.add("tab-is-dragging");
         this.el.classList.add("tabs-is-sorting");
-        this.eventsAPI.emit("tab:dragStart");
+        this.eventsAPI.emit("tab:dragStart", null);
       });
 
       draggabilly.on("dragEnd", async (_) => {
         this.isDragging = false;
-        this.eventsAPI.emit("tab:dragEnd");
+        this.eventsAPI.emit("tab:dragEnd", null);
         if ((await this.settings.getItem("verticalTabs")) == "true") {
           const finalTranslateY = parseFloat(tabEl.style.top, 10);
           tabEl.style.transform = `translate3d(0, 0, 0)`;
@@ -689,11 +691,11 @@ closeCurrentGroup() {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionY,
-            tabPositionsY,
+            tabPositionsY
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget),
+            Math.min(tabEls.length, destinationIndexTarget)
           );
 
           if (currentIndex !== destinationIndex) {
@@ -709,7 +711,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging",
+                  "data-was-not-last-tab-when-started-dragging"
                 )
                 ? moveVector.y - this.tabContentHeights[currentIndex]
                 : moveVector.y
@@ -721,11 +723,11 @@ closeCurrentGroup() {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionX,
-            tabPositions,
+            tabPositions
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget),
+            Math.min(tabEls.length, destinationIndexTarget)
           );
 
           if (currentIndex !== destinationIndex) {
@@ -741,7 +743,7 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging",
+                  "data-was-not-last-tab-when-started-dragging"
                 )
                 ? moveVector.x - this.tabContentWidths[currentIndex]
                 : moveVector.x
@@ -762,8 +764,7 @@ closeCurrentGroup() {
       tabEl.parentNode.insertBefore(tabEl, this.tabEls[destinationIndex + 1]);
     }
     this.layoutTabs();
-  }
-*/
+  }*/
 
   async setupSortable() {
     new Sortable(this.items.tabGroupsContainer!, {
