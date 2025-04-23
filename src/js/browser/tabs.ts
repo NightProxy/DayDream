@@ -5,9 +5,7 @@ import { Items } from "@browser/items";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
-import Sortable from "sortablejs";
 import { Proxy } from "@apis/proxy";
-// @ts-expect-error
 import Draggabilly from "draggabilly";
 
 interface TabsInterface {
@@ -29,6 +27,8 @@ interface TabsInterface {
   proxy: Proxy;
   swConfig: any;
   proxySetting: string;
+  isDragging: boolean;
+  draggabillyDragging: any;
 }
 
 class Tabs implements TabsInterface {
@@ -50,6 +50,8 @@ class Tabs implements TabsInterface {
   proxy: Proxy;
   swConfig: any;
   proxySetting: string;
+  isDragging: boolean;
+  draggabillyDragging: any;
   constructor(render: any, proto: any, swConfig: any, proxySetting: string) {
     this.render = render;
     this.ui = new UI();
@@ -67,6 +69,7 @@ class Tabs implements TabsInterface {
     this.proxy = new Proxy();
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
+    this.isDragging = false;
 
     this.instanceId = 0;
     this.instanceId += 1;
@@ -592,7 +595,7 @@ closeCurrentGroup() {
     this.logger.createLog(`Selected tab: tab-${id}`);
   }
 
-  /*setupSortable() {
+  setupSortable() {
     const tabEls = this.tabEls;
     const tabPositions = this.tabPositions;
     const tabPositionsY = this.tabPositionsY;
@@ -614,7 +617,7 @@ closeCurrentGroup() {
     tabEls.forEach(async (tabEl, originalIndex) => {
       const originalTabPositionX = tabPositions[originalIndex];
       const originalTabPositionY = tabPositionsY[originalIndex];
-      let ax;
+      let ax: "x" | "y";
       if ((await this.settings.getItem("verticalTabs")) == "true") {
         ax = "y";
       } else {
@@ -640,7 +643,7 @@ closeCurrentGroup() {
         this.isDragging = false;
         this.eventsAPI.emit("tab:dragEnd", null);
         if ((await this.settings.getItem("verticalTabs")) == "true") {
-          const finalTranslateY = parseFloat(tabEl.style.top, 10);
+          const finalTranslateY = parseFloat(tabEl.style.top);
           tabEl.style.transform = `translate3d(0, 0, 0)`;
 
           // Animate dragged tab back into its place
@@ -661,7 +664,7 @@ closeCurrentGroup() {
             });
           });
         } else {
-          const finalTranslateX = parseFloat(tabEl.style.left, 10);
+          const finalTranslateX = parseFloat(tabEl.style.left);
           tabEl.style.transform = `translate3d(0, 0, 0)`;
 
           // Animate dragged tab back into its place
@@ -684,7 +687,7 @@ closeCurrentGroup() {
         }
       });
 
-      draggabilly.on("dragMove", async (event, pointer, moveVector) => {
+      draggabilly.on("dragMove", async (_event, _pointer, moveVector) => {
         const tabEls = this.tabEls;
         const currentIndex = tabEls.indexOf(tabEl);
         if ((await this.settings.getItem("verticalTabs")) == "true") {
@@ -717,7 +720,9 @@ closeCurrentGroup() {
                 : moveVector.y
               : 0) +
             16;
-          document.querySelector("#create-tab")!.style.transform =
+          (document.querySelector(
+            "#create-tab"
+          ) as HTMLElement)!.style.transform =
             `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`;
         } else {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
@@ -749,7 +754,7 @@ closeCurrentGroup() {
                 : moveVector.x
               : 0) +
             16;
-          document.querySelector("#create-tab")!.style.transform =
+            (document.querySelector("#create-tab") as HTMLElement)!.style.transform =
             `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`;
         }
       });
@@ -757,34 +762,36 @@ closeCurrentGroup() {
     this.logger.createLog(`Setup draggabilly successfully`);
   }
 
-  animateTabMove(tabEl, originIndex, destinationIndex) {
+  animateTabMove(tabEl: HTMLElement, originIndex: number, destinationIndex: number) {
     if (destinationIndex < originIndex) {
-      tabEl.parentNode.insertBefore(tabEl, this.tabEls[destinationIndex]);
+      tabEl.parentNode!.insertBefore(tabEl, this.tabEls[destinationIndex]);
     } else {
-      tabEl.parentNode.insertBefore(tabEl, this.tabEls[destinationIndex + 1]);
+      tabEl.parentNode!.insertBefore(tabEl, this.tabEls[destinationIndex + 1]);
     }
     this.layoutTabs();
-  }*/
-
-  async setupSortable() {
-    new Sortable(this.items.tabGroupsContainer!, {
-      forceFallback: true,
-      animation: 200,
-      direction:
-        (await this.settings.getItem("verticalTabs")) == "true"
-          ? "vertical"
-          : "horizontal",
-      dragClass: "dragging",
-      handle: ".tab-drag-handle",
-      filter: ".tab-close",
-      onSort: () => {
-        this.layoutTabs();
-      },
-      onEnd: () => {
-        this.layoutTabs();
-      },
-    });
   }
+
+  /*async setupSortable() {
+    this.drag = async () => {
+      new Sortable(this.items.tabGroupsContainer!, {
+        forceFallback: true,
+        animation: 200,
+        direction:
+          (await this.settings.getItem("verticalTabs")) === "true"
+            ? "vertical"
+            : "horizontal",
+        dragClass: "dragging",
+        handle: ".tab-drag-handle",
+        filter: ".tab-close",
+        onSort: () => {
+          this.layoutTabs();
+        },
+        onEnd: () => {
+          this.layoutTabs();
+        },
+      });
+    };
+  }*/
   async layoutTabs() {
     this.eventsAPI.emit("tabs:layout", null);
     document.getElementById("create-tab")!.setAttribute("style", "");
