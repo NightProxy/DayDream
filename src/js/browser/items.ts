@@ -6,6 +6,8 @@ interface ItemsInterface {
   forwardButton: HTMLButtonElement | null;
   addressBar: HTMLInputElement | null;
   bookmarkButton: HTMLButtonElement | null;
+  extensionsButton: HTMLButtonElement | null;
+  profilesButton: HTMLButtonElement | null;
   extrasButton: HTMLButtonElement | null;
   tabGroupsContainer: HTMLDivElement | null;
   newTab: HTMLButtonElement | null;
@@ -22,6 +24,8 @@ class Items implements ItemsInterface {
   forwardButton: HTMLButtonElement | null;
   addressBar: HTMLInputElement | null;
   bookmarkButton: HTMLButtonElement | null;
+  extensionsButton: HTMLButtonElement | null;
+  profilesButton: HTMLButtonElement | null;
   extrasButton: HTMLButtonElement | null;
   tabGroupsContainer: HTMLDivElement | null;
   newTab: HTMLButtonElement | null;
@@ -43,12 +47,12 @@ class Items implements ItemsInterface {
     this.bookmarkButton = document.getElementById(
       "bookmark",
     ) as HTMLButtonElement;
-    /*this.extensionsButton = document.getElementById(
+    this.extensionsButton = document.getElementById(
       "extensions",
     ) as HTMLButtonElement;
     this.profilesButton = document.getElementById(
-      "profiles",
-    ) as HTMLButtonElement;*/
+      "profilesButton",
+    ) as HTMLButtonElement;
     this.extrasButton = document.getElementById(
       "more-options",
     ) as HTMLButtonElement;

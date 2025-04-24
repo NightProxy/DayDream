@@ -114,6 +114,13 @@ class Search implements SearchInterface {
         return;
       }
 
+      document.addEventListener("ddx:page.clicked", () => {
+        this.clearSuggestions();
+        suggestionList.style.display = "none";
+        return;
+      });
+
+
       let cleanedQuery = query.replace(
         /^(daydream:\/\/|daydream:\/|daydream:)/,
         ""

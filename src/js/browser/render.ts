@@ -32,7 +32,7 @@ class Render implements renderInterface {
     const HTMLcode = this.nightmare.createElement("div", { class: "surface" }, [
       this.nightmare.createElement("div", { class: "top-bar" }, [
         this.nightmare.createElement(
-          "div",
+          "button",
           { id: "profilesButton", class: "profiles-box" },
           [
             this.nightmare.createElement(
@@ -187,11 +187,11 @@ class Render implements renderInterface {
               ),
             ],
           ),
-          /*this.nightmare.createElement("li", {}, [
+          this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
               {
-                class: "utilityIcon coming-soon",
+                class: "utilityIcon",
                 id: "extensions",
               },
               [
@@ -203,7 +203,7 @@ class Render implements renderInterface {
               ],
             ),
           ]),
-          this.nightmare.createElement("li", {}, [
+          /*this.nightmare.createElement("li", {}, [
             this.nightmare.createElement(
               "div",
               { class: "utilityIcon coming-soon", id: "profiles" },
@@ -303,6 +303,19 @@ class Render implements renderInterface {
             ],
           ),
         ]),
+        /*this.nightmare.createElement("li", {}, [
+          this.nightmare.createElement(
+            "div",
+            { id: "gitShortcut", title: "Github" },
+            [
+              this.nightmare.createElement(
+                "i",
+                { "data-lucide": "github" },
+                [],
+              ),
+            ],
+          ),
+        ]),*/
         this.nightmare.createElement("li", {}, [
           this.nightmare.createElement(
             "div",

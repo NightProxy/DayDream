@@ -80,8 +80,9 @@ class Functions implements FuncInterface {
     this.menus();
     this.navbarfunctions();
 
-    this.items.newTab!.addEventListener("click", async () =>
-      await this.tabs.createTab("daydream://newtab"),
+    this.items.newTab!.addEventListener(
+      "click",
+      async () => await this.tabs.createTab("daydream://newtab")
     );
   }
 
@@ -116,21 +117,21 @@ class Functions implements FuncInterface {
 
   backward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.back();
   }
 
   forward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.forward();
   }
 
   refresh() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement;
 
     iframe?.contentWindow?.location.reload();
@@ -229,11 +230,11 @@ class Functions implements FuncInterface {
   }
   inspectElement() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active",
+      "iframe.active"
     ) as HTMLIFrameElement;
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
       );
       return;
     }
@@ -248,7 +249,7 @@ class Functions implements FuncInterface {
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
       );
       return;
     }
@@ -278,8 +279,8 @@ class Functions implements FuncInterface {
 
   menus() {
     this.extrasMenu(this.items.extrasButton!);
-    /*this.extensionsMenu(this.items.extensionsButton!);
-    this.profilesMenu(this.items.profilesButton!);*/
+    this.extensionsMenu(this.items.extensionsButton!);
+    this.profilesMenu(this.items.profilesButton!);
   }
 
   goFullscreen() {
@@ -314,7 +315,7 @@ class Functions implements FuncInterface {
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ],
+        ]
       ),
       //New Window
       this.ui.createElement(
@@ -332,7 +333,7 @@ class Functions implements FuncInterface {
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ],
+        ]
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -352,7 +353,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ],
+        ]
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -366,7 +367,7 @@ class Functions implements FuncInterface {
               this.zoomOut();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])]
         ),
         //Zoom In
         this.ui.createElement(
@@ -378,7 +379,7 @@ class Functions implements FuncInterface {
               this.zoomIn();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])]
         ),
         // Fullscreen
         this.ui.createElement(
@@ -390,7 +391,7 @@ class Functions implements FuncInterface {
               this.goFullscreen();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
+          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])]
         ),
       ]),
       // Bookmarks
@@ -409,7 +410,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ],
+        ]
       ),
       // History
       this.ui.createElement(
@@ -427,7 +428,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ],
+        ]
       ),
       // Games
       this.ui.createElement(
@@ -445,7 +446,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ],
+        ]
       ),
       // Extensions
       this.ui.createElement(
@@ -465,7 +466,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ],
+        ]
       ),
       //Inspect Element
       this.ui.createElement(
@@ -485,7 +486,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ],
+        ]
       ),
       // Settings
       this.ui.createElement(
@@ -503,7 +504,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ],
+        ]
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
         this.ui.createElement("i", { "data-lucide": "log-out" }, []),
@@ -511,11 +512,11 @@ class Functions implements FuncInterface {
         this.ui.createElement(
           "span",
           { class: "menu-key", id: "panic-keybind" },
-          ["~"],
+          ["~"]
         ),
       ]),
     ]);
-    this.nightmarePlugins.sidemenu.attachTo(button, content);
+    this.nightmarePlugins.sidemenu.attachTo(button, content, 300);
   }
 
   extensionsMenu(button: HTMLButtonElement) {
@@ -538,9 +539,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["refresh"],
+                ["refresh"]
               ),
-            ],
+            ]
           ),
           this.ui.createElement(
             "div",
@@ -555,14 +556,14 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"],
+                ["settings"]
               ),
-            ],
+            ]
           ),
         ]),
       ]),
     ]);
-    this.nightmarePlugins.sidemenu.attachTo(button, content);
+    this.nightmarePlugins.sidemenu.attachTo(button, content, 300);
   }
 
   profilesMenu(button: HTMLButtonElement) {
@@ -583,33 +584,39 @@ class Functions implements FuncInterface {
             },
             [
               this.ui.createElement(
-                "span",
-                { class: "material-symbols-outlined" },
-                ["person_add"],
+                "i",
+                { "data-lucide": "user-plus" },
+                []
               ),
-            ],
+            ]
           ),
           this.ui.createElement(
             "div",
             {
               class: "menu-item",
               id: "extensionsSettings",
-              onclick: () => {
-                console.log("Disabling all extensions");
+              onclick: async () => {
+                const url =
+                  (await this.proto.processUrl("daydream://extensions")) ||
+                  "/internal/error/";
+                const iframe = this.items.iframeContainer!.querySelector(
+                  "iframe.active"
+                ) as HTMLIFrameElement | null;
+                iframe!.setAttribute("src", url);
               },
             },
             [
               this.ui.createElement(
-                "span",
-                { class: "material-symbols-outlined" },
-                ["settings"],
+                "i",
+                { "data-lucide": "user-pen" },
+                []
               ),
-            ],
+            ]
           ),
         ]),
       ]),
     ]);
-    this.nightmarePlugins.sidemenu.attachTo(button, content);
+    this.nightmarePlugins.sidemenu.attachTo(button, content, 50);
   }
 
   navbarfunctions() {
@@ -619,10 +626,12 @@ class Functions implements FuncInterface {
     const chat = navbar!.querySelector("#chatShortcut") as HTMLButtonElement;
     const music = navbar!.querySelector("#musicShortcut");
     const history = navbar!.querySelector("#historyShortcut");
+    // const github = navbar!.querySelector("#gitShortcut");
     const settings = navbar!.querySelector("#settShortcut");
 
     games!.addEventListener("click", async () => {
-      const url = (await this.proto.processUrl("daydream://games")) || "/internal/error/";
+      const url =
+        (await this.proto.processUrl("daydream://games")) || "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
         "iframe.active"
       ) as HTMLIFrameElement | null;
@@ -636,7 +645,7 @@ class Functions implements FuncInterface {
     const content = this.ui.createElement(
       "iframe",
       { class: "news", src: "https://night-network.changelogfy.com/" },
-      [],
+      []
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);
 
@@ -645,15 +654,23 @@ class Functions implements FuncInterface {
     });
 
     history!.addEventListener("click", async () => {
-      const url = (await this.proto.processUrl("daydream://history")) || "/internal/error/";
+      const url =
+        (await this.proto.processUrl("daydream://history")) ||
+        "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
         "iframe.active"
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
     });
 
+    /*github!.addEventListener("click", async () => {
+      window.open("https://github.com/NightProxy/DayDreamX", "_blank");
+    });*/
+
     settings!.addEventListener("click", async () => {
-      const url = (await this.proto.processUrl("daydream://settings")) || "/internal/error/";
+      const url =
+        (await this.proto.processUrl("daydream://settings")) ||
+        "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
         "iframe.active"
       ) as HTMLIFrameElement | null;

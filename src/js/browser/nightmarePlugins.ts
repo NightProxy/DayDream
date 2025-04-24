@@ -46,20 +46,22 @@ class SideMenu implements SideMenuInterface {
     this.isOpen = false;
   }
 
-  attachTo(element: HTMLButtonElement, content: Function | HTMLElement) {
+  attachTo(element: HTMLButtonElement, content: Function | HTMLElement, offset:number = 0) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 
     element.addEventListener("click", (event) => {
       event.stopPropagation();
-      this.isOpen ? this.closeMenu() : this.openMenu(element, content);
+      this.isOpen ? this.closeMenu() : this.openMenu(element, content, offset);
       createIcons({ icons });
     });
+
+    document.addEventListener("ddx:page.clicked", () => this.closeMenu());
 
     window.addEventListener("click", () => this.closeMenu());
   }
 
-  openMenu(element: HTMLButtonElement, content: Function | HTMLElement) {
+  openMenu(element: HTMLButtonElement, content: Function | HTMLElement, offset:number = 0) {
     if (this.isOpen || !element) return;
 
     this.container = this.ui.createElement("div", { class: "menu-container" });
@@ -74,7 +76,7 @@ class SideMenu implements SideMenuInterface {
 
     const rect = element.getBoundingClientRect();
     this.container!.style.top = `${rect.bottom + window.scrollY}px`;
-    this.container!.style.left = `${rect.left + rect.width + window.scrollX - 300}px`;
+    this.container!.style.left = `${rect.left + rect.width + window.scrollX - offset}px`;
 
     this.container!.style.opacity = "0";
     this.container!.style.filter = "blur(5px)";
@@ -138,6 +140,9 @@ class SidePanel implements SidePanelInterface {
       createIcons({ icons });
     });
 
+    document.addEventListener("ddx:page.clicked", () => this.closeMenu());
+
+
     window.addEventListener("click", () => this.closeMenu());
   }
 
@@ -199,6 +204,8 @@ class RightClickMenu implements RightClickMenuInterface {
       event.stopPropagation();
       this.isOpen ? this.closeMenu() : this.openMenu(element, event, content);
     });
+
+    document.addEventListener("ddx:page.clicked", () => this.closeMenu());
 
     window.addEventListener("click", () => this.closeMenu());
   }

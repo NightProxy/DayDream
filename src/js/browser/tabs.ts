@@ -754,7 +754,9 @@ closeCurrentGroup() {
                 : moveVector.x
               : 0) +
             16;
-            (document.querySelector("#create-tab") as HTMLElement)!.style.transform =
+          (document.querySelector(
+            "#create-tab"
+          ) as HTMLElement)!.style.transform =
             `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`;
         }
       });
@@ -762,7 +764,11 @@ closeCurrentGroup() {
     this.logger.createLog(`Setup draggabilly successfully`);
   }
 
-  animateTabMove(tabEl: HTMLElement, originIndex: number, destinationIndex: number) {
+  animateTabMove(
+    tabEl: HTMLElement,
+    originIndex: number,
+    destinationIndex: number
+  ) {
     if (destinationIndex < originIndex) {
       tabEl.parentNode!.insertBefore(tabEl, this.tabEls[destinationIndex]);
     } else {
@@ -771,27 +777,6 @@ closeCurrentGroup() {
     this.layoutTabs();
   }
 
-  /*async setupSortable() {
-    this.drag = async () => {
-      new Sortable(this.items.tabGroupsContainer!, {
-        forceFallback: true,
-        animation: 200,
-        direction:
-          (await this.settings.getItem("verticalTabs")) === "true"
-            ? "vertical"
-            : "horizontal",
-        dragClass: "dragging",
-        handle: ".tab-drag-handle",
-        filter: ".tab-close",
-        onSort: () => {
-          this.layoutTabs();
-        },
-        onEnd: () => {
-          this.layoutTabs();
-        },
-      });
-    };
-  }*/
   async layoutTabs() {
     this.eventsAPI.emit("tabs:layout", null);
     document.getElementById("create-tab")!.setAttribute("style", "");
@@ -869,11 +854,35 @@ closeCurrentGroup() {
     this.logger.createLog(`Rearranged tabs`);
   }
   pageClient(iframe: HTMLIFrameElement) {
-    iframe.contentWindow!.window.open = function (url?: string | URL) {
-      window.parent.tabs.createTab(url!.toString(), false);
+    iframe.contentWindow!.window.open = (
+      url?: string | URL
+    ): Window | null => {
+      (async () => {
+        const url2Parse = new URL(url!);
+        if (url2Parse.host !== location.host) {
+          const url2Encode = url2Parse.href;
+          const encodedUrl = await window.parent.proxy.convertURL(
+            window.parent.SWconfig,
+            window.parent.ProxySettings,
+            url2Encode
+          );
+          window.parent.tabs.createTab(encodedUrl, false);
+        } else if (
+          url2Parse.pathname.startsWith("/@/") ||
+          url2Parse.pathname.startsWith("/$/")
+        ) {
+          window.parent.tabs.createTab(url2Parse.href, false);
+        }
+      })();
+  
       return null;
     };
+  
+    iframe.contentWindow?.document.body.addEventListener("click", async () => {
+      window.parent.eventsAPI.emit("ddx:page.clicked", null);
+    });
   }
+  
 }
 
 export { Tabs };
