@@ -46,7 +46,11 @@ class SideMenu implements SideMenuInterface {
     this.isOpen = false;
   }
 
-  attachTo(element: HTMLButtonElement, content: Function | HTMLElement, offset:number = 0) {
+  attachTo(
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+    offset: number = 0,
+  ) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 
@@ -61,7 +65,11 @@ class SideMenu implements SideMenuInterface {
     window.addEventListener("click", () => this.closeMenu());
   }
 
-  openMenu(element: HTMLButtonElement, content: Function | HTMLElement, offset:number = 0) {
+  openMenu(
+    element: HTMLButtonElement,
+    content: Function | HTMLElement,
+    offset: number = 0,
+  ) {
     if (this.isOpen || !element) return;
 
     this.container = this.ui.createElement("div", { class: "menu-container" });
@@ -141,7 +149,6 @@ class SidePanel implements SidePanelInterface {
     });
 
     document.addEventListener("ddx:page.clicked", () => this.closeMenu());
-
 
     window.addEventListener("click", () => this.closeMenu());
   }

@@ -47,6 +47,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       },
     },
+    dy: {
+      type: "sw",
+      file: "/&/sw.js",
+      config: window.__dynamic$config,
+      func: null,
+    },
     auto: {
       type: "multi",
       file: null,

@@ -2,7 +2,7 @@ declare global {
   interface Window {
     __uv$config: UVConfig;
     __scramjet$config: SJConfig;
-    __eclipse$config: ECConfig;
+    __dynamic$config: DYConfig;
     nightmare: Nightmare;
     nightmarePlugins: NightmarePlugins;
     settings: SettingsAPI;
@@ -24,6 +24,40 @@ declare global {
     SWconfig: any;
     SWSettings: any;
     ProxySettings: string;
+  }
+
+  interface UVConfig {
+    prefix: string;
+    encodeUrl: Function;
+    decodeUrl: Function;
+    handler: string;
+    client: string;
+    bundle: string;
+    config: string;
+    sw: string;
+  }
+
+  interface DYConfig {
+    prefix: string;
+    encoding: string;
+    mode: string;
+    logLevel: number;
+    tab: {
+      title: string | null;
+      icon: string | null;
+      ua: string | null;
+    };
+    assets: {
+      prefix: string;
+      files: {
+        handler: string;
+        client: string;
+        worker: string;
+        config: string;
+        inject: string | null;
+      };
+    };
+    block: any[];
   }
 
   interface SWConfig {

@@ -19,7 +19,7 @@ import { Proxy } from "@apis/proxy";
     uv: {
       type: "sw",
       file: "/@/sw.js",
-      config: __uv$config,
+      config: window.__uv$config,
       func: null,
     },
     sj: {
@@ -44,6 +44,12 @@ import { Proxy } from "@apis/proxy";
           console.log("Scramjet Service Worker registered.");
         }
       },
+    },
+    dy: {
+      type: "sw",
+      file: "/&/sw.js",
+      config: window.__dynamic$config,
+      func: null,
     },
     auto: {
       type: "multi",

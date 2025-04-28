@@ -3,7 +3,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
 import { sync } from "glob";
 import { resolve } from "path";
-import {normalizePath} from "vite";
+import { normalizePath } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 //@ts-expect-error
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
@@ -42,11 +42,7 @@ function prettyUrlsPlugin() {
 }
 
 export default defineConfig({
-  plugins: [
-    tsconfigPaths(),
-    ViteMinifyPlugin(), 
-    prettyUrlsPlugin(),
-  ],
+  plugins: [tsconfigPaths(), ViteMinifyPlugin(), prettyUrlsPlugin()],
   appType: "mpa",
   build: {
     emptyOutDir: true,
