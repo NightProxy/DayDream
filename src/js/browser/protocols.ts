@@ -51,7 +51,7 @@ class Protocols implements ProtoInterface {
     if (url.startsWith("javascript:")) {
       const js = url.slice("javascript:".length);
       const iframe = document.querySelector(
-        "iframe.active"
+        "iframe.active",
       ) as HTMLIFrameElement | null;
       if (iframe?.contentWindow) {
         (iframe.contentWindow as any).eval(js);
@@ -78,9 +78,9 @@ class Protocols implements ProtoInterface {
                 ? this.proxy.convertURL(
                     this.swConfig,
                     this.proxySetting,
-                    fullUrl
+                    fullUrl,
                   )
-                : fullUrl
+                : fullUrl,
             );
           }
         }
@@ -91,9 +91,9 @@ class Protocols implements ProtoInterface {
               ? this.proxy.convertURL(
                   this.swConfig,
                   this.proxySetting,
-                  resolved.url
+                  resolved.url,
                 )
-              : resolved.url
+              : resolved.url,
           );
         }
       }
@@ -137,11 +137,11 @@ class Protocols implements ProtoInterface {
   async navigate(url: string): Promise<void> {
     const processedUrl = (await this.processUrl(url)) || "/internal/error/";
     if (!this.items.iframeContainer) {
-      this.logging.createLog('iframeContainer is not available.');
+      this.logging.createLog("iframeContainer is not available.");
       return;
     }
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement | null;
     iframe!.setAttribute("src", processedUrl);
     this.logging.createLog(`Navigated to: ${processedUrl}`);

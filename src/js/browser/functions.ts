@@ -82,7 +82,7 @@ class Functions implements FuncInterface {
 
     this.items.newTab!.addEventListener(
       "click",
-      async () => await this.tabs.createTab("daydream://newtab")
+      async () => await this.tabs.createTab("daydream://newtab"),
     );
   }
 
@@ -117,21 +117,21 @@ class Functions implements FuncInterface {
 
   backward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.back();
   }
 
   forward() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.forward();
   }
 
   refresh() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
 
     iframe?.contentWindow?.location.reload();
@@ -230,11 +230,11 @@ class Functions implements FuncInterface {
   }
   inspectElement() {
     const iframe = this.items.iframeContainer!.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     if (!iframe || !iframe.contentWindow) {
       console.error(
-        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)"
+        "Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
       );
       return;
     }
@@ -249,7 +249,7 @@ class Functions implements FuncInterface {
 
     if (iframe.contentWindow.document.readyState == "loading") {
       console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck."
+        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
       );
       return;
     }
@@ -315,7 +315,7 @@ class Functions implements FuncInterface {
             "Open New Tab",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ]
+        ],
       ),
       //New Window
       this.ui.createElement(
@@ -333,7 +333,7 @@ class Functions implements FuncInterface {
             "Open New Window",
           ]),
           this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ]
+        ],
       ),
       //New Incognito Window
       this.ui.createElement(
@@ -353,7 +353,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + N",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-row" }, [
         this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
@@ -367,7 +367,7 @@ class Functions implements FuncInterface {
               this.zoomOut();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
         ),
         //Zoom In
         this.ui.createElement(
@@ -379,7 +379,7 @@ class Functions implements FuncInterface {
               this.zoomIn();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
         ),
         // Fullscreen
         this.ui.createElement(
@@ -391,7 +391,7 @@ class Functions implements FuncInterface {
               this.goFullscreen();
             },
           },
-          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])]
+          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
         ),
       ]),
       // Bookmarks
@@ -410,7 +410,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + B",
           ]),
-        ]
+        ],
       ),
       // History
       this.ui.createElement(
@@ -428,7 +428,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + Y",
           ]),
-        ]
+        ],
       ),
       // Games
       this.ui.createElement(
@@ -446,7 +446,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + G",
           ]),
-        ]
+        ],
       ),
       // Extensions
       this.ui.createElement(
@@ -466,7 +466,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + E",
           ]),
-        ]
+        ],
       ),
       //Inspect Element
       this.ui.createElement(
@@ -486,7 +486,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + I",
           ]),
-        ]
+        ],
       ),
       // Settings
       this.ui.createElement(
@@ -504,7 +504,7 @@ class Functions implements FuncInterface {
           this.ui.createElement("span", { class: "menu-key" }, [
             "Alt + Shift + ,",
           ]),
-        ]
+        ],
       ),
       this.ui.createElement("div", { class: "menu-item" }, [
         this.ui.createElement("i", { "data-lucide": "log-out" }, []),
@@ -512,7 +512,7 @@ class Functions implements FuncInterface {
         this.ui.createElement(
           "span",
           { class: "menu-key", id: "panic-keybind" },
-          ["~"]
+          ["~"],
         ),
       ]),
     ]);
@@ -539,9 +539,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["refresh"]
+                ["refresh"],
               ),
-            ]
+            ],
           ),
           this.ui.createElement(
             "div",
@@ -556,9 +556,9 @@ class Functions implements FuncInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["settings"]
+                ["settings"],
               ),
-            ]
+            ],
           ),
         ]),
       ]),
@@ -582,13 +582,7 @@ class Functions implements FuncInterface {
                 console.log("Adding Profile");
               },
             },
-            [
-              this.ui.createElement(
-                "i",
-                { "data-lucide": "user-plus" },
-                []
-              ),
-            ]
+            [this.ui.createElement("i", { "data-lucide": "user-plus" }, [])],
           ),
           this.ui.createElement(
             "div",
@@ -600,18 +594,12 @@ class Functions implements FuncInterface {
                   (await this.proto.processUrl("daydream://extensions")) ||
                   "/internal/error/";
                 const iframe = this.items.iframeContainer!.querySelector(
-                  "iframe.active"
+                  "iframe.active",
                 ) as HTMLIFrameElement | null;
                 iframe!.setAttribute("src", url);
               },
             },
-            [
-              this.ui.createElement(
-                "i",
-                { "data-lucide": "user-pen" },
-                []
-              ),
-            ]
+            [this.ui.createElement("i", { "data-lucide": "user-pen" }, [])],
           ),
         ]),
       ]),
@@ -633,7 +621,7 @@ class Functions implements FuncInterface {
       const url =
         (await this.proto.processUrl("daydream://games")) || "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
-        "iframe.active"
+        "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
     });
@@ -645,7 +633,7 @@ class Functions implements FuncInterface {
     const content = this.ui.createElement(
       "iframe",
       { class: "news", src: "https://night-network.changelogfy.com/" },
-      []
+      [],
     );
     this.nightmarePlugins.sidepanel.attachTo(chat, content);
 
@@ -658,7 +646,7 @@ class Functions implements FuncInterface {
         (await this.proto.processUrl("daydream://history")) ||
         "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
-        "iframe.active"
+        "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
     });
@@ -672,7 +660,7 @@ class Functions implements FuncInterface {
         (await this.proto.processUrl("daydream://settings")) ||
         "/internal/error/";
       const iframe = this.items.iframeContainer!.querySelector(
-        "iframe.active"
+        "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
     });

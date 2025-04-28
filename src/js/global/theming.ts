@@ -72,36 +72,19 @@ class Themeing implements ThemeingInterface {
 
   async applyThemeFromJsonFile() {
     try {
-      const response1 = await fetch("/json/themes/modes.json");
+      const response1 = await fetch("/json/themes/presets.json");
       if (!response1.ok) throw new Error("Failed to load themes.json");
 
       const themes = await response1.json();
-      const response2 = await fetch("/json/themes/rules.json");
-      if (!response2.ok) throw new Error("Failed to load rules.json");
 
-      const rules = await response2.json();
       const themeName = await this.settings.getItem("themeCustom");
-      const themeColor =
-        (await this.settings.getItem("themeColor")) || "rgba(128, 0, 128, 1)";
-      const uiStyle = await this.settings.getItem("UIStyle");
 
       if (themeName && themes[themeName]) {
         const theme = themes[themeName];
         const root = document.documentElement;
-        const shouldTint = themeName === "T-dark" || themeName === "T-light";
-        const uiStyleRules = rules[uiStyle] || {};
-        const noTintKeys = uiStyleRules["no-tint"]?.[themeName] || [];
-        const tintAmounts = uiStyleRules["tint-amounts"] || {};
 
         Object.keys(theme).forEach((property) => {
           let color = theme[property];
-          if (shouldTint && !noTintKeys.includes(property)) {
-            color = this.applyColorTint(
-              color,
-              themeColor,
-              tintAmounts[property] || 0.35,
-            );
-          }
           root.style.setProperty(`--${property}`, color);
         });
       }

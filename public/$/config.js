@@ -3,11 +3,11 @@
 self.__scramjet$config = {
   prefix: "/$/daydream/",
   files: {
-    wasm: "/$/scramjet.wasm.js",
-    worker: "/$/scramjet.worker.js",
-    client: "/$/scramjet.client.js",
-    shared: "/$/scramjet.shared.js",
-    sync: "/$/scramjet.sync.js"
+    wasm: "/$/wasm.js",
+    worker: "/$/worker.js",
+    client: "/$/client.js",
+    shared: "/$/shared.js",
+    sync: "/$/sync.js"
   },
   siteFlags: {
   },

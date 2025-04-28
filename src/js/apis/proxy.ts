@@ -21,18 +21,18 @@ interface ProxyInterface {
   redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string
+    url: string,
   ): Promise<void>;
   inFrame_Redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string
+    url: string,
   ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(
     url: string,
     swConfig: Record<any, any>,
-    proxySetting: string
+    proxySetting: string,
   ): Promise<string | null>;
 }
 class Proxy implements ProxyInterface {
@@ -96,7 +96,8 @@ class Proxy implements ProxyInterface {
     switch (swConfig.type) {
       case "sw":
         if ("serviceWorker" in navigator) {
-          await navigator.serviceWorker.register(swConfig.file, {});
+          const scpe: string  = swConfig.config.prefix.match(/^\/[^/]+\//)?.[0] || '';
+          await navigator.serviceWorker.register(swConfig.file, { scope: scpe});
 
           navigator.serviceWorker.ready.then(async () => {
             await this.setTransports().then(async () => {
@@ -124,7 +125,7 @@ class Proxy implements ProxyInterface {
       registrations.forEach((registration) => {
         registration.update();
         self.logging.createLog(
-          `Service Worker at ${registration.scope} Updated`
+          `Service Worker at ${registration.scope} Updated`,
         );
       });
     });
@@ -136,7 +137,7 @@ class Proxy implements ProxyInterface {
       registrations.forEach((registration) => {
         registration.unregister();
         self.logging.createLog(
-          `Service Worker at ${registration.scope} Unregistered`
+          `Service Worker at ${registration.scope} Unregistered`,
         );
       });
     });
@@ -232,7 +233,7 @@ class Proxy implements ProxyInterface {
   async inFrame_Redirect(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string
+    url: string,
   ) {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
@@ -257,7 +258,7 @@ class Proxy implements ProxyInterface {
   async convertURL(
     swConfig: Record<any, any>,
     proxySetting: string,
-    url: string
+    url: string,
   ) {
     this.registerSW(swConfig[proxySetting].file).then(async () => {
       await this.setTransports();
@@ -292,7 +293,7 @@ class Proxy implements ProxyInterface {
   async getFavicon(
     url: string,
     swConfig: Record<any, any>,
-    proxySetting: string
+    proxySetting: string,
   ) {
     let page = await this.fetch(url);
     page = await page.toString();
@@ -324,6 +325,7 @@ class Proxy implements ProxyInterface {
         return null;
       }
     }
+    return null;
   }
 }
 

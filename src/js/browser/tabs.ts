@@ -99,7 +99,7 @@ class Tabs implements TabsInterface {
   }
   get unpinedTabEls() {
     return Array.prototype.slice.call(
-      this.el.querySelectorAll(".tab:not(.tab.pinned)")
+      this.el.querySelectorAll(".tab:not(.tab.pinned)"),
     );
   }
 
@@ -235,13 +235,13 @@ class Tabs implements TabsInterface {
               this.ui.createElement(
                 "span",
                 { class: "material-symbols-outlined" },
-                ["close"]
+                ["close"],
               ),
-            ]
+            ],
           ),
         ]),
         this.ui.createElement("div", { class: "tab-bottom-border" }),
-      ]
+      ],
     );
 
     const updateTabTitle = () => {
@@ -368,7 +368,7 @@ class Tabs implements TabsInterface {
   closeCurrentTab() {
     const activeTab = document.querySelector(".tab.active");
     const activeIFrame = document.querySelector(
-      "iframe.active"
+      "iframe.active",
     ) as HTMLIFrameElement;
     const activeIframeUrl = activeIFrame.src;
     if (activeTab && activeIFrame) {
@@ -383,10 +383,10 @@ class Tabs implements TabsInterface {
       const remainingTabs = document.querySelectorAll(".tab");
       if (remainingTabs.length > 0) {
         const previousTab = document.getElementById(
-          `tab-${currentTabId - 1}`
+          `tab-${currentTabId - 1}`,
         ) as HTMLDivElement;
         const nextTab = document.getElementById(
-          `tab-${currentTabId + 1}`
+          `tab-${currentTabId + 1}`,
         ) as HTMLDivElement;
         (
           previousTab ||
@@ -417,7 +417,7 @@ class Tabs implements TabsInterface {
       try {
         if (!iframe.contentDocument) {
           console.error(
-            "Unable to access iframe content due to cross-origin restrictions."
+            "Unable to access iframe content due to cross-origin restrictions.",
           );
           return;
         }
@@ -435,26 +435,26 @@ class Tabs implements TabsInterface {
         }
 
         if (favicon) {
-          let faviconUrl = favicon.href || favicon.getAttribute("href");
+          let faviconUrl: string | null | undefined = favicon.href || favicon.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
 
           faviconUrl = await this.proxy.getFavicon(
             faviconUrl as string,
             this.swConfig,
-            this.proxySetting
+            this.proxySetting,
           );
 
           if (faviconUrl && faviconImage) {
             faviconImage.setAttribute(
               "style",
-              `background-image: url('${faviconUrl}');`
+              `background-image: url('${faviconUrl}');`,
             );
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }
         } else {
           console.error(
-            "No favicon link element found within the iframe document."
+            "No favicon link element found within the iframe document.",
           );
         }
       } catch (error) {
@@ -576,7 +576,7 @@ closeCurrentGroup() {
     });
 
     let check = await this.proto.getInternalURL(
-      new URL(tabInfo.iframe.src).pathname
+      new URL(tabInfo.iframe.src).pathname,
     );
     if (typeof check === "string" && check.startsWith("daydream://")) {
       this.items.addressBar!.value = check;
@@ -694,11 +694,11 @@ closeCurrentGroup() {
           const currentTabPositionY = originalTabPositionY + moveVector.y;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionY,
-            tabPositionsY
+            tabPositionsY,
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget)
+            Math.min(tabEls.length, destinationIndexTarget),
           );
 
           if (currentIndex !== destinationIndex) {
@@ -714,25 +714,25 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging"
+                  "data-was-not-last-tab-when-started-dragging",
                 )
                 ? moveVector.y - this.tabContentHeights[currentIndex]
                 : moveVector.y
               : 0) +
             16;
           (document.querySelector(
-            "#create-tab"
+            "#create-tab",
           ) as HTMLElement)!.style.transform =
             `translate3d(0, min(${translatePx}px, calc(100vh - 280px)),0px), 0`;
         } else {
           const currentTabPositionX = originalTabPositionX + moveVector.x;
           const destinationIndexTarget = this.utils.closest(
             currentTabPositionX,
-            tabPositions
+            tabPositions,
           );
           const destinationIndex = Math.max(
             0,
-            Math.min(tabEls.length, destinationIndexTarget)
+            Math.min(tabEls.length, destinationIndexTarget),
           );
 
           if (currentIndex !== destinationIndex) {
@@ -748,14 +748,14 @@ closeCurrentGroup() {
             lastTabWidth +
             (tabEl === lastTab
               ? tabEl.getAttribute(
-                  "data-was-not-last-tab-when-started-dragging"
+                  "data-was-not-last-tab-when-started-dragging",
                 )
                 ? moveVector.x - this.tabContentWidths[currentIndex]
                 : moveVector.x
               : 0) +
             16;
           (document.querySelector(
-            "#create-tab"
+            "#create-tab",
           ) as HTMLElement)!.style.transform =
             `translate(min(${translatePx}px, calc(100vw - 46px)),0px)`;
         }
@@ -767,7 +767,7 @@ closeCurrentGroup() {
   animateTabMove(
     tabEl: HTMLElement,
     originIndex: number,
-    destinationIndex: number
+    destinationIndex: number,
   ) {
     if (destinationIndex < originIndex) {
       tabEl.parentNode!.insertBefore(tabEl, this.tabEls[destinationIndex]);
@@ -854,9 +854,7 @@ closeCurrentGroup() {
     this.logger.createLog(`Rearranged tabs`);
   }
   pageClient(iframe: HTMLIFrameElement) {
-    iframe.contentWindow!.window.open = (
-      url?: string | URL
-    ): Window | null => {
+    iframe.contentWindow!.window.open = (url?: string | URL): Window | null => {
       (async () => {
         const url2Parse = new URL(url!);
         if (url2Parse.host !== location.host) {
@@ -864,7 +862,7 @@ closeCurrentGroup() {
           const encodedUrl = await window.parent.proxy.convertURL(
             window.parent.SWconfig,
             window.parent.ProxySettings,
-            url2Encode
+            url2Encode,
           );
           window.parent.tabs.createTab(encodedUrl, false);
         } else if (
@@ -874,15 +872,14 @@ closeCurrentGroup() {
           window.parent.tabs.createTab(url2Parse.href, false);
         }
       })();
-  
+
       return null;
     };
-  
+
     iframe.contentWindow?.document.body.addEventListener("click", async () => {
       window.parent.eventsAPI.emit("ddx:page.clicked", null);
     });
   }
-  
 }
 
 export { Tabs };
