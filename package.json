@@ -7,7 +7,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "start": "node index.js"
+    "start": "tsx index.ts"
   },
   "devDependencies": {
     "@types/draggabilly": "^2.1.6",
@@ -26,6 +26,9 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
+    "@fastify/compress": "^8.1.0",
+    "@fastify/helmet": "^13.0.1",
+    "@fastify/static": "^8.2.0",
     "@jaames/iro": "^5.5.2",
     "@mercuryworkshop/bare-mux": "^2.1.7",
     "@mercuryworkshop/epoxy-transport": "^2.1.27",
@@ -34,6 +37,8 @@
     "@mercuryworkshop/wisp-js": "^0.3.3",
     "@nightnetwork/obscura": "^1.0.0",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
+    "@types/content-type": "^1.1.9",
+    "@types/node": "^24.0.10",
     "axios": "^1.8.4",
     "chalk": "^5.4.1",
     "compression": "^1.8.0",
@@ -43,6 +48,7 @@
     "eruda": "^3.4.1",
     "express": "^4.21.2",
     "express-serve-static-core": "^0.1.1",
+    "fastify": "^5.4.0",
     "filer": "^1.4.1",
     "gradient-string": "^3.0.0",
     "js-cookie": "^3.0.5",
@@ -50,6 +56,7 @@
     "localforage": "^1.10.0",
     "lucide": "^0.483.0",
     "sortablejs": "^1.15.6",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
 }
