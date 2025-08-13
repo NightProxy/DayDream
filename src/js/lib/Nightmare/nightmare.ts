@@ -11,7 +11,11 @@ interface MenuItem {
 interface NightmareUI {
   contextMenu: ContextMenu | null;
   menu: Menu | null;
-  createElement(tag: string, attributes?: Record<string, any>, children?: (string | HTMLElement)[]): HTMLElement;
+  createElement(
+    tag: string,
+    attributes?: Record<string, any>,
+    children?: (string | HTMLElement)[],
+  ): HTMLElement;
   queryComponent(componentName: string): HTMLElement | null;
   queryComponentAll(componentName: string): NodeListOf<HTMLElement>;
   setState(componentName: string, state: string): void;
@@ -34,7 +38,11 @@ class Nightmare implements NightmareUI {
     this.menu = new Menu(this);
   }
 
-  createElement(tag: string, attributes: Record<string, any> = {}, children: (string | HTMLElement)[] = []): HTMLElement {
+  createElement(
+    tag: string,
+    attributes: Record<string, any> = {},
+    children: (string | HTMLElement)[] = [],
+  ): HTMLElement {
     const element = document.createElement(tag);
     Object.entries(attributes).forEach(([key, value]) => {
       if (key.startsWith("on")) {
@@ -46,7 +54,9 @@ class Nightmare implements NightmareUI {
       }
     });
     children.forEach((child) => {
-      element.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+      element.appendChild(
+        typeof child === "string" ? document.createTextNode(child) : child,
+      );
     });
     return element;
   }
@@ -74,7 +84,9 @@ class Nightmare implements NightmareUI {
   }
 
   getStyle(componentName: string): string | null {
-    return this.queryComponent(componentName)?.getAttribute("styleMode") ?? null;
+    return (
+      this.queryComponent(componentName)?.getAttribute("styleMode") ?? null
+    );
   }
 
   applyStyle(componentName: string): void {
@@ -86,7 +98,9 @@ class Nightmare implements NightmareUI {
         if (styleValue) {
           component.style.cssText = styleValue;
         } else {
-          console.warn(`Style ${styleMode} is not defined for component ${componentName}.`);
+          console.warn(
+            `Style ${styleMode} is not defined for component ${componentName}.`,
+          );
         }
       }
     } else {
@@ -109,20 +123,43 @@ class Menu {
     this.ui = ui;
   }
 
-  createMenu(tag: HTMLElement, dropdownName: string, dropdownId: string, { items, pages }: { items: MenuItem[]; pages: UIPage[] }): void {
-    this.container = this.ui.createElement("div", { class: "fixed w-[300px] py-0 px-[10px] bg-[var(--background-color)] text-[var(--text-color)] shadow-[-2px_0_10px_rgba(0,0,0,0.1)] transition-all duration-200 ease-[ease] z-[1000] flex flex-col rounded-lg pt-0 pb-0" });
+  createMenu(
+    tag: HTMLElement,
+    dropdownName: string,
+    dropdownId: string,
+    { items, pages }: { items: MenuItem[]; pages: UIPage[] },
+  ): void {
+    this.container = this.ui.createElement("div", {
+      class:
+        "fixed w-[300px] py-0 px-[10px] bg-[var(--background-color)] text-[var(--text-color)] shadow-[-2px_0_10px_rgba(0,0,0,0.1)] transition-all duration-200 ease-[ease] z-[1000] flex flex-col rounded-lg pt-0 pb-0",
+    });
     this.menuTopBar = this.ui.createElement("div", { class: "menu-top-bar" });
 
-    const closeButton = this.ui.createElement("button", { class: "close-button" }, [
-      this.ui.createElement("span", { class: "material-symbols-outlined" }, ["close"]),
-    ]);
+    const closeButton = this.ui.createElement(
+      "button",
+      { class: "close-button" },
+      [
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, [
+          "close",
+        ]),
+      ],
+    );
     closeButton.onclick = () => this.closeMenu();
 
-    this.dropdown = this.ui.createElement("div", { class: "dropdown", id: dropdownId });
-    this.dropdownButton = this.ui.createElement("div", { class: "dropdown-button" }, [
-      this.ui.createElement("span", { class: "button-text" }, [dropdownName]),
-      this.ui.createElement("span", { class: "material-symbols-outlined" }, ["keyboard_arrow_down"]),
-    ]);
+    this.dropdown = this.ui.createElement("div", {
+      class: "dropdown",
+      id: dropdownId,
+    });
+    this.dropdownButton = this.ui.createElement(
+      "div",
+      { class: "dropdown-button" },
+      [
+        this.ui.createElement("span", { class: "button-text" }, [dropdownName]),
+        this.ui.createElement("span", { class: "material-symbols-outlined" }, [
+          "keyboard_arrow_down",
+        ]),
+      ],
+    );
 
     this.dropdownButton.addEventListener("click", () => {
       const isVisible = this.dropdownOptions!.style.display === "block";
@@ -130,9 +167,13 @@ class Menu {
       this.dropdownButton!.classList.toggle("active", !isVisible);
     });
 
-    this.dropdownOptions = this.ui.createElement("ul", { class: "dropdown-options" });
+    this.dropdownOptions = this.ui.createElement("ul", {
+      class: "dropdown-options",
+    });
     items.forEach((item) => {
-      const option = this.ui.createElement("li", { "data-id": item.pageId }, [item.label]);
+      const option = this.ui.createElement("li", { "data-id": item.pageId }, [
+        item.label,
+      ]);
       option.onclick = () => {
         this.showPage(item.pageId);
         const isVisible = this.dropdownOptions!.style.display === "block";
@@ -153,7 +194,11 @@ class Menu {
     this.container.appendChild(contentArea);
 
     pages.forEach((page) => {
-      const pageDiv = this.ui.createElement("div", { class: "menu-page", id: page.id, "data-id": page.id });
+      const pageDiv = this.ui.createElement("div", {
+        class: "menu-page",
+        id: page.id,
+        "data-id": page.id,
+      });
       pageDiv.innerHTML = page.content;
       this.pages[page.id] = pageDiv;
       contentArea.appendChild(pageDiv);
@@ -212,7 +257,7 @@ class ContextMenu {
     position: { x: number; y: number },
     id: string,
     style: string,
-    itemStyle: string
+    itemStyle: string,
   ): void {
     this.currentMenu?.remove();
 
@@ -227,14 +272,12 @@ class ContextMenu {
           "div",
           { style: `cursor: pointer; ${itemStyle}` },
           [
-            this.ui.createElement(
-              "button",
-              { onclick: item.action },
-              [item.text]
-            ),
-          ]
-        )
-      )
+            this.ui.createElement("button", { onclick: item.action }, [
+              item.text,
+            ]),
+          ],
+        ),
+      ),
     );
 
     document.body.appendChild(this.currentMenu);

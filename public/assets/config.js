@@ -4,13 +4,10 @@ self.__scramjet$config = {
   prefix: "/assets/res/",
   files: {
     wasm: "/assets/wasm.wasm",
-    worker: "/assets/worker.js",
-    client: "/assets/client.js",
-    shared: "/assets/shared.js",
-    sync: "/assets/sync.js"
+    all: "/assets/all.js",
+    sync: "/assets/sync.js",
   },
-  siteFlags: {
-  },
+  siteFlags: {},
   flags: {
     captureErrors: true,
     cleanErrors: false,
@@ -20,25 +17,25 @@ self.__scramjet$config = {
     serviceworkers: false,
     sourcemaps: true,
     strictRewrites: true,
-    syncxhr: false
+    syncxhr: false,
   },
   codec: {
     encode: (url) => {
       if (!url) return url;
       const base64 = btoa(url)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '')
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
       return encodeURIComponent(base64);
-        },
-  
+    },
+
     decode: (url) => {
-  if (!url) return url;
-  const base64 = decodeURIComponent(url)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-  return atob(padded);
+      if (!url) return url;
+      const base64 = decodeURIComponent(url)
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+      return atob(padded);
     },
   },
 };

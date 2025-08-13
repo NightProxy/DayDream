@@ -16,6 +16,9 @@ import { Functions } from "@browser/functions";
 import { Keys } from "@browser/keys";
 import { Search } from "@browser/search";
 
+//@ts-ignore
+const { ScramjetController } = $scramjetLoadController();
+
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
   const nightmarePlugins = new NightmarePlugins();
@@ -192,9 +195,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   functions.init();
 
   const searchbar = new Search(proxy, swConfig, proxySetting, proto);
-  searchbar.init(items.addressBar!);
+  //searchbar.init(items.addressBar!);
 
-  uvSearchBar!.addEventListener("keydown", (e) => {
+  /*uvSearchBar!.addEventListener("keydown", (e) => {
     if (e.key == "Enter") {
       e.preventDefault();
       setTimeout(() => {
@@ -204,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           .setAttribute("style", "display:none;");
       }, 30);
     }
-  });
+  });*/
 
   window.nightmare = nightmare;
   window.nightmarePlugins = nightmarePlugins;

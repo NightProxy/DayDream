@@ -1,36 +1,49 @@
 > ## Base:
+>
 > - [x] convert to TS
 > - [ ] Minification & obfuscation in the build step
 >
+> ## Obfuscation & Protection:
+>
+> - [ ] Code obfuscation with Dead Code
+> - [ ] Font Obfuscation
+> - [ ] Path obfuscation
+> - [ ] Keyword Removal
+> - [ ] Obscura Encoding
+> - [ ] IP range blocklists for each blocker
+>
 > ## Backends:
-> - [ ] Middleware injected into SW
-> - [ ] SJ fixes
-> - [ ] UV replacement
+>
+> - [ ] SJ patches
+> - [ ] Envade if finished
 >
 > ## APIs:
+>
 > - [ ] Bookmarks
 > - [ ] History
-> - [ ] Extensions (finish)
-> - [ ] Profiles (finish)
+> - [ ] Profiles
+> - [ ] Tabs (refactor)
 >
 > ## Internal Pages:
+>
 > - [ ] Bookmarks
 > - [ ] History
-> - [ ] Extensions
 > - [ ] Profiles
-> - [ ] Setup
+> - [ ] Settings
 >
 > ## UI/UX:
+>
 > - [ ] Redesign
 > - [ ] convert to TailwindCSS
-> - [ ] increase rendering speed (Potentially swap renderer)
 >
-> ## Tabs Upgrade:
+> ## Tabs:
 >
-> - [ ] Tab Pinning
-> - [ ] Tab Grouping
+> - [x] Tab Pinning
+> - [x] Tab Grouping
+> - [x] Tab Dragging (redo)
 >
-> ## Search Suggestions:
+> ## Search:
 >
+> - [ ] Refactor
 > - [ ] Calculator
 > - [ ] AI prompt (maybe)
