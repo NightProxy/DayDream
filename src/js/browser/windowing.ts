@@ -119,8 +119,7 @@ class Windowing implements WindowingInterface {
 </body>
 </html>
       `);
-    }
-    else {
+    } else {
       console.log("already in about:blank or iframe");
     }
   }

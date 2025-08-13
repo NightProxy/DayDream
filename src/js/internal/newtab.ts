@@ -5,6 +5,9 @@ import { ProfilesAPI } from "@apis/profiles";
 import { Proxy } from "@apis/proxy";
 import { DDXGlobal } from "@js/global/index";
 
+//@ts-ignore
+const { ScramjetController } = $scramjetLoadController();
+
 document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
 
