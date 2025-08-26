@@ -1,3 +1,4 @@
+import "../../css/global.css";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import { DDXGlobal } from "@js/global";
@@ -202,18 +203,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   //Apperance
-  initializeDropdown(
-    "tabLayoutButton",
-    "tabLayoutOptions",
-    "verticalTabs",
-    "false",
-    () => {
-      eventsAPI.emit("UI:changeLayout", null);
-      setTimeout(() => {
-        eventsAPI.emit("UI:changeLayout", null);
-      }, 100);
-    },
-  );
   initializeDropdown(
     "UIStyleButton",
     "UIStyleOptions",

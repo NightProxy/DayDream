@@ -70,7 +70,9 @@ class Proxy implements ProxyInterface {
       libcurl: "/libcurl/index.mjs",
     };
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
-    await this.connection.setTransport(transportFile, [{ wisp: this.wispUrl }]);
+    await this.connection.setTransport("/reflux/index.mjs", [
+      { transport: transportFile, wisp: this.wispUrl },
+    ]);
     this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
   }
 

@@ -1,3 +1,7 @@
+import "../css/vars.css";
+import "../css/imports.css";
+import "../css/global.css";
+
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { SettingsAPI } from "@apis/settings";
@@ -16,7 +20,7 @@ import { Functions } from "@browser/functions";
 import { Keys } from "@browser/keys";
 import { Search } from "@browser/search";
 
-//@ts-ignore
+// @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -27,8 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventsAPI = new EventSystem();
   const profilesAPI = new ProfilesAPI();
   const loggingAPI = new Logger();
-
-  profilesAPI.init();
 
   const proxy = new Proxy();
 
@@ -51,7 +53,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           scramjet.init().then(async () => {
             await proxy.setTransports();
           });
-          await settingsAPI.setItem("scramjet", "fixed");
         } else {
           const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init().then(async () => {
@@ -69,23 +70,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       func: null,
     },
   };
-  const proto = new Protocols(swConfig, proxySetting);
-  const windowing = new Windowing();
-  const globalFunctions = new DDXGlobal();
+
   const render = new Render(
     document.getElementById("browser-container") as HTMLDivElement,
   );
+  const proto = new Protocols(swConfig, proxySetting);
+  const windowing = new Windowing();
+  const globalFunctions = new DDXGlobal();
   const items = new Items();
   const utils = new Utils();
-  //const history = new History(utils, proxy, swConfig, proxySetting);
   const tabs = new Tabs(render, proto, swConfig, proxySetting);
 
-  tabs.createTab("daydream://newtab");
+  tabs.createTab("daydream://newtab", false);
 
   const functions = new Functions(tabs, proto);
-  const keys = new Keys(tabs, functions);
+  //const keys = new Keys(tabs, functions);
 
-  keys.init();
+  //keys.init();
 
   if (
     proxySetting === "sj" &&
@@ -110,13 +111,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   uvSearchBar!.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log("Searching...");
 
       const searchValue = uvSearchBar!.value.trim();
 
       if (searchValue.startsWith("daydream://")) {
         const url = (await proto.processUrl(searchValue)) || "/internal/error/";
-        const iframe = items.iframeContainer!.querySelector(
+        const iframe = items.frameContainer!.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
         iframe!.setAttribute("src", url);
@@ -145,22 +145,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           await proxy.setTransports();
         });
 
-        console.log("swConfigSettings:", swConfigSettings);
-        console.log(
-          "swConfigSettings.func exists:",
-          typeof swConfigSettings.func === "function",
-        );
         if (swConfigSettings && typeof swConfigSettings.func === "function") {
           swConfigSettings.func();
-        } else {
-          console.warn("No function to execute in swConfigSettings.func");
         }
-
-        console.log(
-          `Using proxy: ${proxySetting}, Settings are: ` +
-            (await swConfigSettings),
-        );
-        console.log(swConfigSettings);
 
         if (swConfigSettings && swConfigSettings.type) {
           switch (swConfigSettings.type) {
@@ -195,19 +182,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   functions.init();
 
   const searchbar = new Search(proxy, swConfig, proxySetting, proto);
-  //searchbar.init(items.addressBar!);
-
-  /*uvSearchBar!.addEventListener("keydown", (e) => {
-    if (e.key == "Enter") {
-      e.preventDefault();
-      setTimeout(() => {
-        searchbar.clearSuggestions();
-        document
-          .querySelector("#suggestion-list.suggestion-list")!
-          .setAttribute("style", "display:none;");
-      }, 30);
-    }
-  });*/
 
   window.nightmare = nightmare;
   window.nightmarePlugins = nightmarePlugins;
@@ -224,7 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.tabs = tabs;
   window.windowing = windowing;
   window.functions = functions;
-  window.keys = keys;
+  // window.keys = keys;
   window.searchbar = searchbar;
   window.SWconfig = swConfig;
   window.ProxySettings = proxySetting;

@@ -1,23 +1,7 @@
-interface ItemsInterface {
-  toggleTabsButton: HTMLButtonElement | null;
-  homeButton: HTMLButtonElement | null;
-  backButton: HTMLButtonElement | null;
-  reloadButton: HTMLButtonElement | null;
-  forwardButton: HTMLButtonElement | null;
-  addressBar: HTMLInputElement | null;
-  bookmarkButton: HTMLButtonElement | null;
-  extensionsButton: HTMLButtonElement | null;
-  profilesButton: HTMLButtonElement | null;
-  extrasButton: HTMLButtonElement | null;
-  tabGroupsContainer: HTMLDivElement | null;
-  newTab: HTMLButtonElement | null;
-  iframeContainer: HTMLDivElement | null;
-  activeTabIframe: HTMLIFrameElement | null;
-  historyButton: HTMLButtonElement | null;
-}
+import { Nightmare } from "@libs/Nightmare/nightmare";
 
-class Items implements ItemsInterface {
-  toggleTabsButton: HTMLButtonElement | null;
+/*interface ItemsInterface {
+  ui: Nightmare;
   homeButton: HTMLButtonElement | null;
   backButton: HTMLButtonElement | null;
   reloadButton: HTMLButtonElement | null;
@@ -32,43 +16,90 @@ class Items implements ItemsInterface {
   iframeContainer: HTMLDivElement | null;
   activeTabIframe: HTMLIFrameElement | null;
   historyButton: HTMLButtonElement | null;
+}*/
+
+class Items /*implements ItemsInterface */ {
+  ui: Nightmare;
+  navbar: HTMLDivElement | null;
+  utilityBar: HTMLDivElement | null;
+  topBar: HTMLDivElement | null;
+  tabBar: HTMLDivElement | null;
+  homeButton: HTMLButtonElement | null;
+  backButton: HTMLButtonElement | null;
+  reloadButton: HTMLButtonElement | null;
+  forwardButton: HTMLButtonElement | null;
+  addressBar: HTMLInputElement | null;
+  bookmarkButton: HTMLButtonElement | null;
+  extensionsButton: HTMLButtonElement | null;
+  profilesButton: HTMLButtonElement | null;
+  extrasButton: HTMLButtonElement | null;
+  menuContent: HTMLDivElement | null;
+  newTab: HTMLButtonElement | null;
+  frameContainer: HTMLDivElement | null;
+  activeFrame: HTMLIFrameElement | null;
 
   constructor() {
-    this.toggleTabsButton = document.getElementById(
-      "toggleTabs",
+    this.ui = new Nightmare();
+    this.navbar = this.ui.queryComponent("navbar") as HTMLDivElement;
+    this.utilityBar = this.ui.queryComponent("utility-bar") as HTMLDivElement;
+    this.topBar = this.ui.queryComponent("top-bar") as HTMLDivElement;
+    this.tabBar = this.ui.queryComponent(
+      "tab-bar",
+      this.topBar,
+    ) as HTMLDivElement;
+    this.homeButton = this.ui.queryComponent(
+      "home",
+      this.utilityBar,
     ) as HTMLButtonElement;
-    this.homeButton = document.getElementById("home") as HTMLButtonElement;
-    this.backButton = document.getElementById("backward") as HTMLButtonElement;
-    this.reloadButton = document.getElementById("reload") as HTMLButtonElement;
-    this.forwardButton = document.getElementById(
+    this.backButton = this.ui.queryComponent(
+      "back",
+      this.utilityBar,
+    ) as HTMLButtonElement;
+    this.reloadButton = this.ui.queryComponent(
+      "reload",
+      this.utilityBar,
+    ) as HTMLButtonElement;
+    this.forwardButton = this.ui.queryComponent(
       "forward",
+      this.utilityBar,
     ) as HTMLButtonElement;
-    this.addressBar = document.getElementById("uv-address") as HTMLInputElement;
-    this.bookmarkButton = document.getElementById(
+    this.addressBar = this.ui.queryComponent(
+      "address-bar",
+      this.utilityBar,
+    ) as HTMLInputElement;
+    this.bookmarkButton = this.ui.queryComponent(
       "bookmark",
+      this.utilityBar,
     ) as HTMLButtonElement;
-    this.extensionsButton = document.getElementById(
+    this.extensionsButton = this.ui.queryComponent(
       "extensions",
+      this.navbar,
     ) as HTMLButtonElement;
-    this.profilesButton = document.getElementById(
-      "profilesButton",
+    this.profilesButton = this.ui.queryComponent(
+      "profiles",
+      this.tabBar,
     ) as HTMLButtonElement;
-    this.extrasButton = document.getElementById(
-      "more-options",
+    this.extrasButton = this.ui.queryComponent(
+      "menu",
+      this.utilityBar,
     ) as HTMLButtonElement;
-    this.tabGroupsContainer = document.getElementById(
-      "tab-groups",
+    this.menuContent = this.ui.queryComponent(
+      "menu-content",
+      this.utilityBar,
     ) as HTMLDivElement;
-    this.newTab = document.getElementById("create-tab") as HTMLButtonElement;
-    this.iframeContainer = document.querySelector(
-      ".iframe-container",
+    this.newTab = this.ui.queryComponent(
+      "new-tab",
+      this.topBar,
+    ) as HTMLButtonElement;
+    this.frameContainer = this.ui.queryComponent(
+      "frame-container",
     ) as HTMLDivElement;
-    this.activeTabIframe = this.iframeContainer?.querySelector(
+    this.activeFrame = this.frameContainer?.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
-    this.historyButton = document.getElementById(
+    /*this.historyButton = this.ui.queryComponent("history") as HTMLButtonElement;
       "history",
-    ) as HTMLButtonElement;
+    ) as HTMLButtonElement;*/
   }
 }
 

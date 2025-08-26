@@ -10,7 +10,7 @@ self.__scramjet$config = {
   siteFlags: {},
   flags: {
     captureErrors: true,
-    cleanErrors: false,
+    cleanErrors: true,
     naiiveRewriter: false,
     rewriterLogs: false,
     scramitize: false,
@@ -22,20 +22,29 @@ self.__scramjet$config = {
   codec: {
     encode: (url) => {
       if (!url) return url;
-      const base64 = btoa(url)
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-      return encodeURIComponent(base64);
+      return encodeURIComponent(
+        url
+          .toString()
+          .split("")
+          .map((char, ind) =>
+            ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char,
+          )
+          .join(""),
+      );
     },
 
     decode: (url) => {
       if (!url) return url;
-      const base64 = decodeURIComponent(url)
-        .replace(/-/g, "+")
-        .replace(/_/g, "/");
-      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-      return atob(padded);
+      let [input, ...search] = url.split("?");
+
+      return (
+        decodeURIComponent(input)
+          .split("")
+          .map((char, ind) =>
+            ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char,
+          )
+          .join("") + (search.length ? "?" + search.join("?") : "")
+      );
     },
   },
 };
