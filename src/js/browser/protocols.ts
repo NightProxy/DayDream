@@ -47,7 +47,7 @@ class Protocols implements ProtoInterface {
     this.routes.get(cleanProto)!.set(path, { url, proxy });
   }
 
-  processUrl(url: string): Promise<string | void> {
+  async processUrl(url: string): Promise<string | void> {
     if (url.startsWith("javascript:")) {
       const js = url.slice("javascript:".length);
       const iframe = document.querySelector(
@@ -73,28 +73,24 @@ class Protocols implements ProtoInterface {
           const wildcard = protoRoutes.get("*");
           if (wildcard) {
             const fullUrl = this.joinURL(wildcard.url, path);
-            return Promise.resolve(
-              wildcard.proxy
-                ? this.proxy.convertURL(
-                    this.swConfig,
-                    this.proxySetting,
-                    fullUrl,
-                  )
-                : fullUrl,
-            );
+            return wildcard.proxy
+              ? await this.proxy.convertURL(
+                  this.swConfig,
+                  this.proxySetting,
+                  fullUrl,
+                )
+              : fullUrl;
           }
         }
 
         if (resolved) {
-          return Promise.resolve(
-            resolved.proxy
-              ? this.proxy.convertURL(
-                  this.swConfig,
-                  this.proxySetting,
-                  resolved.url,
-                )
-              : resolved.url,
-          );
+          return resolved.proxy
+            ? await this.proxy.convertURL(
+                this.swConfig,
+                this.proxySetting,
+                resolved.url,
+              )
+            : resolved.url;
         }
       }
     }
@@ -105,10 +101,24 @@ class Protocols implements ProtoInterface {
       url.startsWith("/") ||
       url.startsWith("data:")
     ) {
-      return Promise.resolve(url);
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        try {
+          const urlObj = new URL(url);
+          if (urlObj.host !== location.host) {
+            return await this.proxy.convertURL(
+              this.swConfig,
+              this.proxySetting,
+              url,
+            );
+          }
+        } catch (error) {
+          console.error("Error parsing URL for proxy check:", error);
+        }
+      }
+      return url;
     }
 
-    return Promise.resolve("/internal/" + url);
+    return "/internal/" + url;
   }
 
   getInternalURL(url: string): Promise<string | void> {
@@ -136,11 +146,11 @@ class Protocols implements ProtoInterface {
 
   async navigate(url: string): Promise<void> {
     const processedUrl = (await this.processUrl(url)) || "/internal/error/";
-    if (!this.items.iframeContainer) {
+    if (!this.items.frameContainer) {
       this.logging.createLog("iframeContainer is not available.");
       return;
     }
-    const iframe = this.items.iframeContainer!.querySelector(
+    const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement | null;
     iframe!.setAttribute("src", processedUrl);

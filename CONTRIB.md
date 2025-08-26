@@ -22,7 +22,7 @@ public/
 │   │   │   ├── pages/
 │   │   │   │   └── (page-only CSS files, for internal URLs)
 │   │   │   ├── styles/
-│   │   │   │   └── (separated styles for things like vertical tabs)
+│   │   │   │   └── (separated styles for specific UI components)
 │   │   │   └── (all of the main CSS files)
 │   │   ├── imgs/
 │   │   │   ├── b/

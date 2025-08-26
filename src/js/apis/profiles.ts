@@ -1,391 +1,561 @@
-import Cookies from "js-cookie";
+import localforage from "localforage";
 
-interface Profile {
+interface ProfileData {
+  Cookies: string;
+  LocalStorage: string;
+  IDB: string;
+}
+
+interface DatabaseExport {
   name: string;
-  data: string;
-  date: string;
+  data: Record<string, any[]>;
 }
 
-interface CookieCollection {
-  [cookieName: string]: string;
-}
-
-interface IDBItem {
-  key?: IDBValidKey;
-  value: any;
-}
-
-interface IDBStoreData {
-  [storeName: string]: IDBItem[];
-}
-
-interface IDBDataExport {
-  name: string;
-  data: IDBStoreData;
-}
-
-interface ExportedData {
-  idbData: string;
-  localStorageData: string;
-  cookies: CookieCollection;
-}
-
-interface CookiesInterface {
-  get(): CookieCollection;
-  set(name: string, value: string, options?: any): void;
-  remove(name: string, options?: any): void;
+interface ProfileExport {
+  profileId: string | null;
+  timestamp: string;
+  indexedDB: DatabaseExport[];
+  localStorage: Record<string, string>;
+  cookies: Record<string, string>;
 }
 
 class ProfilesAPI {
-  private PROFILE_DB_NAME: string;
-  private PROFILE_STORE_NAME: string;
-  private cookies: CookiesInterface;
-  private encryption: Profiles_DataEncryption;
+  private canExceedProfileLimit: (() => boolean) | null;
+  private maxProfiles: number;
+  private currentProfile: string | null;
+  private profileStore: LocalForage;
+  private idbStore: LocalForage;
 
-  constructor() {
-    this.PROFILE_DB_NAME = "profilesDB";
-    this.PROFILE_STORE_NAME = "profiles";
-    this.cookies = Cookies as CookiesInterface;
-    this.encryption = new Profiles_DataEncryption();
+  constructor(
+    canExceedProfileLimit: (() => boolean) | null = null,
+    maxProfiles: number = 3,
+  ) {
+    this.canExceedProfileLimit = canExceedProfileLimit;
+    this.maxProfiles = maxProfiles;
+    this.currentProfile = null;
+
+    this.profileStore = localforage.createInstance({
+      name: "Profiles",
+      storeName: "profiles",
+    });
+
+    this.idbStore = localforage.createInstance({
+      name: "ProfileIDB",
+      storeName: "current_profile_idb",
+    });
   }
 
-  async openDB(dbName: string, storeName: string): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request: IDBOpenDBRequest = indexedDB.open(dbName);
-      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-        const db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName);
+  encode(data: any): string {
+    return JSON.stringify(data);
+  }
+
+  decode(encodedData: string): any {
+    try {
+      return JSON.parse(encodedData);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async getAllCookies(): Promise<Record<string, string>> {
+    const cookies: Record<string, string> = {};
+    const cookieString = document.cookie;
+
+    if (cookieString) {
+      cookieString.split(";").forEach((cookie) => {
+        const [name, ...rest] = cookie.trim().split("=");
+        if (name) {
+          cookies[name] = rest.join("=");
         }
-      };
-      request.onsuccess = (event: Event) =>
-        resolve((event.target as IDBOpenDBRequest).result);
-      request.onerror = (event: Event) =>
-        reject((event.target as IDBOpenDBRequest).error);
-    });
-  }
-
-  async init(): Promise<void> {
-    const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
-    const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
-    const store = tx.objectStore(this.PROFILE_STORE_NAME);
-    const request = store.get("activeProfile");
-
-    request.onsuccess = () => {
-      if (!request.result) {
-        store.put("", "activeProfile");
-      }
-    };
-    await this._waitForRequest(request);
-    db.close();
-  }
-
-  async createProfile(
-    profileName: string,
-    autoSelect: boolean = false,
-  ): Promise<Profile> {
-    const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
-    const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
-    const store = tx.objectStore(this.PROFILE_STORE_NAME);
-
-    const profile: Profile = {
-      name: profileName,
-      data: "",
-      date: new Date().toISOString(),
-    };
-
-    const request = store.put(profile, profileName);
-    await this._waitForRequest(request);
-
-    if (autoSelect) {
-      await this.setActiveProfile(profileName);
+      });
     }
 
-    db.close();
-    return profile;
-  }
-
-  async getProfile(profileName: string): Promise<Profile | null> {
-    const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
-    const tx = db.transaction(this.PROFILE_STORE_NAME, "readonly");
-    const store = tx.objectStore(this.PROFILE_STORE_NAME);
-
-    const request = store.get(profileName);
-    const profile = await this._waitForRequest(request);
-
-    db.close();
-    return profile || null;
-  }
-
-  async setActiveProfile(profileName: string): Promise<void> {
-    const profile = await this.getProfile(profileName);
-    if (!profile) {
-      throw new Error(`Profile "${profileName}" does not exist.`);
-    }
-
-    await this.saveCurrentProfileData();
-
-    const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
-    const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
-    const store = tx.objectStore(this.PROFILE_STORE_NAME);
-    const request = store.put(profileName, "activeProfile");
-    await this._waitForRequest(request);
-    db.close();
-
-    await this.clearAllData();
-    await this.importData(profile.data);
-  }
-
-  async getActiveProfile(): Promise<Profile | null> {
-    const db = await this.openDB(this.PROFILE_DB_NAME, this.PROFILE_STORE_NAME);
-    const tx = db.transaction(this.PROFILE_STORE_NAME, "readonly");
-    const store = tx.objectStore(this.PROFILE_STORE_NAME);
-
-    const request = store.get("activeProfile");
-    const activeProfileName = (await this._waitForRequest(request)) as
-      | string
-      | null;
-
-    db.close();
-    return activeProfileName ? await this.getProfile(activeProfileName) : null;
-  }
-
-  async saveCurrentProfileData(): Promise<void> {
-    let activeProfile = await this.getActiveProfile();
-    console.log(activeProfile);
-    if (activeProfile) {
-      const data = await this.exportData();
-      activeProfile.data = data;
-      console.log(activeProfile);
-
-      const db = await this.openDB(
-        this.PROFILE_DB_NAME,
-        this.PROFILE_STORE_NAME,
-      );
-      const tx = db.transaction(this.PROFILE_STORE_NAME, "readwrite");
-      const store = tx.objectStore(this.PROFILE_STORE_NAME);
-      const request = store.put(activeProfile, activeProfile.name);
-      await this._waitForRequest(request);
-      db.close();
-    }
-  }
-
-  async clearAllData(): Promise<void> {
-    localStorage.clear();
-    const dbNames = await indexedDB.databases();
-    for (const { name } of dbNames) {
-      if (name !== this.PROFILE_DB_NAME && name) {
-        await indexedDB.deleteDatabase(name);
-      }
-    }
-    this.clearCookies();
-  }
-
-  clearCookies(): void {
-    const allCookies = this.cookies.get();
-    Object.keys(allCookies).forEach((cookieName) => {
-      this.cookies.remove(cookieName, { path: "/" });
-    });
-    console.log("All cookies have been cleared!");
-  }
-
-  extractCookies(): CookieCollection {
-    let cookies: CookieCollection = {};
-    document.cookie.split(";").forEach((c) => {
-      let parts = c.split("=");
-      cookies[parts.shift()?.trim() || ""] = decodeURI(parts.join("="));
-    });
     return cookies;
   }
 
-  async getIDBData(databaseName: string): Promise<IDBDataExport> {
-    return new Promise((resolve, reject) => {
-      let dbRequest: IDBOpenDBRequest = indexedDB.open(databaseName);
-
-      dbRequest.onsuccess = (event: Event) => {
-        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-        let transaction: IDBTransaction = db.transaction(
-          db.objectStoreNames,
-          "readonly",
-        );
-        let data: IDBStoreData = {};
-
-        transaction.oncomplete = () => resolve({ name: databaseName, data });
-        transaction.onerror = (event: Event) =>
-          reject((event.target as IDBTransaction).error);
-
-        for (let i = 0; i < db.objectStoreNames.length; i++) {
-          let storeName = db.objectStoreNames[i];
-          let objectStore = transaction.objectStore(storeName);
-          let request = objectStore.openCursor();
-          data[storeName] = [];
-
-          request.onsuccess = (event: Event) => {
-            let cursor: IDBCursorWithValue | null = (event.target as IDBRequest)
-              .result;
-            if (cursor) {
-              data[storeName].push({
-                key: cursor.primaryKey,
-                value: cursor.value,
-              });
-              cursor.continue();
-            }
-          };
-
-          request.onerror = (event: Event) =>
-            reject((event.target as IDBRequest).error);
-        }
-      };
-
-      dbRequest.onerror = (event: Event) =>
-        reject((event.target as IDBOpenDBRequest).error);
+  async setCookies(cookies: Record<string, string>): Promise<void> {
+    Object.entries(cookies).forEach(([name, value]) => {
+      document.cookie = `${name}=${value}; path=/`;
     });
   }
 
-  async getAllIDBData(): Promise<IDBDataExport[]> {
-    const databases = await indexedDB.databases();
-    let promises = databases
-      .filter((dbInfo) => dbInfo.name !== this.PROFILE_DB_NAME && dbInfo.name)
-      .map((dbInfo) => this.getIDBData(dbInfo.name!));
-
-    return Promise.all(promises);
+  async clearAllCookies(): Promise<void> {
+    const cookies = await this.getAllCookies();
+    Object.keys(cookies).forEach((name) => {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    });
   }
 
-  async exportData(): Promise<string> {
-    const idbData = await this.getAllIDBData();
-    let data: ExportedData = {
-      idbData: JSON.stringify(idbData),
-      localStorageData: JSON.stringify({ ...localStorage }),
-      cookies: this.extractCookies(),
+  async getAllLocalStorage(): Promise<Record<string, string>> {
+    const data: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+          data[key] = value;
+        }
+      }
+    }
+    return data;
+  }
+
+  async setLocalStorage(data: Record<string, string>): Promise<void> {
+    Object.entries(data).forEach(([key, value]) => {
+      localStorage.setItem(key, value);
+    });
+  }
+
+  async clearAllLocalStorage() {
+    localStorage.clear();
+  }
+
+  async getAllIDBData(): Promise<Record<string, any>> {
+    try {
+      const databases = await indexedDB.databases();
+      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+
+      const data: Record<string, any> = {};
+
+      for (const dbInfo of userDatabases) {
+        try {
+          const dbExport = await this.exportSingleDatabase(dbInfo.name || "");
+          if (dbExport && dbInfo.name) {
+            data[dbInfo.name] = dbExport.data;
+          }
+        } catch (error) {
+          console.warn(
+            `Failed to export database ${dbInfo.name} for profile save:`,
+            error,
+          );
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Failed to get IndexedDB data for profile:", error);
+      return {};
+    }
+  }
+
+  async setIDBData(data: Record<string, any>): Promise<void> {
+    try {
+      await this.clearAllIDB();
+
+      for (const [dbName, dbData] of Object.entries(data)) {
+        if (typeof dbData === "object" && dbData !== null) {
+          await this.restoreDatabase(dbName, dbData);
+        } else {
+          await this.idbStore.setItem(dbName, dbData);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to set IndexedDB data:", error);
+      for (const [key, value] of Object.entries(data)) {
+        await this.idbStore.setItem(key, value);
+      }
+    }
+  }
+
+  async clearAllIDB(): Promise<void> {
+    try {
+      const databases = await indexedDB.databases();
+      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+
+      for (const dbInfo of userDatabases) {
+        try {
+          if (dbInfo.name) {
+            await new Promise<boolean>((resolve, reject) => {
+              const deleteRequest = indexedDB.deleteDatabase(dbInfo.name!);
+              deleteRequest.onsuccess = () => {
+                console.log(`Deleted database: ${dbInfo.name}`);
+                resolve(true);
+              };
+              deleteRequest.onerror = () => {
+                console.warn(`Failed to delete database: ${dbInfo.name}`);
+                reject(deleteRequest.error);
+              };
+              deleteRequest.onblocked = () => {
+                console.warn(`Delete blocked for database: ${dbInfo.name}`);
+                resolve(true);
+              };
+            });
+          }
+        } catch (error) {
+          console.warn(`Error deleting database ${dbInfo.name}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to clear IndexedDB:", error);
+    }
+  }
+
+  async restoreDatabase(
+    dbName: string,
+    dbData: Record<string, any[]>,
+  ): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const version = 1;
+      const request = indexedDB.open(dbName, version);
+
+      request.onerror = () => {
+        console.error(`Failed to restore database ${dbName}:`, request.error);
+        reject(request.error);
+      };
+
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        for (const storeName of Object.keys(dbData)) {
+          if (!db.objectStoreNames.contains(storeName)) {
+            const storeData = dbData[storeName];
+            const hasId = storeData.some(
+              (item: any) => item && typeof item === "object" && "id" in item,
+            );
+
+            if (hasId) {
+              db.createObjectStore(storeName, {
+                keyPath: "id",
+                autoIncrement: true,
+              });
+            } else {
+              db.createObjectStore(storeName, { autoIncrement: true });
+            }
+          }
+        }
+      };
+
+      request.onsuccess = async (event: Event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        try {
+          const transaction = db.transaction(Object.keys(dbData), "readwrite");
+
+          for (const [storeName, storeData] of Object.entries(dbData)) {
+            const store = transaction.objectStore(storeName);
+
+            if (Array.isArray(storeData)) {
+              for (const item of storeData) {
+                store.add(item);
+              }
+            }
+          }
+
+          transaction.oncomplete = () => {
+            console.log(`Successfully restored database: ${dbName}`);
+            db.close();
+            resolve(true);
+          };
+
+          transaction.onerror = () => {
+            console.error(
+              `Transaction failed for database ${dbName}:`,
+              transaction.error,
+            );
+            db.close();
+            reject(transaction.error);
+          };
+        } catch (error) {
+          console.error(
+            `Failed to restore data for database ${dbName}:`,
+            error,
+          );
+          db.close();
+          reject(error);
+        }
+      };
+    });
+  }
+
+  async getCurrentBrowserState(): Promise<ProfileData> {
+    const [cookies, localStorage, idb] = await Promise.all([
+      this.getAllCookies(),
+      this.getAllLocalStorage(),
+      this.getAllIDBData(),
+    ]);
+
+    return {
+      Cookies: this.encode(cookies),
+      LocalStorage: this.encode(localStorage),
+      IDB: this.encode(idb),
+    };
+  }
+
+  async applyBrowserState(state: ProfileData): Promise<void> {
+    await Promise.all([
+      this.clearAllCookies(),
+      this.clearAllLocalStorage(),
+      this.clearAllIDB(),
+    ]);
+    const cookies = this.decode(state.Cookies) || {};
+    const localStorage = this.decode(state.LocalStorage) || {};
+    const idb = this.decode(state.IDB) || {};
+
+    await Promise.all([
+      this.setCookies(cookies),
+      this.setLocalStorage(localStorage),
+      this.setIDBData(idb),
+    ]);
+  }
+
+  async createProfile(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
+    const existingProfile = await this.profileStore.getItem(userID);
+    if (existingProfile) {
+      throw new Error(`Profile ${userID} already exists`);
+    }
+    const profiles = await this.listProfiles();
+    if (profiles.length >= this.maxProfiles) {
+      if (!this.canExceedProfileLimit || !this.canExceedProfileLimit()) {
+        throw new Error(
+          `Maximum number of profiles (${this.maxProfiles}) reached`,
+        );
+      }
+    }
+    const emptyProfile: ProfileData = {
+      Cookies: this.encode({}),
+      LocalStorage: this.encode({}),
+      IDB: this.encode({}),
     };
 
-    let jsonData = JSON.stringify(data);
-    let encryptedData = this.encryption.base6xorEncrypt(jsonData);
-    return encryptedData;
+    await this.profileStore.setItem(userID, emptyProfile);
+    return true;
   }
 
-  async importData(input: string): Promise<void> {
-    try {
-      let decryptedDataJSON = this.encryption.base6xorDecrypt(input);
-      let decryptedData = JSON.parse(decryptedDataJSON) as ExportedData;
+  async deleteProfile(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
 
-      let idbData = JSON.parse(decryptedData.idbData) as IDBDataExport[];
-      let idbPromises = idbData.map((dbInfo) => {
-        return this._importIDBData(dbInfo);
-      });
-
-      await Promise.all(idbPromises);
-
-      localStorage.clear();
-      let localStorageData = JSON.parse(
-        decryptedData.localStorageData,
-      ) as Record<string, string>;
-      Object.keys(localStorageData).forEach((key) => {
-        localStorage.setItem(key, localStorageData[key]);
-      });
-
-      this.clearCookies();
-      Object.entries(decryptedData.cookies).forEach(
-        ([cookieName, cookieValue]) => {
-          this.cookies.set(cookieName, cookieValue);
-        },
+    const profile = await this.profileStore.getItem(userID);
+    if (!profile) {
+      throw new Error(`Profile ${userID} does not exist`);
+    }
+    if (this.currentProfile === userID) {
+      throw new Error(
+        "Cannot delete currently active profile. Switch to another profile first.",
       );
-    } catch (err) {
-      console.error("Error importing data:", err);
     }
+
+    await this.profileStore.removeItem(userID);
+    return true;
   }
 
-  async _importIDBData(dbInfo: IDBDataExport): Promise<void> {
-    return new Promise((resolve, reject) => {
-      let dbRequest: IDBOpenDBRequest = indexedDB.open(dbInfo.name);
+  async switchProfile(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
+    const targetProfile = await this.profileStore.getItem<ProfileData>(userID);
+    if (!targetProfile) {
+      throw new Error(`Profile ${userID} does not exist`);
+    }
+    if (this.currentProfile) {
+      await this.saveProfile(this.currentProfile);
+    }
+    await this.applyBrowserState(targetProfile);
 
-      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
+    this.currentProfile = userID;
 
-        Object.keys(dbInfo.data).forEach((storeName) => {
-          if (!db.objectStoreNames.contains(storeName)) {
-            db.createObjectStore(storeName);
+    return true;
+  }
+
+  async saveProfile(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
+    const existingProfile = await this.profileStore.getItem(userID);
+    if (!existingProfile) {
+      throw new Error(`Profile ${userID} does not exist`);
+    }
+    const currentState = await this.getCurrentBrowserState();
+    await this.profileStore.setItem(userID, currentState);
+
+    return true;
+  }
+
+  async listProfiles(): Promise<string[]> {
+    return await this.profileStore.keys();
+  }
+
+  async clearCurrentProfileData(): Promise<boolean> {
+    await Promise.all([
+      this.clearAllCookies(),
+      this.clearAllLocalStorage(),
+      this.clearAllIDB(),
+    ]);
+
+    return true;
+  }
+
+  getCurrentProfile(): string | null {
+    return this.currentProfile;
+  }
+
+  async getProfileData(
+    userID: string,
+  ): Promise<{ cookies: any; localStorage: any; idb: any } | null> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
+
+    const profile = await this.profileStore.getItem<ProfileData>(userID);
+    if (!profile) {
+      return null;
+    }
+
+    return {
+      cookies: this.decode(profile.Cookies),
+      localStorage: this.decode(profile.LocalStorage),
+      idb: this.decode(profile.IDB),
+    };
+  }
+
+  async profileExists(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      return false;
+    }
+
+    const profile = await this.profileStore.getItem(userID);
+    return profile !== null;
+  }
+
+  async exportIndexedDBs(): Promise<DatabaseExport[]> {
+    try {
+      const databases = await indexedDB.databases();
+
+      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+
+      const exports: DatabaseExport[] = [];
+
+      for (const dbInfo of userDatabases) {
+        try {
+          const dbExport = await this.exportSingleDatabase(dbInfo.name || "");
+          if (dbExport) {
+            exports.push(dbExport);
           }
-        });
-      };
-
-      dbRequest.onsuccess = (event: Event) => {
-        let db: IDBDatabase = (event.target as IDBOpenDBRequest).result;
-
-        const storeNames = Object.keys(dbInfo.data);
-        if (storeNames.length === 0) {
-          resolve();
-          return;
+        } catch (error) {
+          console.warn(`Failed to export database ${dbInfo.name}:`, error);
         }
+      }
 
-        const existingStoreNames = storeNames.filter((name) =>
-          db.objectStoreNames.contains(name),
-        );
-
-        if (existingStoreNames.length === 0) {
-          resolve();
-          return;
-        }
-
-        let transaction: IDBTransaction = db.transaction(
-          existingStoreNames,
-          "readwrite",
-        );
-
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = (event: Event) =>
-          reject((event.target as IDBTransaction).error);
-
-        existingStoreNames.forEach((storeName) => {
-          let objectStore = transaction.objectStore(storeName);
-          let storeData = dbInfo.data[storeName];
-
-          const clearRequest = objectStore.clear();
-          clearRequest.onsuccess = () => {
-            storeData.forEach((item) => {
-              if (item.key !== undefined) {
-                objectStore.put(item.value, item.key);
-              } else {
-                objectStore.add(item.value);
-              }
-            });
-          };
-        });
-      };
-
-      dbRequest.onerror = (event: Event) =>
-        reject((event.target as IDBOpenDBRequest).error);
-    });
+      return exports;
+    } catch (error) {
+      console.error("Failed to export IndexedDB databases:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      throw new Error("Failed to export IndexedDB databases: " + errorMessage);
+    }
   }
 
-  async _waitForRequest<T>(request: IDBRequest<T>): Promise<T> {
+  async exportSingleDatabase(dbName: string): Promise<DatabaseExport | null> {
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const request = indexedDB.open(dbName);
+
+      request.onerror = () => {
+        reject(new Error(`Failed to open database ${dbName}`));
+      };
+
+      request.onsuccess = async (event: Event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        try {
+          const storeNames = Array.from(db.objectStoreNames);
+          const storeData: Record<string, any[]> = {};
+
+          for (const storeName of storeNames) {
+            try {
+              const data = await this.exportObjectStore(db, storeName);
+              storeData[storeName] = data;
+            } catch (error) {
+              console.warn(
+                `Failed to export store ${storeName} from ${dbName}:`,
+                error,
+              );
+              storeData[storeName] = [];
+            }
+          }
+
+          db.close();
+
+          resolve({
+            name: dbName,
+            data: storeData,
+          });
+        } catch (error) {
+          db.close();
+          reject(error);
+        }
+      };
     });
   }
-}
 
-class Profiles_DataEncryption {
-  constructor() {}
+  async exportObjectStore(db: IDBDatabase, storeName: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([storeName], "readonly");
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
 
-  base6xorEncrypt(text: string): string {
-    let output = "";
-    for (let i = 0; i < text.length; i++) {
-      let charCode = text.charCodeAt(i) ^ 2;
-      output += String.fromCharCode(charCode);
-    }
-    return btoa(encodeURIComponent(output));
+      request.onerror = () => {
+        reject(new Error(`Failed to read from store ${storeName}`));
+      };
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+    });
   }
 
-  base6xorDecrypt(encryptedData: string): string {
-    let decodedData = decodeURIComponent(atob(encryptedData));
-    let output = "";
-    for (let i = 0; i < decodedData.length; i++) {
-      let charCode = decodedData.charCodeAt(i) ^ 2;
-      output += String.fromCharCode(charCode);
+  async exportCurrentProfile(): Promise<ProfileExport> {
+    const [idbExports, localStorage, cookies] = await Promise.all([
+      this.exportIndexedDBs(),
+      this.getAllLocalStorage(),
+      this.getAllCookies(),
+    ]);
+
+    return {
+      profileId: this.currentProfile,
+      timestamp: new Date().toISOString(),
+      indexedDB: idbExports,
+      localStorage: localStorage,
+      cookies: cookies,
+    };
+  }
+
+  async downloadExport(filename: string | null = null): Promise<boolean> {
+    try {
+      const exportData = await this.exportCurrentProfile();
+
+      let finalFilename: string;
+      if (!filename) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const profileName = this.currentProfile || "unknown";
+        finalFilename = `profile-export-${profileName}-${timestamp}.json`;
+      } else {
+        finalFilename = filename;
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = finalFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to download export:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      throw new Error("Failed to download export: " + errorMessage);
     }
-    return output;
   }
 }
 

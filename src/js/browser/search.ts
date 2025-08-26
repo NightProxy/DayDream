@@ -77,19 +77,10 @@ class Search implements SearchInterface {
   async init(searchbar: HTMLInputElement) {
     this.searchbar = searchbar;
     let suggestionList: HTMLElement;
-    const verticalTabsSetting =
-      (await this.settings.getItem("verticalTabs")) ?? "false";
-    if (verticalTabsSetting === "true") {
-      suggestionList = this.ui.createElement("div", {
-        class: "suggestion-list vertical",
-        id: "suggestion-list",
-      });
-    } else {
-      suggestionList = this.ui.createElement("div", {
-        class: "suggestion-list",
-        id: "suggestion-list",
-      });
-    }
+    suggestionList = this.ui.createElement("div", {
+      class: "suggestion-list",
+      id: "suggestion-list",
+    });
 
     this.sections = {
       searchResults: this.createSection("Search Results"),
@@ -263,7 +254,11 @@ class Search implements SearchInterface {
         } else {
           let url = new URL(activeIframe.src).pathname;
           url = url.replace(
-            window.SWSettings ? window.SWSettings.config.prefix : "",
+            window.SWSettings
+              ? window.SWconfig[
+                  window.ProxySettings as keyof typeof window.SWconfig
+                ]
+              : "",
             "",
           );
           url = (window as any).window.__uv$config.decodeUrl(url);

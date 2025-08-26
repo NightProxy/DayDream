@@ -64,9 +64,6 @@ class Functions implements FuncInterface {
   }
 
   init() {
-    this.items.toggleTabsButton!.addEventListener("click", () => {
-      this.toggleTabs();
-    });
     this.items.backButton!.addEventListener("click", () => {
       this.backward();
     });
@@ -78,59 +75,30 @@ class Functions implements FuncInterface {
     });
 
     this.menus();
-    this.navbarfunctions();
+    //this.navbarfunctions();
 
     this.items.newTab!.addEventListener(
       "click",
-      async () => await this.tabs.createTab("daydream://newtab"),
+      async () => await this.tabs.createTab("daydream://newtab", false),
     );
   }
 
-  async toggleTabs() {
-    if ((await this.settings.getItem("verticalTabs")) != "false") {
-      const tabs = document.querySelector(".tabs");
-      const viewport = document.querySelector(".viewport");
-      if (tabs && viewport) {
-        const isDisabled = tabs.classList.toggle("hidden");
-
-        if (isDisabled) {
-          tabs.classList.add("hidden");
-          viewport.classList.add("hidden");
-        } else {
-          tabs.classList.remove("hidden");
-          viewport.classList.remove("hidden");
-        }
-
-        let val;
-        if (isDisabled) {
-          val = "true";
-        } else {
-          val = "false";
-        }
-
-        await this.settings.setItem("verticalTabs-notshowing", val);
-      } else {
-        return;
-      }
-    }
-  }
-
   backward() {
-    const iframe = this.items.iframeContainer!.querySelector(
+    const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.back();
   }
 
   forward() {
-    const iframe = this.items.iframeContainer!.querySelector(
+    const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
     iframe?.contentWindow?.history.forward();
   }
 
   refresh() {
-    const iframe = this.items.iframeContainer!.querySelector(
+    const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
 
@@ -230,7 +198,7 @@ class Functions implements FuncInterface {
     });
   }
   inspectElement() {
-    const iframe = this.items.iframeContainer!.querySelector(
+    const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
     if (!iframe || !iframe.contentWindow) {
@@ -279,9 +247,40 @@ class Functions implements FuncInterface {
   }
 
   menus() {
-    this.extrasMenu(this.items.extrasButton!);
-    this.extensionsMenu(this.items.extensionsButton!);
-    this.profilesMenu(this.items.profilesButton!);
+    const menuBtn = this.items.extrasButton;
+    const menuPopup = this.items.menuContent;
+    if (menuBtn && menuPopup) {
+      menuPopup.style.transition = "opacity .18s ease, transform .18s ease";
+      const openMenu = () => {
+        menuPopup.style.pointerEvents = "auto";
+        menuPopup.style.opacity = "1";
+        menuPopup.style.transform = "scale(1)";
+        menuPopup.style.zIndex = "99999999";
+        menuPopup.style.willChange = "opacity, transform";
+      };
+      const closeMenu = () => {
+        menuPopup.style.opacity = "0";
+        menuPopup.style.transform = "scale(.95)";
+        setTimeout(() => {
+          menuPopup.style.pointerEvents = "none";
+        }, 180);
+      };
+      closeMenu();
+      menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = menuPopup.style.opacity === "1";
+        open ? closeMenu() : openMenu();
+      });
+      document.addEventListener("click", (e) => {
+        if (!menuPopup.contains(e.target as Node) && e.target !== menuBtn)
+          closeMenu();
+      });
+
+      document.addEventListener("ddx:page.clicked", (e) => {
+        if (!menuPopup.contains(e.target as Node) && e.target !== menuBtn)
+          closeMenu();
+      });
+    }
   }
 
   goFullscreen() {
@@ -296,248 +295,6 @@ class Functions implements FuncInterface {
     } else if ((iframe as any).msRequestFullscreen) {
       (iframe as any).msRequestFullscreen();
     }
-  }
-
-  extrasMenu(button: HTMLButtonElement) {
-    let content = this.ui.createElement("div", {}, [
-      //New Tab
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openNewTab",
-          onclick: () => {
-            this.tabs.createTab("daydream://newtab");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "square-plus" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Open New Tab",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, ["Alt + T"]),
-        ],
-      ),
-      //New Window
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openNewWindow",
-          onclick: () => {
-            this.windowing.newWindow();
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "copy-plus" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Open New Window",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, ["Alt + N"]),
-        ],
-      ),
-      //New Incognito Window
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openNewABWindow",
-          onclick: () => {
-            this.windowing.aboutBlankWindow();
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "eye-off" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Open About:Blank Window",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + N",
-          ]),
-        ],
-      ),
-      /*this.ui.createElement("div", { class: "menu-row" }, [
-        this.ui.createElement("span", { style: "margin: 0px 20px;" }, ["Zoom"]),
-        // Zoom Out
-        this.ui.createElement(
-          "div",
-          {
-            class: "menu-item",
-            id: "zoom-out",
-            onclick: () => {
-              this.zoomOut();
-            },
-          },
-          [this.ui.createElement("i", { "data-lucide": "zoom-out" }, [])],
-        ),
-        //Zoom In
-        this.ui.createElement(
-          "div",
-          {
-            class: "menu-item",
-            id: "zoom-in",
-            onclick: () => {
-              this.zoomIn();
-            },
-          },
-          [this.ui.createElement("i", { "data-lucide": "zoom-in" }, [])],
-        ),
-        // Fullscreen
-        this.ui.createElement(
-          "div",
-          {
-            class: "menu-item",
-            id: "fullscreen",
-            onclick: () => {
-              this.goFullscreen();
-            },
-          },
-          [this.ui.createElement("i", { "data-lucide": "fullscreen" }, [])],
-        ),
-      ]),*/
-      // Fullscreen
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "fullscreen",
-          onclick: () => {
-            this.goFullscreen();
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "fullscreen" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Fullscreen",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + F",
-          ]),
-        ],
-      ),
-      // Bookmarks
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openBookmarks",
-          onclick: () => {
-            alert("disabled while in repair");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "folder-heart" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, ["Bookmarks"]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + B",
-          ]),
-        ],
-      ),
-      // History
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openHistory",
-          onclick: () => {
-            this.tabs.createTab("daydream://history");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "history" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, ["History"]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + Y",
-          ]),
-        ],
-      ),
-      // Games
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openGames",
-          onclick: () => {
-            this.tabs.createTab("daydream://games");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "joystick" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, ["Games"]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + G",
-          ]),
-        ],
-      ),
-      // Extensions
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "openExtensions",
-          onclick: () => {
-            this.tabs.createTab("daydream://extensions");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "blocks" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Extensions",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + E",
-          ]),
-        ],
-      ),
-      //Inspect Element
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "inspectElement",
-          onclick: () => {
-            this.inspectElement();
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "code-xml" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, [
-            "Developer Tools",
-          ]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + I",
-          ]),
-        ],
-      ),
-      // Settings
-      this.ui.createElement(
-        "div",
-        {
-          class: "menu-item",
-          id: "settingsFromMenu",
-          onclick: () => {
-            this.tabs.createTab("daydream://settings");
-          },
-        },
-        [
-          this.ui.createElement("i", { "data-lucide": "settings" }, []),
-          this.ui.createElement("span", { class: "menu-label" }, ["Settings"]),
-          this.ui.createElement("span", { class: "menu-key" }, [
-            "Alt + Shift + ,",
-          ]),
-        ],
-      ),
-      this.ui.createElement("div", { class: "menu-item" }, [
-        this.ui.createElement("i", { "data-lucide": "log-out" }, []),
-        this.ui.createElement("span", { class: "menu-label" }, ["Panic"]),
-        this.ui.createElement(
-          "span",
-          { class: "menu-key", id: "panic-keybind" },
-          ["~"],
-        ),
-      ]),
-    ]);
-    this.nightmarePlugins.sidemenu.attachTo(button, content, 300);
   }
 
   extensionsMenu(button: HTMLButtonElement) {
@@ -614,7 +371,7 @@ class Functions implements FuncInterface {
                 const url =
                   (await this.proto.processUrl("daydream://extensions")) ||
                   "/internal/error/";
-                const iframe = this.items.iframeContainer!.querySelector(
+                const iframe = this.items.frameContainer!.querySelector(
                   "iframe.active",
                 ) as HTMLIFrameElement | null;
                 iframe!.setAttribute("src", url);
@@ -639,7 +396,7 @@ class Functions implements FuncInterface {
     games!.addEventListener("click", async () => {
       const url =
         (await this.proto.processUrl("daydream://games")) || "/internal/error/";
-      const iframe = this.items.iframeContainer!.querySelector(
+      const iframe = this.items.frameContainer!.querySelector(
         "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
@@ -653,7 +410,7 @@ class Functions implements FuncInterface {
       const url =
         (await this.proto.processUrl("daydream://history")) ||
         "/internal/error/";
-      const iframe = this.items.iframeContainer!.querySelector(
+      const iframe = this.items.frameContainer!.querySelector(
         "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
@@ -667,7 +424,7 @@ class Functions implements FuncInterface {
       const url =
         (await this.proto.processUrl("daydream://settings")) ||
         "/internal/error/";
-      const iframe = this.items.iframeContainer!.querySelector(
+      const iframe = this.items.frameContainer!.querySelector(
         "iframe.active",
       ) as HTMLIFrameElement | null;
       iframe!.setAttribute("src", url);
