@@ -38,7 +38,7 @@
     "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/latest/mercuryworkshop-scramjet-1.0.2-dev.tgz",
     "@mercuryworkshop/wisp-js": "^0.3.3",
     "@nightnetwork/obscura": "^1.0.0",
-    "@nightnetwork/reflux": "^1.0.1",
+    "@nightnetwork/reflux": "^1.0.2",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "@types/content-type": "^1.1.9",
     "@types/node": "^24.0.10",

@@ -1,9 +1,14 @@
+import "../../css/vars.css";
+import "../../css/imports.css";
+import "../../css/global.css";
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { SettingsAPI } from "@apis/settings";
-import { ProfilesAPI } from "@apis/profiles";
+//import { ProfilesAPI } from "@apis/profiles";
 import { Proxy } from "@apis/proxy";
 import { DDXGlobal } from "@js/global/index";
+
+console.log("TailwindCSS should be loaded now!");
 
 //@ts-ignore
 const { ScramjetController } = $scramjetLoadController();
@@ -12,9 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const nightmare = new Nightmare();
 
   const settingsAPI = new SettingsAPI();
-  const profilesAPI = new ProfilesAPI();
-
-  profilesAPI.init();
+  //const profilesAPI = new ProfilesAPI();
 
   const proxy = new Proxy();
 
@@ -39,7 +42,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
 
           console.log("Scramjet Service Worker registered.");
-          await settingsAPI.setItem("scramjet", "fixed");
         } else {
           const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init().then(async () => {

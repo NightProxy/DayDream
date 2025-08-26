@@ -4,7 +4,8 @@ import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { scramjetPath } from "@mercuryworkshop/scramjet";
-// import { refluxPath } from "@nightnetwork/reflux";
+import { refluxPath } from "@nightnetwork/reflux";
+import path from "path";
 
 export const routePaths = {
   epoxy: "epoxy",
@@ -12,6 +13,7 @@ export const routePaths = {
   libcurl: "libcurl",
   baremux: "baremux",
   uv: "data",
+  reflux: "reflux",
 };
 
 const copyMap = {
@@ -48,6 +50,11 @@ const copyMap = {
     path: baremuxPath,
     files: ["*"],
     dest: routePaths.baremux,
+  },
+  reflux: {
+    path: refluxPath,
+    files: ["*"],
+    dest: routePaths.reflux,
   },
 };
 

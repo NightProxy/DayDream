@@ -1,3 +1,4 @@
+import "../../css/global.css";
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";
 import { DDXGlobal } from "@js/global";
@@ -34,7 +35,6 @@ import { Proxy } from "@apis/proxy";
           });
 
           console.log("Scramjet Service Worker registered.");
-          await settingsAPI.setItem("scramjet", "fixed");
         } else {
           const scramjet = new ScramjetController(window.__scramjet$config);
           scramjet.init().then(async () => {

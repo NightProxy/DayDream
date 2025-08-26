@@ -61,12 +61,18 @@ class Nightmare implements NightmareUI {
     return element;
   }
 
-  queryComponent(componentName: string): HTMLElement | null {
-    return document.querySelector(`[component="${componentName}"]`);
+  queryComponent(
+    componentName: string,
+    el: HTMLElement | Document = document,
+  ): HTMLElement | null {
+    return el.querySelector(`[component="${componentName}"]`);
   }
 
-  queryComponentAll(componentName: string): NodeListOf<HTMLElement> {
-    return document.querySelectorAll(`[component="${componentName}"]`);
+  queryComponentAll(
+    componentName: string,
+    el: HTMLElement | Document = document,
+  ): NodeListOf<HTMLElement> {
+    return el.querySelectorAll(`[component="${componentName}"]`);
   }
 
   setState(componentName: string, state: string): void {

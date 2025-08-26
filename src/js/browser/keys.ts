@@ -70,66 +70,6 @@ class Keys implements keysInterface {
         if (activeIframe) {
           this.functions.inspectElement();
         }
-      } else if (event.altKey && event.key === "s") {
-        const sidebar = document.querySelector(".navbar");
-        const browser = document.querySelector(".surface");
-        const tabs = document.querySelector(".tabs");
-        const bar = document.querySelector(".under-tabs");
-        const IFcontainer = document.querySelector(".viewport");
-        const suggestions = document.querySelector(".suggestion-list");
-        const isDisabled = sidebar!.classList.toggle("autohide");
-
-        if (isDisabled) {
-          browser!.classList.add("autohide");
-          tabs!.classList.add("vertical");
-          bar!.classList.add("vertical");
-          IFcontainer!.classList.add("vertical");
-          if (suggestions != null) {
-            suggestions.classList.add("vertical");
-          }
-        } else {
-          browser!.classList.remove("autohide");
-          tabs!.classList.remove("vertical");
-          bar!.classList.remove("vertical");
-          IFcontainer!.classList.remove("vertical");
-          if (suggestions != null) {
-            suggestions.classList.remove("vertical");
-          }
-        }
-        let val;
-        if (isDisabled) {
-          val = "true";
-        } else {
-          val = "false";
-        }
-
-        await this.settings.setItem("verticalTabs", val);
-        this.events.emit("tabs:changeLayout", null);
-      } else if (event.altKey && event.shiftKey && event.key === "S") {
-        if ((await this.settings.getItem("verticalTabs")) === "true") {
-          const tabs = document.querySelector(".tabs");
-          const viewport = document.querySelector(".viewport");
-          const isDisabled = tabs!.classList.toggle("hidden");
-
-          if (isDisabled) {
-            tabs!.classList.add("hidden");
-            viewport!.classList.add("hidden");
-          } else {
-            tabs!.classList.remove("hidden");
-            viewport!.classList.remove("hidden");
-          }
-
-          let val;
-          if (isDisabled) {
-            val = "true";
-          } else {
-            val = "false";
-          }
-          // Save the current state to this.settings
-          await this.settings.setItem("verticalTabs-notshowing", val);
-        } else {
-          return;
-        }
       }
     });
     /*const iframes = document.querySelectorAll(".iframe-container iframe");

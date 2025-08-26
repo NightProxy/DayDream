@@ -5,132 +5,134 @@
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="UTF-8" />
-    <link rel="stylesheet" type="text/css" href="/src/css/global.css" />
-    <link rel="stylesheet" href="/src/css/imports.css" />
-    <link rel="stylesheet" type="text/css" href="/src/css/vars.css" />
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="/src/css/pages/internalBase.css"
-    />
-    <link rel="stylesheet" type="text/css" href="/src/css/pages/newtab.css" />
-
-    <style>
-      @keyframes scaleBlurFade {
-        0% {
-          transform: scale(0);
-          filter: blur(15px);
-          opacity: 0;
-        }
-        100% {
-          transform: scale(1);
-          filter: blur(0);
-          opacity: 1;
-        }
-      }
-      .animate {
-        opacity: 0;
-      }
-      .animate.logo {
-        animation: scaleBlurFade 1s ease forwards;
-        animation-delay: 0.4s;
-      }
-      .animate.title {
-        animation: scaleBlurFade 1s ease forwards;
-        animation-delay: 0.6s;
-      }
-      .animate.search {
-        animation: scaleBlurFade 1s ease forwards;
-        animation-delay: 0.8s;
-      }
-
-      .shortcutcontainer {
-        position: relative;
-        display: inline-block;
-      }
-
-      .shortcutcontainer::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        box-sizing: border-box;
-
-        clip-path: polygon(
-          20px 0,
-          100% 0,
-          100% calc(100% - 20px),
-          calc(100% - 20px) 100%,
-          0 100%,
-          0 20px
-        );
-      }
-
-      .shortcut {
-        width: 150px;
-        display: block;
-        clip-path: polygon(
-          20px 0,
-          100% 0,
-          100% calc(100% - 20px),
-          calc(100% - 20px) 100%,
-          0 100%,
-          0 20px
-        );
-
-        max-width: 100%;
-        height: auto;
-      }
-    </style>
-    <script src="/data/bundle.js" defer></script>
-    <script src="/data/config.js" defer></script>
-    <script src="/assets/config.js" defer></script>
-    <script src="/assets/all.js" defer></script>
   </head>
+  <body class="bg-[var(--bg-2)] text-[var(--text)] select-none antialiased">
+    <div class="min-h-dvh w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <span
+                class="text-3xl font-extrabold tracking-wide text-[var(--text)]"
+                >Daydream</span
+              >
+              <span
+                class="text-3xl font-extrabold tracking-wide text-[var(--main)]"
+                >X</span
+              >
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Share"
+                data-side="right"
+                data-align="center"
+                aria-label="Share"
+              >
+                <i data-lucide="share-2" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
 
-  <body>
-    <div class="bg-img">
-      <img src="/res/DDX.bg.jpeg" />
-    </div>
-    <div>
-      <div class="banner">
-        <div class="banner__image animate logo"></div>
-        <h1 class="banner__title animate title">DayDream X</h1>
-      </div>
-
-      <div class="search-header animate search" style="margin-top: 30px">
-        <img id="searchEngineIcon" src="" class="searchEngineIcon" />
-        <input
-          id="newTabSearch"
-          placeholder="Search the Web..."
-          class="search-header__input"
-          type="text"
-          autocomplete="off"
-        />
-        <button aria-label="search" type="submit" class="search-header__button">
-          <svg
-            fill="none"
-            viewBox="0 0 18 18"
-            height="18"
-            width="18"
-            class="search-header__icon"
+        <div class="mt-8 relative">
+          <div
+            class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
           >
-            <path
-              fill="#3A3A3A"
-              d="M7.132 0C3.197 0 0 3.124 0 6.97c0 3.844 3.197 6.969 7.132 6.969 1.557 0 2.995-.49 4.169-1.32L16.82 18 18 16.847l-5.454-5.342a6.846 6.846 0 0 0 1.718-4.536C14.264 3.124 11.067 0 7.132 0zm0 .82c3.48 0 6.293 2.748 6.293 6.15 0 3.4-2.813 6.149-6.293 6.149S.839 10.37.839 6.969C.839 3.568 3.651.82 7.132.82z"
-            ></path>
-          </svg>
-        </button>
-      </div>
+            <i data-lucide="lock" class="h-4 w-4 text-[var(--success)]"></i>
+            <span class="text-sm font-medium text-[var(--proto)]">ddx</span>
+          </div>
+          <input
+            class="w-full rounded-xl bg-[var(--bg-2)] pl-20 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+            placeholder="Search ddx for anything..."
+            aria-label="Search"
+          />
+          <button
+            class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            aria-label="Bookmark"
+          >
+            <i data-lucide="star" class="h-4 w-4"></i>
+          </button>
+        </div>
 
-      <div class="shortcutcontainer">
-        <img src="/res/g/vscs.png" alt="Shortcut" class="shortcut" />
-      </div>
+        <section
+          class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          <a
+            href="#"
+            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
+          >
+            <div
+              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
+            ></div>
+          </a>
+          <a
+            href="#"
+            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
+          >
+            <div
+              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
+            ></div>
+          </a>
+          <a
+            href="#"
+            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
+          >
+            <div
+              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
+            ></div>
+          </a>
+          <a
+            href="#"
+            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
+          >
+            <div
+              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
+            ></div>
+          </a>
+        </section>
+      </main>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Server Latency: <span class="text-[var(--text)]/80">46ms</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noreferrer"
+            class="hover:text-[var(--text)]"
+            >Github</a
+          >
+          <span>\</span>
+          <a
+            href="https://discord.com"
+            target="_blank"
+            rel="noreferrer"
+            class="hover:text-[var(--text)]"
+            >Discord</a
+          >
+        </nav>
+      </footer>
     </div>
-    <!--Main Scripts-->
+
+    <script>
+      document.documentElement.classList.add("pre-anim");
+      window.addEventListener("load", () => {
+        document
+          .querySelectorAll("body *:not(.always-visible)")
+          .forEach((el) => {
+            el.style.transition = "opacity .1s ease .1s";
+            el.style.opacity = "1";
+            el.style.pointerEvents = "";
+          });
+        document.documentElement.classList.remove("pre-anim");
+        if (window.lucide && lucide.createIcons) lucide.createIcons();
+      });
+    </script>
     <script type="module" src="/src/js/internal/newtab.ts"></script>
   </body>
 </html>

@@ -9,6 +9,7 @@ import { fontObfuscationPlugin } from "./srv/vite/font";
 // import { server as wisp } from "@mercuryworkshop/wisp-js/server";
 import { prettyUrlsPlugin, pageRoutes } from "./srv/vite/routes";
 import { copyRoutes, routePaths } from "./srv/vite/copy";
+//import { cssObfuscationPlugin } from "./srv/vite/classnames";
 
 export default defineConfig({
   plugins: [
@@ -17,6 +18,12 @@ export default defineConfig({
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
     viteStaticCopy(copyRoutes()),
+    /*cssObfuscationPlugin({
+      enabled: true,
+      prefix: '_',
+      exclude: [], // Add class names you want to exclude from obfuscation
+      preserveClasses: [] // Add class names you want to preserve
+    }),*/
     /*obfuscatorPlugin({
       options: {
         compact: true,
