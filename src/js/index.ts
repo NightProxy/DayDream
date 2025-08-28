@@ -1,7 +1,7 @@
 import "../css/vars.css";
 import "../css/imports.css";
 import "../css/global.css";
-import 'basecoat-css/all';
+import "basecoat-css/all";
 
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
