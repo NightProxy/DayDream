@@ -9,349 +9,564 @@
     <meta property="og:image" content="/res/logo.png" />
   </head>
 
-  <body class="bg-[var(--bg-2)] text-[var(--text)] select-none antialiased">
-    <div class="min-h-screen w-full flex">
-      <!-- Sidebar Navigation -->
-      <aside class="w-64 min-h-screen bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0">
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full">
+      <aside
+        class="fixed inset-y-0 left-0 w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0 overflow-y-auto z-40"
+      >
         <div class="mb-8">
           <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Settings</h1>
           <p class="text-sm text-[var(--proto)]">Configure DayDreamX</p>
         </div>
-        
+
         <nav class="space-y-2">
-          <a href="#Cloaking" class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors" data-id="cloak">
+          <a
+            href="#Cloaking"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+            data-id="cloak"
+          >
             <i data-lucide="eye-off" class="h-4 w-4"></i>
             <span>Cloaking</span>
           </a>
-          <a href="#Themes" class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors" data-id="themes">
+          <a
+            href="#Themes"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+            data-id="themes"
+          >
             <i data-lucide="palette" class="h-4 w-4"></i>
             <span>Appearance</span>
           </a>
-          <a href="#Searching" class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors" data-id="searching">
+          <a
+            href="#Searching"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+            data-id="searching"
+          >
             <i data-lucide="search" class="h-4 w-4"></i>
             <span>Search</span>
           </a>
-          <a href="#Misc" class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors" data-id="misc">
+          <a
+            href="#Misc"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+            data-id="misc"
+          >
             <i data-lucide="more-vertical" class="h-4 w-4"></i>
             <span>Other</span>
           </a>
-          
+
           <hr class="border-[var(--white-08)] my-4" />
-          
-          <a href="#About" class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors" data-id="about">
+
+          <a
+            href="#About"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            data-id="about"
+          >
             <i data-lucide="info" class="h-4 w-4"></i>
             <span>About & Statistics</span>
           </a>
         </nav>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto">
-        <div class="p-8 max-w-4xl space-y-12">
-            <!-- Cloaking Section -->
-            <section id="Cloaking" class="space-y-6">
-              <div class="border-b border-[var(--white-08)] pb-4">
-                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">Cloaking</h2>
-                <p class="text-sm text-[var(--proto)]">Control how DDX appears and behaves</p>
+      <main class="flex-1 h-screen overflow-y-auto">
+        <div class="p-8 max-w-4xl space-y-12 mx-auto">
+          <section id="Cloaking" class="space-y-6 hidden">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Cloaking
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Control how DDX appears and behaves
+              </p>
+            </div>
+
+            <div class="grid gap-6">
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  URL Cloak
+                </h3>
+                <select
+                  id="URL-cloakSelect"
+                  component="dropdown"
+                  data-setting="URL_Cloak"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="off">Off</option>
+                  <option value="a:b">About:Blank</option>
+                  <option value="blob">Blob</option>
+                </select>
               </div>
-              
-              <div class="grid gap-6">
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">URL Cloak</h3>
-                  <select id="URL-cloakSelect" component="dropdown" data-setting="URL_Cloak" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                    <option value="off">Off</option>
-                    <option value="a:b">About:Blank</option>
-                    <option value="blob">Blob</option>
-                  </select>
-                </div>
 
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h3 class="text-sm font-medium text-[var(--text)]">Auto Cloak</h3>
-                      <p class="text-xs text-[var(--proto)] mt-1">Automatically cloak when browsing</p>
-                    </div>
-                    <label class="relative inline-flex cursor-pointer">
-                      <input id="autoCloakSwitch" component="switch" type="checkbox" data-setting="autoCloak" class="sr-only peer" />
-                      <div class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"></div>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">Tab Cloaking</h3>
-                  <select id="tabCloakSelect" component="dropdown" data-setting="tabCloak" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                    <option value="off">Off</option>
-                    <option value="custom">Custom</option>
-                    <option value="google">Google</option>
-                    <option value="newtab">New Tab</option>
-                  </select>
-                </div>
-
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h3 class="text-sm font-medium text-[var(--text)]">Anti-Close</h3>
-                      <p class="text-xs text-[var(--proto)] mt-1">Prevent accidental tab closure</p>
-                    </div>
-                    <label class="relative inline-flex cursor-pointer">
-                      <input id="antiCloseSwitch" component="switch" type="checkbox" data-setting="antiClose" class="sr-only peer" />
-                      <div class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <!-- Appearance Section -->
-            <section id="Themes" class="space-y-6">
-              <div class="border-b border-[var(--white-08)] pb-4">
-                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">Appearance</h2>
-                <p class="text-sm text-[var(--proto)]">Customize the look and feel of DDX</p>
-              </div>
-              
-              <div class="grid gap-6">
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-lg font-medium text-[var(--text)] mb-4">Formatting</h3>
-                  
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="text-sm font-medium text-[var(--text)] mb-2">UI Style</h4>
-                      <select id="UIStyleSelect" component="dropdown" data-setting="UIStyle" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                        <option value="operagx">Opera GX</option>
-                        <option value="opera">Opera</option>
-                        <option value="arc">Arc</option>
-                        <option value="vivaldi">Vivaldi</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-lg font-medium text-[var(--text)] mb-4">Theming</h3>
-                  
-                  <div class="space-y-6">
-                    <div>
-                      <h4 class="text-sm font-medium text-[var(--text)] mb-3">Preinstalled Themes</h4>
-                      <div id="preThemes" class="text-sm text-[var(--proto)]">
-                        It doesn't seem like you have any pre-installed themes.
-                      </div>
-                    </div>
-
-                    <div class="border-t border-[var(--white-08)] pt-6">
-                      <h4 class="text-sm font-medium text-[var(--text)] mb-4">Custom Theme</h4>
-                      
-                      <div class="space-y-4">
-                        <div>
-                          <h5 class="text-xs font-medium text-[var(--text)] mb-2">Color</h5>
-                          <div class="colorPicker"></div>
-                        </div>
-
-                        <div>
-                          <h5 class="text-xs font-medium text-[var(--text)] mb-2">Base Color</h5>
-                          <select id="themeCustomSelect" component="dropdown" data-setting="themeCustom" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                            <option value="light">Light</option>
-                            <option value="T-light">Light (Tinted)</option>
-                            <option value="dark">Dark</option>
-                            <option value="T-dark">Dark (Tinted)</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <h5 class="text-xs font-medium text-[var(--text)] mb-3">Background</h5>
-                          <div class="flex gap-3">
-                            <button id="bgUpload" component="button" class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
-                              Upload
-                            </button>
-                            <button id="bgRemove" component="button" class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
-                              Remove
-                            </button>
-                          </div>
-                          <div class="bg-list mt-3" id="bgList"></div>
-                          <input type="file" id="bgInput" style="display: none" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <!-- Search Section -->
-            <section id="Searching" class="space-y-6">
-              <div class="border-b border-[var(--white-08)] pb-4">
-                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">Search</h2>
-                <p class="text-sm text-[var(--proto)]">Configure proxy and search settings</p>
-              </div>
-              
-              <div class="grid gap-6">
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">Backend</h3>
-                  <select id="proxySelect" component="dropdown" data-setting="proxy" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                    <option value="auto">Automatic</option>
-                    <option value="uv">Ultraviolet</option>
-                    <option value="sj">Scramjet</option>
-                  </select>
-                </div>
-
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">Transport</h3>
-                  <select id="transportSelect" component="dropdown" data-setting="transports" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                    <option value="libcurl">LibCurl</option>
-                    <option value="epoxy">Epoxy</option>
-                  </select>
-                </div>
-
-                <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">Search Engine</h3>
-                  <select id="searchSelect" component="dropdown" data-setting="search" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
-                    <option value="https://google.com/search?q=%s">Google</option>
-                    <option value="https://bing.com/search?q=%s">Bing</option>
-                    <option value="https://duckduckgo.com/?q=%s">DuckDuckGo</option>
-                    <option value="https://search.yahoo.com/search?p=%s">Yahoo</option>
-                  </select>
-                </div>
-
-                <div id="wispDiv" class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                  <h3 class="text-sm font-medium text-[var(--text)] mb-3">Wisp Server</h3>
-                  <div class="space-y-3">
-                    <input type="text" id="wispSetting" data-setting="wisp" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" placeholder="wss://example.com/wisp/" />
-                    <div class="flex gap-3">
-                      <button id="saveWispSetting" component="button" class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">Save</button>
-                      <button id="resetWispSetting" component="button" class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">Reset</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- Other Section -->
-            <section id="Misc" class="space-y-6">
-              <div class="border-b border-[var(--white-08)] pb-4">
-                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">Other</h2>
-                <p class="text-sm text-[var(--proto)]">Additional settings and options</p>
-              </div>
-              
-              <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                <p class="text-sm text-[var(--proto)]">Doesn't look like there's anything here for now.</p>
-              </div>
-            </section>
-
-            <!-- About Section -->
-            <section id="About" class="space-y-6">
-              <div class="border-b border-[var(--white-08)] pb-4">
-                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">About DayDreamX</h2>
-                <p class="text-sm text-[var(--proto)]">Information about the project and contributors</p>
-              </div>
-              
-              <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]">
-                <div class="prose prose-sm max-w-none">
-                  <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                    DayDreamX is a Project that aims to bring a new browsing experience to users by providing a modern and customizable interface that is both fast and secure.
-                  </p>
-                  <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                    Our browser is heavily inspired by Opera GX and Arc, and we aim to provide a similar experience to our users without the downsides of spyware or lack of support.
-                  </p>
-                  <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                    We aim to provide a similar browser remake similar to r58playz's AboutBrowser, Cohen's Velocity, and Other Projects. We keep our site running with ads, while giving you the choice to disable them.
-                  </p>
-                  <p class="text-sm text-[var(--proto)] mb-6">
-                    AI was used in the debugging and development process of DayDreamX.
-                  </p>
-                  
-                  <h3 class="text-lg font-semibold text-[var(--main)] mb-3">Techstack</h3>
-                  <ul class="text-sm text-[var(--text)] space-y-1 mb-6">
-                    <li>- Chrome Tabs (Rewritten to modern standards and capabilities)</li>
-                    <li>- Ultraviolet V3</li>
-                    <li>- Scramjet</li>
-                    <li>- Eclipse</li>
-                    <li>- BareMux V2</li>
-                    <li>- Libcurl.js</li>
-                    <li>- Epoxy</li>
-                    <li>- Wisp JS Client</li>
-                    <li>- FilerJS</li>
-                    <li>- JSzip</li>
-                    <li>- Eruda</li>
-                    <li>- JS-cookie</li>
-                    <li>- Dragabilly</li>
-                    <li>- Localforage</li>
-                    <li>- NightmareJS (In Development)</li>
-                    <li>- Workerware</li>
-                    <li>- Iro.js</li>
-                  </ul>
-                  
-                  <hr class="border-[var(--white-08)] my-6" />
-                  
-                  <h3 class="text-lg font-semibold text-[var(--main)] mb-3">Developers</h3>
-                  <p class="text-xs text-[var(--proto)] mb-4">Click on a Dev's name to redirect to their portfolio.</p>
-                  
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="text-sm font-medium">
-                        <a href="https://notamplify.online" class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors">
-                          Amplify (Owner)
-                        </a>
-                      </h4>
-                      <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                        <li>- Many bug fixes</li>
-                        <li>- Wrote UI</li>
-                        <li>- Wrote all functionality</li>
-                        <li>- Wrote Extensions System and Other APIs</li>
-                        <li>- Wrote Docs</li>
-                        <li>- Manages And runs DayDreamX and its stability</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 class="text-sm font-medium">
-                        <a href="https://guns.lol/kdust7" class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors">
-                          KDust7 (Owner)
-                        </a>
-                      </h4>
-                      <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                        <li>- Polished pages UI</li>
-                        <li>- Optimizations</li>
-                        <li>- UI Optimizations / Polishing</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 class="text-sm font-medium">
-                        <a href="https://github.com/xnoctra" class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors">
-                          Noctra (Dev)
-                        </a>
-                      </h4>
-                      <ul class="text-xs text-[var(--text)] mt-1">
-                        <li>- Design Changes</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 class="text-sm font-medium">
-                        <a href="https://github.com/crllect" class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors">
-                          Crllect (Owner)
-                        </a>
-                      </h4>
-                      <ul class="text-xs text-[var(--text)] mt-1">
-                        <li>- emotional support</li>
-                      </ul>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-6 pt-6 border-t border-[var(--white-08)]">
-                    <h3 class="text-lg font-semibold text-[var(--main)] mb-2">Thank you for contributing to DayDreamX.</h3>
-                    <p class="text-sm text-[var(--text)]">
-                      If you would like to contribute, check out our
-                      <a href="https://github.com/NightProxy/DayDreamX" class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors">GitHub</a>
-                      for how to get started.
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-sm font-medium text-[var(--text)]">
+                      Auto Cloak
+                    </h3>
+                    <p class="text-xs text-[var(--proto)] mt-1">
+                      Automatically cloak when browsing
                     </p>
                   </div>
+                  <label class="relative inline-flex cursor-pointer">
+                    <input
+                      id="autoCloakSwitch"
+                      component="switch"
+                      type="checkbox"
+                      data-setting="autoCloak"
+                      class="sr-only peer"
+                    />
+                    <div
+                      class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"
+                    ></div>
+                  </label>
                 </div>
               </div>
-            </section>
-          </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Tab Cloaking
+                </h3>
+                <select
+                  id="tabCloakSelect"
+                  component="dropdown"
+                  data-setting="tabCloak"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="off">Off</option>
+                  <option value="custom">Custom</option>
+                  <option value="google">Google</option>
+                  <option value="newtab">New Tab</option>
+                </select>
+              </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-sm font-medium text-[var(--text)]">
+                      Anti-Close
+                    </h3>
+                    <p class="text-xs text-[var(--proto)] mt-1">
+                      Prevent accidental tab closure
+                    </p>
+                  </div>
+                  <label class="relative inline-flex cursor-pointer">
+                    <input
+                      id="antiCloseSwitch"
+                      component="switch"
+                      type="checkbox"
+                      data-setting="antiClose"
+                      class="sr-only peer"
+                    />
+                    <div
+                      class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"
+                    ></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <section id="Themes" class="space-y-6 hidden">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Appearance
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Customize the look and feel of DDX
+              </p>
+            </div>
+
+            <div class="grid gap-6">
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-medium text-[var(--text)] mb-4">
+                  Formatting
+                </h3>
+
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="text-sm font-medium text-[var(--text)] mb-2">
+                      UI Style
+                    </h4>
+                    <select
+                      id="UIStyleSelect"
+                      component="dropdown"
+                      data-setting="UIStyle"
+                      class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    >
+                      <option value="operagx">Opera GX</option>
+                      <option value="opera">Opera</option>
+                      <option value="arc">Arc</option>
+                      <option value="vivaldi">Vivaldi</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-medium text-[var(--text)] mb-4">
+                  Theming
+                </h3>
+
+                <div class="space-y-6">
+                  <div>
+                    <h4 class="text-sm font-medium text-[var(--text)] mb-3">
+                      Preinstalled Themes
+                    </h4>
+                    <div id="preThemes" class="text-sm text-[var(--proto)]">
+                      It doesn't seem like you have any pre-installed themes.
+                    </div>
+                  </div>
+
+                  <div class="border-t border-[var(--white-08)] pt-6">
+                    <h4 class="text-sm font-medium text-[var(--text)] mb-4">
+                      Custom Theme
+                    </h4>
+
+                    <div class="space-y-4">
+                      <div>
+                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
+                          Color
+                        </h5>
+                        <div class="colorPicker"></div>
+                      </div>
+
+                      <div>
+                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
+                          Base Color
+                        </h5>
+                        <select
+                          id="themeCustomSelect"
+                          component="dropdown"
+                          data-setting="themeCustom"
+                          class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                        >
+                          <option value="light">Light</option>
+                          <option value="T-light">Light (Tinted)</option>
+                          <option value="dark">Dark</option>
+                          <option value="T-dark">Dark (Tinted)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <h5 class="text-xs font-medium text-[var(--text)] mb-3">
+                          Background
+                        </h5>
+                        <div class="flex gap-3">
+                          <button
+                            id="bgUpload"
+                            component="button"
+                            class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
+                          >
+                            Upload
+                          </button>
+                          <button
+                            id="bgRemove"
+                            component="button"
+                            class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div class="bg-list mt-3" id="bgList"></div>
+                        <input type="file" id="bgInput" style="display: none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <section id="Searching" class="space-y-6 hidden">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Search
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Configure proxy and search settings
+              </p>
+            </div>
+
+            <div class="grid gap-6">
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Backend
+                </h3>
+                <select
+                  id="proxySelect"
+                  component="dropdown"
+                  data-setting="proxy"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="auto">Automatic</option>
+                  <option value="uv">Ultraviolet</option>
+                  <option value="sj">Scramjet</option>
+                </select>
+              </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Transport
+                </h3>
+                <select
+                  id="transportSelect"
+                  component="dropdown"
+                  data-setting="transports"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="libcurl">LibCurl</option>
+                  <option value="epoxy">Epoxy</option>
+                </select>
+              </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Search Engine
+                </h3>
+                <select
+                  id="searchSelect"
+                  component="dropdown"
+                  data-setting="search"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="https://google.com/search?q=%s">Google</option>
+                  <option value="https://bing.com/search?q=%s">Bing</option>
+                  <option value="https://duckduckgo.com/?q=%s">
+                    DuckDuckGo
+                  </option>
+                  <option value="https://search.yahoo.com/search?p=%s">
+                    Yahoo
+                  </option>
+                </select>
+              </div>
+
+              <div
+                id="wispDiv"
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Wisp Server
+                </h3>
+                <div class="space-y-3">
+                  <input
+                    type="text"
+                    id="wispSetting"
+                    data-setting="wisp"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="wss://example.com/wisp/"
+                  />
+                  <div class="flex gap-3">
+                    <button
+                      id="saveWispSetting"
+                      component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      id="resetWispSetting"
+                      component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <section id="Misc" class="space-y-6 hidden">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Other
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Additional settings and options
+              </p>
+            </div>
+
+            <div
+              class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              <p class="text-sm text-[var(--proto)]">
+                Doesn't look like there's anything here for now.
+              </p>
+            </div>
+          </section>
+
+          <section id="About" class="space-y-6 hidden">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                About DayDreamX
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Information about the project and contributors
+              </p>
+            </div>
+
+            <div
+              class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              <div class="prose prose-sm max-w-none">
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
+                  DayDreamX is a Project that aims to bring a new browsing
+                  experience to users by providing a modern and customizable
+                  interface that is both fast and secure.
+                </p>
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
+                  Our browser is heavily inspired by Opera GX and Arc, and we
+                  aim to provide a similar experience to our users without the
+                  downsides of spyware or lack of support.
+                </p>
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
+                  We aim to provide a similar browser remake similar to
+                  r58playz's AboutBrowser, Cohen's Velocity, and Other Projects.
+                  We keep our site running with ads, while giving you the choice
+                  to disable them.
+                </p>
+                <p class="text-sm text-[var(--proto)] mb-6">
+                  AI was used in the debugging and development process of
+                  DayDreamX.
+                </p>
+
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  Techstack
+                </h3>
+                <ul class="text-sm text-[var(--text)] space-y-1 mb-6">
+                  <li>
+                    - Chrome Tabs (Rewritten to modern standards and
+                    capabilities)
+                  </li>
+                  <li>- Ultraviolet V3</li>
+                  <li>- Scramjet</li>
+                  <li>- Eclipse</li>
+                  <li>- BareMux V2</li>
+                  <li>- Libcurl.js</li>
+                  <li>- Epoxy</li>
+                  <li>- Wisp JS Client</li>
+                  <li>- FilerJS</li>
+                  <li>- JSzip</li>
+                  <li>- Eruda</li>
+                  <li>- JS-cookie</li>
+                  <li>- Dragabilly</li>
+                  <li>- Localforage</li>
+                  <li>- NightmareJS (In Development)</li>
+                  <li>- Workerware</li>
+                  <li>- Iro.js</li>
+                </ul>
+
+                <hr class="border-[var(--white-08)] my-6" />
+
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  Developers
+                </h3>
+                <p class="text-xs text-[var(--proto)] mb-4">
+                  Click on a Dev's name to redirect to their portfolio.
+                </p>
+
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="text-sm font-medium">
+                      <a
+                        href="https://notamplify.online"
+                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >
+                        Amplify (Owner)
+                      </a>
+                    </h4>
+                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
+                      <li>- Many bug fixes</li>
+                      <li>- Wrote UI</li>
+                      <li>- Wrote all functionality</li>
+                      <li>- Wrote Extensions System and Other APIs</li>
+                      <li>- Wrote Docs</li>
+                      <li>- Manages And runs DayDreamX and its stability</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 class="text-sm font-medium">
+                      <a
+                        href="https://guns.lol/kdust7"
+                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >
+                        KDust7 (Owner)
+                      </a>
+                    </h4>
+                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
+                      <li>- Polished pages UI</li>
+                      <li>- Optimizations</li>
+                      <li>- UI Optimizations / Polishing</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 class="text-sm font-medium">
+                      <a
+                        href="https://github.com/xnoctra"
+                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >
+                        Noctra (Dev)
+                      </a>
+                    </h4>
+                    <ul class="text-xs text-[var(--text)] mt-1">
+                      <li>- Design Changes</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 class="text-sm font-medium">
+                      <a
+                        href="https://github.com/crllect"
+                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >
+                        Crllect (Owner)
+                      </a>
+                    </h4>
+                    <ul class="text-xs text-[var(--text)] mt-1">
+                      <li>- emotional support</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-[var(--white-08)]">
+                  <h3 class="text-lg font-semibold text-[var(--main)] mb-2">
+                    Thank you for contributing to DayDreamX.
+                  </h3>
+                  <p class="text-sm text-[var(--text)]">
+                    If you would like to contribute, check out our
+                    <a
+                      href="https://github.com/NightProxy/DayDreamX"
+                      class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >GitHub</a
+                    >
+                    for how to get started.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
     </div>
-    
+
     <script type="module" src="/src/js/internal/settings.ts"></script>
   </body>
 </html>

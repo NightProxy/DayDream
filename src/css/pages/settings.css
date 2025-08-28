@@ -98,7 +98,8 @@ button[component="button"]:focus {
 }
 
 /* Modern Layout Fixes */
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
 }
