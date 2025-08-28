@@ -108,7 +108,7 @@ class Windowing implements WindowingInterface {
       scrolling: auto;
     }
   </style>
-  <iframe id="main" frameborder="0" style="width:100%;height:100%;border:none;position:fixed;inset:0px;outline:none;scrolling:auto;"></iframe>
+  <iframe id="main" frameborder="0" style="width:100%; height:100%; border:none; position:fixed; inset:0px; outline:none; scrolling:auto;"></iframe>
         <script>
           const iframe = document.getElementById("main");
           const doc = iframe.contentDocument || iframe.contentWindow.document;

@@ -10,9 +10,11 @@ import { fontObfuscationPlugin } from "./srv/vite/font";
 import { prettyUrlsPlugin, pageRoutes } from "./srv/vite/routes";
 import { copyRoutes, routePaths } from "./srv/vite/copy";
 //import { cssObfuscationPlugin } from "./srv/vite/classnames";
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     tsconfigPaths(),
     ViteMinifyPlugin(),
     prettyUrlsPlugin(),
@@ -67,6 +69,11 @@ export default defineConfig({
     }),*/
   ],
   appType: "mpa",
+  server: {
+    allowedHosts: [
+      "qualifications-experienced-lighting-salaries.trycloudflare.com"
+    ]
+  },
   build: {
     emptyOutDir: true,
     rollupOptions: {

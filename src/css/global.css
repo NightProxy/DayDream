@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "basecoat-css";
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 #browser-container {
   display: flex;
@@ -129,6 +139,13 @@ p {
   --tab-enter-duration: 260ms;
   --tab-enter-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --stagger-step: 70ms;
+  --scrollbar-size: 6px;
+  --scrollbar-radius: 6px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--main);
+  --scrollbar-thumb-shadow: 0px -5px 8px 1px var(--main-35a), 0px -5px 35px 0px var(--main);
+  --scrollbar-thumb-hover: color-mix(in oklab, var(--text) 28%, transparent);
+  --scrollbar-thumb-active: color-mix(in oklab, var(--text) 40%, transparent);
 }
 
 .pre-anim * {
@@ -279,6 +296,108 @@ li {
   transform: translateY(0) scale(0.98);
 }
 
+/* Profile Manager Menu Styles */
+.profile-manager-menu {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.profile-manager-menu button {
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.profile-manager-menu button:hover {
+  transform: scale(1.02);
+}
+
+.profile-manager-menu button:active {
+  transform: scale(0.98);
+}
+
+.profile-manager-menu .profile-row:hover {
+  transform: translateX(2px);
+}
+
+.profile-manager-menu .profile-actions button {
+  opacity: 0.7;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.profile-manager-menu .profile-row:hover .profile-actions button {
+  opacity: 1;
+}
+
+.profile-manager-menu .profile-actions button:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+/* Scrollbar styling for profile list */
+.profile-manager-menu div::-webkit-scrollbar {
+  width: 4px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-track {
+  background: var(--white-05);
+  border-radius: 2px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-thumb {
+  background: var(--white-20);
+  border-radius: 2px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-thumb:hover {
+  background: var(--white-30);
+}
+
+/* Basecoat Dialog Styles */
+.bc-dialog-overlay {
+  animation: fadeIn 0.2s ease;
+}
+
+.bc-dialog-content {
+  animation: slideIn 0.2s ease;
+}
+
+.bc-input:focus {
+  border-color: var(--main) !important;
+  box-shadow: 0 0 0 3px var(--main-20a) !important;
+}
+
+.bc-btn-primary:hover {
+  transform: scale(1.02) !important;
+}
+
+.bc-btn-primary:active {
+  transform: scale(0.98) !important;
+}
+
+.bc-btn-secondary:hover {
+  background: var(--white-05) !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .tab {
   position: relative;
   display: inline-flex;
@@ -292,6 +411,7 @@ li {
   cursor: pointer;
   user-select: none;
   isolation: isolate;
+  margin: calc(var(--scrollbar-size)) 0 0 0;
 }
 
 .tab > * {
@@ -416,6 +536,7 @@ li {
   opacity: 0;
   transform: scale(0.92);
 }
+
 div[component="frame-container"] iframe {
   width: 100%;
   height: 100%;
@@ -427,7 +548,61 @@ div[component="frame-container"] iframe.active {
   display: block;
 }
 
-div[component="tab-bar"] {
-  overflow-x: auto;
+div[component="top-bar"] {
+  display: flex;
+  min-width: 0;
+}
+
+div[component="tab-bar-container"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
   overflow-y: hidden;
+  z-index: 999;
+}
+
+div[component="tab-bar"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: scroll;
+  overflow-y: overlay !important;
+  white-space: nowrap;
+  box-sizing: border-box;
+  align-items: flex-start;
+  width: 0;
+  z-index: 999;
+  padding-bottom: var(--scrollbar-size);
+  margin-bottom: calc(-1 * var(--scrollbar-size));
+}
+
+div[component="utility-bar"] {
+  z-index: 99;
+}
+
+@supports selector(::-webkit-scrollbar) {
+  div[component="tab-bar"]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  div[component="tab-bar"]::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  div[component="tab-bar"]::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  div[component="tab-bar"]::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb) !important;
+    border-radius: 9999px !important;
+  }
+}
+
+@-moz-document url-prefix() {
+  div[component="tab-bar"] {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
 }

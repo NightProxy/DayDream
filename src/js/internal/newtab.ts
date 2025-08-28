@@ -1,6 +1,9 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
+import 'basecoat-css/all';
+import { createIcons, icons } from "lucide";
+
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { SettingsAPI } from "@apis/settings";
@@ -11,10 +14,11 @@ import { DDXGlobal } from "@js/global/index";
 console.log("TailwindCSS should be loaded now!");
 
 //@ts-ignore
-const { ScramjetController } = $scramjetLoadController();
+//const { ScramjetController } = $scramjetLoadController();
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const nightmare = new Nightmare();
+  createIcons({icons})
+  /*const nightmare = new Nightmare();
 
   const settingsAPI = new SettingsAPI();
   //const profilesAPI = new ProfilesAPI();
@@ -225,5 +229,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   nightmarePlugins.rightclickmenu.attachTo(
     document.querySelector("body") as HTMLBodyElement,
     rightclickmenucontent,
-  );
+  );*/
 });

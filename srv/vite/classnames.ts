@@ -128,15 +128,11 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
     let transformedJS = jsContent;
 
     try {
-      // Only transform specific DOM manipulation patterns where we're confident about class names
-
-      // 1. classList methods: classList.add(), classList.remove(), classList.toggle(), classList.contains()
       const classListRegex =
         /\.classList\.(add|remove|toggle|contains)\s*\(\s*(['"`])([a-zA-Z_][a-zA-Z0-9_-]*)\2\s*\)/g;
       transformedJS = transformedJS.replace(
         classListRegex,
         (match, method, quote, className) => {
-          // Only transform if we have a mapping for this exact class name
           if (mapping[className]) {
             return `.classList.${method}(${quote}${mapping[className]}${quote})`;
           }
@@ -144,13 +140,11 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
         },
       );
 
-      // 2. querySelector methods with class selectors
       const selectorRegex =
         /\.(querySelector|querySelectorAll|matches|closest)\s*\(\s*(['"`])\.([a-zA-Z_][a-zA-Z0-9_-]*)\2\s*\)/g;
       transformedJS = transformedJS.replace(
         selectorRegex,
         (match, method, quote, className) => {
-          // Only transform if we have a mapping for this exact class name
           if (mapping[className]) {
             return `.${method}(${quote}.${mapping[className]}${quote})`;
           }
@@ -158,7 +152,6 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
         },
       );
 
-      // 3. More complex selectors (like ".class1 .class2" or ".class1.class2")
       const complexSelectorRegex =
         /\.(querySelector|querySelectorAll|matches|closest)\s*\(\s*(['"`])([^'"`]*\.([a-zA-Z_][a-zA-Z0-9_-]*)[^'"`]*)\2\s*\)/g;
       transformedJS = transformedJS.replace(
@@ -175,13 +168,11 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
         },
       );
 
-      // 4. className property assignments (single class or space-separated)
       const classNameAssignRegex =
         /\.className\s*=\s*(['"`])([a-zA-Z_][a-zA-Z0-9_\-\s]*)\1/g;
       transformedJS = transformedJS.replace(
         classNameAssignRegex,
         (match, quote, classValue) => {
-          // Split into individual class names
           const classNames = classValue.trim().split(/\s+/).filter(Boolean);
           let hasTransformations = false;
 
@@ -193,7 +184,6 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
             return className;
           });
 
-          // Only replace if we actually transformed something
           if (hasTransformations) {
             return `.className = ${quote}${transformedClasses.join(" ")}${quote}`;
           }
@@ -201,7 +191,6 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
         },
       );
 
-      // 5. setAttribute for class attribute
       const setAttributeRegex =
         /\.setAttribute\s*\(\s*(['"`])class\1\s*,\s*(['"`])([a-zA-Z_][a-zA-Z0-9_\-\s]*)\2\s*\)/g;
       transformedJS = transformedJS.replace(
@@ -242,12 +231,10 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
     },
 
     generateBundle(options, bundle) {
-      // Only run in production builds
       if (!enabled || !isProduction) {
         return;
       }
 
-      // Find CSS files in the bundle
       const cssFiles = Object.keys(bundle).filter((fileName) =>
         fileName.endsWith(".css"),
       );
@@ -312,7 +299,6 @@ export function cssObfuscationPlugin(options: ObfuscationOptions = {}): Plugin {
         }
       });
 
-      // Optionally write mapping to a file for debugging (only in development)
       if (process.env.NODE_ENV === "development") {
         console.log("Class mapping:", classMapping);
       }

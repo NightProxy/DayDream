@@ -1,3 +1,162 @@
+/* Basecoat Component Overrides */
+select[component="dropdown"] {
+  background-color: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--white-10);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+select[component="dropdown"]:hover {
+  border-color: var(--white-20);
+}
+
+select[component="dropdown"]:focus {
+  outline: none;
+  border-color: var(--main);
+  box-shadow: 0 0 0 3px var(--main-20a);
+}
+
+select[component="dropdown"] option {
+  background-color: var(--bg-2);
+  color: var(--text);
+  padding: 8px;
+}
+
+/* Basecoat Switch Styling */
+input[component="switch"] + div {
+  background-color: var(--white-10);
+  transition: all 0.3s ease;
+}
+
+input[component="switch"]:checked + div {
+  background-color: var(--main);
+}
+
+input[component="switch"]:focus + div {
+  box-shadow: 0 0 0 4px var(--main-20a);
+}
+
+input[component="switch"] + div::after {
+  background-color: white;
+  border: 1px solid var(--white-20);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input[component="switch"]:checked + div::after {
+  border-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+button[component="button"] {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  border: 1px solid transparent;
+}
+
+button[component="button"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--main-20a);
+}
+
+/* Primary button styling */
+.bg-\[var\(--main\)\] {
+  background-color: var(--main) !important;
+}
+
+.bg-\[var\(--main\)\]:hover {
+  background-color: color-mix(in srgb, var(--main) 90%, black) !important;
+}
+
+/* Secondary button styling */
+.bg-\[var\(--white-10\)\] {
+  background-color: var(--white-10) !important;
+}
+
+.bg-\[var\(--white-10\)\]:hover {
+  background-color: var(--white-20) !important;
+}
+
+/* Focus ring colors */
+.focus\:ring-\[var\(--main\)\]:focus {
+  --tw-ring-color: var(--main) !important;
+}
+
+.focus\:ring-\[var\(--main-20a\)\]:focus {
+  --tw-ring-color: var(--main-20a) !important;
+}
+
+/* Modern Layout Fixes */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure proper scrolling for settings */
+main {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for modern look */
+main::-webkit-scrollbar {
+  width: 6px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: var(--main);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* Firefox scrollbar */
+main {
+  scrollbar-width: thin;
+  scrollbar-color: var(--main) transparent;
+}
+
+/* Remove legacy scrolling styles that might interfere */
+.scrollDiv {
+  display: none !important;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Fix sidebar height */
+aside {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+/* Legacy Component Styles */
 .settings-child {
   margin-left: 30px;
 }

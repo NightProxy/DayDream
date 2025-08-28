@@ -1,6 +1,7 @@
 import "../css/vars.css";
 import "../css/imports.css";
 import "../css/global.css";
+import 'basecoat-css/all';
 
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
@@ -17,7 +18,7 @@ import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
-import { Keys } from "@browser/keys";
+//import { Keys } from "@browser/keys";
 import { Search } from "@browser/search";
 
 // @ts-ignore
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const utils = new Utils();
   const tabs = new Tabs(render, proto, swConfig, proxySetting);
 
-  tabs.createTab("daydream://newtab", false);
+  tabs.createTab("daydream://newtab");
 
   const functions = new Functions(tabs, proto);
   //const keys = new Keys(tabs, functions);

@@ -14,13 +14,45 @@
             <div
               class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
             >
+            <div class="stack h-10 w-10">
+										<div
+											class="masked-shape"
+											style="
+												width: 100%;
+												height: 100%;
+												background: var(--main);
+												-webkit-mask-image: url('/res/logo/mask.png');
+												-webkit-mask-repeat: no-repeat;
+												-webkit-mask-position: center;
+												-webkit-mask-size: cover;
+												-webkit-mask-mode: luminance;
+												mask-image: url('/res/logo/mask.png');
+												mask-repeat: no-repeat;
+												mask-position: center;
+												mask-size: cover;
+												mask-mode: luminance;
+											"
+										>
+											<img
+												class="overlay"
+												src="/res/logo/overlay.png"
+												alt="overlay gradient"
+												style="
+													width: 100%;
+													height: 100%;
+													mix-blend-mode: multiply;
+													pointer-events: none;
+												"
+											/>
+										</div>
+                    </div>
+            
               <span
-                class="text-3xl font-extrabold tracking-wide text-[var(--text)]"
+                class="text-3xl tracking-widest text-[var(--text)] -mr-1"
                 >Daydream</span
-              >
-              <span
-                class="text-3xl font-extrabold tracking-wide text-[var(--main)]"
-                >X</span
+              ><em
+                class="text-3xl font-bold tracking-widest text-[var(--main)] -ml-1"
+                >X</em
               >
               <button
                 class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
@@ -29,7 +61,7 @@
                 data-align="center"
                 aria-label="Share"
               >
-                <i data-lucide="share-2" class="h-4 w-4"></i>
+                <i data-lucide="share-2" class="h-4 w-4 text-white"></i>
               </button>
             </div>
           </div>
@@ -97,7 +129,7 @@
         class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
       >
         <span class="pointer-events-auto"
-          >Server Latency: <span class="text-[var(--text)]/80">46ms</span></span
+          >Server Latency: <span id="latency" class="text-[var(--text)]/80">...</span></span
         >
         <nav class="pointer-events-auto flex items-center gap-4">
           <a
@@ -120,6 +152,17 @@
     </div>
 
     <script>
+      async function measureLatency() { // Temporary, replace later (TODO for % searching)
+        const start = performance.now();
+        try {
+          await fetch("/internal/newtab.html", { cache: "no-store" });
+          const end = performance.now();
+          document.getElementById("latency").textContent = `${Math.round(end - start)}ms`;
+        } catch (err) {
+          document.getElementById("latency").textContent = "Oh lord oh jesus everything is fucked";
+        }
+      }
+
       document.documentElement.classList.add("pre-anim");
       window.addEventListener("load", () => {
         document
@@ -130,7 +173,6 @@
             el.style.pointerEvents = "";
           });
         document.documentElement.classList.remove("pre-anim");
-        if (window.lucide && lucide.createIcons) lucide.createIcons();
       });
     </script>
     <script type="module" src="/src/js/internal/newtab.ts"></script>

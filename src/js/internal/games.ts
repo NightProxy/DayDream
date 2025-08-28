@@ -1,4 +1,5 @@
 import "../../css/global.css";
+import 'basecoat-css/all';
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";
 import { DDXGlobal } from "@js/global";
