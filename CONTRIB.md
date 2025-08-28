@@ -3,11 +3,11 @@
 First of all, thanks for taking interest in the project!
 
 > [!IMPORTANT]
-> Please use prettier with our provided config to all your changes, failure to do so will result in your changes getting rejected. Simply run `npm format` to format the code with our config
+> Please use prettier with our provided config to all your changes, failure to do so will result in your changes getting rejected. Simply run `{package manager} format` to format the code with our config
 
 ## Frontend Contributions
 
-All frontend contributions should use the provided files, and should avoid creating new ones. There are of course exceptions, but try to fit and organize your changes across the files. Heres a guide for the purpose of the frontend files and path chart:
+All frontend contributions should use the provided files, and should avoid creating new ones. There are of course exceptions, but try to fit and organize your changes across the files. Here's a guide for the purpose of the frontend files and path chart:
 
 ```
 public/
@@ -15,7 +15,7 @@ public/
 │   ├── internal/
 │   │   ├── (all of the pages and internal URLs)
 │   └── index.html (main page)
-├── static/
+├── public/
 │   ├── (proxy files)
 │   ├── assets/
 │   │   ├── css/
@@ -66,7 +66,7 @@ The json files should follow this format:
 {
   "name": "game name",
   "link": "game url that will get proxied",
-  "image": "/res/g/{name of the game without spaces}.webp",
+  "image": "/res/g/{name of the game only a-z, no special characters or caps}.webp",
   "categories": ["all", "cat1", "cat2"]
 }
 ```

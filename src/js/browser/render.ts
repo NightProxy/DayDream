@@ -72,7 +72,7 @@ class Render implements renderInterface {
                                 {
                                   class: "masked-shape",
                                   style:
-                                    "width: 100%;height: 100%;background: var(--main);-webkit-mask-image: url('/res/logo/mask.png');-webkit-mask-repeat: no-repeat;-webkit-mask-position: center;-webkit-mask-size: cover;-webkit-mask-mode: luminance;mask-image: url('/res/logo/mask.png');mask-repeat: no-repeat;mask-position: center;mask-size: cover;mask-mode: luminance;",
+                                    "width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('/res/logo/mask.png'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('/res/logo/mask.png'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;",
                                 },
                                 [
                                   this.ui.createElement(
@@ -82,7 +82,7 @@ class Render implements renderInterface {
                                       src: "/res/logo/overlay.png",
                                       alt: "overlay gradient",
                                       style:
-                                        "width: 100%;height: 100%;mix-blend-mode: multiply; pointer-events: none;",
+                                        "width: 100%; height: 100%; mix-blend-mode: multiply; pointer-events: none;",
                                     },
                                     [],
                                   ),
@@ -104,6 +104,9 @@ class Render implements renderInterface {
                       "data-tooltip": "Games",
                       "data-side": "right",
                       "data-align": "center",
+                      onclick: async () => {
+                        await window.tabs.createTab("daydream://games");
+                      }
                     },
                     [
                       this.ui.createElement(
@@ -129,6 +132,9 @@ class Render implements renderInterface {
                         "data-tooltip": "Extensions",
                         "data-side": "right",
                         "data-align": "center",
+                        onclick: async () => {
+                        await window.tabs.createTab("daydream://extensions");
+                      }
                       },
                       [
                         this.ui.createElement(
@@ -189,6 +195,9 @@ class Render implements renderInterface {
                       "data-tooltip": "What's New",
                       "data-side": "right",
                       "data-align": "center",
+                      onclick: async () => {
+                        await window.tabs.createTab("daydream://updates");
+                      }
                     },
                     [
                       this.ui.createElement(
@@ -208,6 +217,9 @@ class Render implements renderInterface {
                       "data-tooltip": "History",
                       "data-side": "right",
                       "data-align": "center",
+                      onclick: async () => {
+                        await window.tabs.createTab("daydream://history");
+                      }
                     },
                     [
                       this.ui.createElement(
@@ -228,6 +240,9 @@ class Render implements renderInterface {
                       "data-tooltip": "Settings",
                       "data-side": "right",
                       "data-align": "center",
+                      onclick: async () => {
+                        await window.tabs.createTab("daydream://settings");
+                      }
                     },
                     [
                       this.ui.createElement(
@@ -292,10 +307,19 @@ class Render implements renderInterface {
                 this.ui.createElement(
                   "div",
                   {
-                    component: "tab-bar",
-                    class: "flex items-center gap-2 flex-1",
+                    component: "tab-bar-container",
+                    class: "flex items-center flex-1 overflow-x-hidden",
                   },
-                  [],
+                  [
+                    this.ui.createElement(
+                      "div",
+                      {
+                        component: "tab-bar",
+                        class: "flex items-center gap-2 flex-1",
+                      },
+                      [],
+                    ),
+                  ],
                 ),
                 this.ui.createElement(
                   "div",
@@ -541,7 +565,7 @@ class Render implements renderInterface {
           "div",
           {
             style:
-              "border: none;outline: none;will-change: filter, transform, opacity;",
+              "border: none; outline: none; will-change: filter, transform, opacity;",
             class: "h-[calc(100vh-96px)] w-full bg-[var(--bg-2)]",
             component: "frame-container",
           },
@@ -552,7 +576,7 @@ class Render implements renderInterface {
           {
             "aria-hidden": "true",
             style:
-              "position: absolute;inset: 0;background: var(--bg-2);mix-blend-mode: lighten;pointer-events: none;",
+              "position: absolute; inset: 0; background: var(--bg-2); mix-blend-mode: lighten; pointer-events: none;",
             class: "h-full w-full bg-[var(--bg-2)]",
           },
           [],

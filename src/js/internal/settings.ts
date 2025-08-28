@@ -1,4 +1,8 @@
+import "../../css/vars.css";
+import "../../css/imports.css";
 import "../../css/global.css";
+import 'basecoat-css/all';
+import { createIcons, icons } from "lucide";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import { DDXGlobal } from "@js/global";
@@ -9,214 +13,147 @@ const eventsAPI = new EventSystem();
 // @ts-expect-error
 const globalFunctions = new DDXGlobal();
 
-const initializeDropdown = async (
-  buttonId: string,
-  optionsId: string,
+// Initialize Basecoat dropdown components
+const initializeSelect = async (
+  selectId: string,
   settingsKey: string,
   defaultValue: string,
-  functions: Function | null = null,
+  onChangeCallback: Function | null = null,
 ) => {
-  const dropdownButton = document.getElementById(buttonId);
-  const dropdownOptions = document.getElementById(optionsId);
-  const buttonText = dropdownButton?.querySelector(".button-text");
-
-  if (!dropdownButton) {
-    console.error(`Dropdown button with id "${buttonId}" not found.`);
-    return;
-  }
-  if (!dropdownOptions) {
-    console.error(`Dropdown options with id "${optionsId}" not found.`);
-    return;
-  }
-  if (!buttonText) {
-    console.error(
-      `Button text element not found within dropdown button with id "${buttonId}".`,
-    );
+  const selectElement = document.getElementById(selectId) as HTMLSelectElement;
+  
+  if (!selectElement) {
+    console.error(`Select element with id "${selectId}" not found.`);
     return;
   }
 
+  // Load saved value and set it
   const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
-  const selectedOption = dropdownOptions.querySelector(
-    `[data-value="${savedValue}"]`,
-  );
-  if (selectedOption) {
-    buttonText.textContent = selectedOption.textContent;
-  } else {
-    console.warn(
-      `No option found for value "${savedValue}" in dropdown with id "${optionsId}".`,
-    );
+  selectElement.value = savedValue;
+
+  // Add change event listener
+  selectElement.addEventListener("change", async () => {
+    await settingsAPI.setItem(settingsKey, selectElement.value);
+    if (onChangeCallback) {
+      await onChangeCallback();
+    }
+    location.reload();
+  });
+};
+
+// Initialize Basecoat switch components
+const initSwitch = async (
+  switchId: string,
+  settingsKey: string,
+  onChangeCallback: Function | null = null,
+) => {
+  const switchElement = document.getElementById(switchId) as HTMLInputElement;
+  
+  if (!switchElement) {
+    console.error(`Switch element with id "${switchId}" not found.`);
+    return;
   }
 
-  dropdownButton.addEventListener("click", () => {
-    const DO = document.querySelectorAll(".dropdown-options");
-    DO.forEach((dropdown) => {
-      if (dropdown !== dropdownOptions) {
-        dropdown.setAttribute("style", "opacity:0;filter:blur(5px);");
-        setTimeout(() => {
-          dropdown.setAttribute(
-            "style",
-            "display:none;opacity:0;filter:blur(5px);",
-          );
-        }, 200);
-      }
-    });
+  // Load saved value and set it
+  const savedValue = await settingsAPI.getItem(settingsKey);
+  switchElement.checked = savedValue === "true";
 
-    document.querySelectorAll(".dropdown-button.active").forEach((btn) => {
-      if (btn !== dropdownButton) {
-        btn.classList.remove("active");
-      }
-    });
-
-    const isVisible = dropdownOptions.style.display === "block";
-    if (!isVisible) {
-      dropdownOptions.style.display = "block";
-      setTimeout(() => {
-        dropdownOptions.style.opacity = "1";
-        dropdownOptions.style.filter = "blur(0px)";
-      }, 10);
-    } else {
-      dropdownOptions.style.opacity = "0";
-      dropdownOptions.style.filter = "blur(5px)";
-      setTimeout(() => {
-        dropdownOptions.style.display = "none";
-      }, 200);
+  // Add change event listener
+  switchElement.addEventListener("change", async () => {
+    await settingsAPI.setItem(settingsKey, switchElement.checked.toString());
+    if (onChangeCallback) {
+      await onChangeCallback();
     }
-    dropdownButton.classList.toggle("active", !isVisible);
+  });
+};
+
+// Initialize text input with auto-save
+const initTextInput = async (
+  inputId: string,
+  settingsKey: string,
+  defaultValue: string = "",
+) => {
+  const inputElement = document.getElementById(inputId) as HTMLInputElement;
+  
+  if (!inputElement) {
+    console.error(`Input element with id "${inputId}" not found.`);
+    return;
+  }
+
+  // Load saved value and set it
+  const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
+  inputElement.value = savedValue;
+
+  // Add auto-save on change and enter
+  inputElement.addEventListener("change", async () => {
+    await settingsAPI.setItem(settingsKey, inputElement.value);
   });
 
-  dropdownOptions.addEventListener("click", (event: any) => {
-    if (event.target.tagName === "A") {
-      let selectedValue = event.target.getAttribute("data-value");
-      const selectedOption = event.target.textContent;
-      buttonText.textContent = selectedOption;
-      settingsAPI.setItem(settingsKey, selectedValue);
-      dropdownOptions.style.opacity = "0";
-      dropdownOptions.style.filter = "blur(5px)";
-      setTimeout(() => {
-        dropdownOptions.style.display = "none";
-      }, 200);
-      dropdownButton.classList.remove("active");
-
-      functions?.();
+  inputElement.addEventListener("keypress", async (event) => {
+    if (event.key === "Enter") {
+      await settingsAPI.setItem(settingsKey, inputElement.value);
       location.reload();
     }
   });
 };
 
-document.addEventListener("click", (event: any) => {
-  if (!event.target.closest(".dropdown")) {
-    document.querySelectorAll(".dropdown-button.active").forEach((btn) => {
-      btn.classList.remove("active");
-      const dropdownOptions = btn.nextElementSibling;
-      if (dropdownOptions) {
-        dropdownOptions.setAttribute("style", "opacity:0;filter:blur(5px);");
-        setTimeout(() => {
-          dropdownOptions.setAttribute(
-            "style",
-            "display:none;opacity:0;filter:blur(5px);",
-          );
-        }, 200);
-      }
-    });
-  }
-});
-const initSwitch = async (
-  item: HTMLInputElement,
-  setting: string,
-  functionToCall: Function | null,
-) => {
-  const switchElement = item;
-  if (!switchElement) {
-    console.error(`Switch element at ${item} not found.`);
+// Initialize button with custom action
+const initButton = (buttonId: string, action: () => void) => {
+  const buttonElement = document.getElementById(buttonId) as HTMLButtonElement;
+  
+  if (!buttonElement) {
+    console.error(`Button element with id "${buttonId}" not found.`);
     return;
   }
-  switchElement.checked = (await settingsAPI.getItem(setting)) === "true";
-  switchElement.addEventListener("change", async () => {
-    await settingsAPI.setItem(setting, switchElement.checked.toString());
-    if (functionToCall) {
-      await functionToCall();
-    }
-  });
+
+  buttonElement.addEventListener("click", action);
 };
 
-const uploadBGInput = document.getElementById("bgInput");
-const uploadBGButton = document.getElementById("bgUpload");
-
-uploadBGButton!.addEventListener("click", function () {
-  uploadBGInput!.click();
-});
-
-uploadBGInput!.addEventListener("change", function (event: any) {
-  var file = event.target.files[0];
-  var reader = new FileReader();
-  reader.onload = async function (e) {
-    var backgroundImage = e.target!.result;
-    await settingsAPI.setItem(
-      "theme:background-image",
-      backgroundImage as string,
-    );
-    eventsAPI.emit("theme:background-change", null);
-  };
-  reader.readAsDataURL(file);
-});
-
 document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize Lucide icons
+  createIcons({icons});
+
+  // Initialize sidebar navigation
   document
-    .querySelector(".sideSnav")!
-    .querySelectorAll("a")
+    .querySelectorAll(".settingItem")
     .forEach((link) => {
-      link.addEventListener("click", () => {
-        const element = document.querySelector(link.getAttribute("section")!);
-        if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-            inline: "nearest",
-          });
-        }
-      });
-      link.querySelector("*")!.addEventListener("click", () => {
-        const element = document.querySelector(link.getAttribute("section")!);
-        if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-            inline: "nearest",
-          });
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const href = link.getAttribute("href");
+        if (href) {
+          const element = document.querySelector(href);
+          if (element) {
+            element.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+              inline: "nearest",
+            });
+          }
         }
       });
     });
-  //Cloaking
-  initializeDropdown("tabCloakButton", "tabCloakOptions", "tabCloak", "off");
-  initializeDropdown("URL-cloakButton", "URL-cloakOptions", "URL_Cloak", "off");
-  initSwitch(
-    document.getElementById("autoCloakSwitch") as HTMLInputElement,
-    "autoCloak",
-    function () {
-      eventsAPI.emit("cloaking:auto-toggle", null);
-    },
-  );
-  initSwitch(
-    document.getElementById("antiCloseSwitch") as HTMLInputElement,
-    "antiClose",
-    null,
-  );
 
-  //Apperance
-  initializeDropdown(
-    "UIStyleButton",
-    "UIStyleOptions",
-    "UIStyle",
-    "operagx",
-    () => {
+  // Initialize Cloaking settings
+  await initializeSelect("tabCloakSelect", "tabCloak", "off");
+  await initializeSelect("URL-cloakSelect", "URL_Cloak", "off");
+  
+  await initSwitch("autoCloakSwitch", "autoCloak", () => {
+    eventsAPI.emit("cloaking:auto-toggle", null);
+  });
+  
+  await initSwitch("antiCloseSwitch", "antiClose", null);
+
+  // Initialize Appearance settings
+  await initializeSelect("UIStyleSelect", "UIStyle", "operagx", () => {
+    eventsAPI.emit("UI:changeStyle", null);
+    eventsAPI.emit("theme:template-change", null);
+    setTimeout(() => {
       eventsAPI.emit("UI:changeStyle", null);
       eventsAPI.emit("theme:template-change", null);
-      setTimeout(() => {
-        eventsAPI.emit("UI:changeStyle", null);
-        eventsAPI.emit("theme:template-change", null);
-      }, 100);
-    },
-  );
+    }, 100);
+  });
+
+  // Initialize color picker
   var colorPicker = new (iro.ColorPicker as any)(".colorPicker", {
     width: 80,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
@@ -239,85 +176,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     eventsAPI.emit("theme:color-change", { color: color.rgbaString });
   });
 
-  initializeDropdown(
-    "themeButtonCustom",
-    "themeOptionsCustom",
-    "themeCustom",
-    "dark",
-    function () {
+  await initializeSelect("themeCustomSelect", "themeCustom", "dark", () => {
+    eventsAPI.emit("theme:template-change", null);
+    setTimeout(() => {
       eventsAPI.emit("theme:template-change", null);
-      setTimeout(() => {
-        eventsAPI.emit("theme:template-change", null);
-      }, 100);
-    },
-  );
+    }, 100);
+  });
 
-  // Searching
-  initializeDropdown("proxyButton", "proxyOptions", "proxy", "uv");
-  initializeDropdown(
-    "transportButton",
-    "transportOptions",
-    "transports",
-    "libcurl",
-  );
-  initializeDropdown(
-    "searchButton",
-    "searchOptions",
-    "search",
-    "https://duckduckgo.com/?q=%s",
-  );
+  // Initialize Search settings
+  await initializeSelect("proxySelect", "proxy", "uv");
+  await initializeSelect("transportSelect", "transports", "libcurl");
+  await initializeSelect("searchSelect", "search", "https://duckduckgo.com/?q=%s");
 
-  // Load and handle visibility of wisp and bare settings
-  const wispSetting = document.getElementById(
-    "wispSetting",
-  ) as HTMLInputElement;
-  if (wispSetting) {
-    wispSetting.value =
-      (await settingsAPI.getItem("wisp")) ||
-      (location.protocol === "https:" ? "wss" : "ws") +
-        "://" +
-        location.host +
-        "/wisp/";
-  }
+  // Initialize Wisp setting
+  const defaultWispUrl = (location.protocol === "https:" ? "wss" : "ws") + 
+                        "://" + location.host + "/wisp/";
+  await initTextInput("wispSetting", "wisp", defaultWispUrl);
 
-  const saveInputValue = (inputId: string, settingsKey: string) => {
-    const inputElement = document.getElementById(inputId) as HTMLInputElement;
+  // Initialize buttons
+  initButton("bgUpload", () => {
+    const uploadBGInput = document.getElementById("bgInput") as HTMLInputElement;
+    uploadBGInput!.click();
+  });
 
-    inputElement.addEventListener("change", async () => {
-      await settingsAPI.setItem(settingsKey, inputElement.value);
-      location.reload();
-    });
-    inputElement.addEventListener("keypress", async (event) => {
-      if (event.key === "Enter") {
-        await settingsAPI.setItem(settingsKey, inputElement.value);
-        location.reload();
-      }
-    });
-  };
+  initButton("bgRemove", async () => {
+    await settingsAPI.removeItem("theme:background-image");
+    eventsAPI.emit("theme:background-change", null);
+  });
 
-  saveInputValue("wispSetting", "wisp");
-});
-
-function saveInputValueAsButton(
-  button: HTMLButtonElement,
-  input: HTMLInputElement,
-  key: string,
-) {
-  button.addEventListener("click", async () => {
-    await settingsAPI.setItem(key, input.value);
+  initButton("saveWispSetting", async () => {
+    const wispInput = document.getElementById("wispSetting") as HTMLInputElement;
+    await settingsAPI.setItem("wisp", wispInput.value);
     location.reload();
   });
-}
 
-saveInputValueAsButton(
-  document.getElementById("saveWispSetting") as HTMLButtonElement,
-  document.getElementById("wispSetting") as HTMLInputElement,
-  "wisp",
-);
-
-document
-  .getElementById("resetWispSetting")!
-  .addEventListener("click", async () => {
+  initButton("resetWispSetting", async () => {
     await settingsAPI.removeItem("wisp");
     location.reload();
   });
+});
+
+// Background upload functionality
+const uploadBGInput = document.getElementById("bgInput") as HTMLInputElement;
+
+if (uploadBGInput) {
+  uploadBGInput.addEventListener("change", function (event: any) {
+    var file = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = async function (e) {
+      var backgroundImage = e.target!.result;
+      await settingsAPI.setItem(
+        "theme:background-image",
+        backgroundImage as string,
+      );
+      eventsAPI.emit("theme:background-change", null);
+    };
+    reader.readAsDataURL(file);
+  });
+}
