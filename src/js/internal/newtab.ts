@@ -1,7 +1,7 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
-import 'basecoat-css/all';
+import "basecoat-css/all";
 import { createIcons, icons } from "lucide";
 
 import { Nightmare } from "@libs/Nightmare/nightmare";
@@ -17,7 +17,7 @@ console.log("TailwindCSS should be loaded now!");
 //const { ScramjetController } = $scramjetLoadController();
 
 document.addEventListener("DOMContentLoaded", async () => {
-  createIcons({icons})
+  createIcons({ icons });
   /*const nightmare = new Nightmare();
 
   const settingsAPI = new SettingsAPI();

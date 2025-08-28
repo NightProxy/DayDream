@@ -106,7 +106,7 @@ class Render implements renderInterface {
                       "data-align": "center",
                       onclick: async () => {
                         await window.tabs.createTab("daydream://games");
-                      }
+                      },
                     },
                     [
                       this.ui.createElement(
@@ -133,8 +133,8 @@ class Render implements renderInterface {
                         "data-side": "right",
                         "data-align": "center",
                         onclick: async () => {
-                        await window.tabs.createTab("daydream://extensions");
-                      }
+                          await window.tabs.createTab("daydream://extensions");
+                        },
                       },
                       [
                         this.ui.createElement(
@@ -197,7 +197,7 @@ class Render implements renderInterface {
                       "data-align": "center",
                       onclick: async () => {
                         await window.tabs.createTab("daydream://updates");
-                      }
+                      },
                     },
                     [
                       this.ui.createElement(
@@ -219,7 +219,7 @@ class Render implements renderInterface {
                       "data-align": "center",
                       onclick: async () => {
                         await window.tabs.createTab("daydream://history");
-                      }
+                      },
                     },
                     [
                       this.ui.createElement(
@@ -242,7 +242,7 @@ class Render implements renderInterface {
                       "data-align": "center",
                       onclick: async () => {
                         await window.tabs.createTab("daydream://settings");
-                      }
+                      },
                     },
                     [
                       this.ui.createElement(
