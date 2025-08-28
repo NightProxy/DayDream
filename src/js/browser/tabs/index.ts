@@ -111,9 +111,9 @@ class Tabs implements TabsInterface {
     return this.pinManager.unpinnedTabEls;
   }
 
-  popGlow(el: HTMLElement) {
+  popGlow = (el: HTMLElement) => {
     el.style.transition = ".4s ease-out";
-  }
+  };
 
   get tabContentWidths() {
     const numberOfTabs = this.tabEls.length;
@@ -216,7 +216,7 @@ class Tabs implements TabsInterface {
     return positions;
   }
 
-  async createTab(url: string) {
+  createTab = async (url: string) => {
     this.tabCount++;
     let tabTitle = "New Tab";
 
@@ -258,50 +258,15 @@ class Tabs implements TabsInterface {
         ]),
       ],
     );
-    this.setFavicon(tab, iframe);
-
-    const faviconObserver = new MutationObserver(() => {
-      this.setFavicon(tab, iframe);
-    });
 
     iframe.addEventListener("load", async () => {
       try {
         if (iframe.contentWindow) {
           this.pageClient(iframe);
-          faviconObserver.observe(iframe.contentDocument!.head, {
-            childList: true,
-            subtree: true,
-          });
-          let check = await this.proto.getInternalURL(
-            new URL(iframe.src).pathname,
-          );
-          if (typeof check === "string" && check.startsWith("daydream://")) {
-            this.items.addressBar!.value = check;
-            /*document.querySelector(".webSecurityIcon")!.innerHTML =
-              `<span class="material-symbols-outlined">lock_open</span>`;*/
-          } else {
-            let IFurl = new URL(iframe.src).pathname;
-            IFurl = IFurl.replace(
-              window.SWconfig[
-                window.ProxySettings as keyof typeof window.SWconfig
-              ].config.prefix,
-              "",
-            );
-            IFurl = window.__uv$config.decodeUrl(IFurl);
-            this.items.addressBar!.value = IFurl;
-            //const fURL = new URL(IFurl);
-            /*if (fURL.protocol == "https:") {
-              document.querySelector(".webSecurityIcon")!.innerHTML =
-                `<span class="material-symbols-outlined">lock</span>`;
-            } else {
-              document.querySelector(".webSecurityIcon")!.innerHTML =
-                `<span class="material-symbols-outlined">lock_open</span>`;
-            }*/
-          }
         } else {
           console.error("Iframe contentWindow is not accessible.");
         }
-        this.startTitleWatcher(id, iframe, tab);
+        this.startMetaWatcher(id, iframe, tab);
       } catch (error) {
         console.error("An error occurred while loading the iframe:", error);
       }
@@ -326,7 +291,9 @@ class Tabs implements TabsInterface {
       url,
       groupId: undefined,
       isPinned: false,
-      titleInterval: undefined as number | undefined,
+      metaInterval: undefined as number | undefined,
+      lastInternalRoute: undefined as string | undefined,
+      lastAddressShown: undefined as string | undefined,
     };
 
     this.tabs.push(tabData);
@@ -335,17 +302,17 @@ class Tabs implements TabsInterface {
 
     this.setupSortable();
     this.logger.createLog(`Created tab: ${url}`);
-  }
+  };
 
-  updateTabAttributes() {
+  updateTabAttributes = () => {
     const tabElements = this.ui.queryComponentAll("tab", this.items.tabBar!);
 
     tabElements.forEach((element, index) => {
       element.setAttribute("tab", index.toString());
     });
-  }
+  };
 
-  async closeTabById(id: string) {
+  closeTabById = async (id: string) => {
     const tabInfo = this.tabs.find((tab) => tab.id === id);
     if (!tabInfo) return;
 
@@ -357,6 +324,8 @@ class Tabs implements TabsInterface {
       iframe: tabInfo.iframe.id,
     });
 
+    this.stopMetaWatcher(id);
+
     tabInfo.tab.remove();
     tabInfo.iframe.remove();
 
@@ -364,16 +333,18 @@ class Tabs implements TabsInterface {
     this.updateTabAttributes();
     console.log(this.tabs, currentTabIndex, isCurrentTabActive);
     if (this.tabs.length > 0) {
-      // && isCurrentTabActive
       let nextTabToSelect: any = null;
       console.log(nextTabToSelect + 11);
-      if (currentTabIndex > 0 && this.tabs[currentTabIndex - 1]) {
-        nextTabToSelect = this.tabs[currentTabIndex - 1];
-      } else if (this.tabs[currentTabIndex]) {
-        nextTabToSelect = this.tabs[currentTabIndex];
-      } else {
-        // (this.tabs.length > 0)
-        nextTabToSelect = this.tabs[this.tabs.length - 1];
+      switch (true) {
+        case currentTabIndex > 0 &&
+          this.tabs[currentTabIndex - 1] !== undefined:
+          nextTabToSelect = this.tabs[currentTabIndex - 1];
+          break;
+        case this.tabs[currentTabIndex] !== undefined:
+          nextTabToSelect = this.tabs[currentTabIndex];
+          break;
+        default:
+          nextTabToSelect = this.tabs[this.tabs.length - 1];
       }
       console.log(nextTabToSelect);
       if (nextTabToSelect) {
@@ -384,11 +355,10 @@ class Tabs implements TabsInterface {
       this.createTab("daydream://newtab");
     }
 
-    this.stopTitleWatcher(id);
     this.logger.createLog(`Closed tab: ${id}`);
-  }
+  };
 
-  closeCurrentTab() {
+  closeCurrentTab = () => {
     const activeTab = Array.from(
       this.ui.queryComponentAll("tab", this.el),
     ).find((tab: HTMLElement) => tab.classList.contains("active"));
@@ -401,7 +371,7 @@ class Tabs implements TabsInterface {
     const activeIframeUrl = activeIFrame.src;
     const tabPosition = parseInt(activeTab.getAttribute("tab") || "0");
 
-    this.stopTitleWatcher(activeTab.id);
+    this.stopMetaWatcher(activeTab.id);
     this.eventsAPI.emit("tab:closed", {
       url: activeIframeUrl,
       iframe: activeIFrame.id,
@@ -445,9 +415,9 @@ class Tabs implements TabsInterface {
     }
 
     this.logger.createLog(`Closed tab: ${activeIframeUrl}`);
-  }
+  };
 
-  closeAllTabs() {
+  closeAllTabs = () => {
     this.ui.queryComponentAll("tab").forEach((tab) => {
       tab.remove();
     });
@@ -455,61 +425,9 @@ class Tabs implements TabsInterface {
       page.remove();
     });
     this.logger.createLog(`Closed all tabs`);
-  }
+  };
 
-  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement): void {
-    iframe.addEventListener("load", async () => {
-      try {
-        if (!iframe.contentDocument) {
-          console.error(
-            "Unable to access iframe content due to cross-origin restrictions.",
-          );
-          return;
-        }
-
-        let favicon: HTMLLinkElement | null = null;
-        const nodeList =
-          iframe.contentDocument.querySelectorAll("link[rel~='icon']");
-
-        for (let i = 0; i < nodeList.length; i++) {
-          const relAttr = nodeList[i].getAttribute("rel");
-          if (relAttr && relAttr.includes("icon")) {
-            favicon = nodeList[i] as HTMLLinkElement;
-            break;
-          }
-        }
-
-        if (favicon) {
-          let faviconUrl: string | null | undefined =
-            favicon.href || favicon.getAttribute("href");
-          const faviconImage = tabElement.querySelector(".tab-favicon");
-
-          faviconUrl = await this.proxy.getFavicon(
-            faviconUrl as string,
-            this.swConfig,
-            this.proxySetting,
-          );
-
-          if (faviconUrl && faviconImage) {
-            faviconImage.setAttribute(
-              "style",
-              `background-image: url('${faviconUrl}');`,
-            );
-          } else {
-            console.error("Favicon URL or favicon element is missing.");
-          }
-        } else {
-          console.error(
-            "No favicon link element found within the iframe document.",
-          );
-        }
-      } catch (error) {
-        console.error("An error occurred while setting the favicon:", error);
-      }
-    });
-  }
-
-  async selectTab(tabId: string) {
+  selectTab = async (tabId: string) => {
     const tabInfo = this.tabs.find((t) => t.id === tabId);
     if (!tabInfo) return;
 
@@ -553,25 +471,25 @@ class Tabs implements TabsInterface {
     }
 
     this.logger.createLog(`Selected tab: ${tabInfo.url || tabId}`);
-  }
+  };
 
-  renameGroup(groupId: string, newName?: string): boolean {
+  renameGroup = (groupId: string, newName?: string): boolean => {
     return this.groupManager.renameGroup(groupId, newName);
-  }
+  };
 
-  changeGroupColor(groupId: string, color: string): boolean {
+  changeGroupColor = (groupId: string, color: string): boolean => {
     return this.groupManager.changeGroupColor(groupId, color);
-  }
+  };
 
-  ungroupAllTabs(groupId: string): boolean {
+  ungroupAllTabs = (groupId: string): boolean => {
     return this.groupManager.ungroupAllTabs(groupId);
-  }
+  };
 
-  deleteGroup(groupId: string): boolean {
+  deleteGroup = (groupId: string): boolean => {
     return this.groupManager.deleteGroup(groupId);
-  }
+  };
 
-  duplicateTab(tabId: string): string | null {
+  duplicateTab = (tabId: string): string | null => {
     const tabInfo = this.tabs.find((t) => t.id === tabId);
     if (!tabInfo) return null;
 
@@ -594,14 +512,14 @@ class Tabs implements TabsInterface {
       return `tab-${this.tabCount}`;
     }
     return null;
-  }
+  };
 
-  selectTabById(id: string) {
+  selectTabById = (id: string) => {
     this.selectTab(id);
     this.logger.createLog(`Selected tab: ${id}`);
-  }
+  };
 
-  refreshTab(tabId: string) {
+  refreshTab = (tabId: string) => {
     const tabInfo = this.tabs.find((t) => t.id === tabId);
     if (!tabInfo) return;
 
@@ -609,9 +527,9 @@ class Tabs implements TabsInterface {
       tabInfo.iframe.src = tabInfo.iframe.src;
       this.logger.createLog(`Refreshed tab: ${tabId}`);
     }
-  }
+  };
 
-  closeTabsToRight(tabId: string): void {
+  closeTabsToRight = (tabId: string): void => {
     const targetIndex = this.tabs.findIndex((t) => t.id === tabId);
     if (targetIndex === -1 || targetIndex === this.tabs.length - 1) return;
 
@@ -623,9 +541,9 @@ class Tabs implements TabsInterface {
     this.logger.createLog(
       `Closed ${tabsToClose.length} tabs to the right of ${tabId}`,
     );
-  }
+  };
 
-  setupSortable() {
+  setupSortable = () => {
     this.dragHandler.setupSortable();
 
     const tabEls = this.tabEls;
@@ -636,9 +554,9 @@ class Tabs implements TabsInterface {
         tabEl.setAttribute("data-context-menu-setup", "true");
       }
     });
-  }
+  };
 
-  reorderTabElements() {
+  reorderTabElements = () => {
     const container = this.items.tabBar;
     if (!container) return;
 
@@ -651,41 +569,41 @@ class Tabs implements TabsInterface {
     });
 
     container.appendChild(fragment);
-  }
+  };
 
-  togglePinTab(tabId: string) {
+  togglePinTab = (tabId: string) => {
     this.pinManager.togglePinTab(tabId);
-  }
+  };
 
-  isPinned(tabId: string): boolean {
+  isPinned = (tabId: string): boolean => {
     return this.pinManager.isPinned(tabId);
-  }
+  };
 
-  createGroupWithTab(tabId: string, groupName?: string): string | null {
+  createGroupWithTab = (tabId: string, groupName?: string): string | null => {
     return this.groupManager.createGroupWithTab(tabId, groupName);
-  }
+  };
 
-  addTabToGroup(tabId: string, groupId: string): boolean {
+  addTabToGroup = (tabId: string, groupId: string): boolean => {
     return this.groupManager.addTabToGroup(tabId, groupId);
-  }
+  };
 
-  removeTabFromGroup(tabId: string): boolean {
+  removeTabFromGroup = (tabId: string): boolean => {
     return this.groupManager.removeTabFromGroup(tabId);
-  }
+  };
 
-  toggleGroup(groupId: string): boolean {
+  toggleGroup = (groupId: string): boolean => {
     return this.groupManager.toggleGroup(groupId);
-  }
+  };
 
-  getTabGroup(tabId: string): TabGroup | null {
+  getTabGroup = (tabId: string): TabGroup | null => {
     return this.groupManager.getTabGroup(tabId);
-  }
+  };
 
-  getGroupTabs(groupId: string): any[] {
+  getGroupTabs = (groupId: string): any[] => {
     return this.groupManager.getGroupTabs(groupId);
-  }
+  };
 
-  setupTabContextMenu(tabElement: HTMLElement, tabId: string) {
+  setupTabContextMenu = (tabElement: HTMLElement, tabId: string) => {
     const tab = this.tabs.find((t) => t.id === tabId);
     if (!tab) return this.ui.createElement("div");
 
@@ -868,10 +786,9 @@ class Tabs implements TabsInterface {
     this.nightmarePlugins.rightclickmenu.attachTo(tabElement, () => {
       return menu;
     });
-  }
-  pageClient(iframe: HTMLIFrameElement) {
-    const self = this;
+  };
 
+  pageClient = (iframe: HTMLIFrameElement) => {
     iframe.contentWindow!.window.open = (url?: string | URL): Window | null => {
       (async () => {
         try {
@@ -880,9 +797,9 @@ class Tabs implements TabsInterface {
           const urlString = url instanceof URL ? url.href : url.toString();
           console.log("Opening new tab with URL:", urlString);
 
-          await self.createTab(urlString);
+          await this.createTab(urlString);
 
-          self.logger.createLog(`New tab opened via window.open: ${urlString}`);
+          this.logger.createLog(`New tab opened via window.open: ${urlString}`);
         } catch (error) {
           console.error("Error opening new tab via window.open:", error);
         }
@@ -894,35 +811,162 @@ class Tabs implements TabsInterface {
     iframe.contentWindow?.document.body.addEventListener("click", async () => {
       window.parent.eventsAPI.emit("ddx:page.clicked", null);
     });
-  }
+  };
 
-  startTitleWatcher(
+  startMetaWatcher = (
     tabId: string,
     iframe: HTMLIFrameElement,
     tabEl: HTMLElement,
-  ) {
-    const titleEl = tabEl.querySelector(".tab-title") as HTMLElement;
+  ) => {
     const tabData = this.tabs.find((t) => t.id === tabId);
     if (!tabData) return;
-    if (tabData.titleInterval) clearInterval(tabData.titleInterval);
-    const tick = () => {
+    if (tabData.metaInterval) clearInterval(tabData.metaInterval);
+
+    const titleEl = tabEl.querySelector(".tab-title") as HTMLElement;
+    const faviconEl = tabEl.querySelector(".tab-favicon") as HTMLElement;
+
+    const tick = async () => {
+      let d: Document | null = null;
+      let locHref: string | null = null;
       try {
-        const d = iframe.contentDocument;
-        const t = d && d.title ? d.title : "New Tab";
-        if (titleEl && titleEl.textContent !== t) titleEl.textContent = t;
+        d = iframe.contentDocument!;
+        locHref = iframe.contentWindow?.location?.href || null;
+      } catch {}
+
+      try {
+        if (d) {
+          const t = d.title?.trim() || "New Tab";
+          if (titleEl && titleEl.textContent !== t) titleEl.textContent = t;
+        }
+      } catch {}
+
+      try {
+        if (locHref && tabEl.classList.contains("active")) {
+          if (
+            this.items.addressBar &&
+            document.activeElement === this.items.addressBar
+          )
+            return;
+
+          let liveURL: URL | null = null;
+          try {
+            liveURL = new URL(locHref);
+          } catch {}
+          if (!liveURL) return;
+
+          const liveHash = liveURL.hash || "";
+          const currentVal = this.items.addressBar?.value || "";
+          const tabRef = this.tabs.find((t) => t.id === tabId);
+
+          const mapHashToInternal = (hash: string): string | null => {
+            const h = hash || "";
+            let m: RegExpMatchArray | null = null;
+
+            switch (true) {
+              case !!(m = h.match(/^#\/?settings(?:\/([^/?#]+))?/i)):
+                return m && m[1]
+                  ? `daydream://settings#${decodeURIComponent(m[1])}`
+                  : "daydream://settings";
+              case /^#\/?history(?:[/?#]|$)/i.test(h):
+                return "daydream://history";
+              default:
+                return null;
+            }
+          };
+
+          const maybeInternal = await this.proto.getInternalURL(
+            liveURL.pathname,
+          );
+          let nextVal: string | null = null;
+
+          switch (true) {
+            case typeof maybeInternal === "string" &&
+              maybeInternal.startsWith("daydream://"): {
+              const byHash = mapHashToInternal(liveHash);
+              nextVal = byHash || maybeInternal;
+              switch (true) {
+                case nextVal !== "daydream://newtab":
+                  if (tabRef) tabRef.lastInternalRoute = nextVal;
+                  break;
+                case !!tabRef?.lastInternalRoute:
+                  nextVal = tabRef!.lastInternalRoute!;
+                  break;
+              }
+              break;
+            }
+            default: {
+              const prefix =
+                window.SWconfig[
+                  window.ProxySettings as keyof typeof window.SWconfig
+                ].config.prefix;
+              let p = liveURL.pathname.replace(prefix, "");
+              const decoded = (window as any).__uv$config.decodeUrl(p);
+              nextVal =
+                decoded.indexOf("#") === -1
+                  ? liveHash
+                    ? decoded + liveHash
+                    : decoded
+                  : decoded;
+            }
+          }
+
+          if (!nextVal) return;
+          if (tabRef?.lastAddressShown === nextVal) return;
+          if (this.items.addressBar && nextVal !== currentVal) {
+            this.items.addressBar.value = nextVal;
+            if (tabRef) tabRef.lastAddressShown = nextVal;
+          }
+        }
+      } catch {}
+
+      try {
+        if (d && faviconEl) {
+          const link = d.querySelector<HTMLLinkElement>(
+            "link[rel~='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']",
+          );
+          let href: string | null = null;
+          switch (true) {
+            case link !== null:
+              href = new URL(link!.getAttribute("href") || "", d.baseURI).href;
+              break;
+            case !!iframe.contentWindow?.location?.origin:
+              href = iframe.contentWindow.location.origin + "/favicon.ico";
+              break;
+          }
+          if (href) {
+            const prox = await this.proxy.getFavicon(
+              href,
+              this.swConfig,
+              this.proxySetting,
+            );
+            if (prox && faviconEl.getAttribute("data-favicon") !== prox) {
+              faviconEl.setAttribute(
+                "style",
+                `background-image: url('${prox}');`,
+              );
+              faviconEl.setAttribute("data-favicon", prox);
+              tabEl.classList.add("has-favicon");
+            }
+          } else {
+            faviconEl.removeAttribute("style");
+            faviconEl.removeAttribute("data-favicon");
+            tabEl.classList.remove("has-favicon");
+          }
+        }
       } catch {}
     };
-    tick();
-    tabData.titleInterval = window.setInterval(tick, 100);
-  }
 
-  stopTitleWatcher(tabId: string) {
+    tick();
+    tabData.metaInterval = window.setInterval(tick, 250);
+  };
+
+  stopMetaWatcher = (tabId: string) => {
     const tabData = this.tabs.find((t) => t.id === tabId);
-    if (tabData && tabData.titleInterval) {
-      clearInterval(tabData.titleInterval);
-      delete tabData.titleInterval;
+    if (tabData && tabData.metaInterval) {
+      clearInterval(tabData.metaInterval);
+      delete tabData.metaInterval;
     }
-  }
+  };
 }
 
 export { Tabs };
