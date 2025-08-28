@@ -1,0 +1,1 @@
+In the future lets maybe have every theme be its own json file to avoid PR conflicts - crllect

@@ -77,7 +77,7 @@ class Items /*implements ItemsInterface */ {
     ) as HTMLButtonElement;
     this.profilesButton = this.ui.queryComponent(
       "profiles",
-      this.tabBar,
+      this.topBar,
     ) as HTMLButtonElement;
     this.extrasButton = this.ui.queryComponent(
       "menu",
