@@ -301,6 +301,7 @@ class Tabs implements TabsInterface {
         } else {
           console.error("Iframe contentWindow is not accessible.");
         }
+        this.startTitleWatcher(id, iframe, tab);
       } catch (error) {
         console.error("An error occurred while loading the iframe:", error);
       }
@@ -325,6 +326,7 @@ class Tabs implements TabsInterface {
       url,
       groupId: undefined,
       isPinned: false,
+      titleInterval: undefined as number | undefined,
     };
 
     this.tabs.push(tabData);
@@ -382,6 +384,7 @@ class Tabs implements TabsInterface {
       this.createTab("daydream://newtab");
     }
 
+    this.stopTitleWatcher(id);
     this.logger.createLog(`Closed tab: ${id}`);
   }
 
@@ -398,6 +401,7 @@ class Tabs implements TabsInterface {
     const activeIframeUrl = activeIFrame.src;
     const tabPosition = parseInt(activeTab.getAttribute("tab") || "0");
 
+    this.stopTitleWatcher(activeTab.id);
     this.eventsAPI.emit("tab:closed", {
       url: activeIframeUrl,
       iframe: activeIFrame.id,
@@ -890,6 +894,34 @@ class Tabs implements TabsInterface {
     iframe.contentWindow?.document.body.addEventListener("click", async () => {
       window.parent.eventsAPI.emit("ddx:page.clicked", null);
     });
+  }
+
+  startTitleWatcher(
+    tabId: string,
+    iframe: HTMLIFrameElement,
+    tabEl: HTMLElement,
+  ) {
+    const titleEl = tabEl.querySelector(".tab-title") as HTMLElement;
+    const tabData = this.tabs.find((t) => t.id === tabId);
+    if (!tabData) return;
+    if (tabData.titleInterval) clearInterval(tabData.titleInterval);
+    const tick = () => {
+      try {
+        const d = iframe.contentDocument;
+        const t = d && d.title ? d.title : "New Tab";
+        if (titleEl && titleEl.textContent !== t) titleEl.textContent = t;
+      } catch {}
+    };
+    tick();
+    tabData.titleInterval = window.setInterval(tick, 100);
+  }
+
+  stopTitleWatcher(tabId: string) {
+    const tabData = this.tabs.find((t) => t.id === tabId);
+    if (tabData && tabData.titleInterval) {
+      clearInterval(tabData.titleInterval);
+      delete tabData.titleInterval;
+    }
   }
 }
 
