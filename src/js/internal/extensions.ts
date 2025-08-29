@@ -1,6 +1,7 @@
 import "../../css/global.css";
 import "basecoat-css/all";
+import { createIcons, icons } from "lucide";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Extensions page initialization
+  createIcons({ icons });
 });
