@@ -14,41 +14,40 @@
             <div
               class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
             >
-            <div class="stack h-10 w-10">
-										<div
-											class="masked-shape"
-											style="
-												width: 100%;
-												height: 100%;
-												background: var(--main);
-												-webkit-mask-image: url('/res/logo/mask.png');
-												-webkit-mask-repeat: no-repeat;
-												-webkit-mask-position: center;
-												-webkit-mask-size: cover;
-												-webkit-mask-mode: luminance;
-												mask-image: url('/res/logo/mask.png');
-												mask-repeat: no-repeat;
-												mask-position: center;
-												mask-size: cover;
-												mask-mode: luminance;
-											"
-										>
-											<img
-												class="overlay"
-												src="/res/logo/overlay.png"
-												alt="overlay gradient"
-												style="
-													width: 100%;
-													height: 100%;
-													mix-blend-mode: multiply;
-													pointer-events: none;
-												"
-											/>
-										</div>
-                    </div>
-            
-              <span
-                class="text-3xl tracking-widest text-[var(--text)] -mr-1"
+              <div class="stack h-10 w-10">
+                <div
+                  class="masked-shape"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+
+              <span class="text-3xl tracking-widest text-[var(--text)] -mr-1"
                 >Daydream</span
               ><em
                 class="text-3xl font-bold tracking-widest text-[var(--main)] -ml-1"
@@ -88,48 +87,72 @@
         </div>
 
         <section
-          class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          id="shortcuts-section"
+          class="mt-8 grid grid-cols-6 gap-4 max-w-4xl mx-auto"
         >
-          <a
-            href="#"
-            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
-          >
-            <div
-              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
-            ></div>
-          </a>
-          <a
-            href="#"
-            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
-          >
-            <div
-              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
-            ></div>
-          </a>
-          <a
-            href="#"
-            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
-          >
-            <div
-              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
-            ></div>
-          </a>
-          <a
-            href="#"
-            class="group relative rounded-2xl bg-[var(--bg-2)] p-4 h-32 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition"
-          >
-            <div
-              class="h-full w-full rounded-xl bg-[radial-gradient(100%_60%_at_50%_0%,_var(--grad-inactive-12)_12.5%,_var(--grad-inactive-25)_25%,_var(--grad-inactive-50)_50%)]"
-            ></div>
-          </a>
+          <!-- Shortcuts will be populated by JavaScript -->
         </section>
       </main>
+
+      <!-- Edit Shortcut Modal -->
+      <div
+        id="editShortcutModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
+      >
+        <div
+          class="bg-[var(--bg-1)] rounded-xl border border-[var(--white-08)] p-6 w-full max-w-md mx-4"
+        >
+          <h3 class="text-lg font-semibold text-[var(--text)] mb-4">
+            Edit Shortcut
+          </h3>
+          <form id="editShortcutForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-[var(--text)] mb-2"
+                >Title</label
+              >
+              <input
+                type="text"
+                id="shortcutTitle"
+                required
+                class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--text)] mb-2"
+                >URL</label
+              >
+              <input
+                type="url"
+                id="shortcutUrl"
+                required
+                class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+              />
+            </div>
+            <div class="flex justify-end gap-3">
+              <button
+                type="button"
+                id="cancelEditShortcut"
+                class="px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <footer
         class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
       >
         <span class="pointer-events-auto"
-          >Server Latency: <span id="latency" class="text-[var(--text)]/80">...</span></span
+          >Server Latency:
+          <span id="latency" class="text-[var(--text)]/80">...</span></span
         >
         <nav class="pointer-events-auto flex items-center gap-4">
           <a
@@ -152,14 +175,17 @@
     </div>
 
     <script>
-      async function measureLatency() { // Temporary, replace later (TODO for % searching)
+      async function measureLatency() {
+        // Temporary, replace later (TODO for % searching)
         const start = performance.now();
         try {
           await fetch("/internal/newtab.html", { cache: "no-store" });
           const end = performance.now();
-          document.getElementById("latency").textContent = `${Math.round(end - start)}ms`;
+          document.getElementById("latency").textContent =
+            `${Math.round(end - start)}ms`;
         } catch (err) {
-          document.getElementById("latency").textContent = "Oh lord oh jesus everything is fucked";
+          document.getElementById("latency").textContent =
+            "Oh lord oh jesus everything is fucked";
         }
       }
 

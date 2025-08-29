@@ -29,11 +29,7 @@ interface ProxyInterface {
     url: string,
   ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
-  getFavicon(
-    url: string,
-    swConfig: Record<any, any>,
-    proxySetting: string,
-  ): Promise<string | null>;
+  getFavicon(url: string): Promise<string | null>;
 }
 class Proxy implements ProxyInterface {
   connection!: BareMux.BareMuxConnection;
@@ -73,7 +69,9 @@ class Proxy implements ProxyInterface {
     await this.connection.setTransport("/reflux/index.mjs", [
       { transport: transportFile, wisp: this.wispUrl },
     ]);
-    this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
+    if (this.logging) {
+      this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
+    }
   }
 
   search(input: string) {
@@ -161,6 +159,15 @@ class Proxy implements ProxyInterface {
 
   getDomainFromUrl(url: string) {
     try {
+      if (!url || typeof url !== "string") {
+        return null;
+      }
+
+      // Add protocol if missing
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
+      }
+
       return new URL(url).hostname;
     } catch (error) {
       console.error("Invalid URL format:", error);
@@ -295,42 +302,83 @@ class Proxy implements ProxyInterface {
     return await response.text();
   }
 
-  async getFavicon(
-    url: string,
-    swConfig: Record<any, any>,
-    proxySetting: string,
-  ) {
-    let page = await this.fetch(url);
-    page = await page.toString();
+  private faviconCache = new Map<string, string>();
+  private bookmarkManager: any = null;
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(page, "text/html");
+  // Set bookmark manager for enhanced favicon caching
+  public setBookmarkManager(bookmarkManager: any): void {
+    this.bookmarkManager = bookmarkManager;
+  }
 
-    let favicon =
-      doc.querySelector("link[rel='icon']") ||
-      doc.querySelector("link[rel='shortcut icon']");
-
-    if (favicon) {
-      let href: string | null;
-      href = favicon.getAttribute("href");
-      if (typeof href == "string") {
-        if (!href.startsWith("http")) {
-          let base = new URL(url);
-          href = base.origin + (href.startsWith("/") ? href : "/" + href);
-        }
-        this.registerSW(swConfig[proxySetting].file).then(async () => {
-          await this.setTransports();
-        });
-        let swConfigSettings = swConfig[proxySetting];
-        let encodedHref =
-          swConfigSettings.config.prefix + window.__uv$config.encodeUrl(href);
-
-        return encodedHref;
-      } else {
+  async getFavicon(url: string) {
+    try {
+      const domain = this.getDomainFromUrl(url);
+      if (!domain) {
         return null;
       }
+
+      // Check bookmark manager cache first
+      if (this.bookmarkManager) {
+        const cachedFavicon = this.bookmarkManager.getCachedFavicon(url);
+        if (cachedFavicon) {
+          return cachedFavicon;
+        }
+      }
+
+      // Check local cache
+      if (this.faviconCache.has(domain)) {
+        return this.faviconCache.get(domain) || null;
+      }
+
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await this.setTransports();
+          break;
+        } catch (transportError) {
+          retries--;
+          if (retries === 0) throw transportError;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      const client = new BareMux.BareClient();
+      const response = await client.fetch(googleFaviconUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+
+      const dataUrl = `data:image/png;base64,${base64}`;
+
+      // Cache in local cache
+      this.faviconCache.set(domain, dataUrl);
+
+      // Cache in bookmark manager if available
+      if (this.bookmarkManager) {
+        await this.bookmarkManager.cacheFavicon(url, dataUrl);
+      }
+
+      return dataUrl;
+    } catch (error) {
+      console.warn("Failed to fetch favicon:", error);
+      return null;
     }
-    return null;
   }
 }
 
