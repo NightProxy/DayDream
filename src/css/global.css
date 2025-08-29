@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "basecoat-css";
+@import "./components/search.css";
 
 @keyframes modal-enter {
   from {
@@ -297,7 +298,7 @@ li {
   transform: translateY(0) scale(0.98);
 }
 
-/* Profile Manager Menu Styles */
+
 .profile-manager-menu {
   font-family: inherit;
   line-height: 1.4;
@@ -336,7 +337,7 @@ li {
   opacity: 1;
 }
 
-/* Scrollbar styling for profile list */
+
 .profile-manager-menu div::-webkit-scrollbar {
   width: 4px;
 }
@@ -355,7 +356,7 @@ li {
   background: var(--white-30);
 }
 
-/* Basecoat Dialog Styles */
+
 .bc-dialog-overlay {
   animation: fadeIn 0.2s ease;
 }

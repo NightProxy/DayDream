@@ -89,7 +89,6 @@ export class BookmarkManager {
     this.autoSync = config.autoSync ?? true;
   }
 
-  // Event listener management
   public addListener(callback: () => void): () => void {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
@@ -99,7 +98,6 @@ export class BookmarkManager {
     this.listeners.forEach((callback) => callback());
   }
 
-  // Storage operations
   public async loadFromStorage(): Promise<void> {
     try {
       const data = await this.store.getItem<{
@@ -121,12 +119,10 @@ export class BookmarkManager {
         this.notifyListeners();
       }
 
-      // Load favicon cache
       const faviconCacheData = await this.store.getItem<FaviconCache>(
         this.faviconCacheKey,
       );
       if (faviconCacheData) {
-        // Filter out expired entries
         const now = new Date();
         this.faviconCache = {};
         Object.entries(faviconCacheData).forEach(([host, entry]) => {
@@ -151,7 +147,6 @@ export class BookmarkManager {
         folders: this.folders,
       });
 
-      // Save favicon cache
       await this.store.setItem(this.faviconCacheKey, this.faviconCache);
     } catch (error) {
       console.error("Failed to save bookmarks to storage:", error);
@@ -164,7 +159,6 @@ export class BookmarkManager {
     }
   }
 
-  // Bookmark operations
   public async createBookmark(data: CreateBookmarkData): Promise<Bookmark> {
     if (!data.title || !data.url) {
       throw new Error("Title and URL are required for bookmark creation");
@@ -197,7 +191,6 @@ export class BookmarkManager {
     const index = this.bookmarks.findIndex((b) => b.id === id);
     if (index === -1) return null;
 
-    // Clean up the updates
     const cleanUpdates: any = { ...updates };
     if (cleanUpdates.title) cleanUpdates.title = cleanUpdates.title.trim();
     if (cleanUpdates.url) cleanUpdates.url = cleanUpdates.url.trim();
@@ -223,7 +216,6 @@ export class BookmarkManager {
     return true;
   }
 
-  // Folder operations
   public async createFolder(data: CreateFolderData): Promise<BookmarkFolder> {
     const now = new Date();
     const siblings = this.getItemsByParent(data.parentId);
@@ -271,7 +263,6 @@ export class BookmarkManager {
     if (folderIndex === -1) return false;
 
     if (deleteContents) {
-      // Recursively delete all contents
       const childItems = this.getItemsByParent(id);
       for (const child of childItems) {
         if (isFolder(child)) {
@@ -281,7 +272,6 @@ export class BookmarkManager {
         }
       }
     } else {
-      // Move contents to parent folder
       const folder = this.folders[folderIndex];
       const childItems = this.getItemsByParent(id);
       for (const child of childItems) {
@@ -299,12 +289,10 @@ export class BookmarkManager {
     return true;
   }
 
-  // Move operations
   public async moveItem(data: MoveItemData): Promise<boolean> {
     const item = this.getItemById(data.itemId);
     if (!item) return false;
 
-    // Update the item's parent and reorder siblings
     if (isFolder(item)) {
       const folderIndex = this.folders.findIndex((f) => f.id === data.itemId);
       this.folders[folderIndex] = {
@@ -323,7 +311,6 @@ export class BookmarkManager {
       };
     }
 
-    // Reorder items in the new parent
     this.reorderItems(data.newParentId, data.itemId, data.newIndex);
 
     await this.syncIfEnabled();
@@ -352,7 +339,6 @@ export class BookmarkManager {
     });
   }
 
-  // Query operations
   public getBookmarks(): Bookmark[] {
     return [...this.bookmarks];
   }
@@ -378,7 +364,7 @@ export class BookmarkManager {
     );
 
     return [...bookmarksInParent, ...foldersInParent]
-      .filter(Boolean) // Remove any null/undefined items
+      .filter(Boolean)
       .sort((a, b) => (a?.index || 0) - (b?.index || 0));
   }
 
@@ -450,7 +436,6 @@ export class BookmarkManager {
     this.notifyListeners();
   }
 
-  // Favicon caching methods
   private getHostFromUrl(url: string): string | null {
     try {
       const urlObj = new URL(url);
@@ -467,7 +452,6 @@ export class BookmarkManager {
     const entry = this.faviconCache[host];
     if (!entry) return null;
 
-    // Check if entry is expired
     if (new Date() > entry.expiresAt) {
       delete this.faviconCache[host];
       return null;
@@ -483,7 +467,6 @@ export class BookmarkManager {
     const host = this.getHostFromUrl(url);
     if (!host) return;
 
-    // Don't cache if it's the default favicon
     if (
       faviconDataUrl.includes(
         "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYi",
@@ -492,7 +475,6 @@ export class BookmarkManager {
       return;
     }
 
-    // Cache for 7 days
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -503,7 +485,6 @@ export class BookmarkManager {
       expiresAt,
     };
 
-    // Save to storage if auto-sync is enabled
     if (this.autoSync) {
       try {
         await this.store.setItem(this.faviconCacheKey, this.faviconCache);

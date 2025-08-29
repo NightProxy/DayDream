@@ -10,10 +10,8 @@ import iro from "@jaames/iro";
 
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
-// @ts-expect-error
 const globalFunctions = new DDXGlobal();
 
-// Initialize Basecoat dropdown components
 const initializeSelect = async (
   selectId: string,
   settingsKey: string,
@@ -27,11 +25,9 @@ const initializeSelect = async (
     return;
   }
 
-  // Load saved value and set it
   const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
   selectElement.value = savedValue;
 
-  // Add change event listener
   selectElement.addEventListener("change", async () => {
     await settingsAPI.setItem(settingsKey, selectElement.value);
     if (onChangeCallback) {
@@ -41,7 +37,6 @@ const initializeSelect = async (
   });
 };
 
-// Initialize Basecoat switch components
 const initSwitch = async (
   switchId: string,
   settingsKey: string,
@@ -54,11 +49,9 @@ const initSwitch = async (
     return;
   }
 
-  // Load saved value and set it
   const savedValue = await settingsAPI.getItem(settingsKey);
   switchElement.checked = savedValue === "true";
 
-  // Add change event listener
   switchElement.addEventListener("change", async () => {
     await settingsAPI.setItem(settingsKey, switchElement.checked.toString());
     if (onChangeCallback) {
@@ -67,7 +60,6 @@ const initSwitch = async (
   });
 };
 
-// Initialize text input with auto-save
 const initTextInput = async (
   inputId: string,
   settingsKey: string,
@@ -80,11 +72,9 @@ const initTextInput = async (
     return;
   }
 
-  // Load saved value and set it
   const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
   inputElement.value = savedValue;
 
-  // Add auto-save on change and enter
   inputElement.addEventListener("change", async () => {
     await settingsAPI.setItem(settingsKey, inputElement.value);
   });
@@ -97,7 +87,6 @@ const initTextInput = async (
   });
 };
 
-// Initialize button with custom action
 const initButton = (buttonId: string, action: () => void) => {
   const buttonElement = document.getElementById(buttonId) as HTMLButtonElement;
 
@@ -110,16 +99,22 @@ const initButton = (buttonId: string, action: () => void) => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Initialize Lucide icons
   createIcons({ icons });
 
-  // Initialize sidebar navigation
   document.querySelectorAll(".settingItem").forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
+
+      document.querySelectorAll(".settingItem").forEach((item) => {
+        item.classList.remove("bg-[var(--white-05)]");
+      });
+
+      link.classList.add("bg-[var(--white-05)]");
+
       const href = link.getAttribute("href");
       if (href) {
-        const element = document.querySelector(href);
+        const targetId = href.replace(/^#\/?/, "");
+        const element = document.getElementById(targetId);
         if (element) {
           element.scrollIntoView({
             behavior: "smooth",
@@ -131,7 +126,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Initialize Cloaking settings
+  const observerOptions = {
+    root: null,
+    rootMargin: "-20% 0px -70% 0px",
+    threshold: 0,
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll(".settingItem").forEach((item) => {
+          item.classList.remove("bg-[var(--white-05)]");
+        });
+
+        const activeLink = document.querySelector(
+          `.settingItem[href="#${entry.target.id}"]`,
+        );
+        if (activeLink) {
+          activeLink.classList.add("bg-[var(--white-05)]");
+        }
+      }
+    });
+  }, observerOptions);
+
+  document.querySelectorAll("section[id]").forEach((section) => {
+    observer.observe(section);
+  });
+
+  const firstLink = document.querySelector(".settingItem");
+  if (firstLink) {
+    firstLink.classList.add("bg-[var(--white-05)]");
+  }
+
   await initializeSelect("tabCloakSelect", "tabCloak", "off");
   await initializeSelect("URL-cloakSelect", "URL_Cloak", "off");
 
@@ -141,7 +167,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await initSwitch("antiCloseSwitch", "antiClose", null);
 
-  // Initialize Appearance settings
   await initializeSelect("UIStyleSelect", "UIStyle", "operagx", () => {
     eventsAPI.emit("UI:changeStyle", null);
     eventsAPI.emit("theme:template-change", null);
@@ -151,7 +176,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 100);
   });
 
-  // Initialize color picker
   var colorPicker = new (iro.ColorPicker as any)(".colorPicker", {
     width: 80,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
@@ -181,7 +205,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 100);
   });
 
-  // Initialize Search settings
   await initializeSelect("proxySelect", "proxy", "uv");
   await initializeSelect("transportSelect", "transports", "libcurl");
   await initializeSelect(
@@ -190,7 +213,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     "https://duckduckgo.com/?q=%s",
   );
 
-  // Initialize Wisp setting
   const defaultWispUrl =
     (location.protocol === "https:" ? "wss" : "ws") +
     "://" +
@@ -198,7 +220,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     "/wisp/";
   await initTextInput("wispSetting", "wisp", defaultWispUrl);
 
-  // Initialize buttons
   initButton("bgUpload", () => {
     const uploadBGInput = document.getElementById(
       "bgInput",
@@ -225,7 +246,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// Background upload functionality
 const uploadBGInput = document.getElementById("bgInput") as HTMLInputElement;
 
 if (uploadBGInput) {
@@ -243,45 +263,3 @@ if (uploadBGInput) {
     reader.readAsDataURL(file);
   });
 }
-
-const sections = Array.from(
-  document.querySelectorAll<HTMLElement>("main section[id]"),
-);
-const links = Array.from(
-  document.querySelectorAll<HTMLAnchorElement>("aside .settingItem"),
-);
-
-const currentId = () => {
-  const raw = location.hash.replace(/^#\/?/, "") || sections[0]?.id || "";
-  const match = sections.find((s) => s.id.toLowerCase() === raw.toLowerCase());
-  return match ? match.id : sections[0]?.id || "";
-};
-
-const select = (id: string) => {
-  sections.forEach((s) => s.classList.toggle("hidden", s.id !== id));
-  links.forEach((a) => {
-    const isActive = (a.hash || "").replace(/^#\/?/, "") === id;
-    a.classList.toggle("bg-[var(--white-05)]", isActive);
-  });
-};
-
-document.querySelectorAll(".settingItem").forEach((link) => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    const href = link.getAttribute("href");
-    if (!href) return;
-    const id = href.replace(/^#\/?/, "");
-    location.hash = id;
-  });
-});
-
-const initRouting = () => {
-  if (!location.hash) {
-    const first = sections[0]?.id;
-    if (first) location.replace(`#${first}`);
-  }
-  select(currentId());
-};
-
-addEventListener("hashchange", () => select(currentId()));
-document.addEventListener("DOMContentLoaded", initRouting);

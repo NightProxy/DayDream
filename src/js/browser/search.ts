@@ -3,6 +3,7 @@ import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
+import { Proxy } from "@apis/proxy";
 
 interface Section {
   section: HTMLElement;
@@ -21,7 +22,7 @@ interface SearchInterface {
   ui: UI;
   data: Logger;
   settings: SettingsAPI;
-  proxy: any;
+  proxy: Proxy;
   swConfig: any;
   proxySetting: string;
   currentSectionIndex: number;
@@ -39,7 +40,7 @@ class Search implements SearchInterface {
   ui: UI;
   data: Logger;
   settings: SettingsAPI;
-  proxy: any;
+  proxy: Proxy;
   swConfig: any;
   proxySetting: string;
   currentSectionIndex: number;
@@ -50,9 +51,12 @@ class Search implements SearchInterface {
   selectedSuggestionIndex: number;
   currentMaxResults: number;
   searchbar: HTMLInputElement | null = null;
+  private lastQuery: string = "";
+  private readonly DOMAIN_REGEX =
+    /^(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/;
 
   constructor(
-    proxy: any,
+    proxy: Proxy,
     swConfig: any,
     proxySetting: string,
     proto: Protocols,
@@ -76,66 +80,74 @@ class Search implements SearchInterface {
 
   async init(searchbar: HTMLInputElement) {
     this.searchbar = searchbar;
-    let suggestionList: HTMLElement;
-    suggestionList = this.ui.createElement("div", {
-      class: "suggestion-list",
+
+    const suggestionList = this.ui.createElement("div", {
+      class:
+        "suggestion-list fixed z-[9999] left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-[var(--bg-2)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm hidden",
       id: "suggestion-list",
+      style:
+        "top: 50%; transform: translate(-50%, -50%); max-height: 60vh; overflow-y: auto;",
     });
 
     this.sections = {
-      searchResults: this.createSection("Search Results"),
-      otherPages: this.createSection("Other Pages"),
-      settings: this.createSection("Settings"),
-      games: this.createSection("Games"),
+      searchResults: this.createSection("Search Results", "search"),
+      internalPages: this.createSection("Internal Pages", "folder"),
+      games: this.createSection("Games", "gamepad-2"),
     };
 
     Object.values(this.sections).forEach((sectionObj: Section) =>
       suggestionList.appendChild(sectionObj.section),
     );
 
+    let debounceTimer: number | null = null;
     searchbar.addEventListener("input", async (event: Event) => {
-      suggestionList.style.display = "flex";
       const target = event.target as HTMLInputElement | null;
       if (!target) return;
+
       const query = target.value.trim();
       const inputEvent = event as InputEvent;
+
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
       if (query === "" && inputEvent.inputType === "deleteContentBackward") {
         this.clearSuggestions();
         suggestionList.style.display = "none";
         return;
       }
 
-      document.addEventListener("ddx:page.clicked", () => {
-        this.clearSuggestions();
-        suggestionList.style.display = "none";
-        return;
-      });
+      if (query.length > 0) {
+        suggestionList.style.display = "block";
+      }
 
-      let cleanedQuery = query.replace(
-        /^(daydream:\/\/|daydream:\/|daydream:)/,
-        "",
-      );
-      const response = await fetch(`/results/${cleanedQuery}`).then((res) =>
-        res.json(),
-      );
-      const suggestions: string[] = response.map((item: any) => item.phrase);
-
-      this.clearSuggestions();
-      await this.populateSections(suggestions, searchbar.value);
+      debounceTimer = window.setTimeout(async () => {
+        await this.performSearch(query);
+      }, 150);
     });
 
     window.addEventListener("keydown", async (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        suggestionList.style.display = "none";
+        this.clearSuggestions();
+        searchbar.blur();
+        return;
+      }
+
       if (
-        event.key === "Escape" ||
         event.ctrlKey ||
         event.shiftKey ||
         event.altKey ||
         event.metaKey
       )
         return;
+
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
-      suggestionList.style.display = "flex";
+
+      if (numSuggestions === 0) return;
+
+      suggestionList.style.display = "block";
 
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -157,7 +169,7 @@ class Search implements SearchInterface {
             numSuggestions;
         }
         this.updateSelectedSuggestion();
-      } else if (event.key === "Tab") {
+      } else if (event.key === "Tab" || event.key === "ArrowRight") {
         if (this.selectedSuggestionIndex !== -1) {
           event.preventDefault();
           const selectedSuggestion =
@@ -168,15 +180,16 @@ class Search implements SearchInterface {
             searchbar.value = selectedSuggestion;
           }
         }
-      } else if (event.key === "ArrowRight") {
+      } else if (event.key === "Enter") {
+        event.preventDefault();
         if (this.selectedSuggestionIndex !== -1) {
-          event.preventDefault();
-          const selectedSuggestion =
-            suggestionItems[this.selectedSuggestionIndex].querySelector(
-              ".suggestion-text",
-            )?.textContent;
-          if (selectedSuggestion) {
-            searchbar.value = selectedSuggestion;
+          const selectedItem = suggestionItems[this.selectedSuggestionIndex];
+          selectedItem.click();
+        } else {
+          suggestionList.style.display = "none";
+          this.clearSuggestions();
+          if (searchbar.value.trim()) {
+            await this.handleDirectNavigation(searchbar.value.trim());
           }
         }
       } else if (event.key === "Backspace") {
@@ -185,57 +198,33 @@ class Search implements SearchInterface {
           this.clearSuggestions();
         }
       }
+    });
 
-      const engineIconElem = suggestionList.querySelectorAll(
-        ".searchEngineIcon",
-      )[0] as HTMLImageElement | null;
-      if (engineIconElem) {
-        engineIconElem.style.display = "block";
+    document.addEventListener("click", (event) => {
+      const target = event.target as Node;
+      if (
+        !suggestionList.contains(target) &&
+        target !== searchbar &&
+        !searchbar.contains(target)
+      ) {
+        this.clearSuggestions();
+        suggestionList.style.display = "none";
       }
-      const searchSetting =
-        (await this.settings.getItem("search")) ??
-        "https://duckduckgo.com/?q=%s";
-      switch (searchSetting) {
-        case "https://duckduckgo.com/?q=%s":
-          if (engineIconElem) {
-            engineIconElem.src = "/res/b/ddg.webp";
-            engineIconElem.style.transform = "scale(1.35)";
-          }
-          break;
-        case "https://bing.com/search?q=%s":
-          if (engineIconElem) {
-            engineIconElem.src = "/res/b/bing.webp";
-            engineIconElem.style.transform = "scale(1.65)";
-          }
-          break;
-        case "https://www.google.com/search?q=%s":
-          if (engineIconElem) {
-            engineIconElem.src = "/res/b/google.webp";
-            engineIconElem.style.transform = "scale(1.2)";
-          }
-          break;
-        case "https://search.yahoo.com/search?p=%s":
-          if (engineIconElem) {
-            engineIconElem.src = "/res/b/yahoo.webp";
-            engineIconElem.style.transform = "scale(1.5)";
-          }
-          break;
-        default:
-          this.proxy
-            .getFavicon(searchSetting)
-            .then((dataUrl: string | null) => {
-              if (dataUrl == null || dataUrl.endsWith("null")) {
-                if (engineIconElem) {
-                  engineIconElem.src = "/res/b/ddg.webp";
-                  engineIconElem.style.transform = "scale(1.35)";
-                }
-              } else {
-                if (engineIconElem) {
-                  engineIconElem.src = dataUrl;
-                  engineIconElem.style.transform = "scale(1.2)";
-                }
-              }
-            });
+    });
+
+    searchbar.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (document.activeElement !== searchbar && 
+            !suggestionList.contains(document.activeElement as Node)) {
+          this.clearSuggestions();
+          suggestionList.style.display = "none";
+        }
+      }, 150);
+    });
+
+    searchbar.addEventListener("focus", () => {
+      if (searchbar.value.trim().length > 0) {
+        suggestionList.style.display = "block";
       }
     });
 
@@ -246,40 +235,38 @@ class Search implements SearchInterface {
     ) as HTMLIFrameElement | null;
     if (activeIframe) {
       activeIframe.addEventListener("load", async () => {
-        let check = await this.proto.getInternalURL(
-          new URL(activeIframe.src).pathname,
-        );
-        if (typeof check === "string" && check.startsWith("daydream://")) {
-          searchbar.value = check;
-        } else {
-          let url = new URL(activeIframe.src).pathname;
-          url = url.replace(
-            window.SWSettings
-              ? window.SWconfig[
-                  window.ProxySettings as keyof typeof window.SWconfig
-                ]
-              : "",
-            "",
-          );
-          url = (window as any).window.__uv$config.decodeUrl(url);
-          url = new URL(url).origin;
-          searchbar.value = url;
-        }
+        await this.syncAddressBar(activeIframe, searchbar);
       });
     }
   }
 
-  createSection(titleText: string): Section {
-    const section = this.ui.createElement("div", { class: "search-section" }, [
-      this.ui.createElement("div", { class: "search-title" }, [
-        this.ui.createElement("img", {
-          class: "searchEngineIcon",
-          src: "/res/logo.png",
-        }),
-        this.ui.createElement("span", {}, [titleText]),
-      ]),
-      this.ui.createElement("div", { class: "search-results" }),
-    ]);
+  createSection(titleText: string, iconName?: string): Section {
+    const section = this.ui.createElement(
+      "div",
+      {
+        class:
+          "search-section p-4 border-b border-[var(--main-20a)] last:border-b-0",
+        style: "display: none;",
+      },
+      [
+        this.ui.createElement(
+          "div",
+          {
+            class:
+              "search-title flex items-center gap-2 mb-3 text-sm font-medium text-[var(--main)] uppercase tracking-wide",
+          },
+          [
+            this.ui.createElement("i", {
+              "data-lucide": iconName || "search",
+              class: "w-4 h-4 text-[var(--main)]",
+            }),
+            this.ui.createElement("span", {}, [titleText]),
+          ],
+        ),
+        this.ui.createElement("div", { class: "search-results space-y-1" }),
+      ],
+    );
+
     const searchResults = section.querySelector(
       ".search-results",
     ) as HTMLElement;
@@ -329,15 +316,128 @@ class Search implements SearchInterface {
     document
       .querySelectorAll(".search-results div.selected")
       .forEach((item) => {
-        item.classList.remove("selected");
+        item.classList.remove(
+          "selected",
+          "bg-[var(--main-35a)]",
+          "border-l-[var(--main)]",
+        );
       });
     suggestionItems.forEach((item, index) => {
       if (index === this.selectedSuggestionIndex) {
-        item.classList.add("selected");
+        item.classList.add(
+          "selected",
+          "bg-[var(--main-35a)]",
+          "border-l-[var(--main)]",
+        );
+        item.scrollIntoView({ block: "nearest", behavior: "smooth" });
       } else {
-        item.classList.remove("selected");
+        item.classList.remove(
+          "selected",
+          "bg-[var(--main-35a)]",
+          "border-l-[var(--main)]",
+        );
       }
     });
+  }
+
+  private async performSearch(query: string): Promise<void> {
+    if (!query || query === this.lastQuery) return;
+
+    this.lastQuery = query;
+    this.clearSuggestions();
+
+    try {
+      const cleanedQuery = query.replace(/^(ddx:\/\/|ddx:\/|ddx:)/, "");
+      const suggestions = await this.fetchSearchSuggestions(cleanedQuery);
+
+      if (this.isValidUrl(query) && !suggestions.includes(query)) {
+        suggestions.unshift(query);
+      }
+
+      await this.populateSearchResults(suggestions);
+
+      await this.populateInternalPages(query);
+      await this.populateGames(query);
+
+      if ((window as any).lucide && (window as any).lucide.createIcons) {
+        (window as any).lucide.createIcons();
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      this.data.createLog(`Search error: ${error}`);
+    }
+  }
+
+  private isValidUrl(input: string): boolean {
+    if (
+      input.startsWith("ddx://") ||
+      input.startsWith("http://") ||
+      input.startsWith("https://")
+    ) {
+      return true;
+    }
+
+    return (
+      this.DOMAIN_REGEX.test(input) ||
+      (input.includes(".") && !input.includes(" "))
+    );
+  }
+
+  private async fetchSearchSuggestions(query: string): Promise<string[]> {
+    try {
+      const response = await fetch(`/results/${encodeURIComponent(query)}`);
+      if (!response.ok) return [];
+
+      const data = await response.json();
+      return data
+        .map((item: any) => item.phrase)
+        .slice(0, this.maxExpandedResults);
+    } catch (error) {
+      console.warn("Failed to fetch search suggestions:", error);
+      return [];
+    }
+  }
+
+  private async syncAddressBar(
+    iframe: HTMLIFrameElement,
+    searchbar: HTMLInputElement,
+  ): Promise<void> {
+    try {
+      const internalCheck = await this.proto.getInternalURL(
+        new URL(iframe.src).pathname,
+      );
+
+      if (
+        typeof internalCheck === "string" &&
+        internalCheck.startsWith("ddx://")
+      ) {
+        searchbar.value = internalCheck;
+      } else {
+        let url = new URL(iframe.src).pathname;
+
+        const windowObj = window as any;
+        const proxyConfig = windowObj.SWconfig?.[windowObj.ProxySettings];
+
+        if (proxyConfig?.config?.prefix) {
+          url = url.replace(proxyConfig.config.prefix, "");
+        }
+
+        if (windowObj.__uv$config?.decodeUrl) {
+          try {
+            const decodedUrl = windowObj.__uv$config.decodeUrl(url);
+            const urlObj = new URL(decodedUrl);
+            searchbar.value = urlObj.origin + urlObj.pathname;
+          } catch {
+            searchbar.value = iframe.src;
+          }
+        } else {
+          searchbar.value = iframe.src;
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to sync address bar:", error);
+      this.data.createLog(`Address bar sync error: ${error}`);
+    }
   }
 
   async generatePredictedUrls(query: string): Promise<string[]> {
@@ -354,12 +454,12 @@ class Search implements SearchInterface {
   }
 
   clearSuggestions(): void {
-    Object.values(this.sections).forEach(({ searchResults }) => {
+    Object.values(this.sections).forEach(({ searchResults, section }) => {
       searchResults.innerHTML = "";
-      if (searchResults.parentElement) {
-        searchResults.parentElement.style.display = "none";
-      }
+      section.style.display = "none";
     });
+    this.selectedSuggestionIndex = -1;
+    this.currentSectionIndex = 0;
   }
 
   async populateSections(suggestions: string[], e: string): Promise<void> {
@@ -368,7 +468,7 @@ class Search implements SearchInterface {
       this.maxExpandedResults,
     );
     this.populateSearchResults(searchResultsSuggestions);
-    await this.populateOtherPages(suggestions);
+    await this.populateInternalPages(e);
     await this.populateGames(e);
   }
 
@@ -377,44 +477,84 @@ class Search implements SearchInterface {
     if (suggestions.length > 0) {
       section.style.display = "block";
       suggestions.forEach((suggestion: string) => {
-        const listItem = this.createSuggestionItem(suggestion);
+        const listItem = this.createSuggestionItem(suggestion, "search");
         searchResults.appendChild(listItem);
       });
+    } else {
+      section.style.display = "none";
     }
   }
 
-  async populateOtherPages(query: string[]): Promise<void> {
-    const { searchResults, section } = this.sections.otherPages;
+  async populateInternalPages(query: string): Promise<void> {
+    const { searchResults, section } = this.sections.internalPages;
     let hasResults = false;
-    console.log("Query:", query);
-    for (let url of query) {
-      url = url.replace(/ /g, "");
-      url = "daydream://" + url;
-      const internalUrl = await this.proto.processUrl(url);
-      if (typeof internalUrl === "string") {
-        const tofetchUrl = new URL(internalUrl);
-        const response = await fetch(tofetchUrl, { method: "HEAD" }).catch(
-          (error) => {
-            this.data.createLog("Failed to Fetch: " + error);
-          },
+
+    const internalPages = [
+      {
+        name: "Settings",
+        url: "ddx://settings",
+        keywords: ["settings", "config", "preferences"],
+      },
+      {
+        name: "Bookmarks",
+        url: "ddx://bookmarks",
+        keywords: ["bookmarks", "favorites", "saved"],
+      },
+      {
+        name: "History",
+        url: "ddx://history",
+        keywords: ["history", "visited", "past"],
+      },
+      {
+        name: "Extensions",
+        url: "ddx://extensions",
+        keywords: ["extensions", "addons", "plugins"],
+      },
+      {
+        name: "Games",
+        url: "ddx://games",
+        keywords: ["games", "play", "entertainment"],
+      },
+      {
+        name: "About",
+        url: "ddx://about",
+        keywords: ["about", "info", "version"],
+      },
+    ];
+
+    const lowerQuery = query.toLowerCase();
+    const filteredPages = internalPages
+      .filter(
+        (page) =>
+          page.name.toLowerCase().includes(lowerQuery) ||
+          page.keywords.some((keyword) => keyword.includes(lowerQuery)) ||
+          page.url.includes(lowerQuery),
+      )
+      .slice(0, 5);
+
+    if (filteredPages.length > 0) {
+      section.style.display = "block";
+      filteredPages.forEach((page) => {
+        const listItem = this.createSuggestionItem(
+          page.url,
+          "folder",
+          page.name,
         );
-        if (response && response.ok) {
-          const listItem = this.createSuggestionItem(url);
-          searchResults.appendChild(listItem);
-          hasResults = true;
-        }
-      } else {
-        this.data.createLog("processUrl returned nothing for: " + url);
-      }
+        searchResults.appendChild(listItem);
+        hasResults = true;
+      });
     }
-    section.style.display = hasResults ? "block" : "none";
+
+    if (!hasResults) {
+      section.style.display = "none";
+    }
   }
 
   async populateSettings(searchbar: HTMLInputElement): Promise<void> {
     const { searchResults, section } = this.sections.settings;
     let hasResults = false;
     let query = searchbar.value;
-    query = query.replace(/^(daydream:\/\/|daydream:\/|daydream:)/, "");
+    query = query.replace(/^(ddx:\/\/|ddx:\/|ddx:)/, "");
     const predictedUrls = this.generatePredictedSettingsUrls(query);
     for (let url of predictedUrls) {
       const response = await fetch(url, { method: "HEAD" });
@@ -445,13 +585,21 @@ class Search implements SearchInterface {
   async populateGames(query: string): Promise<void> {
     const { searchResults, section } = this.sections.games;
     let hasResults = false;
+
     if (this.appsData.length === 0) {
       await this.fetchAppData();
     }
+
+    if (query.trim() === "") {
+      section.style.display = "none";
+      return;
+    }
+
     const lowerQuery = query.toLowerCase();
     const filteredGames = this.appsData
       .filter((app) => app.name.toLowerCase().includes(lowerQuery))
-      .slice(0, 10);
+      .slice(0, 6);
+
     if (filteredGames.length > 0) {
       section.style.display = "block";
       filteredGames.forEach((game: GameData) => {
@@ -460,70 +608,216 @@ class Search implements SearchInterface {
         hasResults = true;
       });
     }
-    section.style.display = hasResults ? "block" : "none";
+
+    if (!hasResults) {
+      section.style.display = "none";
+    }
+  }
+
+  createSuggestionItem(
+    suggestion: string,
+    iconName?: string,
+    displayName?: string,
+  ): HTMLElement {
+    const listItem = this.ui.createElement(
+      "div",
+      {
+        class:
+          "flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--main-20a)] hover:border-l-2 hover:border-l-[var(--main)] cursor-pointer transition-all group border-l-2 border-l-transparent",
+      },
+      [
+        this.ui.createElement("i", {
+          "data-lucide":
+            iconName ||
+            (this.isValidUrl(suggestion) ? "external-link" : "search"),
+          class:
+            "w-4 h-4 text-[var(--proto)] group-hover:text-[var(--main)] transition-colors flex-shrink-0",
+        }),
+        this.ui.createElement(
+          "div",
+          {
+            class: "flex-1 min-w-0",
+          },
+          [
+            this.ui.createElement(
+              "div",
+              {
+                class:
+                  "suggestion-text text-sm text-[var(--text)] truncate group-hover:text-[var(--text)]",
+              },
+              [displayName || suggestion],
+            ),
+            ...(displayName && displayName !== suggestion
+              ? [
+                  this.ui.createElement(
+                    "div",
+                    {
+                      class:
+                        "text-xs text-[var(--proto)] truncate mt-1 group-hover:text-[var(--main-70)]",
+                    },
+                    [suggestion],
+                  ),
+                ]
+              : []),
+          ],
+        ),
+      ],
+    );
+
+    listItem.addEventListener("click", async () => {
+      await this.handleSuggestionClick(suggestion);
+    });
+
+    return listItem;
+  }
+
+  createGameItem(game: GameData): HTMLElement {
+    const listItem = this.ui.createElement(
+      "div",
+      {
+        class:
+          "flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--main-20a)] hover:border-l-2 hover:border-l-[var(--main)] cursor-pointer transition-all group border-l-2 border-l-transparent",
+      },
+      [
+        this.ui.createElement(
+          "div",
+          {
+            class:
+              "w-8 h-8 rounded-md overflow-hidden flex-shrink-0 bg-[var(--bg-1)] ring-1 ring-[var(--main-35a)]",
+          },
+          [
+            this.ui.createElement("img", {
+              src: game.image,
+              alt: game.name,
+              class: "w-full h-full object-cover",
+              loading: "lazy",
+            }),
+          ],
+        ),
+        this.ui.createElement(
+          "div",
+          {
+            class: "flex-1 min-w-0",
+          },
+          [
+            this.ui.createElement(
+              "div",
+              {
+                class:
+                  "text-sm text-[var(--text)] font-medium truncate group-hover:text-[var(--text)]",
+              },
+              [game.name],
+            ),
+            this.ui.createElement(
+              "div",
+              {
+                class:
+                  "text-xs text-[var(--proto)] truncate group-hover:text-[var(--main-70)]",
+              },
+              ["Game"],
+            ),
+          ],
+        ),
+        this.ui.createElement("i", {
+          "data-lucide": "gamepad-2",
+          class:
+            "w-4 h-4 text-[var(--proto)] group-hover:text-[var(--main)] transition-colors flex-shrink-0",
+        }),
+      ],
+    );
+
+    listItem.addEventListener("click", async () => {
+      await this.handleGameClick(game);
+    });
+
+    return listItem;
+  }
+
+  private async handleSuggestionClick(suggestion: string): Promise<void> {
+    this.clearSuggestions();
+    const suggestionListElem = document.querySelector(
+      "#suggestion-list",
+    ) as HTMLElement | null;
+    if (suggestionListElem) {
+      suggestionListElem.style.display = "none";
+    }
+
+    try {
+      if (suggestion.startsWith("ddx://")) {
+        const processedUrl = await this.proto.processUrl(suggestion);
+        if (
+          typeof processedUrl === "string" &&
+          processedUrl.startsWith("/internal/")
+        ) {
+          const iframe = document.querySelector(
+            "iframe.active",
+          ) as HTMLIFrameElement | null;
+          if (iframe) {
+            iframe.setAttribute("src", processedUrl);
+          }
+        }
+      } else {
+        await this.proxy.redirect(this.swConfig, this.proxySetting, suggestion);
+      }
+    } catch (error) {
+      console.error("Navigation error:", error);
+      this.data.createLog(`Navigation error: ${error}`);
+    }
+  }
+
+  private async handleDirectNavigation(input: string): Promise<void> {
+    try {
+      if (input.startsWith("ddx://")) {
+        const processedUrl = await this.proto.processUrl(input);
+        if (
+          typeof processedUrl === "string" &&
+          processedUrl.startsWith("/internal/")
+        ) {
+          const iframe = document.querySelector(
+            "iframe.active",
+          ) as HTMLIFrameElement | null;
+          if (iframe) {
+            iframe.setAttribute("src", processedUrl);
+          }
+        }
+      } else {
+        await this.proxy.redirect(this.swConfig, this.proxySetting, input);
+      }
+    } catch (error) {
+      console.error("Direct navigation error:", error);
+      this.data.createLog(`Direct navigation error: ${error}`);
+    }
+  }
+
+  private async handleGameClick(game: GameData): Promise<void> {
+    this.clearSuggestions();
+    const suggestionListElem = document.querySelector(
+      "#suggestion-list",
+    ) as HTMLElement | null;
+    if (suggestionListElem) {
+      suggestionListElem.style.display = "none";
+    }
+
+    try {
+      await this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
+    } catch (error) {
+      console.error("Game navigation error:", error);
+      this.data.createLog(`Game navigation error: ${error}`);
+    }
   }
 
   async fetchAppData(): Promise<void> {
     try {
       const response = await fetch("/json/g.json");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       this.appsData = await response.json();
     } catch (error) {
-      console.error("Error fetching JSON data:", error);
+      console.error("Error fetching game data:", error);
+      this.data.createLog(`Failed to fetch game data: ${error}`);
+      this.appsData = [];
     }
-  }
-
-  createSuggestionItem(suggestion: string): HTMLElement {
-    const listItem = document.createElement("div");
-    const listIcon = document.createElement("span");
-    const listSuggestion = document.createElement("span");
-    listIcon.classList.add("material-symbols-outlined");
-    listIcon.textContent = "search";
-    listItem.appendChild(listIcon);
-    listSuggestion.classList.add("suggestion-text");
-    listSuggestion.textContent = suggestion;
-    listItem.appendChild(listSuggestion);
-    listItem.addEventListener("click", async () => {
-      this.clearSuggestions();
-      const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list",
-      ) as HTMLElement | null;
-      if (suggestionListElem) {
-        suggestionListElem.style.display = "none";
-      }
-      if (suggestion.startsWith("daydream")) {
-        const link = await this.proto.processUrl(suggestion);
-        if (link!.startsWith("/internal/")) {
-          const url = link || "/internal/error/";
-          const iframe = document.querySelector(
-            "iframe.active",
-          ) as HTMLIFrameElement | null;
-          iframe!.setAttribute("src", url);
-        }
-      } else {
-        this.proxy.redirect(this.swConfig, this.proxySetting, suggestion);
-      }
-    });
-    return listItem;
-  }
-
-  createGameItem(game: GameData): HTMLElement {
-    const listItem = document.createElement("div");
-    const listIcon = document.createElement("img");
-    listIcon.classList.add("game-icon");
-    listIcon.src = game.image;
-    listItem.appendChild(listIcon);
-    listItem.innerHTML += game.name;
-    listItem.addEventListener("click", () => {
-      this.clearSuggestions();
-      const suggestionListElem = document.querySelector(
-        "#suggestion-list.suggestion-list",
-      ) as HTMLElement | null;
-      if (suggestionListElem) {
-        suggestionListElem.style.display = "none";
-      }
-      this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
-    });
-    return listItem;
   }
 }
 

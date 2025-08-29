@@ -107,11 +107,11 @@
           id="shortcuts-section"
           class="mt-8 grid grid-cols-6 gap-4 max-w-4xl mx-auto"
         >
-          <!-- Shortcuts will be populated by JavaScript -->
+          
         </section>
       </main>
 
-      <!-- Edit Shortcut Modal -->
+      
       <div
         id="editShortcutModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
@@ -193,7 +193,6 @@
 
     <script>
       async function measureLatency() {
-        // Temporary, replace later (TODO for % searching)
         const start = performance.now();
         try {
           await fetch("/internal/newtab.html", { cache: "no-store" });
