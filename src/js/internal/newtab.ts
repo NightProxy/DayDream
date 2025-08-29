@@ -1,6 +1,6 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
-import "../../css/global.css";
+import "../..css/global.css";
 import "basecoat-css/all";
 import { createIcons, icons } from "lucide";
 
@@ -39,7 +39,6 @@ class NewTabShortcuts {
     this.bookmarkManager = new BookmarkManager();
     this.proxy = new Proxy();
 
-    // Connect bookmark manager to proxy for favicon caching
     this.proxy.setBookmarkManager(this.bookmarkManager);
 
     this.init();
@@ -55,13 +54,11 @@ class NewTabShortcuts {
 
   private async getFavicon(url: string): Promise<string> {
     try {
-      // First check if we have a cached favicon
       const cachedFavicon = this.bookmarkManager.getCachedFavicon(url);
       if (cachedFavicon) {
         return cachedFavicon;
       }
 
-      // If not cached, fetch it
       const faviconUrl = await this.proxy.getFavicon(url);
       return faviconUrl || this.getFallbackFavicon();
     } catch (error) {
