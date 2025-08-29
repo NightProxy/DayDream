@@ -1,4 +1,4 @@
-/* Basecoat Component Overrides */
+
 select[component="dropdown"] {
   background-color: var(--bg-2);
   color: var(--text);
@@ -28,7 +28,7 @@ select[component="dropdown"] option {
   padding: 8px;
 }
 
-/* Basecoat Switch Styling */
+
 input[component="switch"] + div {
   background-color: var(--white-10);
   transition: all 0.3s ease;
@@ -70,7 +70,7 @@ button[component="button"]:focus {
   box-shadow: 0 0 0 3px var(--main-20a);
 }
 
-/* Primary button styling */
+
 .bg-\[var\(--main\)\] {
   background-color: var(--main) !important;
 }
@@ -79,7 +79,7 @@ button[component="button"]:focus {
   background-color: color-mix(in srgb, var(--main) 90%, black) !important;
 }
 
-/* Secondary button styling */
+
 .bg-\[var\(--white-10\)\] {
   background-color: var(--white-10) !important;
 }
@@ -88,7 +88,7 @@ button[component="button"]:focus {
   background-color: var(--white-20) !important;
 }
 
-/* Focus ring colors */
+
 .focus\:ring-\[var\(--main\)\]:focus {
   --tw-ring-color: var(--main) !important;
 }
@@ -97,7 +97,7 @@ button[component="button"]:focus {
   --tw-ring-color: var(--main-20a) !important;
 }
 
-/* Modern Layout Fixes */
+
 html,
 body {
   height: 100%;
@@ -111,7 +111,7 @@ body {
   overflow: hidden !important;
 }
 
-/* Ensure proper scrolling for settings main content */
+
 main {
   height: 100vh !important;
   overflow-y: auto !important;
@@ -119,7 +119,7 @@ main {
   flex: 1 !important;
 }
 
-/* Custom scrollbar for modern look */
+
 main::-webkit-scrollbar {
   width: 6px;
 }
@@ -138,34 +138,34 @@ main::-webkit-scrollbar-thumb:hover {
   opacity: 0.8;
 }
 
-/* Firefox scrollbar */
+
 main {
   scrollbar-width: thin;
   scrollbar-color: var(--main) transparent;
 }
 
-/* Remove legacy scrolling styles that might interfere */
+
 .scrollDiv {
   display: none !important;
 }
 
-/* Smooth scroll behavior */
+
 html {
   scroll-behavior: smooth;
 }
 
-/* Fix sidebar height and prevent scrolling issues */
+
 aside {
   height: 100vh !important;
   overflow: visible !important;
 }
 
-/* Ensure main content container allows scrolling */
+
 .space-y-12 {
   min-height: 100%;
 }
 
-/* Legacy Component Styles */
+
 .settings-child {
   margin-left: 30px;
 }

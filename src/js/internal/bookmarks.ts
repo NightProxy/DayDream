@@ -22,7 +22,6 @@ class BookmarkManagerUI {
   private contextMenu: HTMLElement | null = null;
   private contextTarget: Bookmark | BookmarkFolder | null = null;
 
-  // UI Elements
   private folderTree: HTMLElement;
   private bookmarkList: HTMLElement;
   private emptyState: HTMLElement;
@@ -32,7 +31,6 @@ class BookmarkManagerUI {
   private sortSelect: HTMLSelectElement;
   private viewToggle: HTMLButtonElement;
 
-  // Modals
   private addBookmarkModal: HTMLElement;
   private addFolderModal: HTMLElement;
 
@@ -40,10 +38,8 @@ class BookmarkManagerUI {
     this.bookmarkManager = new BookmarkManager();
     this.proxy = new Proxy();
 
-    // Connect bookmark manager to proxy for favicon caching
     this.proxy.setBookmarkManager(this.bookmarkManager);
 
-    // Initialize UI elements
     this.folderTree = document.getElementById("folderTree")!;
     this.bookmarkList = document.getElementById("bookmarkList")!;
     this.emptyState = document.getElementById("emptyState")!;
@@ -65,7 +61,6 @@ class BookmarkManagerUI {
   }
 
   private async init() {
-    // Initialize Lucide icons
     createIcons({ icons });
 
     await this.bookmarkManager.loadFromStorage();
@@ -76,7 +71,6 @@ class BookmarkManagerUI {
   }
 
   private setupEventListeners() {
-    // Header buttons
     document
       .getElementById("addBookmarkBtn")
       ?.addEventListener("click", () => this.showAddBookmarkModal());
@@ -93,7 +87,6 @@ class BookmarkManagerUI {
       .getElementById("addFirstBookmarkBtn")
       ?.addEventListener("click", () => this.showAddBookmarkModal());
 
-    // Search and filters
     this.searchInput.addEventListener("input", (e) => {
       this.searchQuery = (e.target as HTMLInputElement).value;
       this.renderBookmarks();
@@ -113,13 +106,10 @@ class BookmarkManagerUI {
       this.renderBookmarks();
     });
 
-    // Modal handling
     this.setupModalEventListeners();
 
-    // Context menu
     this.setupContextMenu();
 
-    // Import file input
     document.getElementById("importInput")?.addEventListener("change", (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -129,7 +119,6 @@ class BookmarkManagerUI {
   }
 
   private setupModalEventListeners() {
-    // Add bookmark modal
     document
       .getElementById("cancelAddBookmark")
       ?.addEventListener("click", () => this.hideAddBookmarkModal());
@@ -137,7 +126,6 @@ class BookmarkManagerUI {
       .getElementById("addBookmarkForm")
       ?.addEventListener("submit", (e) => this.handleAddBookmark(e));
 
-    // Add folder modal
     document
       .getElementById("cancelAddFolder")
       ?.addEventListener("click", () => this.hideAddFolderModal());
@@ -145,7 +133,6 @@ class BookmarkManagerUI {
       .getElementById("addFolderForm")
       ?.addEventListener("submit", (e) => this.handleAddFolder(e));
 
-    // Close modals on backdrop click
     this.addBookmarkModal.addEventListener("click", (e) => {
       if (e.target === this.addBookmarkModal) {
         this.hideAddBookmarkModal();
@@ -160,14 +147,12 @@ class BookmarkManagerUI {
   }
 
   private setupContextMenu() {
-    // Hide context menu on click outside
     document.addEventListener("click", () => {
       if (this.contextMenu) {
         this.contextMenu.classList.add("hidden");
       }
     });
 
-    // Context menu actions
     this.contextMenu?.addEventListener("click", (e) => {
       e.stopPropagation();
       const action = (e.target as HTMLElement)
@@ -195,12 +180,10 @@ class BookmarkManagerUI {
 
     for (const treeNode of tree) {
       if (!("url" in treeNode.item)) {
-        // It's a folder
         this.folderTree.appendChild(this.createFolderTreeNode(treeNode));
       }
     }
 
-    // Re-initialize icons after DOM changes
     createIcons({ icons });
   }
 
@@ -211,7 +194,7 @@ class BookmarkManagerUI {
     folderElement.dataset.folderId = folder.id;
 
     const hasChildren = treeNode.children && treeNode.children.length > 0;
-    const isExpanded = true; // For now, keep all folders expanded
+    const isExpanded = true;
 
     folderElement.innerHTML = `
             <div class="folder-header" onclick="bookmarkUI.selectFolder('${folder.id}')">
@@ -228,7 +211,6 @@ class BookmarkManagerUI {
 
       for (const child of treeNode.children!) {
         if (!("url" in child.item)) {
-          // Only add folder children
           childrenContainer.appendChild(this.createFolderTreeNode(child));
         }
       }
@@ -244,9 +226,9 @@ class BookmarkManagerUI {
     if (treeNode.children) {
       for (const child of treeNode.children) {
         if ("url" in child.item) {
-          count++; // Count bookmarks
+          count++;
         } else {
-          count += this.getTreeNodeCount(child); // Recursively count folder contents
+          count += this.getTreeNodeCount(child);
         }
       }
     }
@@ -260,12 +242,10 @@ class BookmarkManagerUI {
   private async renderBookmarks() {
     let allBookmarks = this.bookmarkManager.getBookmarks();
 
-    // Filter by current folder
     let bookmarks = allBookmarks.filter((b) =>
       this.currentFolderId === "" ? true : b.parentId === this.currentFolderId,
     );
 
-    // Apply search filter
     if (this.searchQuery) {
       const searchItems = this.bookmarkManager.searchBookmarks(
         this.searchQuery,
@@ -277,7 +257,6 @@ class BookmarkManagerUI {
       bookmarks = bookmarks.filter((b) => searchBookmarksIds.includes(b.id));
     }
 
-    // Sort bookmarks
     bookmarks.sort((a, b) => {
       switch (this.sortBy) {
         case "title":
@@ -293,7 +272,6 @@ class BookmarkManagerUI {
       }
     });
 
-    // Update UI
     this.bookmarkCount.textContent = `${bookmarks.length} item${bookmarks.length !== 1 ? "s" : ""}`;
 
     if (bookmarks.length === 0) {
@@ -303,12 +281,10 @@ class BookmarkManagerUI {
       this.bookmarkList.style.display = "block";
       this.emptyState.style.display = "none";
 
-      // Apply view mode
       this.bookmarkList.className = this.isGridView
         ? "bookmark-grid"
         : "space-y-2";
 
-      // Render bookmark items
       this.bookmarkList.innerHTML = "";
       for (const bookmark of bookmarks) {
         const bookmarkElement = await this.createBookmarkElement(bookmark);
@@ -316,7 +292,6 @@ class BookmarkManagerUI {
       }
     }
 
-    // Re-initialize icons after DOM changes
     createIcons({ icons });
   }
 
@@ -328,7 +303,6 @@ class BookmarkManagerUI {
     bookmarkElement.draggable = true;
     bookmarkElement.dataset.bookmarkId = bookmark.id;
 
-    // Get favicon asynchronously
     const favicon = await this.getFavicon(bookmark.url);
 
     bookmarkElement.innerHTML = `
@@ -353,7 +327,6 @@ class BookmarkManagerUI {
             </div>
         `;
 
-    // Add event listeners
     bookmarkElement.addEventListener("contextmenu", (e) =>
       this.showContextMenu(e, bookmark),
     );
@@ -365,7 +338,6 @@ class BookmarkManagerUI {
       this.handleDrop(e, bookmark),
     );
 
-    // Add button event listeners
     const editBtn = bookmarkElement.querySelector(
       ".edit-bookmark-btn",
     ) as HTMLButtonElement;
@@ -390,7 +362,6 @@ class BookmarkManagerUI {
       this.navigateToBookmark(bookmark.url);
     });
 
-    // Add click to navigate
     bookmarkElement.addEventListener("click", () => {
       this.navigateToBookmark(bookmark.url);
     });
@@ -422,13 +393,11 @@ class BookmarkManagerUI {
 
   private async getFavicon(url: string): Promise<string | null> {
     try {
-      // First check if we have a cached favicon
       const cachedFavicon = this.bookmarkManager.getCachedFavicon(url);
       if (cachedFavicon) {
         return cachedFavicon;
       }
 
-      // If not cached, fetch it (proxy will automatically cache it)
       const proxyFavicon = await this.proxy.getFavicon(url);
       return proxyFavicon;
     } catch (error) {
@@ -484,7 +453,6 @@ class BookmarkManagerUI {
     }
   }
 
-  // Drag and Drop
   private handleDragStart(e: DragEvent, item: Bookmark | BookmarkFolder) {
     if (e.dataTransfer) {
       e.dataTransfer.setData("text/plain", JSON.stringify(item));
@@ -512,11 +480,9 @@ class BookmarkManagerUI {
     try {
       const draggedItem = JSON.parse(draggedData);
 
-      // Determine target folder
       const targetFolderId =
         "url" in targetItem ? targetItem.parentId : targetItem.id;
 
-      // Move the item
       if ("url" in draggedItem) {
         await this.bookmarkManager.updateBookmark(draggedItem.id, {
           parentId: targetFolderId,
@@ -534,11 +500,9 @@ class BookmarkManagerUI {
     }
   }
 
-  // Public methods for UI interactions
   public selectFolder(folderId: string) {
     this.currentFolderId = folderId;
 
-    // Update folder tree active state
     this.folderTree.querySelectorAll(".folder-item").forEach((item) => {
       item.classList.remove("active");
     });
@@ -546,7 +510,6 @@ class BookmarkManagerUI {
       .querySelector(`[data-folder-id="${folderId}"]`)
       ?.classList.add("active");
 
-    // Update title
     if (folderId === "") {
       this.currentFolderTitle.textContent = "All Bookmarks";
     } else {
@@ -565,7 +528,6 @@ class BookmarkManagerUI {
     const bookmark = bookmarks.find((b) => b.id === bookmarkId);
     if (!bookmark) return;
 
-    // Populate form with existing data
     (document.getElementById("bookmarkTitle") as HTMLInputElement).value =
       bookmark.title;
     (document.getElementById("bookmarkUrl") as HTMLInputElement).value =
@@ -573,10 +535,8 @@ class BookmarkManagerUI {
     (document.getElementById("bookmarkFolder") as HTMLSelectElement).value =
       bookmark.parentId || "";
 
-    // Show modal
     this.showAddBookmarkModal();
 
-    // Update form submit to handle edit
     const form = document.getElementById("addBookmarkForm");
     form?.addEventListener(
       "submit",
@@ -608,7 +568,6 @@ class BookmarkManagerUI {
     }
   }
 
-  // Modal methods
   private showAddBookmarkModal() {
     this.populateFolderSelect("bookmarkFolder");
     this.addBookmarkModal.classList.remove("hidden");
@@ -650,6 +609,7 @@ class BookmarkManagerUI {
   private async handleAddBookmark(e: Event) {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
+    console.log("Form Data:", Array.from(formData.entries()));
 
     const title = (formData.get("bookmarkTitle") as string)?.trim();
     const url = (formData.get("bookmarkUrl") as string)?.trim();
@@ -719,16 +679,13 @@ class BookmarkManagerUI {
     const icon = this.viewToggle.querySelector("i");
     if (icon) {
       icon.setAttribute("data-lucide", this.isGridView ? "list" : "grid");
-      // Re-initialize icons after attribute change
       createIcons({ icons });
     }
   }
 
   private updateUI() {
-    // Update any other UI elements as needed
   }
 
-  // Import/Export
   private async exportBookmarks() {
     try {
       const bookmarks = this.bookmarkManager.getBookmarks();
@@ -761,7 +718,6 @@ class BookmarkManagerUI {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      // Simple import - add all bookmarks and folders
       if (data.bookmarks) {
         for (const bookmark of data.bookmarks) {
           await this.bookmarkManager.createBookmark({
@@ -791,11 +747,8 @@ class BookmarkManagerUI {
   }
 }
 
-// Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
-  // Initialize the bookmark manager
   const bookmarkUI = new BookmarkManagerUI();
 
-  // Make it globally accessible for onclick handlers
   (window as any).bookmarkUI = bookmarkUI;
 });

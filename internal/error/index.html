@@ -8,6 +8,23 @@
     <script src="/data/config.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="UTF-8" />
+
+    <style>
+      html.tw-wait {
+        opacity: 0;
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add("tw-wait");
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "/src/js/internal/error.ts";
+      s.onload = () => document.documentElement.classList.remove("tw-wait");
+      s.onerror = () => document.documentElement.classList.remove("tw-wait");
+      document.head.appendChild(s);
+    </script>
+
+    <script type="module" defer src="/src/js/internal/error.ts"></script>
   </head>
 
   <body>
@@ -16,6 +33,5 @@
     </div>
     <h1 class="glitch title404" data-text="404">404</h1>
     <h1 class="name">Oops... Something Went Wrong...</h1>
-    <script type="module" src="/src/js/internal/error.ts"></script>
   </body>
 </html>

@@ -121,9 +121,7 @@ class DataExportAPI {
           type: "application/octet-stream",
         });
 
-        // @ts-ignore: msSaveOrOpenBlob is IE/Edge only
         if ((window.navigator as any).msSaveOrOpenBlob) {
-          // @ts-ignore: msSaveBlob is IE/Edge only
           (window.navigator as any).msSaveBlob(blob, fileName);
         } else {
           const a = document.createElement("a");

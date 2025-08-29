@@ -1,9 +1,9 @@
-/* Import global styles and variables */
+
 @import "../global.css";
 
-/* Bookmark Manager Specific Styles */
 
-/* Drag and Drop */
+
+
 .bookmark-item,
 .folder-item {
   transition: all 0.2s ease;
@@ -28,7 +28,7 @@
   border-color: var(--main);
 }
 
-/* Bookmark Item Styles */
+
 .bookmark-item {
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@
   color: var(--text);
 }
 
-/* Folder Tree Styles */
+
 .folder-item {
   margin-bottom: 4px;
 }
@@ -159,7 +159,7 @@
   transform: rotate(90deg);
 }
 
-/* Grid View */
+
 .bookmark-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -186,7 +186,7 @@
   display: none;
 }
 
-/* Search Results */
+
 .search-results {
   display: flex;
   flex-direction: column;
@@ -200,13 +200,13 @@
   border-radius: 4px;
 }
 
-/* Empty State */
+
 .empty-state {
   text-align: center;
   padding: 48px 0;
 }
 
-/* Modals */
+
 .modal {
   backdrop-filter: blur(4px);
 }
@@ -220,7 +220,7 @@
   transform: scale(1);
 }
 
-/* Context Menu */
+
 #contextMenu {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
@@ -229,7 +229,7 @@
   background: var(--white-05);
 }
 
-/* Animations */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -245,7 +245,7 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
   .bookmark-manager {
     flex-direction: column;
@@ -263,7 +263,7 @@
   }
 }
 
-/* Loading States */
+
 .loading {
   opacity: 0.5;
   pointer-events: none;
@@ -284,7 +284,7 @@
   }
 }
 
-/* Drag Drop Visual Feedback */
+
 .drop-zone {
   border: 2px dashed var(--main);
   background: var(--main-20a);
@@ -298,20 +298,20 @@
   border-style: solid;
 }
 
-/* Bookmark Item Selection */
+
 .bookmark-item.selected {
   background: var(--main-20a);
   border-color: var(--main);
 }
 
-/* Folder Indicators */
+
 .folder-count {
   font-size: 12px;
   color: var(--proto);
   margin-left: auto;
 }
 
-/* Special Folders */
+
 .shortcuts-folder {
   position: relative;
 }
@@ -325,7 +325,7 @@
   font-size: 12px;
 }
 
-/* Accessibility */
+
 .bookmark-item:focus,
 .folder-header:focus {
   outline: none;
@@ -333,7 +333,7 @@
   border-radius: 8px;
 }
 
-/* Toolbar Styling */
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -343,7 +343,7 @@
   border-bottom: 1px solid var(--white-08);
 }
 
-/* Sort and View Controls */
+
 .view-controls {
   display: flex;
   align-items: center;

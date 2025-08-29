@@ -4,7 +4,6 @@ import { fileURLToPath } from "url";
 import fastifyCompress from "@fastify/compress";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyStatic from "@fastify/static";
-//@ts-ignore
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import chalk from "chalk";
 import Fastify from "fastify";
@@ -66,7 +65,7 @@ await server.register(fastifyHelmet, {
   xPoweredBy: false,
   crossOriginEmbedderPolicy: true,
   crossOriginOpenerPolicy: true,
-  contentSecurityPolicy: false, // Disabled because of issues with Astro SSR
+  contentSecurityPolicy: false,
 });
 
 server.register(routes);
