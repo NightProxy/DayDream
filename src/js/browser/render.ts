@@ -105,7 +105,7 @@ class Render implements renderInterface {
                       "data-side": "right",
                       "data-align": "center",
                       onclick: async () => {
-                        await window.tabs.createTab("daydream://games");
+                        await window.tabs.createTab("ddx://games/");
                       },
                     },
                     [
@@ -114,7 +114,6 @@ class Render implements renderInterface {
                         { class: "h-4 w-4", "data-lucide": "joystick" },
                         [],
                       ),
-                      //this.ui.createElement("span", { class: "absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--error)] px-1 text-[10px] leading-none text-[var(--white)]" }, ["3"])
                     ],
                   ),
                 ]),
@@ -133,7 +132,7 @@ class Render implements renderInterface {
                         "data-side": "right",
                         "data-align": "center",
                         onclick: async () => {
-                          await window.tabs.createTab("daydream://extensions");
+                          await window.tabs.createTab("ddx://extensions/");
                         },
                       },
                       [
@@ -196,7 +195,7 @@ class Render implements renderInterface {
                       "data-side": "right",
                       "data-align": "center",
                       onclick: async () => {
-                        await window.tabs.createTab("daydream://updates");
+                        await window.tabs.createTab("ddx://updates/");
                       },
                     },
                     [
@@ -218,7 +217,7 @@ class Render implements renderInterface {
                       "data-side": "right",
                       "data-align": "center",
                       onclick: async () => {
-                        await window.tabs.createTab("daydream://history");
+                        await window.tabs.createTab("ddx://history/");
                       },
                     },
                     [
@@ -227,7 +226,6 @@ class Render implements renderInterface {
                         { class: "h-4 w-4", "data-lucide": "history" },
                         [],
                       ),
-                      //this.ui.createElement("span", { class: "absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--success)] px-1 text-[10px] leading-none text-[var(--black-80)]" }, ["420"])
                     ],
                   ),
                 ]),
@@ -241,7 +239,7 @@ class Render implements renderInterface {
                       "data-side": "right",
                       "data-align": "center",
                       onclick: async () => {
-                        await window.tabs.createTab("daydream://settings");
+                        await window.tabs.createTab("ddx://settings/");
                       },
                     },
                     [

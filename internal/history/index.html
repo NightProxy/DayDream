@@ -5,13 +5,16 @@
     <title>History</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <style>
-      html.tw-wait {
+      *.tw-wait {
         opacity: 0;
       }
     </style>
     <script>
-      document.documentElement.classList.add("tw-wait");
+      document
+        .querySelectorAll("*")
+        .forEach((el) => el.classList.add("tw-wait"));
       const s = document.createElement("script");
       s.type = "module";
       s.src = "/src/js/internal/history.ts";
@@ -19,6 +22,7 @@
       s.onerror = () => document.documentElement.classList.remove("tw-wait");
       document.head.appendChild(s);
     </script>
+
     <script type="module" defer src="/src/js/internal/history.ts"></script>
   </head>
 

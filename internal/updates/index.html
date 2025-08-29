@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Updates</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <meta property="og:image" content="/res/logo.png" />
+    <style>
+      html.tw-wait {
+        opacity: 0;
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add("tw-wait");
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "/src/js/internal/updates.ts";
+      s.onload = () => document.documentElement.classList.remove("tw-wait");
+      s.onerror = () => document.documentElement.classList.remove("tw-wait");
+      document.head.appendChild(s);
+    </script>
+    <script type="module" defer src="/src/js/internal/updates.ts"></script>
+  </head>
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <div class="stack h-10 w-10">
+                <div
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+              <span class="text-3xl tracking-widest -mr-1">Updates</span>
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Subscribe"
+                data-side="right"
+                data-align="center"
+                aria-label="Subscribe"
+              >
+                <i data-lucide="bell" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_260px]">
+          <div class="space-y-6">
+            <div class="relative">
+              <i
+                data-lucide="search"
+                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--proto)]"
+              ></i>
+              <input
+                id="updates-search"
+                class="w-full rounded-xl bg-[var(--bg-2)] pl-10 pr-28 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+                placeholder="Search announcements..."
+                aria-label="Search updates"
+              />
+              <div
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2"
+              >
+                <button
+                  id="updates-clear"
+                  class="inline-flex h-8 px-3 items-center justify-center rounded-lg text-xs text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                >
+                  Clear
+                </button>
+                <button
+                  id="updates-filter"
+                  class="inline-flex h-8 px-3 items-center justify-center rounded-lg text-xs text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  aria-expanded="false"
+                >
+                  Filters
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2" id="updates-tags">
+              <button
+                data-tag="all"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)] bg-[var(--white-05)]"
+              >
+                All
+              </button>
+              <button
+                data-tag="release"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Release
+              </button>
+              <button
+                data-tag="maintenance"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Maintenance
+              </button>
+              <button
+                data-tag="devlog"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Devlog
+              </button>
+              <button
+                data-tag="annc"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Announcement
+              </button>
+            </div>
+
+            <div class="relative">
+              <div
+                class="absolute left-4 top-0 bottom-0 w-px bg-[var(--white-08)]"
+              ></div>
+              <div id="updates-list" class="space-y-4">
+                <details
+                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] [&[open]]:ring-[var(--main-35a)] transition data-[hidden=true]:hidden"
+                  data-tags="release annc"
+                  open
+                >
+                  <summary class="list-none cursor-pointer">
+                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
+                      <div
+                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--main)] shadow-[0_0_0_3px_var(--bg-2)]"
+                      ></div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
+                            >Release</span
+                          >
+                          <span
+                            class="inline-flex items-center gap-1 rounded-md bg-[var(--main-20a)] px-2 py-0.5 text-[10px] text-[var(--bg-2)] ring-1 ring-inset ring-[var(--main-35a)]"
+                            >v0.8.0</span
+                          >
+                          <time class="text-[10px] text-[var(--proto)]"
+                            >Aug 20, 2025</time
+                          >
+                        </div>
+                        <h3 class="mt-1 text-sm font-semibold">
+                          Faster New Tab, Smarter History, Prettier Everything
+                        </h3>
+                        <p
+                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
+                        >
+                          Lorem ipsum dolor sit amet, consectetur adipiscing
+                          elit. Pellentesque non viverra urna. Vestibulum
+                          faucibus, mi non maximus venenatis, mauris nunc
+                          elementum arcu, vitae vulputate arcu eros et massa.
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="star"
+                        >
+                          <i data-lucide="star" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="pin"
+                        >
+                          <i data-lucide="pin" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="hide"
+                        >
+                          <i data-lucide="eye-off" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </summary>
+                  <div class="px-10 pb-4 space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-3">
+                      <img
+                        src="/res/updates/shot-1.png"
+                        alt=""
+                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
+                      />
+                      <img
+                        src="/res/updates/shot-2.png"
+                        alt=""
+                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
+                      />
+                      <img
+                        src="/res/updates/shot-3.png"
+                        alt=""
+                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
+                      />
+                    </div>
+                    <ul class="text-sm leading-6 list-disc pl-6">
+                      <li>New tab paint time reduced by 37% on average</li>
+                      <li>History page live search and keyboard navigation</li>
+                      <li>Refined gradients and focus rings across UI</li>
+                    </ul>
+                  </div>
+                </details>
+
+                <details
+                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
+                  data-tags="maintenance annc"
+                >
+                  <summary class="list-none cursor-pointer">
+                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
+                      <div
+                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--white-20)] shadow-[0_0_0_3px_var(--bg-2)]"
+                      ></div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
+                            >Maintenance</span
+                          >
+                          <time class="text-[10px] text-[var(--proto)]"
+                            >Aug 15, 2025</time
+                          >
+                        </div>
+                        <h3 class="mt-1 text-sm font-semibold">
+                          Backend rotation and transport hardening
+                        </h3>
+                        <p
+                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
+                        >
+                          Mauris sit amet interdum ipsum. Cras dictum, metus vel
+                          efficitur mattis, nibh augue faucibus neque, ac
+                          aliquet eros arcu id metus. Integer ac dolor quis
+                          sapien aliquam feugiat.
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="star"
+                        >
+                          <i data-lucide="star" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="pin"
+                        >
+                          <i data-lucide="pin" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="hide"
+                        >
+                          <i data-lucide="eye-off" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </summary>
+                  <div class="px-10 pb-4 space-y-4">
+                    <div
+                      class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
+                    >
+                      Window: 01:00–02:00 UTC. Intermittent reconnects expected
+                      on Wisp endpoints. Ultraviolet nodes recycled with updated
+                      cert chains.
+                    </div>
+                  </div>
+                </details>
+
+                <details
+                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
+                  data-tags="devlog"
+                >
+                  <summary class="list-none cursor-pointer">
+                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
+                      <div
+                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--proto)] shadow-[0_0_0_3px_var(--bg-2)]"
+                      ></div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
+                            >Devlog</span
+                          >
+                          <time class="text-[10px] text-[var(--proto)]"
+                            >Aug 8, 2025</time
+                          >
+                        </div>
+                        <h3 class="mt-1 text-sm font-semibold">
+                          Nightmare API preview and extension hooks
+                        </h3>
+                        <p
+                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
+                        >
+                          Sed ut perspiciatis unde omnis iste natus error sit
+                          voluptatem accusantium doloremque laudantium. Nemo
+                          enim ipsam voluptatem quia voluptas sit aspernatur aut
+                          odit aut fugit.
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="star"
+                        >
+                          <i data-lucide="star" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="pin"
+                        >
+                          <i data-lucide="pin" class="h-4 w-4"></i>
+                        </button>
+                        <button
+                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                          data-action="hide"
+                        >
+                          <i data-lucide="eye-off" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </summary>
+                  <div class="px-10 pb-4 space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      <div
+                        class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
+                      >
+                        Early hooks for install, enable, permissions, and
+                        context menu entries. Subject to change.
+                      </div>
+                      <div
+                        class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
+                      >
+                        Prototype profiler for tab startup showing CPU and
+                        network slices.
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <section id="updates-empty" hidden>
+              <div
+                class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-8 text-center"
+              >
+                <div
+                  class="mx-auto mb-3 grid place-items-center h-10 w-10 rounded-full bg-[var(--white-05)]"
+                >
+                  <i
+                    data-lucide="inbox"
+                    class="h-5 w-5 text-[var(--proto)]"
+                  ></i>
+                </div>
+                <h2 class="text-lg font-semibold">No announcements found</h2>
+                <p class="text-sm text-[var(--proto)]">
+                  Try clearing filters or adjusting your search.
+                </p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="space-y-4">
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Quick Filters</h4>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  data-qf="starred"
+                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+                >
+                  Starred
+                </button>
+                <button
+                  data-qf="pinned"
+                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+                >
+                  Pinned
+                </button>
+                <button
+                  data-qf="new"
+                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+                >
+                  Last 7 days
+                </button>
+              </div>
+            </div>
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Changelog</h4>
+              <ul class="text-xs text-[var(--proto)] space-y-1">
+                <li>v0.8.0 Released</li>
+                <li>Transport maintenance</li>
+                <li>Devlog additions</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <template id="updates-item-template">
+        <details
+          class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
+        >
+          <summary class="list-none cursor-pointer">
+            <div class="pl-10 pr-3 py-4 flex items-start gap-4">
+              <div
+                class="absolute left-3 top-5 h-3 w-3 rounded-full shadow-[0_0_0_3px_var(--bg-2)]"
+                data-dot
+              ></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2" data-badges></div>
+                <h3 class="mt-1 text-sm font-semibold" data-title></h3>
+                <p
+                  class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
+                  data-excerpt
+                ></p>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  data-action="star"
+                >
+                  <i data-lucide="star" class="h-4 w-4"></i>
+                </button>
+                <button
+                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  data-action="pin"
+                >
+                  <i data-lucide="pin" class="h-4 w-4"></i>
+                </button>
+                <button
+                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  data-action="hide"
+                >
+                  <i data-lucide="eye-off" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+          </summary>
+          <div class="px-10 pb-4 space-y-4" data-body></div>
+        </details>
+      </template>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Announcements:
+          <span id="updates-count" class="text-[var(--text)]/80">3</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a href="/internal/newtab.html" class="hover:text-[var(--text)]"
+            >New Tab</a
+          >
+          <span>\</span>
+          <a href="/internal/settings.html" class="hover:text-[var(--text)]"
+            >Settings</a
+          >
+        </nav>
+      </footer>
+    </div>
+  </body>
+</html>

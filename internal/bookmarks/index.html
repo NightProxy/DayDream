@@ -3,17 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DDX Bookmark Manager</title>
+    <title>Bookmark Manager</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta property="og:image" content="/res/logo.png" />
+    <link rel="preload" href="/src/css/pages/bookmarks.css" as="style" />
     <link rel="stylesheet" href="/src/css/pages/bookmarks.css" />
+
+    <style>
+      html.tw-wait {
+        opacity: 0;
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add("tw-wait");
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "/src/js/internal/bookmarks.ts";
+      s.onload = () => document.documentElement.classList.remove("tw-wait");
+      s.onerror = () => document.documentElement.classList.remove("tw-wait");
+      document.head.appendChild(s);
+    </script>
+
+    <script type="module" defer src="/src/js/internal/bookmarks.ts"></script>
   </head>
 
   <body
     class="bg-[var(--bg-2)] text-[var(--text)] antialiased h-screen overflow-hidden"
   >
     <div class="h-full w-full flex flex-col">
-      <!-- Header -->
+      
       <header
         class="bg-[var(--bg-1)] border-b border-[var(--white-08)] px-6 py-4"
       >
@@ -78,9 +96,9 @@
         </div>
       </header>
 
-      <!-- Main Content -->
+      
       <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
+        
         <aside
           class="w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-4 flex flex-col"
         >
@@ -95,9 +113,9 @@
           </div>
         </aside>
 
-        <!-- Main Bookmark Area -->
+        
         <main class="flex-1 flex flex-col overflow-hidden">
-          <!-- Toolbar -->
+          
           <div
             class="bg-[var(--bg-1)] border-b border-[var(--white-08)] px-6 py-3"
           >
@@ -133,7 +151,7 @@
             </div>
           </div>
 
-          <!-- Bookmark List -->
+          
           <div id="bookmarkContainer" class="flex-1 overflow-y-auto p-6">
             <div id="bookmarkList" class="space-y-2"></div>
             <div
@@ -163,7 +181,7 @@
       </div>
     </div>
 
-    <!-- Add Bookmark Modal -->
+    
     <div
       id="addBookmarkModal"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
@@ -182,6 +200,7 @@
             <input
               type="text"
               id="bookmarkTitle"
+              name="bookmarkTitle"
               required
               class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
             />
@@ -193,6 +212,7 @@
             <input
               type="url"
               id="bookmarkUrl"
+              name="bookmarkUrl"
               required
               class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
             />
@@ -203,6 +223,7 @@
             >
             <select
               id="bookmarkFolder"
+              name="bookmarkFolder"
               class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
             >
               <option value="">Root</option>
@@ -227,7 +248,7 @@
       </div>
     </div>
 
-    <!-- Add Folder Modal -->
+    
     <div
       id="addFolderModal"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
@@ -246,6 +267,7 @@
             <input
               type="text"
               id="folderTitle"
+              name="folderTitle"
               required
               class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
             />
@@ -256,6 +278,7 @@
             >
             <select
               id="parentFolder"
+              name="parentFolder"
               class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
             >
               <option value="">Root</option>
@@ -280,7 +303,7 @@
       </div>
     </div>
 
-    <!-- Context Menu -->
+    
     <div
       id="contextMenu"
       class="fixed z-50 bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 min-w-48 hidden"
@@ -315,7 +338,5 @@
         <span>Open in New Tab</span>
       </button>
     </div>
-
-    <script type="module" src="/src/js/internal/bookmarks.ts"></script>
   </body>
 </html>

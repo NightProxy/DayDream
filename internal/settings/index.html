@@ -7,7 +7,34 @@
     <title>Settings</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta property="og:image" content="/res/logo.png" />
-    <link rel="stylesheet" href="/src/css/pages/settings.css" />
+    <link
+      rel="preload"
+      href="/src/css/pages/settings.css"
+      as="style"
+      onload="this.rel='stylesheet'"
+    />
+    <noscript
+      ><link rel="stylesheet" href="/src/css/pages/settings.css"
+    /></noscript>
+
+    <style>
+      *.tw-wait {
+        opacity: 0;
+      }
+    </style>
+    <script>
+      document
+        .querySelectorAll("*")
+        .forEach((el) => el.classList.add("tw-wait"));
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "/src/js/internal/settings.ts";
+      s.onload = () => document.documentElement.classList.remove("tw-wait");
+      s.onerror = () => document.documentElement.classList.remove("tw-wait");
+      document.head.appendChild(s);
+    </script>
+
+    <script type="module" defer src="/src/js/internal/settings.ts"></script>
   </head>
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
@@ -69,13 +96,13 @@
 
       <main class="flex-1 h-screen overflow-y-auto">
         <div class="p-8 max-w-4xl space-y-12 mx-auto">
-          <section id="Cloaking" class="space-y-6 hidden">
+          <section id="Cloaking" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Cloaking
               </h2>
               <p class="text-sm text-[var(--proto)]">
-                Control how DDX appears and behaves
+                Control how ddx appears and behaves
               </p>
             </div>
 
@@ -173,7 +200,7 @@
             </div>
           </section>
 
-          <section id="Themes" class="space-y-6 hidden">
+          <section id="Themes" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Appearance
@@ -288,7 +315,7 @@
             </div>
           </section>
 
-          <section id="Searching" class="space-y-6 hidden">
+          <section id="Searching" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Search
@@ -393,7 +420,7 @@
             </div>
           </section>
 
-          <section id="Misc" class="space-y-6 hidden">
+          <section id="Misc" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Other
@@ -412,7 +439,7 @@
             </div>
           </section>
 
-          <section id="About" class="space-y-6 hidden">
+          <section id="About" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 About DayDreamX

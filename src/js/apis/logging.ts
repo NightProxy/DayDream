@@ -63,7 +63,7 @@ class Logger {
   }
 
   async clearAllLogs() {
-    await this.store.clear(); // what huh
+    await this.store.clear();
     sessionStorage.removeItem("sessionId");
   }
 

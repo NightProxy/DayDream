@@ -74,6 +74,11 @@ class Proxy implements ProxyInterface {
     }
   }
 
+  async getTransports() {
+    const transport = await this.connection.getTransport();
+    return transport;
+  }
+
   search(input: string) {
     input = input.trim();
     const searchTemplate = this.searchVar || "https://www.duckduckgo.com/?q=%s";
@@ -163,7 +168,6 @@ class Proxy implements ProxyInterface {
         return null;
       }
 
-      // Add protocol if missing
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
         url = "https://" + url;
       }
@@ -221,7 +225,7 @@ class Proxy implements ProxyInterface {
     });
     let swConfigSettings: Record<any, any> = {};
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(this.search(url)); //amplify
+      const result = await swConfig.auto.func(this.search(url));
       swConfigSettings = result;
     } else {
       swConfigSettings = swConfig[proxySetting];
@@ -305,7 +309,6 @@ class Proxy implements ProxyInterface {
   private faviconCache = new Map<string, string>();
   private bookmarkManager: any = null;
 
-  // Set bookmark manager for enhanced favicon caching
   public setBookmarkManager(bookmarkManager: any): void {
     this.bookmarkManager = bookmarkManager;
   }
@@ -317,7 +320,6 @@ class Proxy implements ProxyInterface {
         return null;
       }
 
-      // Check bookmark manager cache first
       if (this.bookmarkManager) {
         const cachedFavicon = this.bookmarkManager.getCachedFavicon(url);
         if (cachedFavicon) {
@@ -325,7 +327,6 @@ class Proxy implements ProxyInterface {
         }
       }
 
-      // Check local cache
       if (this.faviconCache.has(domain)) {
         return this.faviconCache.get(domain) || null;
       }
@@ -366,10 +367,8 @@ class Proxy implements ProxyInterface {
 
       const dataUrl = `data:image/png;base64,${base64}`;
 
-      // Cache in local cache
       this.faviconCache.set(domain, dataUrl);
 
-      // Cache in bookmark manager if available
       if (this.bookmarkManager) {
         await this.bookmarkManager.cacheFavicon(url, dataUrl);
       }

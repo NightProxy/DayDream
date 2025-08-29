@@ -1,24 +1,6 @@
 import { Nightmare } from "@libs/Nightmare/nightmare";
 
-/*interface ItemsInterface {
-  ui: Nightmare;
-  homeButton: HTMLButtonElement | null;
-  backButton: HTMLButtonElement | null;
-  reloadButton: HTMLButtonElement | null;
-  forwardButton: HTMLButtonElement | null;
-  addressBar: HTMLInputElement | null;
-  bookmarkButton: HTMLButtonElement | null;
-  extensionsButton: HTMLButtonElement | null;
-  profilesButton: HTMLButtonElement | null;
-  extrasButton: HTMLButtonElement | null;
-  tabGroupsContainer: HTMLDivElement | null;
-  newTab: HTMLButtonElement | null;
-  iframeContainer: HTMLDivElement | null;
-  activeTabIframe: HTMLIFrameElement | null;
-  historyButton: HTMLButtonElement | null;
-}*/
-
-class Items /*implements ItemsInterface */ {
+class Items {
   ui: Nightmare;
   navbar: HTMLDivElement | null;
   utilityBar: HTMLDivElement | null;

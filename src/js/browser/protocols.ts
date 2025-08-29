@@ -36,7 +36,7 @@ class Protocols implements ProtoInterface {
     this.routes = new Map();
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
-    this.register("daydream", "*", "/internal", false);
+    this.register("ddx", "*", "/internal", false);
   }
 
   register(proto: string, path: string, url: string, proxy: boolean): void {
@@ -138,7 +138,7 @@ class Protocols implements ProtoInterface {
     }
 
     if (url.startsWith("/internal/")) {
-      return Promise.resolve("daydream://" + url.slice("/internal/".length));
+      return Promise.resolve("ddx://" + url.slice("/internal/".length));
     }
 
     return Promise.resolve(url);

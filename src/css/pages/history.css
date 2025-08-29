@@ -58,7 +58,7 @@
   border-color: var(--active-border-color) !important;
 }
 
-/* Styling for input inside .search */
+
 .search input {
   font-size: 14px;
   padding: 5px;

@@ -18,10 +18,9 @@ import { Protocols } from "@browser/protocols";
 import { Utils } from "@js/utils";
 import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
-//import { Keys } from "@browser/keys";
 import { Search } from "@browser/search";
 
-// @ts-ignore
+//@ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -82,12 +81,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const utils = new Utils();
   const tabs = new Tabs(render, proto, swConfig, proxySetting);
 
-  tabs.createTab("daydream://newtab");
+  tabs.createTab("ddx://newtab/");
 
   const functions = new Functions(tabs, proto);
-  //const keys = new Keys(tabs, functions);
 
-  //keys.init();
 
   if (
     proxySetting === "sj" &&
@@ -115,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const searchValue = uvSearchBar!.value.trim();
 
-      if (searchValue.startsWith("daydream://")) {
+      if (searchValue.startsWith("ddx://")) {
         const url = (await proto.processUrl(searchValue)) || "/internal/error/";
         const iframe = items.frameContainer!.querySelector(
           "iframe.active",
@@ -183,6 +180,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   functions.init();
 
   const searchbar = new Search(proxy, swConfig, proxySetting, proto);
+  if (items.addressBar) {
+    await searchbar.init(items.addressBar);
+  }
 
   window.nightmare = nightmare;
   window.nightmarePlugins = nightmarePlugins;
@@ -199,7 +199,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.tabs = tabs;
   window.windowing = windowing;
   window.functions = functions;
-  // window.keys = keys;
   window.searchbar = searchbar;
   window.SWconfig = swConfig;
   window.ProxySettings = proxySetting;
