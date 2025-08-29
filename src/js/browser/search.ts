@@ -222,7 +222,7 @@ class Search implements SearchInterface {
           break;
         default:
           this.proxy
-            .getFavicon(searchSetting, this.swConfig, this.proxySetting)
+            .getFavicon(searchSetting)
             .then((dataUrl: string | null) => {
               if (dataUrl == null || dataUrl.endsWith("null")) {
                 if (engineIconElem) {

@@ -1,233 +1,419 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
-import 'basecoat-css/all';
+import "basecoat-css/all";
 import { createIcons, icons } from "lucide";
 
-import { Nightmare } from "@libs/Nightmare/nightmare";
-import { NightmarePlugins } from "@browser/nightmarePlugins";
-import { SettingsAPI } from "@apis/settings";
-//import { ProfilesAPI } from "@apis/profiles";
+import { BookmarkManager, isBookmark } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
-import { DDXGlobal } from "@js/global/index";
 
-console.log("TailwindCSS should be loaded now!");
+interface Shortcut {
+  id: string;
+  title: string;
+  url: string;
+  favicon?: string;
+}
 
-//@ts-ignore
-//const { ScramjetController } = $scramjetLoadController();
+class NewTabShortcuts {
+  private bookmarkManager: BookmarkManager;
+  private proxy: Proxy;
+  private shortcuts: Shortcut[] = [];
+  private currentEditingId: string | null = null;
 
-document.addEventListener("DOMContentLoaded", async () => {
-  createIcons({icons})
-  /*const nightmare = new Nightmare();
+  private defaultShortcuts: Omit<Shortcut, "id" | "favicon">[] = [
+    { title: "Google", url: "https://google.com" },
+    { title: "YouTube", url: "https://youtube.com" },
+    { title: "GitHub", url: "https://github.com" },
+    { title: "Reddit", url: "https://reddit.com" },
+    { title: "Twitter", url: "https://twitter.com" },
+    { title: "Wikipedia", url: "https://wikipedia.org" },
+    { title: "Stack Overflow", url: "https://stackoverflow.com" },
+    { title: "Discord", url: "https://discord.com" },
+    { title: "Netflix", url: "https://netflix.com" },
+    { title: "Amazon", url: "https://amazon.com" },
+    { title: "Spotify", url: "https://spotify.com" },
+    { title: "Twitch", url: "https://twitch.tv" },
+  ];
 
-  const settingsAPI = new SettingsAPI();
-  //const profilesAPI = new ProfilesAPI();
+  constructor() {
+    this.bookmarkManager = new BookmarkManager();
+    this.proxy = new Proxy();
 
-  const proxy = new Proxy();
+    // Connect bookmark manager to proxy for favicon caching
+    this.proxy.setBookmarkManager(this.bookmarkManager);
 
-  const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
-  let swConfigSettings: Record<string, any> = {};
-  const swConfig = {
-    uv: {
-      type: "sw",
-      file: "/data/sw.js",
-      config: window.__uv$config,
-      func: null,
-    },
-    sj: {
-      type: "sw",
-      file: "/assets/sw.js",
-      config: window.__scramjet$config,
-      func: async () => {
-        if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
+    this.init();
+  }
 
-          console.log("Scramjet Service Worker registered.");
-        } else {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
+  private async init() {
+    await this.bookmarkManager.loadFromStorage();
+    await this.loadShortcuts();
+    this.renderShortcuts();
+    this.setupEventListeners();
+    createIcons({ icons });
+  }
 
-          console.log("Scramjet Service Worker registered.");
-        }
-      },
-    },
-    auto: {
-      type: "multi",
-      file: null,
-      config: null,
-      func: null,
-    },
-  };
-
-  // @ts-expect-error
-  const globalFunctions = new DDXGlobal();
-
-  async function getFavicon(url: string) {
+  private async getFavicon(url: string): Promise<string> {
     try {
-      var googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
-      return googleFaviconUrl;
+      // First check if we have a cached favicon
+      const cachedFavicon = this.bookmarkManager.getCachedFavicon(url);
+      if (cachedFavicon) {
+        return cachedFavicon;
+      }
+
+      // If not cached, fetch it
+      const faviconUrl = await this.proxy.getFavicon(url);
+      return faviconUrl || this.getFallbackFavicon();
     } catch (error) {
-      console.error("Error fetching favicon as data URL:", error);
-      return null;
+      console.warn("Failed to get favicon for", url, error);
+      return this.getFallbackFavicon();
     }
   }
 
-  if (
-    typeof swConfig[proxySetting as keyof typeof swConfig].func ===
-      "function" &&
-    proxySetting === "sj"
-  ) {
-    await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
-  }
-  proxy
-    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
-    .then(async () => {
-      await proxy.setTransports().then(async () => {
-        const transport = await proxy.connection.getTransport();
-        if (transport == null) {
-          proxy.setTransports();
-        }
-      });
-    });
-  const uvSearchBar = document.querySelector(
-    "#newTabSearch",
-  ) as HTMLInputElement;
-
-  const engineIconElem = document.querySelector(
-    ".searchEngineIcon",
-  ) as HTMLImageElement | null;
-  engineIconElem!.style.display = "block";
-  switch (await settingsAPI.getItem("search")) {
-    case "https://duckduckgo.com/?q=%s":
-      engineIconElem!.src = "/res/b/ddg.webp";
-      engineIconElem!.style.transform = "scale(1.35)";
-      break;
-    case "https://bing.com/search?q=%s":
-      engineIconElem!.src = "/res/b/bing.webp";
-      engineIconElem!.style.transform = "scale(1.65)";
-      break;
-    case "https://www.google.com/search?q=%s":
-      engineIconElem!.src = "/res/b/google.webp";
-      engineIconElem!.style.transform = "scale(1.2)";
-      break;
-    case "https://search.yahoo.com/search?p=%s":
-      engineIconElem!.src = "/res/b/yahoo.webp";
-      engineIconElem!.style.transform = "scale(1.5)";
-      break;
-    default:
-      getFavicon(await settingsAPI.getItem("search")).then((dataUrl) => {
-        if (dataUrl == null || dataUrl.endsWith("null")) {
-          engineIconElem!.src = "/res/b/ddg.webp";
-          engineIconElem!.style.transform = "scale(1.35)";
-        } else {
-          engineIconElem!.src = dataUrl;
-          engineIconElem!.style.transform = "scale(1.2)";
-        }
-      });
+  private getFallbackFavicon(): string {
+    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTVBNyA3IDAgMSAwIDggMUE3IDcgMCAwIDAgOCAxNVoiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTggMTJBNCA0IDAgMSAwIDggNEE0IDQgMCAwIDAgOCAxMloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+";
   }
 
-  uvSearchBar!.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      console.log("Searching...");
+  private async loadShortcuts() {
+    try {
+      const folders = this.bookmarkManager.getFolders();
+      let shortcutsFolder = folders.find(
+        (f) => f.title.toLowerCase() === "shortcuts",
+      );
 
-      const searchValue = uvSearchBar!.value.trim();
-
-      if (searchValue.startsWith("daydream://")) {
-        const url = searchValue.replace("daydream://", "/internal/");
-        location.href = url;
-      } else {
-        if (proxySetting === "auto") {
-          const result = (await proxy.automatic(
-            proxy.search(searchValue),
-            swConfig,
-          )) as Record<string, any>;
-          swConfigSettings = result;
-        } else {
-          swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];
-        }
-
-        await proxy.registerSW(swConfigSettings);
-
-        console.log("swConfigSettings:", swConfigSettings);
-        console.log(
-          "swConfigSettings.func exists:",
-          typeof swConfigSettings.func === "function",
+      if (!shortcutsFolder) {
+        await this.createDefaultShortcuts();
+        const updatedFolders = this.bookmarkManager.getFolders();
+        shortcutsFolder = updatedFolders.find(
+          (f) => f.title.toLowerCase() === "shortcuts",
         );
-        if (swConfigSettings && typeof swConfigSettings.func === "function") {
-          swConfigSettings.func();
-        } else {
-          console.warn("No function to execute in swConfigSettings.func");
-        }
+      }
 
-        console.log(
-          `Using proxy: ${proxySetting}, Settings are: ` +
-            (await swConfigSettings),
-        );
-        console.log(swConfigSettings);
+      if (shortcutsFolder) {
+        const shortcutBookmarks = this.bookmarkManager
+          .getItemsByParent(shortcutsFolder.id)
+          .filter((item) => isBookmark(item))
+          .slice(0, 12);
 
-        switch (swConfigSettings.type) {
-          case "sw":
-            let encodedUrl =
-              swConfigSettings.config.prefix +
-              window.__uv$config.encodeUrl(proxy.search(searchValue));
-            location.href = encodedUrl;
-            break;
-        }
+        this.shortcuts = await Promise.all(
+          shortcutBookmarks.map(async (bookmark) => {
+            if (isBookmark(bookmark)) {
+              return {
+                id: bookmark.id,
+                title: bookmark.title,
+                url: bookmark.url,
+                favicon: await this.getFavicon(bookmark.url),
+              };
+            }
+            return null;
+          }),
+        ).then((results) => results.filter(Boolean) as Shortcut[]);
+      }
+    } catch (error) {
+      console.error("Failed to load shortcuts:", error);
+      if (this.shortcuts.length === 0) {
+        await this.createDefaultShortcuts();
       }
     }
-  });
+  }
 
-  const nightmarePlugins = new NightmarePlugins();
+  private async createDefaultShortcuts() {
+    const shortcutsFolderId = await this.getOrCreateShortcutsFolder();
 
-  let rightclickmenucontent = nightmare.createElement("div", {}, [
-    nightmare.createElement(
-      "div",
-      {
-        class: "menu-item",
-        id: "settingsButton",
-        onclick: () => {
-          window.parent.tabs.createTab("daydream://settings");
-        },
-      },
-      [
-        nightmare.createElement(
-          "span",
-          { class: "material-symbols-outlined" },
-          ["settings"],
-        ),
-        nightmare.createElement("span", { class: "menu-label" }, ["Settings"]),
-      ],
-    ),
-    nightmare.createElement(
-      "div",
-      {
-        class: "menu-item",
-        id: "about-blankButton",
-        onclick: () => {
-          window.parent.windowing.aboutBlankWindow();
-        },
-      },
-      [
-        nightmare.createElement(
-          "span",
-          { class: "material-symbols-outlined" },
-          ["visibility_off"],
-        ),
-        nightmare.createElement("span", { class: "menu-label" }, [
-          "About:Blank",
-        ]),
-      ],
-    ),
-  ]);
+    const existingBookmarks = this.bookmarkManager
+      .getItemsByParent(shortcutsFolderId)
+      .filter((item) => isBookmark(item));
 
-  nightmarePlugins.rightclickmenu.attachTo(
-    document.querySelector("body") as HTMLBodyElement,
-    rightclickmenucontent,
-  );*/
+    if (existingBookmarks.length > 0) {
+      return;
+    }
+
+    for (const defaultShortcut of this.defaultShortcuts) {
+      try {
+        await this.bookmarkManager.createBookmark({
+          title: defaultShortcut.title,
+          url: defaultShortcut.url,
+          parentId: shortcutsFolderId,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to create shortcut for ${defaultShortcut.title}:`,
+          error,
+        );
+      }
+    }
+  }
+
+  private async getOrCreateShortcutsFolder(): Promise<string> {
+    const folders = this.bookmarkManager.getFolders();
+    let shortcutsFolder = folders.find(
+      (f) => f.title.toLowerCase() === "shortcuts",
+    );
+
+    if (!shortcutsFolder) {
+      shortcutsFolder = await this.bookmarkManager.createFolder({
+        title: "Shortcuts",
+      });
+    }
+
+    return shortcutsFolder.id;
+  }
+
+  private renderShortcuts() {
+    const section = document.getElementById("shortcuts-section");
+    if (!section) return;
+
+    section.innerHTML = "";
+
+    this.shortcuts.forEach((shortcut) => {
+      const shortcutElement = this.createShortcutElement(shortcut);
+      section.appendChild(shortcutElement);
+    });
+
+    const remaining = 12 - this.shortcuts.length;
+    for (let i = 0; i < remaining; i++) {
+      const emptySlot = this.createEmptySlot();
+      section.appendChild(emptySlot);
+    }
+
+    setTimeout(() => createIcons({ icons }), 0);
+  }
+
+  private createShortcutElement(shortcut: Shortcut): HTMLElement {
+    const shortcutDiv = document.createElement("div");
+    shortcutDiv.className = "shortcut-item relative group";
+
+    shortcutDiv.innerHTML = `
+      <div class="shortcut-link block relative rounded-xl bg-[var(--bg-2)] p-3 h-24 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition group cursor-pointer">
+        <div class="flex flex-col items-center justify-center h-full text-center">
+          <div class="w-8 h-8 mb-2 flex items-center justify-center">
+            <img
+              src="${shortcut.favicon || this.getFallbackFavicon()}"
+              alt="${shortcut.title}"
+              class="w-8 h-8 object-contain"
+              onerror="this.src='${this.getFallbackFavicon()}'"
+            />
+          </div>
+          <span class="text-xs text-[var(--text)] font-medium truncate w-full">${shortcut.title}</span>
+        </div>
+      </div>
+      <button
+        class="edit-shortcut-btn absolute -top-1 -right-1 w-6 h-6 bg-[var(--bg-1)] border border-[var(--white-20)] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-[var(--white-10)]"
+        title="Edit shortcut"
+      >
+        <i data-lucide="edit" class="h-3 w-3 text-[var(--text-secondary)]"></i>
+      </button>
+    `;
+
+    const linkElement = shortcutDiv.querySelector(
+      ".shortcut-link",
+    ) as HTMLElement;
+    linkElement.addEventListener("click", (e) => {
+      e.preventDefault();
+      this.handleShortcutNavigation(shortcut.url);
+    });
+
+    const editBtn = shortcutDiv.querySelector(
+      ".edit-shortcut-btn",
+    ) as HTMLElement;
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.openEditShortcutModal(shortcut.id);
+    });
+
+    return shortcutDiv;
+  }
+
+  private handleShortcutNavigation(url: string): void {
+    try {
+      if (url.startsWith("javascript:")) {
+        const js = url.slice("javascript:".length);
+        eval(js);
+        return;
+      }
+
+      window.location.href = url;
+    } catch (error) {
+      console.error("Failed to navigate:", error);
+      window.open(url, "_blank");
+    }
+  }
+
+  private createEmptySlot(): HTMLElement {
+    const emptyDiv = document.createElement("div");
+    emptyDiv.className = "empty-slot relative group cursor-pointer";
+    emptyDiv.innerHTML = `
+      <div class="block relative rounded-xl bg-[var(--bg-2)] border-2 border-dashed border-[var(--white-20)] p-3 h-24 hover:border-[var(--main-35a)] transition group">
+        <div class="flex flex-col items-center justify-center h-full text-center">
+          <div class="w-8 h-8 mb-2 flex items-center justify-center">
+            <i data-lucide="plus" class="w-6 h-6 text-[var(--white-50)]"></i>
+          </div>
+          <span class="text-xs text-[var(--white-50)] font-medium">Add shortcut</span>
+        </div>
+      </div>
+    `;
+
+    emptyDiv.addEventListener("click", () => this.openAddShortcutModal());
+    return emptyDiv;
+  }
+
+  private setupEventListeners() {
+    document.addEventListener("click", (e) => {
+      const editBtn = (e.target as HTMLElement).closest(".edit-shortcut-btn");
+      if (editBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const shortcutId = editBtn.getAttribute("data-shortcut-id");
+        if (shortcutId) {
+          this.openEditShortcutModal(shortcutId);
+        }
+      }
+    });
+
+    const modal = document.getElementById("editShortcutModal");
+    const form = document.getElementById("editShortcutForm") as HTMLFormElement;
+    const cancelBtn = document.getElementById("cancelEditShortcut");
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => this.closeModal());
+    }
+
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          this.closeModal();
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener("submit", (e) => this.handleSubmit(e));
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.isModalOpen()) {
+        this.closeModal();
+      }
+    });
+  }
+
+  private openEditShortcutModal(shortcutId: string) {
+    const shortcut = this.shortcuts.find((s) => s.id === shortcutId);
+    if (!shortcut) return;
+
+    this.currentEditingId = shortcutId;
+
+    const titleInput = document.getElementById(
+      "shortcutTitle",
+    ) as HTMLInputElement;
+    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+
+    if (titleInput) titleInput.value = shortcut.title;
+    if (urlInput) urlInput.value = shortcut.url;
+
+    this.showModal();
+  }
+
+  private openAddShortcutModal() {
+    this.currentEditingId = null;
+
+    const titleInput = document.getElementById(
+      "shortcutTitle",
+    ) as HTMLInputElement;
+    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+
+    if (titleInput) titleInput.value = "";
+    if (urlInput) urlInput.value = "";
+
+    this.showModal();
+  }
+
+  private showModal() {
+    const modal = document.getElementById("editShortcutModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      const titleInput = document.getElementById(
+        "shortcutTitle",
+      ) as HTMLInputElement;
+      if (titleInput) {
+        setTimeout(() => titleInput.focus(), 100);
+      }
+    }
+  }
+
+  private closeModal() {
+    const modal = document.getElementById("editShortcutModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+    this.currentEditingId = null;
+  }
+
+  private isModalOpen(): boolean {
+    const modal = document.getElementById("editShortcutModal");
+    return modal ? !modal.classList.contains("hidden") : false;
+  }
+
+  private async handleSubmit(e: Event) {
+    e.preventDefault();
+
+    const titleInput = document.getElementById(
+      "shortcutTitle",
+    ) as HTMLInputElement;
+    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+
+    if (!titleInput || !urlInput) return;
+
+    const title = titleInput.value.trim();
+    const url = urlInput.value.trim();
+
+    if (!title || !url) return;
+
+    try {
+      if (this.currentEditingId) {
+        await this.bookmarkManager.updateBookmark(this.currentEditingId, {
+          title,
+          url,
+        });
+
+        await this.loadShortcuts();
+        this.renderShortcuts();
+      } else {
+        if (this.shortcuts.length >= 12) {
+          alert("Maximum of 12 shortcuts allowed");
+          return;
+        }
+
+        const shortcutsFolderId = await this.getOrCreateShortcutsFolder();
+        await this.bookmarkManager.createBookmark({
+          title,
+          url,
+          parentId: shortcutsFolderId,
+        });
+
+        await this.loadShortcuts();
+        this.renderShortcuts();
+      }
+
+      this.closeModal();
+    } catch (error) {
+      console.error("Failed to save shortcut:", error);
+      alert("Failed to save shortcut. Please try again.");
+    }
+  }
+
+  public async refresh() {
+    await this.bookmarkManager.loadFromStorage();
+    await this.loadShortcuts();
+    this.renderShortcuts();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  createIcons({ icons });
+  const shortcutsManager = new NewTabShortcuts();
+  (window as any).shortcutsManager = shortcutsManager;
 });

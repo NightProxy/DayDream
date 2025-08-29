@@ -97,21 +97,26 @@ button[component="button"]:focus {
   --tw-ring-color: var(--main-20a) !important;
 }
 
-/* Modern Layout Fixes */
-html, body {
-  height: 100%;
-  overflow: hidden;
+/* Modern Layout Fixes - Override global styles */
+html {
+  height: 100% !important;
+  overflow: visible !important;
+  scroll-behavior: smooth !important;
 }
 
 body {
-  margin: 0;
-  padding: 0;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
-/* Ensure proper scrolling for settings */
+/* Ensure proper scrolling for settings main content */
 main {
-  height: 100vh;
-  overflow-y: auto;
+  height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 !important;
 }
 
 /* Custom scrollbar for modern look */
@@ -149,11 +154,15 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Fix sidebar height */
+/* Fix sidebar height and prevent scrolling issues */
 aside {
-  height: 100vh;
-  position: sticky;
-  top: 0;
+  height: 100vh !important;
+  overflow: visible !important;
+}
+
+/* Ensure main content container allows scrolling */
+.space-y-12 {
+  min-height: 100%;
 }
 
 /* Legacy Component Styles */
@@ -442,7 +451,7 @@ aside {
 hr {
   border: none;
   height: 1px;
-  background: var(--main-color);
+  background: var(--main);
   width: 75%;
 }
 
@@ -530,10 +539,6 @@ input[type="text"]:focus {
 input[type="text"]::placeholder {
   color: var(--text-color);
   font-family: "Plus Jakarta Sans";
-}
-
-h1 {
-  color: var(--main-color);
 }
 
 .bgPreview {
