@@ -243,3 +243,45 @@ if (uploadBGInput) {
     reader.readAsDataURL(file);
   });
 }
+
+const sections = Array.from(
+  document.querySelectorAll<HTMLElement>("main section[id]"),
+);
+const links = Array.from(
+  document.querySelectorAll<HTMLAnchorElement>("aside .settingItem"),
+);
+
+const currentId = () => {
+  const raw = location.hash.replace(/^#\/?/, "") || sections[0]?.id || "";
+  const match = sections.find((s) => s.id.toLowerCase() === raw.toLowerCase());
+  return match ? match.id : sections[0]?.id || "";
+};
+
+const select = (id: string) => {
+  sections.forEach((s) => s.classList.toggle("hidden", s.id !== id));
+  links.forEach((a) => {
+    const isActive = (a.hash || "").replace(/^#\/?/, "") === id;
+    a.classList.toggle("bg-[var(--white-05)]", isActive);
+  });
+};
+
+document.querySelectorAll(".settingItem").forEach((link) => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const href = link.getAttribute("href");
+    if (!href) return;
+    const id = href.replace(/^#\/?/, "");
+    location.hash = id;
+  });
+});
+
+const initRouting = () => {
+  if (!location.hash) {
+    const first = sections[0]?.id;
+    if (first) location.replace(`#${first}`);
+  }
+  select(currentId());
+};
+
+addEventListener("hashchange", () => select(currentId()));
+document.addEventListener("DOMContentLoaded", initRouting);

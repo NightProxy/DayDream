@@ -4,19 +4,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DDX Settings</title>
+    <title>Settings</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta property="og:image" content="/res/logo.png" />
     <link rel="stylesheet" href="/src/css/pages/settings.css" />
   </head>
 
-  <body
-    class="bg-[var(--bg-2)] text-[var(--text)] antialiased h-screen overflow-hidden"
-  >
-    <div class="h-full w-full flex">
-      <!-- Sidebar Navigation -->
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full">
       <aside
-        class="w-64 h-full bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0"
+        class="fixed inset-y-0 left-0 w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0 overflow-y-auto z-40"
       >
         <div class="mb-8">
           <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Settings</h1>
@@ -26,7 +23,7 @@
         <nav class="space-y-2">
           <a
             href="#Cloaking"
-            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
             data-id="cloak"
           >
             <i data-lucide="eye-off" class="h-4 w-4"></i>
@@ -34,7 +31,7 @@
           </a>
           <a
             href="#Themes"
-            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
             data-id="themes"
           >
             <i data-lucide="palette" class="h-4 w-4"></i>
@@ -42,7 +39,7 @@
           </a>
           <a
             href="#Searching"
-            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
             data-id="searching"
           >
             <i data-lucide="search" class="h-4 w-4"></i>
@@ -50,14 +47,14 @@
           </a>
           <a
             href="#Misc"
-            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
             data-id="misc"
           >
             <i data-lucide="more-vertical" class="h-4 w-4"></i>
             <span>Other</span>
           </a>
 
-          <hr class="border-[var(--white-08)] my-2" />
+          <hr class="border-[var(--white-08)] my-4" />
 
           <a
             href="#About"
@@ -70,11 +67,9 @@
         </nav>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 h-full overflow-y-auto">
-        <div class="p-8 max-w-4xl space-y-12">
-          <!-- Cloaking Section -->
-          <section id="Cloaking" class="space-y-6">
+      <main class="flex-1 h-screen overflow-y-auto">
+        <div class="p-8 max-w-4xl space-y-12 mx-auto">
+          <section id="Cloaking" class="space-y-6 hidden">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Cloaking
@@ -177,8 +172,8 @@
               </div>
             </div>
           </section>
-          <!-- Appearance Section -->
-          <section id="Themes" class="space-y-6">
+
+          <section id="Themes" class="space-y-6 hidden">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Appearance
@@ -292,8 +287,8 @@
               </div>
             </div>
           </section>
-          <!-- Search Section -->
-          <section id="Searching" class="space-y-6">
+
+          <section id="Searching" class="space-y-6 hidden">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Search
@@ -398,8 +393,7 @@
             </div>
           </section>
 
-          <!-- Other Section -->
-          <section id="Misc" class="space-y-6">
+          <section id="Misc" class="space-y-6 hidden">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 Other
@@ -418,8 +412,7 @@
             </div>
           </section>
 
-          <!-- About Section -->
-          <section id="About" class="space-y-6">
+          <section id="About" class="space-y-6 hidden">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
                 About DayDreamX

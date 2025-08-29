@@ -4,6 +4,11 @@ import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";
 import { DDXGlobal } from "@js/global";
 import { Proxy } from "@apis/proxy";
+import { createIcons, icons } from "lucide";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  createIcons({ icons });
+});
 
 (async () => {
   const nightmare = new Nightmare();
