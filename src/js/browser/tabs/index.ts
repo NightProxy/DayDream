@@ -361,14 +361,16 @@ class Tabs implements TabsInterface {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
     this.updateTabAttributes();
     console.log(this.tabs, currentTabIndex, isCurrentTabActive);
-    if (this.tabs.length > 0) { // && isCurrentTabActive
+    if (this.tabs.length > 0) {
+      // && isCurrentTabActive
       let nextTabToSelect: any = null;
       console.log(nextTabToSelect + 11);
       if (currentTabIndex > 0 && this.tabs[currentTabIndex - 1]) {
         nextTabToSelect = this.tabs[currentTabIndex - 1];
       } else if (this.tabs[currentTabIndex]) {
         nextTabToSelect = this.tabs[currentTabIndex];
-      } else { // (this.tabs.length > 0)
+      } else {
+        // (this.tabs.length > 0)
         nextTabToSelect = this.tabs[this.tabs.length - 1];
       }
       console.log(nextTabToSelect);
@@ -478,11 +480,7 @@ class Tabs implements TabsInterface {
             favicon.href || favicon.getAttribute("href");
           const faviconImage = tabElement.querySelector(".tab-favicon");
 
-          faviconUrl = await this.proxy.getFavicon(
-            faviconUrl as string,
-            this.swConfig,
-            this.proxySetting,
-          );
+          faviconUrl = await this.proxy.getFavicon(faviconUrl as string);
 
           if (faviconUrl && faviconImage) {
             faviconImage.setAttribute(
@@ -510,16 +508,16 @@ class Tabs implements TabsInterface {
     const iframeId = `iframe-${tabId.replace("tab-", "")}`;
     const iframe = document.getElementById(iframeId) as HTMLIFrameElement;
     const tabElement = document.getElementById(tabId) as HTMLElement;
-    
+
     if (!iframe || !tabElement) return;
 
-    const allTabs = this.items.tabBar!.querySelectorAll('.tab');
+    const allTabs = this.items.tabBar!.querySelectorAll(".tab");
     allTabs.forEach((tab) => {
       tab.classList.remove("active");
       tab.classList.add("inactive");
     });
 
-    const allIframes = this.items.frameContainer!.querySelectorAll('iframe');
+    const allIframes = this.items.frameContainer!.querySelectorAll("iframe");
     allIframes.forEach((iframe) => {
       iframe.classList.remove("active");
     });
@@ -533,9 +531,7 @@ class Tabs implements TabsInterface {
       iframe: iframe.id,
     });
 
-    let check = await this.proto.getInternalURL(
-      new URL(iframe.src).pathname,
-    );
+    let check = await this.proto.getInternalURL(new URL(iframe.src).pathname);
     if (typeof check === "string" && check.startsWith("daydream://")) {
       this.items.addressBar!.value = check;
     } else {

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DDX Bookmark Manager</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="stylesheet" href="/src/css/pages/bookmarks.css" />
+  </head>
+
+  <body
+    class="bg-[var(--bg-2)] text-[var(--text)] antialiased h-screen overflow-hidden"
+  >
+    <div class="h-full w-full flex flex-col">
+      <!-- Header -->
+      <header
+        class="bg-[var(--bg-1)] border-b border-[var(--white-08)] px-6 py-4"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-bold text-[var(--main)]">
+              Bookmark Manager
+            </h1>
+            <div class="flex items-center gap-2">
+              <button
+                id="addBookmarkBtn"
+                class="px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors text-sm flex items-center gap-2"
+              >
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                Add Bookmark
+              </button>
+              <button
+                id="addFolderBtn"
+                class="px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm flex items-center gap-2"
+              >
+                <i data-lucide="folder-plus" class="h-4 w-4"></i>
+                New Folder
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="relative">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search bookmarks..."
+                class="pl-10 pr-4 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent w-64"
+              />
+              <i
+                data-lucide="search"
+                class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--proto)]"
+              ></i>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                id="exportBtn"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Export Bookmarks"
+              >
+                <i data-lucide="download" class="h-4 w-4"></i>
+              </button>
+              <button
+                id="importBtn"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Import Bookmarks"
+              >
+                <i data-lucide="upload" class="h-4 w-4"></i>
+              </button>
+              <input
+                type="file"
+                id="importInput"
+                accept=".json"
+                style="display: none"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside
+          class="w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-4 flex flex-col"
+        >
+          <h3 class="text-sm font-semibold text-[var(--text)] mb-3">Folders</h3>
+          <div id="folderTree" class="flex-1 overflow-y-auto">
+            <div class="folder-item active" data-folder-id="">
+              <div class="folder-header">
+                <i data-lucide="bookmark" class="h-4 w-4"></i>
+                <span>All Bookmarks</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Bookmark Area -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+          <!-- Toolbar -->
+          <div
+            class="bg-[var(--bg-1)] border-b border-[var(--white-08)] px-6 py-3"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <h2
+                  id="currentFolderTitle"
+                  class="text-lg font-medium text-[var(--text)]"
+                >
+                  All Bookmarks
+                </h2>
+                <div class="text-sm text-[var(--proto)]">
+                  <span id="bookmarkCount">0 items</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <select
+                  id="sortBy"
+                  class="px-3 py-1 bg-[var(--bg-2)] border border-[var(--white-10)] rounded text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                >
+                  <option value="title">Sort by Name</option>
+                  <option value="url">Sort by URL</option>
+                  <option value="createdAt">Sort by Date Added</option>
+                </select>
+                <button
+                  id="viewToggle"
+                  class="px-3 py-1 bg-[var(--white-10)] text-[var(--text)] rounded hover:bg-[var(--white-20)] transition-colors"
+                  title="Toggle View"
+                >
+                  <i data-lucide="grid" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bookmark List -->
+          <div id="bookmarkContainer" class="flex-1 overflow-y-auto p-6">
+            <div id="bookmarkList" class="space-y-2"></div>
+            <div
+              id="emptyState"
+              class="hidden flex flex-col items-center justify-center h-full text-center"
+            >
+              <i
+                data-lucide="bookmark"
+                class="h-16 w-16 text-[var(--proto)] mb-4"
+              ></i>
+              <h3 class="text-xl font-semibold text-[var(--text)] mb-2">
+                No bookmarks yet
+              </h3>
+              <p class="text-[var(--proto)] mb-4">
+                Start organizing your favorite sites by adding your first
+                bookmark
+              </p>
+              <button
+                id="addFirstBookmarkBtn"
+                class="px-6 py-3 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors"
+              >
+                Add Your First Bookmark
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Add Bookmark Modal -->
+    <div
+      id="addBookmarkModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
+    >
+      <div
+        class="bg-[var(--bg-1)] rounded-xl border border-[var(--white-08)] p-6 w-full max-w-md mx-4"
+      >
+        <h3 class="text-lg font-semibold text-[var(--text)] mb-4">
+          Add Bookmark
+        </h3>
+        <form id="addBookmarkForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-[var(--text)] mb-2"
+              >Title</label
+            >
+            <input
+              type="text"
+              id="bookmarkTitle"
+              required
+              class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[var(--text)] mb-2"
+              >URL</label
+            >
+            <input
+              type="url"
+              id="bookmarkUrl"
+              required
+              class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[var(--text)] mb-2"
+              >Folder</label
+            >
+            <select
+              id="bookmarkFolder"
+              class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+            >
+              <option value="">Root</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              id="cancelAddBookmark"
+              class="px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors"
+            >
+              Add Bookmark
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Folder Modal -->
+    <div
+      id="addFolderModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
+    >
+      <div
+        class="bg-[var(--bg-1)] rounded-xl border border-[var(--white-08)] p-6 w-full max-w-md mx-4"
+      >
+        <h3 class="text-lg font-semibold text-[var(--text)] mb-4">
+          Create Folder
+        </h3>
+        <form id="addFolderForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-[var(--text)] mb-2"
+              >Folder Name</label
+            >
+            <input
+              type="text"
+              id="folderTitle"
+              required
+              class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[var(--text)] mb-2"
+              >Parent Folder</label
+            >
+            <select
+              id="parentFolder"
+              class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+            >
+              <option value="">Root</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              id="cancelAddFolder"
+              class="px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors"
+            >
+              Create Folder
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div
+      id="contextMenu"
+      class="fixed z-50 bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 min-w-48 hidden"
+    >
+      <button
+        class="context-item flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left"
+        data-action="edit"
+      >
+        <i data-lucide="edit" class="h-4 w-4"></i>
+        <span>Edit</span>
+      </button>
+      <button
+        class="context-item flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left"
+        data-action="delete"
+      >
+        <i data-lucide="trash-2" class="h-4 w-4 text-red-500"></i>
+        <span class="text-red-500">Delete</span>
+      </button>
+      <hr class="border-[var(--white-08)] my-1" />
+      <button
+        class="context-item flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left"
+        data-action="copy"
+      >
+        <i data-lucide="copy" class="h-4 w-4"></i>
+        <span>Copy URL</span>
+      </button>
+      <button
+        class="context-item flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left"
+        data-action="open"
+      >
+        <i data-lucide="external-link" class="h-4 w-4"></i>
+        <span>Open in New Tab</span>
+      </button>
+    </div>
+
+    <script type="module" src="/src/js/internal/bookmarks.ts"></script>
+  </body>
+</html>

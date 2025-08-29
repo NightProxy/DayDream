@@ -1,7 +1,7 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
-import 'basecoat-css/all';
+import "basecoat-css/all";
 import { createIcons, icons } from "lucide";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
@@ -21,7 +21,7 @@ const initializeSelect = async (
   onChangeCallback: Function | null = null,
 ) => {
   const selectElement = document.getElementById(selectId) as HTMLSelectElement;
-  
+
   if (!selectElement) {
     console.error(`Select element with id "${selectId}" not found.`);
     return;
@@ -48,7 +48,7 @@ const initSwitch = async (
   onChangeCallback: Function | null = null,
 ) => {
   const switchElement = document.getElementById(switchId) as HTMLInputElement;
-  
+
   if (!switchElement) {
     console.error(`Switch element with id "${switchId}" not found.`);
     return;
@@ -74,7 +74,7 @@ const initTextInput = async (
   defaultValue: string = "",
 ) => {
   const inputElement = document.getElementById(inputId) as HTMLInputElement;
-  
+
   if (!inputElement) {
     console.error(`Input element with id "${inputId}" not found.`);
     return;
@@ -100,7 +100,7 @@ const initTextInput = async (
 // Initialize button with custom action
 const initButton = (buttonId: string, action: () => void) => {
   const buttonElement = document.getElementById(buttonId) as HTMLButtonElement;
-  
+
   if (!buttonElement) {
     console.error(`Button element with id "${buttonId}" not found.`);
     return;
@@ -111,36 +111,34 @@ const initButton = (buttonId: string, action: () => void) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Initialize Lucide icons
-  createIcons({icons});
+  createIcons({ icons });
 
   // Initialize sidebar navigation
-  document
-    .querySelectorAll(".settingItem")
-    .forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const href = link.getAttribute("href");
-        if (href) {
-          const element = document.querySelector(href);
-          if (element) {
-            element.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-              inline: "nearest",
-            });
-          }
+  document.querySelectorAll(".settingItem").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const href = link.getAttribute("href");
+      if (href) {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "nearest",
+          });
         }
-      });
+      }
     });
+  });
 
   // Initialize Cloaking settings
   await initializeSelect("tabCloakSelect", "tabCloak", "off");
   await initializeSelect("URL-cloakSelect", "URL_Cloak", "off");
-  
+
   await initSwitch("autoCloakSwitch", "autoCloak", () => {
     eventsAPI.emit("cloaking:auto-toggle", null);
   });
-  
+
   await initSwitch("antiCloseSwitch", "antiClose", null);
 
   // Initialize Appearance settings
@@ -186,16 +184,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize Search settings
   await initializeSelect("proxySelect", "proxy", "uv");
   await initializeSelect("transportSelect", "transports", "libcurl");
-  await initializeSelect("searchSelect", "search", "https://duckduckgo.com/?q=%s");
+  await initializeSelect(
+    "searchSelect",
+    "search",
+    "https://duckduckgo.com/?q=%s",
+  );
 
   // Initialize Wisp setting
-  const defaultWispUrl = (location.protocol === "https:" ? "wss" : "ws") + 
-                        "://" + location.host + "/wisp/";
+  const defaultWispUrl =
+    (location.protocol === "https:" ? "wss" : "ws") +
+    "://" +
+    location.host +
+    "/wisp/";
   await initTextInput("wispSetting", "wisp", defaultWispUrl);
 
   // Initialize buttons
   initButton("bgUpload", () => {
-    const uploadBGInput = document.getElementById("bgInput") as HTMLInputElement;
+    const uploadBGInput = document.getElementById(
+      "bgInput",
+    ) as HTMLInputElement;
     uploadBGInput!.click();
   });
 
@@ -205,7 +212,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   initButton("saveWispSetting", async () => {
-    const wispInput = document.getElementById("wispSetting") as HTMLInputElement;
+    const wispInput = document.getElementById(
+      "wispSetting",
+    ) as HTMLInputElement;
     await settingsAPI.setItem("wisp", wispInput.value);
     location.reload();
   });
