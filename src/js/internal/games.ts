@@ -1,7 +1,8 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
-import "../../js/global/theming.ts";
+import "../../css/internal.css";
+import "./shared/themeInit";
 import "basecoat-css/all";
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";

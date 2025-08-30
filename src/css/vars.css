@@ -1,6 +1,5 @@
 :root {
-  /* Default theme variables - these will be overridden by the theming system */
-  --background-color: rgb(24, 24, 37); /* catppuccin-mocha default */
+  --background-color: rgb(24, 24, 37);
   --hover-background-color: rgba(203, 166, 247, 0.13);
   --input-background-color: rgb(30, 30, 46);
   --input-hover-background-color: rgba(30, 30, 46, 0.49);

@@ -8,15 +8,131 @@ export class ThemeManager {
 
   async loadThemes(): Promise<Record<string, ThemePreset>> {
     try {
+      console.log("Loading themes from /json/themes/presets.json");
       const response = await fetch("/json/themes/presets.json");
-      if (!response.ok) throw new Error("Failed to load themes");
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-      this.themes = await response.json();
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid content type, expected JSON");
+      }
+
+      const themesData = await response.json();
+      
+      if (!themesData || typeof themesData !== "object") {
+        throw new Error("Invalid themes data format");
+      }
+
+      // Validate themes have required properties
+      const validatedThemes: Record<string, ThemePreset> = {};
+      let validThemeCount = 0;
+
+      for (const [key, theme] of Object.entries(themesData)) {
+        if (this.isValidTheme(theme as any)) {
+          validatedThemes[key] = theme as ThemePreset;
+          validThemeCount++;
+        } else {
+          console.warn(`Invalid theme data for '${key}', skipping`);
+        }
+      }
+
+      if (validThemeCount === 0) {
+        throw new Error("No valid themes found in loaded data");
+      }
+
+      this.themes = validatedThemes;
+      console.log(`Successfully loaded ${validThemeCount} themes:`, Object.keys(validatedThemes));
       return this.themes;
     } catch (error) {
       console.error("Failed to load themes:", error);
-      return {};
+      console.log("Using fallback theme");
+      
+      // Return fallback theme
+      const fallbackThemes = this.getFallbackThemes();
+      this.themes = fallbackThemes;
+      return fallbackThemes;
     }
+  }
+
+  private isValidTheme(theme: any): boolean {
+    const requiredProperties = [
+      "name",
+      "background-color",
+      "text-color",
+      "main-color"
+    ];
+    
+    return theme && 
+           typeof theme === "object" && 
+           requiredProperties.every(prop => prop in theme && typeof theme[prop] === "string");
+  }
+
+  private getFallbackThemes(): Record<string, ThemePreset> {
+    return {
+      "custom": {
+        "name": "Custom",
+        "description": "Create your own theme",
+        "background-color": "rgba(0, 0, 0, 1)",
+        "hover-background-color": "rgba(140, 0, 255, 0.13)",
+        "input-background-color": "rgba(10, 10, 10, 1)",
+        "tab-bg-color": "rgba(22, 22, 22, 1)",
+        "tab-active-bg-color": "rgba(51, 51, 51, 1)",
+        "utility-background-color": "rgba(22, 22, 22, 1)",
+        "dark-translucent-bg": "rgba(61, 61, 61, 0.43)",
+        "border-color": "rgba(82, 82, 82, 1)",
+        "text-color": "rgba(255, 255, 255, 1)",
+        "hover-text-color": "rgba(255, 255, 255, 0.49)",
+        "active-text-color": "rgba(255, 255, 255, 0.81)",
+        "main-color": "rgba(141, 1, 255, 1)",
+        "faded-main-color": "rgba(170, 1, 255, 0.26)",
+        "accent-colors": [
+          "#8d01ff",
+          "#aa00ff",
+          "#7b01cc",
+          "#9900cc",
+          "#b300ff",
+          "#cc01ff"
+        ],
+        "customizable": true
+      },
+      "catppuccin-mocha": {
+        "name": "Catppuccin Mocha",
+        "description": "The warmer and darker variant of Catppuccin",
+        "background-color": "rgba(24, 24, 37, 1)",
+        "hover-background-color": "rgba(203, 166, 247, 0.13)",
+        "input-background-color": "rgba(30, 30, 46, 1)",
+        "tab-bg-color": "rgba(49, 50, 68, 1)",
+        "tab-active-bg-color": "rgba(88, 91, 112, 1)",
+        "utility-background-color": "rgba(49, 50, 68, 1)",
+        "dark-translucent-bg": "rgba(88, 91, 112, 0.43)",
+        "border-color": "rgba(88, 91, 112, 1)",
+        "text-color": "rgba(205, 214, 244, 1)",
+        "hover-text-color": "rgba(205, 214, 244, 0.7)",
+        "active-text-color": "rgba(203, 166, 247, 1)",
+        "main-color": "rgba(203, 166, 247, 1)",
+        "faded-main-color": "rgba(203, 166, 247, 0.26)",
+        "accent-colors": [
+          "#cba6f7",
+          "#89b4fa",
+          "#94e2d5",
+          "#a6e3a1",
+          "#f9e2af",
+          "#f38ba8"
+        ],
+        "color-roles": {
+          "mauve": "#cba6f7",
+          "blue": "#89b4fa",
+          "teal": "#94e2d5",
+          "green": "#a6e3a1",
+          "yellow": "#f9e2af",
+          "pink": "#f38ba8"
+        },
+        "customizable": true
+      }
+    };
   }
 
   getTheme(themeName: string): ThemePreset | null {

@@ -264,13 +264,37 @@ class Themeing implements ThemeingInterface {
 
   async loadThemePresets() {
     try {
+      console.log("Loading theme presets from /json/themes/presets.json");
       const response = await fetch("/json/themes/presets.json");
-      if (!response.ok) throw new Error("Failed to load theme presets");
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to load theme presets`);
+      }
 
-      this.themes = await response.json();
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid content type, expected JSON");
+      }
+
+      const themesData = await response.json();
+      
+      if (!themesData || typeof themesData !== "object") {
+        throw new Error("Invalid theme data format");
+      }
+
+      // Validate and count themes
+      const validThemeCount = Object.keys(themesData).length;
+      if (validThemeCount === 0) {
+        throw new Error("No themes found in data");
+      }
+
+      this.themes = themesData;
+      console.log(`Successfully loaded ${validThemeCount} theme presets`);
     } catch (error) {
       console.error("Error loading theme presets:", error);
-      // Fallback to basic themes if loading fails
+      console.log("Using fallback themes");
+      
+      // Enhanced fallback themes if loading fails
       this.themes = {
         custom: {
           name: "Custom",
@@ -296,6 +320,40 @@ class Themeing implements ThemeingInterface {
             "#b300ff",
             "#cc01ff",
           ],
+          customizable: true,
+        },
+        "catppuccin-mocha": {
+          name: "Catppuccin Mocha",
+          description: "The warmer and darker variant of Catppuccin",
+          "background-color": "rgba(24, 24, 37, 1)",
+          "hover-background-color": "rgba(203, 166, 247, 0.13)",
+          "input-background-color": "rgba(30, 30, 46, 1)",
+          "tab-bg-color": "rgba(49, 50, 68, 1)",
+          "tab-active-bg-color": "rgba(88, 91, 112, 1)",
+          "utility-background-color": "rgba(49, 50, 68, 1)",
+          "dark-translucent-bg": "rgba(88, 91, 112, 0.43)",
+          "border-color": "rgba(88, 91, 112, 1)",
+          "text-color": "rgba(205, 214, 244, 1)",
+          "hover-text-color": "rgba(205, 214, 244, 0.7)",
+          "active-text-color": "rgba(203, 166, 247, 1)",
+          "main-color": "rgba(203, 166, 247, 1)",
+          "faded-main-color": "rgba(203, 166, 247, 0.26)",
+          "accent-colors": [
+            "#cba6f7",
+            "#89b4fa",
+            "#94e2d5",
+            "#a6e3a1",
+            "#f9e2af",
+            "#f38ba8"
+          ],
+          "color-roles": {
+            "mauve": "#cba6f7",
+            "blue": "#89b4fa",
+            "teal": "#94e2d5",
+            "green": "#a6e3a1",
+            "yellow": "#f9e2af",
+            "pink": "#f38ba8"
+          },
           customizable: true,
         },
       };
@@ -502,4 +560,23 @@ class Themeing implements ThemeingInterface {
   }
 }
 
-export { Themeing, type ThemePreset };
+// Create a global instance for use across the application
+const globalTheming = new Themeing();
+
+// Auto-initialize the theming system when imported
+if (typeof window !== 'undefined') {
+  // Check if we're in a browser environment
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      globalTheming.init();
+    });
+  } else {
+    // DOM is already ready
+    globalTheming.init();
+  }
+  
+  // Make theming available globally for debugging and cross-page access
+  (window as any).globalTheming = globalTheming;
+}
+
+export { Themeing, globalTheming, type ThemePreset };

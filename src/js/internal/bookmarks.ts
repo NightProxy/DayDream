@@ -1,8 +1,9 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
+import "../../css/internal.css";
 import "basecoat-css/all";
-import "../../js/global/theming.ts";
+import "./shared/themeInit";
 import { createIcons, icons } from "lucide";
 
 import {

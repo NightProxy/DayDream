@@ -61,15 +61,15 @@ class ProfilesAPI {
     const cookies: Record<string, string> = {};
     const cookieString = document.cookie;
 
-    if (cookieString) {
+    if (cookieString && cookieString.trim()) {
       cookieString.split(";").forEach((cookie) => {
         const [name, ...rest] = cookie.trim().split("=");
-        if (name) {
-          cookies[name] = rest.join("=");
+        if (name && name.trim()) {
+          cookies[name.trim()] = rest.join("=");
         }
       });
     }
-
+    
     return cookies;
   }
 
@@ -88,15 +88,18 @@ class ProfilesAPI {
 
   async getAllLocalStorage(): Promise<Record<string, string>> {
     const data: Record<string, string> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
+    
+    try {
+      Object.keys(localStorage).forEach(key => {
         const value = localStorage.getItem(key);
         if (value !== null) {
           data[key] = value;
         }
-      }
+      });
+    } catch (e) {
+      console.error("Error collecting localStorage:", e);
     }
+    
     return data;
   }
 
@@ -113,7 +116,16 @@ class ProfilesAPI {
   async getAllIDBData(): Promise<Record<string, any>> {
     try {
       const databases = await indexedDB.databases();
-      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+      
+      const systemDatabases = [
+        "Profiles",
+        "ProfileIDB"
+      ];
+      
+      const userDatabases = databases.filter((db) => {
+        const dbName = db.name || "";
+        return !systemDatabases.includes(dbName);
+      });
 
       const data: Record<string, any> = {};
 
@@ -143,16 +155,30 @@ class ProfilesAPI {
       await this.clearAllIDB();
 
       for (const [dbName, dbData] of Object.entries(data)) {
-        if (typeof dbData === "object" && dbData !== null) {
-          await this.restoreDatabase(dbName, dbData);
+        if (typeof dbData === "object" && dbData !== null && !Array.isArray(dbData)) {
+          const storeKeys = Object.keys(dbData);
+          const hasData = storeKeys.some(key => Array.isArray(dbData[key]) && dbData[key].length > 0);
+          
+          if (hasData) {
+            try {
+              await this.restoreDatabase(dbName, dbData);
+            } catch (error) {
+              console.error(`Failed to restore database ${dbName}:`, error);
+            }
+          }
         } else {
           await this.idbStore.setItem(dbName, dbData);
         }
       }
     } catch (error) {
       console.error("Failed to set IndexedDB data:", error);
+      
       for (const [key, value] of Object.entries(data)) {
-        await this.idbStore.setItem(key, value);
+        try {
+          await this.idbStore.setItem(key, value);
+        } catch (fallbackError) {
+          console.error(`Fallback failed for ${key}:`, fallbackError);
+        }
       }
     }
   }
@@ -160,25 +186,50 @@ class ProfilesAPI {
   async clearAllIDB(): Promise<void> {
     try {
       const databases = await indexedDB.databases();
-      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+      
+      const systemDatabases = [
+        "Profiles",
+        "ProfileIDB"
+      ];
+      
+      const userDatabases = databases.filter((db) => {
+        const dbName = db.name || "";
+        return !systemDatabases.includes(dbName);
+      });
 
       for (const dbInfo of userDatabases) {
         try {
           if (dbInfo.name) {
-            await new Promise<boolean>((resolve, reject) => {
+            await new Promise<boolean>((resolve) => {
               const deleteRequest = indexedDB.deleteDatabase(dbInfo.name!);
+              
+              let resolved = false;
+              
               deleteRequest.onsuccess = () => {
-                console.log(`Deleted database: ${dbInfo.name}`);
-                resolve(true);
+                if (!resolved) {
+                  resolved = true;
+                  resolve(true);
+                }
               };
               deleteRequest.onerror = () => {
-                console.warn(`Failed to delete database: ${dbInfo.name}`);
-                reject(deleteRequest.error);
+                if (!resolved) {
+                  resolved = true;
+                  resolve(false);
+                }
               };
               deleteRequest.onblocked = () => {
-                console.warn(`Delete blocked for database: ${dbInfo.name}`);
-                resolve(true);
+                if (!resolved) {
+                  resolved = true;
+                  resolve(false);
+                }
               };
+              
+              setTimeout(() => {
+                if (!resolved) {
+                  resolved = true;
+                  resolve(false);
+                }
+              }, 1000);
             });
           }
         } catch (error) {
@@ -194,76 +245,169 @@ class ProfilesAPI {
     dbName: string,
     dbData: Record<string, any[]>,
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const version = 1;
+    return new Promise((resolve) => {
+      let completed = false;
+      
+      const timeout = setTimeout(() => {
+        if (!completed) {
+          console.warn(`Timeout opening ${dbName} after 5 seconds, skipping restoration`);
+          completed = true;
+          resolve(false);
+        }
+      }, 5000);
+      
+      const version = Date.now() + Math.floor(Math.random() * 1000);
       const request = indexedDB.open(dbName, version);
 
       request.onerror = () => {
-        console.error(`Failed to restore database ${dbName}:`, request.error);
-        reject(request.error);
+        console.error(`Failed to open database ${dbName}:`, request.error);
+        if (!completed) {
+          completed = true;
+          clearTimeout(timeout);
+          resolve(false);
+        }
+      };
+
+      request.onblocked = () => {
       };
 
       request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        for (const storeName of Object.keys(dbData)) {
-          if (!db.objectStoreNames.contains(storeName)) {
-            const storeData = dbData[storeName];
-            const hasId = storeData.some(
-              (item: any) => item && typeof item === "object" && "id" in item,
-            );
-
-            if (hasId) {
-              db.createObjectStore(storeName, {
-                keyPath: "id",
-                autoIncrement: true,
-              });
-            } else {
-              db.createObjectStore(storeName, { autoIncrement: true });
+        try {
+          for (const [storeName, storeData] of Object.entries(dbData)) {
+            if (!db.objectStoreNames.contains(storeName)) {
+              if (Array.isArray(storeData) && storeData.length > 0) {
+                const firstItem = storeData[0];
+                
+                if (firstItem && typeof firstItem === 'object' && 'key' in firstItem && 'value' in firstItem) {
+                  db.createObjectStore(storeName);
+                } else {
+                  const hasId = firstItem && typeof firstItem === "object" && "id" in firstItem;
+                  
+                  if (hasId) {
+                    db.createObjectStore(storeName, {
+                      keyPath: "id",
+                      autoIncrement: true,
+                    });
+                  } else {
+                    db.createObjectStore(storeName, { autoIncrement: true });
+                  }
+                }
+              } else {
+                db.createObjectStore(storeName);
+              }
             }
+          }
+        } catch (error) {
+          console.error(`Error in onupgradeneeded for ${dbName}:`, error);
+          if (!completed) {
+            completed = true;
+            clearTimeout(timeout);
+            resolve(false);
           }
         }
       };
 
       request.onsuccess = async (event: Event) => {
+        if (completed) {
+          const db = (event.target as IDBOpenDBRequest).result;
+          db.close();
+          return;
+        }
+        
         const db = (event.target as IDBOpenDBRequest).result;
 
         try {
-          const transaction = db.transaction(Object.keys(dbData), "readwrite");
-
-          for (const [storeName, storeData] of Object.entries(dbData)) {
-            const store = transaction.objectStore(storeName);
-
-            if (Array.isArray(storeData)) {
-              for (const item of storeData) {
-                store.add(item);
-              }
-            }
-          }
-
-          transaction.oncomplete = () => {
-            console.log(`Successfully restored database: ${dbName}`);
+          const storeNames = Object.keys(dbData);
+          if (storeNames.length === 0) {
+            completed = true;
+            clearTimeout(timeout);
             db.close();
             resolve(true);
+            return;
+          }
+
+          const transaction = db.transaction(storeNames, "readwrite");
+
+          transaction.oncomplete = () => {
+            if (!completed) {
+              completed = true;
+              clearTimeout(timeout);
+              db.close();
+              resolve(true);
+            } else {
+              db.close();
+            }
           };
 
           transaction.onerror = () => {
-            console.error(
-              `Transaction failed for database ${dbName}:`,
-              transaction.error,
-            );
-            db.close();
-            reject(transaction.error);
+            console.error(`Transaction failed for ${dbName}:`, transaction.error);
+            if (!completed) {
+              completed = true;
+              clearTimeout(timeout);
+              db.close();
+              resolve(false);
+            } else {
+              db.close();
+            }
           };
+
+          transaction.onabort = () => {
+            console.error(`Transaction aborted for ${dbName}:`, transaction.error);
+            if (!completed) {
+              completed = true;
+              clearTimeout(timeout);
+              db.close();
+              resolve(false);
+            } else {
+              db.close();
+            }
+          };
+
+          for (const [storeName, storeData] of Object.entries(dbData)) {
+            try {
+              const store = transaction.objectStore(storeName);
+              
+              store.clear();
+              
+              if (Array.isArray(storeData) && storeData.length > 0) {
+                for (let i = 0; i < storeData.length; i++) {
+                  const item = storeData[i];
+                  try {
+                    if (item && typeof item === 'object' && 'key' in item && 'value' in item) {
+                      const putRequest = store.put(item.value, item.key);
+                      putRequest.onerror = () => {
+                        console.warn(`Failed to put key-value ${item.key} to ${storeName}:`, putRequest.error);
+                      };
+                    } else {
+                      const addRequest = store.add(item);
+                      addRequest.onerror = () => {
+                        console.warn(`Failed to add item ${i} to ${storeName}:`, addRequest.error);
+                      };
+                    }
+                  } catch (error) {
+                    console.warn(`Exception adding item ${i} to ${storeName}:`, error);
+                  }
+                }
+              }
+            } catch (storeError) {
+              console.error(`Error processing store ${storeName}:`, storeError);
+            }
+          }
         } catch (error) {
-          console.error(
-            `Failed to restore data for database ${dbName}:`,
-            error,
-          );
-          db.close();
-          reject(error);
+          console.error(`Failed to process data for ${dbName}:`, error);
+          if (!completed) {
+            completed = true;
+            clearTimeout(timeout);
+            db.close();
+            resolve(false);
+          } else {
+            db.close();
+          }
         }
       };
+      
     });
   }
 
@@ -274,11 +418,13 @@ class ProfilesAPI {
       this.getAllIDBData(),
     ]);
 
-    return {
+    const result = {
       Cookies: this.encode(cookies),
       LocalStorage: this.encode(localStorage),
       IDB: this.encode(idb),
     };
+
+    return result;
   }
 
   async applyBrowserState(state: ProfileData): Promise<void> {
@@ -287,6 +433,7 @@ class ProfilesAPI {
       this.clearAllLocalStorage(),
       this.clearAllIDB(),
     ]);
+    
     const cookies = this.decode(state.Cookies) || {};
     const localStorage = this.decode(state.LocalStorage) || {};
     const idb = this.decode(state.IDB) || {};
@@ -324,6 +471,31 @@ class ProfilesAPI {
     return true;
   }
 
+  async createProfileWithCurrentData(userID: string): Promise<boolean> {
+    if (!userID || typeof userID !== "string") {
+      throw new Error("Invalid userID: must be a non-empty string");
+    }
+    const existingProfile = await this.profileStore.getItem(userID);
+    if (existingProfile) {
+      throw new Error(`Profile ${userID} already exists`);
+    }
+    const profiles = await this.listProfiles();
+    if (profiles.length >= this.maxProfiles) {
+      if (!this.canExceedProfileLimit || !this.canExceedProfileLimit()) {
+        throw new Error(
+          `Maximum number of profiles (${this.maxProfiles}) reached`,
+        );
+      }
+    }
+
+    const currentState = await this.getCurrentBrowserState();
+    await this.profileStore.setItem(userID, currentState);
+    
+    this.currentProfile = userID;
+    
+    return true;
+  }
+
   async deleteProfile(userID: string): Promise<boolean> {
     if (!userID || typeof userID !== "string") {
       throw new Error("Invalid userID: must be a non-empty string");
@@ -351,9 +523,11 @@ class ProfilesAPI {
     if (!targetProfile) {
       throw new Error(`Profile ${userID} does not exist`);
     }
+    
     if (this.currentProfile) {
       await this.saveProfile(this.currentProfile);
     }
+    
     await this.applyBrowserState(targetProfile);
 
     this.currentProfile = userID;
@@ -369,6 +543,7 @@ class ProfilesAPI {
     if (!existingProfile) {
       throw new Error(`Profile ${userID} does not exist`);
     }
+    
     const currentState = await this.getCurrentBrowserState();
     await this.profileStore.setItem(userID, currentState);
 
@@ -425,7 +600,15 @@ class ProfilesAPI {
     try {
       const databases = await indexedDB.databases();
 
-      const userDatabases = databases.filter((db) => db.name !== "Profiles");
+      const systemDatabases = [
+        "Profiles",
+        "ProfileIDB"
+      ];
+      
+      const userDatabases = databases.filter((db) => {
+        const dbName = db.name || "";
+        return !systemDatabases.includes(dbName);
+      });
 
       const exports: DatabaseExport[] = [];
 
@@ -495,14 +678,25 @@ class ProfilesAPI {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([storeName], "readonly");
       const store = transaction.objectStore(storeName);
-      const request = store.getAll();
+      
+      const data: any[] = [];
+      const request = store.openCursor();
 
       request.onerror = () => {
         reject(new Error(`Failed to read from store ${storeName}`));
       };
 
       request.onsuccess = () => {
-        resolve(request.result || []);
+        const cursor = request.result;
+        if (cursor) {
+          data.push({
+            key: cursor.key,
+            value: cursor.value
+          });
+          cursor.continue();
+        } else {
+          resolve(data);
+        }
       };
     });
   }

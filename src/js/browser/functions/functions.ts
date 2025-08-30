@@ -283,6 +283,18 @@ class Functions implements FuncInterface {
     await this.profileManager.clearCurrentProfileData();
   }
 
+  async createTestData(): Promise<void> {
+    await this.profileManager.createTestData();
+  }
+
+  async inspectCurrentData(): Promise<any> {
+    return await this.profileManager.inspectCurrentData();
+  }
+
+  async inspectProfileData(profileId: string): Promise<any> {
+    return await this.profileManager.inspectProfileData(profileId);
+  }
+
   navbarfunctions(): void {
     const navbar = document.querySelector(".navbar");
     const games = navbar!.querySelector("#gamesShortcut");
