@@ -68,7 +68,8 @@ class EventSystem {
         callback(data),
       );
     }
-    document.dispatchEvent(new CustomEvent(eventName, { detail: data }));
+    // Ensure detail is always defined to prevent destructuring errors
+    document.dispatchEvent(new CustomEvent(eventName, { detail: data || {} }));
   }
 }
 

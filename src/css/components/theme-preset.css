@@ -1,0 +1,183 @@
+.theme-preset-button {
+  position: relative;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.theme-preset-button:hover {
+  transform: scale(1.05);
+}
+
+.theme-preset-button.active {
+  border-color: var(--main);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--main) 30%, transparent);
+}
+
+.theme-preset-button:not(.active) {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-preset-button:not(.active):hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.theme-preset-colors {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.theme-preset-color-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
+
+.theme-preset-info {
+  margin-top: 0.5rem;
+}
+
+.theme-preset-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.theme-preset-description {
+  font-size: 0.75rem;
+  color: var(--proto);
+  margin-top: 0.25rem;
+}
+
+/* Accent Color Grid */
+.accent-color-button {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--white-10);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.accent-color-button:hover {
+  border-color: var(--white-20);
+  transform: scale(1.1);
+}
+
+.accent-color-button:active {
+  transform: scale(0.95);
+}
+
+.accent-color-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--main);
+}
+
+.accent-color-button.selected {
+  border-color: var(--main);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--main) 20%, transparent);
+}
+
+/* Custom Color Section */
+.custom-color-section {
+  transition:
+    opacity 0.3s ease,
+    max-height 0.3s ease;
+}
+
+.custom-color-section.hidden {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* Theme Grid Responsive */
+#themePresetGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  #themePresetGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  #themePresetGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Color picker container adjustments */
+.colorPicker {
+  display: flex;
+  justify-content: center;
+}
+
+/* Accent color grid responsive */
+#accentColorGrid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(2rem, 1fr));
+}
+
+@media (min-width: 640px) {
+  #accentColorGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Theme transition animations */
+.theme-transition {
+  transition:
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Theme preview animation */
+@keyframes themePreview {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.theme-preview-animation {
+  animation: themePreview 0.4s ease-in-out;
+}
+
+/* Theme preset grid item styling */
+.theme-preset-button .theme-colors-preview {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.theme-preset-button .theme-info {
+  text-align: left;
+}
+
+.theme-preset-button .theme-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.theme-preset-button .theme-description {
+  font-size: 0.625rem;
+  color: var(--proto);
+  margin-top: 0.125rem;
+  line-height: 1.3;
+  opacity: 0.8;
+}

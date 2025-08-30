@@ -19,11 +19,14 @@ import { Utils } from "@js/utils";
 import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
 import { Search } from "@browser/search";
+import { universalTheme } from "@js/global/universalTheme";
 
-//@ts-ignore
+// @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await universalTheme.init();
+
   const nightmare = new Nightmare();
   const nightmarePlugins = new NightmarePlugins();
 
@@ -74,6 +77,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const render = new Render(
     document.getElementById("browser-container") as HTMLDivElement,
   );
+
+  setTimeout(() => {
+    const theming = universalTheme.getTheming();
+    theming.applyTheme(theming.currentTheme);
+  }, 100);
+
   const proto = new Protocols(swConfig, proxySetting);
   const windowing = new Windowing();
   const globalFunctions = new DDXGlobal();
@@ -84,7 +93,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   tabs.createTab("ddx://newtab/");
 
   const functions = new Functions(tabs, proto);
-
 
   if (
     proxySetting === "sj" &&

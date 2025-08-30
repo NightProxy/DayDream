@@ -22,7 +22,6 @@
 .sidenav li:active {
   color: var(--active-outline-clr);
   position: relative;
-  
 }
 
 .sidenav li:active:before {

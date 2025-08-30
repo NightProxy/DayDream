@@ -1,7 +1,8 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
-import "../..css/global.css";
+import "../../css/global.css";
 import "basecoat-css/all";
+import "../../js/global/theming.ts";
 import { createIcons, icons } from "lucide";
 
 import { BookmarkManager, isBookmark } from "@apis/bookmarks";
