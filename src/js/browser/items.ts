@@ -79,9 +79,6 @@ class Items {
     this.activeFrame = this.frameContainer?.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
-    /*this.historyButton = this.ui.queryComponent("history") as HTMLButtonElement;
-      "history",
-    ) as HTMLButtonElement;*/
   }
 }
 

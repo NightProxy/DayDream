@@ -1,10 +1,10 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
+import "../../js/global/theming.ts";
 import "basecoat-css/all";
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";
-import { DDXGlobal } from "@js/global";
 import { Proxy } from "@apis/proxy";
 import { createIcons, icons } from "lucide";
 
@@ -121,20 +121,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 const searchBar = document.getElementById("games-search")?.parentElement;
 if (searchBar) {
-  searchBar.classList.add(
-    "sticky",
-    "top-0",
-    "z-50",
-    "bg-[var(--bg-2)]"
-  );
+  searchBar.classList.add("sticky", "top-0", "z-50", "bg-[var(--bg-2)]");
 }
 
 (async () => {
   const nightmare = new Nightmare();
 
   const settingsAPI = new SettingsAPI();
-
-  const global = new DDXGlobal();
 
   const proxy = new Proxy();
 

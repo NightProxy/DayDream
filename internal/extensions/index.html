@@ -27,12 +27,32 @@
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
     <div class="min-h-screen w-full">
-      <aside
-        class="fixed inset-y-0 left-0 w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0 overflow-y-auto z-40"
+      <button
+        id="aside-toggle"
+        class="fixed top-4 left-4 z-50 2xl:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text)]/80 bg-[var(--bg-2)] ring-1 ring-[var(--white-10)] hover:bg-[var(--white-05)]"
+        aria-label="Toggle menu"
       >
-        <div class="mb-8">
-          <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Extensions</h1>
-          <p class="text-sm text-[var(--proto)]">Browse & manage add-ons</p>
+        <i data-lucide="menu" class="h-6 w-6"></i>
+      </button>
+      <aside
+        id="aside"
+        aside="extensions"
+        class="fixed top-0 left-0 h-screen w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 overflow-y-auto z-40 transition-transform duration-300 -translate-x-full 2xl:translate-x-0"
+      >
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-[var(--main)] mb-1">
+              Extensions
+            </h1>
+            <p class="text-sm text-[var(--proto)]">Browse & manage add-ons</p>
+          </div>
+          <button
+            id="aside-close"
+            class="2xl:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            aria-label="Close menu"
+          >
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
         </div>
 
         <div class="mb-4">
@@ -74,7 +94,7 @@
         </nav>
       </aside>
 
-      <main class="flex-1 h-screen overflow-y-auto ml-64">
+      <main class="flex-1 h-screen overflow-y-auto">
         <div class="p-8 max-w-5xl space-y-12 mx-auto">
           <section id="installed" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">

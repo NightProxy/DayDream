@@ -62,7 +62,7 @@ export class DevTools implements DevToolsInterface {
 			eruda.init({
 				defaults: {
 					displaySize: 50,
-					transparency: 0.65,
+					transparency: 0.85,
 					theme: 'Night Owl'
 				}
 			});

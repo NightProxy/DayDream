@@ -29,8 +29,14 @@
       const s = document.createElement("script");
       s.type = "module";
       s.src = "/src/js/internal/settings.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
+      s.onload = () =>
+        document
+          .querySelectorAll("*")
+          .forEach((el) => el.classList.remove("tw-wait"));
+      s.onerror = () =>
+        document
+          .querySelectorAll("*")
+          .forEach((el) => el.classList.remove("tw-wait"));
       document.head.appendChild(s);
     </script>
 
@@ -39,12 +45,30 @@
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
     <div class="min-h-screen w-full">
-      <aside
-        class="fixed inset-y-0 left-0 w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 flex-shrink-0 overflow-y-auto z-40"
+      <button
+        id="aside-toggle"
+        class="fixed top-4 left-4 overflow-visible 2xl:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text)]/80 bg-[var(--bg-2)] ring-1 ring-[var(--white-10)] hover:bg-[var(--white-05)]"
+        aria-label="Toggle menu"
       >
-        <div class="mb-8">
-          <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Settings</h1>
-          <p class="text-sm text-[var(--proto)]">Configure DayDreamX</p>
+        <i data-lucide="menu" class="!h-6 !w-6 z-[99999]"></i>
+      </button>
+      <aside
+        id="aside"
+        aside="settings"
+        class="fixed top-0 left-0 h-screen w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 overflow-y-auto z-40 transition-transform duration-300 -translate-x-full 2xl:translate-x-0"
+      >
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Settings</h1>
+            <p class="text-sm text-[var(--proto)]">Configure DayDreamX</p>
+          </div>
+          <button
+            id="aside-close"
+            class="2xl:hidden z-[9999] inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            aria-label="Close menu"
+          >
+            <i data-lucide="x" class="h-5 w-5 z-[99999]"></i>
+          </button>
         </div>
 
         <nav class="space-y-2">
@@ -242,72 +266,72 @@
                 class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
               >
                 <h3 class="text-lg font-medium text-[var(--text)] mb-4">
-                  Theming
+                  Theme Presets
                 </h3>
 
                 <div class="space-y-6">
                   <div>
                     <h4 class="text-sm font-medium text-[var(--text)] mb-3">
-                      Preinstalled Themes
+                      Choose a Theme
                     </h4>
-                    <div id="preThemes" class="text-sm text-[var(--proto)]">
-                      It doesn't seem like you have any pre-installed themes.
+                    <div id="themePresetGrid" class="grid grid-cols-2 gap-3">
+                      <!-- Theme preset buttons will be populated by JavaScript -->
+                    </div>
+                  </div>
+
+                  <div
+                    id="customColorSection"
+                    class="border-t border-[var(--white-08)] pt-6"
+                  >
+                    <h4 class="text-sm font-medium text-[var(--text)] mb-4">
+                      Customize Colors
+                    </h4>
+
+                    <div class="space-y-4">
+                      <div id="accentColorPalette">
+                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
+                          Accent Colors
+                        </h5>
+                        <div
+                          id="accentColorGrid"
+                          class="grid grid-cols-6 gap-2"
+                        >
+                          <!-- Accent color buttons will be populated by JavaScript -->
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
+                          Custom Color Picker
+                        </h5>
+                        <div class="colorPicker"></div>
+                      </div>
                     </div>
                   </div>
 
                   <div class="border-t border-[var(--white-08)] pt-6">
-                    <h4 class="text-sm font-medium text-[var(--text)] mb-4">
-                      Custom Theme
-                    </h4>
-
-                    <div class="space-y-4">
-                      <div>
-                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
-                          Color
-                        </h5>
-                        <div class="colorPicker"></div>
-                      </div>
-
-                      <div>
-                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
-                          Base Color
-                        </h5>
-                        <select
-                          id="themeCustomSelect"
-                          component="dropdown"
-                          data-setting="themeCustom"
-                          class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    <div>
+                      <h5 class="text-xs font-medium text-[var(--text)] mb-3">
+                        Background
+                      </h5>
+                      <div class="flex gap-3">
+                        <button
+                          id="bgUpload"
+                          component="button"
+                          class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
                         >
-                          <option value="light">Light</option>
-                          <option value="T-light">Light (Tinted)</option>
-                          <option value="dark">Dark</option>
-                          <option value="T-dark">Dark (Tinted)</option>
-                        </select>
+                          Upload
+                        </button>
+                        <button
+                          id="bgRemove"
+                          component="button"
+                          class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]"
+                        >
+                          Remove
+                        </button>
                       </div>
-
-                      <div>
-                        <h5 class="text-xs font-medium text-[var(--text)] mb-3">
-                          Background
-                        </h5>
-                        <div class="flex gap-3">
-                          <button
-                            id="bgUpload"
-                            component="button"
-                            class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
-                          >
-                            Upload
-                          </button>
-                          <button
-                            id="bgRemove"
-                            component="button"
-                            class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div class="bg-list mt-3" id="bgList"></div>
-                        <input type="file" id="bgInput" style="display: none" />
-                      </div>
+                      <div class="bg-list mt-3" id="bgList"></div>
+                      <input type="file" id="bgInput" style="display: none" />
                     </div>
                   </div>
                 </div>

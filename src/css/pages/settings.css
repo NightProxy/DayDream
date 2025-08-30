@@ -1,4 +1,3 @@
-
 select[component="dropdown"] {
   background-color: var(--bg-2);
   color: var(--text);
@@ -27,7 +26,6 @@ select[component="dropdown"] option {
   color: var(--text);
   padding: 8px;
 }
-
 
 input[component="switch"] + div {
   background-color: var(--white-10);
@@ -70,7 +68,6 @@ button[component="button"]:focus {
   box-shadow: 0 0 0 3px var(--main-20a);
 }
 
-
 .bg-\[var\(--main\)\] {
   background-color: var(--main) !important;
 }
@@ -78,7 +75,6 @@ button[component="button"]:focus {
 .bg-\[var\(--main\)\]:hover {
   background-color: color-mix(in srgb, var(--main) 90%, black) !important;
 }
-
 
 .bg-\[var\(--white-10\)\] {
   background-color: var(--white-10) !important;
@@ -88,7 +84,6 @@ button[component="button"]:focus {
   background-color: var(--white-20) !important;
 }
 
-
 .focus\:ring-\[var\(--main\)\]:focus {
   --tw-ring-color: var(--main) !important;
 }
@@ -96,7 +91,6 @@ button[component="button"]:focus {
 .focus\:ring-\[var\(--main-20a\)\]:focus {
   --tw-ring-color: var(--main-20a) !important;
 }
-
 
 html,
 body {
@@ -111,7 +105,6 @@ body {
   overflow: hidden !important;
 }
 
-
 main {
   height: 100vh !important;
   overflow-y: auto !important;
@@ -119,9 +112,8 @@ main {
   flex: 1 !important;
 }
 
-
 main::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 main::-webkit-scrollbar-track {
@@ -138,33 +130,27 @@ main::-webkit-scrollbar-thumb:hover {
   opacity: 0.8;
 }
 
-
 main {
   scrollbar-width: thin;
   scrollbar-color: var(--main) transparent;
 }
 
-
 .scrollDiv {
   display: none !important;
 }
 
-
 html {
   scroll-behavior: smooth;
 }
-
 
 aside {
   height: 100vh !important;
   overflow: visible !important;
 }
 
-
 .space-y-12 {
   min-height: 100%;
 }
-
 
 .settings-child {
   margin-left: 30px;
@@ -593,7 +579,7 @@ input[type="text"]::placeholder {
   border-color: var(--faded-main-color);
 }
 
-button {
+aside[aside="settings"] > * > button:not(#aside-close) {
   padding: 12px 20px;
   border: none;
   border-radius: 10px;
@@ -603,7 +589,8 @@ button {
   transition: all 0.2s ease;
   cursor: pointer;
 }
-button:hover {
+
+aside[aside="settings"] > * > button:not(#aside-close):hover {
   transition: all 0.2s ease;
   cursor: pointer;
   background-color: var(--hover-background-color);

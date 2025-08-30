@@ -30,6 +30,12 @@ class Render implements renderInterface {
 
   async init() {
     this.container.innerHTML = "";
+
+    const bgElement = this.ui.createElement("div", { class: "bg-img" }, [
+      this.ui.createElement("img", { src: "/res/DDX.bg.png" }, []),
+    ]);
+    document.body.appendChild(bgElement);
+
     const UI = this.ui.createElement("div", { class: "flex h-full" }, [
       this.ui.createElement(
         "aside",
@@ -529,24 +535,110 @@ class Render implements renderInterface {
                                 {
                                   class:
                                     "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://newtab/");
+                                  },
                                 },
-                                ["Profile"],
+                                ["New Tab"],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
                                     "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.windowing.newWindow();
+                                  },
+                                },
+                                ["New window"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.windowing.aboutBlankWindow();
+                                  },
+                                },
+                                ["New Cloaked Window"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.functions.goFullscreen();
+                                  },
+                                },
+                                ["Fullscreen"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://bookmarks/");
+                                  },
+                                },
+                                ["Bookmarks"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://history/");
+                                  },
+                                },
+                                ["History"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://games/");
+                                  },
+                                },
+                                ["Games"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://extensions/");
+                                  },
+                                },
+                                ["Extensions"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.functions.inspectElement();
+                                  },
+                                },
+                                ["Devtools"],
+                              ),
+                              this.ui.createElement(
+                                "li",
+                                {
+                                  class:
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                  onclick: () => {
+                                    window.tabs.createTab("ddx://settings/");
+                                  },
                                 },
                                 ["Settings"],
-                              ),
-                              this.ui.createElement(
-                                "li",
-                                {
-                                  class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
-                                },
-                                ["Logout"],
                               ),
                             ],
                           ),

@@ -43,15 +43,14 @@ class Utils implements UtilsInterface {
 
         if (favicon) {
           let faviconUrl = favicon.href || favicon.getAttribute("href");
-          const faviconImage = tabElement.querySelector(".tab-favicon");
+          const faviconImage = tabElement.querySelector(
+            ".tab-favicon",
+          ) as HTMLImageElement;
 
           faviconUrl = await this.getFavicon(faviconUrl as string);
 
           if (faviconUrl && faviconImage) {
-            faviconImage.setAttribute(
-              "style",
-              `background-image: url('${faviconUrl}');`,
-            );
+            faviconImage.src = faviconUrl;
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }

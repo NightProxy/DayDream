@@ -13,7 +13,6 @@ export interface TabData {
   url: string;
   groupId: string | undefined;
   isPinned: boolean;
-  metaInterval: number | undefined;
   lastInternalRoute: string | undefined;
   lastAddressShown: string | undefined;
 }
