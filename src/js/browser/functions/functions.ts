@@ -145,7 +145,6 @@ class Functions implements FuncInterface {
           console.warn("Failed to auto-save profile data:", error);
         }
       }
-
     });
 
     document.addEventListener("visibilitychange", async () => {

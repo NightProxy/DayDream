@@ -96,15 +96,14 @@ export class TabManipulation {
         if (favicon) {
           let faviconUrl: string | null | undefined =
             favicon.href || favicon.getAttribute("href");
-          const faviconImage = tabElement.querySelector(".tab-favicon");
+          const faviconImage = tabElement.querySelector(
+            ".tab-favicon",
+          ) as HTMLImageElement;
 
           faviconUrl = await this.tabs.proxy.getFavicon(faviconUrl as string);
 
           if (faviconUrl && faviconImage) {
-            faviconImage.setAttribute(
-              "style",
-              `background-image: url('${faviconUrl}');`,
-            );
+            faviconImage.src = faviconUrl;
           } else {
             console.error("Favicon URL or favicon element is missing.");
           }

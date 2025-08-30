@@ -20,6 +20,7 @@
   width: 100vw;
   position: fixed;
   right: 0;
+  background-color: var(--background-color, var(--bg-2));
 }
 h1,
 h2,
@@ -30,6 +31,11 @@ h6,
 p {
   cursor: text;
 }
+
+.hidden {
+  display: none !important;
+}
+
 :root {
   --main: #cba6f7;
   --bg-1: #1a1a25;
@@ -161,6 +167,24 @@ p {
   pointer-events: auto !important;
 }
 
+main::-webkit-scrollbar {
+  width: 4px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: var(--main);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
 html,
 body {
   height: 100vh;
@@ -169,6 +193,25 @@ body {
   padding: 0;
   border: none;
   overflow-x: hidden;
+  background-color: var(--background-color, var(--bg-2));
+  color: var(--text-color, var(--text));
+}
+
+body .bg-img {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+body .bg-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(10px);
+  z-index: -2;
 }
 
 aside,
@@ -298,7 +341,6 @@ li {
   transform: translateY(0) scale(0.98);
 }
 
-
 .profile-manager-menu {
   font-family: inherit;
   line-height: 1.4;
@@ -337,7 +379,6 @@ li {
   opacity: 1;
 }
 
-
 .profile-manager-menu div::-webkit-scrollbar {
   width: 4px;
 }
@@ -355,7 +396,6 @@ li {
 .profile-manager-menu div::-webkit-scrollbar-thumb:hover {
   background: var(--white-30);
 }
-
 
 .bc-dialog-overlay {
   animation: fadeIn 0.2s ease;

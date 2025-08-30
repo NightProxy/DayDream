@@ -1,8 +1,4 @@
-
 @import "../global.css";
-
-
-
 
 .bookmark-item,
 .folder-item {
@@ -27,7 +23,6 @@
   background: var(--main-20a);
   border-color: var(--main);
 }
-
 
 .bookmark-item {
   display: flex;
@@ -117,7 +112,6 @@
   color: var(--text);
 }
 
-
 .folder-item {
   margin-bottom: 4px;
 }
@@ -159,7 +153,6 @@
   transform: rotate(90deg);
 }
 
-
 .bookmark-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -186,7 +179,6 @@
   display: none;
 }
 
-
 .search-results {
   display: flex;
   flex-direction: column;
@@ -200,12 +192,10 @@
   border-radius: 4px;
 }
 
-
 .empty-state {
   text-align: center;
   padding: 48px 0;
 }
-
 
 .modal {
   backdrop-filter: blur(4px);
@@ -220,7 +210,6 @@
   transform: scale(1);
 }
 
-
 #contextMenu {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
@@ -228,7 +217,6 @@
 .context-item:hover {
   background: var(--white-05);
 }
-
 
 @keyframes fadeIn {
   from {
@@ -244,7 +232,6 @@
 .bookmark-item {
   animation: fadeIn 0.2s ease-out;
 }
-
 
 @media (max-width: 768px) {
   .bookmark-manager {
@@ -262,7 +249,6 @@
     flex: 1;
   }
 }
-
 
 .loading {
   opacity: 0.5;
@@ -284,7 +270,6 @@
   }
 }
 
-
 .drop-zone {
   border: 2px dashed var(--main);
   background: var(--main-20a);
@@ -298,19 +283,16 @@
   border-style: solid;
 }
 
-
 .bookmark-item.selected {
   background: var(--main-20a);
   border-color: var(--main);
 }
-
 
 .folder-count {
   font-size: 12px;
   color: var(--proto);
   margin-left: auto;
 }
-
 
 .shortcuts-folder {
   position: relative;
@@ -325,14 +307,12 @@
   font-size: 12px;
 }
 
-
 .bookmark-item:focus,
 .folder-header:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--main);
   border-radius: 8px;
 }
-
 
 .toolbar {
   display: flex;
@@ -342,7 +322,6 @@
   background: var(--bg-1);
   border-bottom: 1px solid var(--white-08);
 }
-
 
 .view-controls {
   display: flex;

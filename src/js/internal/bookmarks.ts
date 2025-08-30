@@ -2,6 +2,7 @@ import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
 import "basecoat-css/all";
+import "../../js/global/theming.ts";
 import { createIcons, icons } from "lucide";
 
 import {
@@ -683,8 +684,7 @@ class BookmarkManagerUI {
     }
   }
 
-  private updateUI() {
-  }
+  private updateUI() {}
 
   private async exportBookmarks() {
     try {

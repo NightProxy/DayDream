@@ -23,14 +23,9 @@ export class TabMetaWatcher {
 
   private onTabSelected = (event: Event) => {
     const customEvent = event as CustomEvent;
-    const { tabId, iframe, tabElement } = customEvent.detail;
-
-    if (this.currentActiveTabId) {
-      this.stopMetaWatcher(this.currentActiveTabId);
-    }
+    const { tabId } = customEvent.detail;
 
     this.currentActiveTabId = tabId;
-    this.startMetaWatcher(tabId, iframe, tabElement);
   };
 
   private onIframeLoaded = (event: Event) => {
@@ -51,7 +46,7 @@ export class TabMetaWatcher {
     if (!tabData) return;
 
     const titleEl = tabEl.querySelector(".tab-title") as HTMLElement;
-    const faviconEl = tabEl.querySelector(".tab-favicon") as HTMLElement;
+    const faviconEl = tabEl.querySelector(".tab-favicon") as HTMLImageElement;
 
     let d: Document | null = null;
     let locHref: string | null = null;
@@ -151,7 +146,7 @@ export class TabMetaWatcher {
   private updateFavicon = async (
     document: Document,
     iframe: HTMLIFrameElement,
-    faviconEl: HTMLElement,
+    faviconEl: HTMLImageElement,
     tabEl: HTMLElement,
   ) => {
     const link = document.querySelector<HTMLLinkElement>(
@@ -191,10 +186,7 @@ export class TabMetaWatcher {
           proxyFavicon &&
           faviconEl.getAttribute("data-favicon") !== proxyFavicon
         ) {
-          faviconEl.setAttribute(
-            "style",
-            `background-image: url('${proxyFavicon}');`,
-          );
+          faviconEl.src = proxyFavicon;
           faviconEl.setAttribute("data-favicon", proxyFavicon);
           tabEl.classList.add("has-favicon");
         }
@@ -207,8 +199,8 @@ export class TabMetaWatcher {
     }
   };
 
-  private clearFavicon = (faviconEl: HTMLElement, tabEl: HTMLElement) => {
-    faviconEl.removeAttribute("style");
+  private clearFavicon = (faviconEl: HTMLImageElement, tabEl: HTMLElement) => {
+    faviconEl.removeAttribute("src");
     faviconEl.removeAttribute("data-favicon");
     tabEl.classList.remove("has-favicon");
   };
@@ -218,27 +210,10 @@ export class TabMetaWatcher {
     iframe: HTMLIFrameElement,
     tabEl: HTMLElement,
   ) => {
-    const tabData = this.tabs.tabs.find((t) => t.id === tabId);
-    if (!tabData) return;
-
-    if (tabData.metaInterval) {
-      clearInterval(tabData.metaInterval);
-    }
-
     this.updateTabMeta(tabId, iframe, tabEl);
-
-    tabData.metaInterval = window.setInterval(() => {
-      this.updateTabMeta(tabId, iframe, tabEl);
-    }, 250);
   };
 
-  stopMetaWatcher = (tabId: string) => {
-    const tabData = this.tabs.tabs.find((t) => t.id === tabId);
-    if (tabData && tabData.metaInterval) {
-      clearInterval(tabData.metaInterval);
-      delete tabData.metaInterval;
-    }
-  };
+  stopMetaWatcher = (_tabId: string) => {};
 
   destroy = () => {
     document.removeEventListener(
@@ -249,12 +224,5 @@ export class TabMetaWatcher {
       "iframeLoaded",
       this.onIframeLoaded as EventListener,
     );
-
-    this.tabs.tabs.forEach((tab) => {
-      if (tab.metaInterval) {
-        clearInterval(tab.metaInterval);
-        delete tab.metaInterval;
-      }
-    });
   };
 }

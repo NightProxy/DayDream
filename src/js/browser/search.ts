@@ -134,12 +134,7 @@ class Search implements SearchInterface {
         return;
       }
 
-      if (
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey ||
-        event.metaKey
-      )
+      if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey)
         return;
 
       const suggestionItems = this.getCurrentSuggestionItems();
@@ -214,8 +209,10 @@ class Search implements SearchInterface {
 
     searchbar.addEventListener("blur", () => {
       setTimeout(() => {
-        if (document.activeElement !== searchbar && 
-            !suggestionList.contains(document.activeElement as Node)) {
+        if (
+          document.activeElement !== searchbar &&
+          !suggestionList.contains(document.activeElement as Node)
+        ) {
           this.clearSuggestions();
           suggestionList.style.display = "none";
         }

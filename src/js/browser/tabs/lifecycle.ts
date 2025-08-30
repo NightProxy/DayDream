@@ -29,7 +29,7 @@ export class TabLifecycle {
       [
         this.tabs.ui.createElement("div", { class: "tab-content" }, [
           this.tabs.ui.createElement("div", { class: "tab-group-color" }),
-          this.tabs.ui.createElement("div", { class: "tab-favicon" }),
+          this.tabs.ui.createElement("img", { class: "tab-favicon" }),
           this.tabs.ui.createElement("div", { class: "tab-title" }, [tabTitle]),
           this.tabs.ui.createElement("div", { class: "tab-drag-handle" }),
           this.tabs.ui.createElement(
@@ -94,7 +94,6 @@ export class TabLifecycle {
       url,
       groupId: undefined,
       isPinned: false,
-      metaInterval: undefined,
       lastInternalRoute: undefined,
       lastAddressShown: undefined,
     };
