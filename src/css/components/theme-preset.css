@@ -51,7 +51,6 @@
   margin-top: 0.25rem;
 }
 
-/* Accent Color Grid */
 .accent-color-button {
   width: 2rem;
   height: 2rem;
@@ -80,7 +79,6 @@
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--main) 20%, transparent);
 }
 
-/* Custom Color Section */
 .custom-color-section {
   transition:
     opacity 0.3s ease,
@@ -93,7 +91,6 @@
   overflow: hidden;
 }
 
-/* Theme Grid Responsive */
 #themePresetGrid {
   display: grid;
   gap: 0.75rem;
@@ -112,13 +109,11 @@
   }
 }
 
-/* Color picker container adjustments */
 .colorPicker {
   display: flex;
   justify-content: center;
 }
 
-/* Accent color grid responsive */
 #accentColorGrid {
   display: grid;
   gap: 0.5rem;
@@ -131,7 +126,6 @@
   }
 }
 
-/* Theme transition animations */
 .theme-transition {
   transition:
     background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -139,7 +133,6 @@
     color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Theme preview animation */
 @keyframes themePreview {
   0% {
     transform: scale(1);
@@ -156,7 +149,6 @@
   animation: themePreview 0.4s ease-in-out;
 }
 
-/* Theme preset grid item styling */
 .theme-preset-button .theme-colors-preview {
   display: flex;
   gap: 0.25rem;

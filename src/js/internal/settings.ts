@@ -1,10 +1,10 @@
 import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
-import "../../js/global/theming.ts";
+import "../../css/internal.css";
+import "./shared/themeInit";
 import "basecoat-css/all";
 import { SettingsAPI } from "@apis/settings";
-import { ProfilesAPI } from "@apis/profiles";
 import { EventSystem } from "@apis/events";
 import iro from "@jaames/iro";
 import { themeManager } from "@js/utils/themeManager";
@@ -242,23 +242,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function initializeThemeSystem() {
     try {
+      console.log("Initializing theme system...");
+      
       const themes = await themeManager.loadThemes();
+      console.log("Loaded themes:", Object.keys(themes));
 
-      const themeGrid = document.querySelector(".theme-grid") as HTMLElement;
-      const themePresetGrid = document.querySelector(
-        ".theme-preset-grid",
-      ) as HTMLElement;
+      const themePresetGrid = document.getElementById("themePresetGrid") as HTMLElement;
       const accentColorGrid = document.getElementById("accentColorGrid");
       const customColorSection = document.getElementById("customColorSection");
+
+      if (!themePresetGrid) {
+        console.error("Theme preset grid element not found");
+        return;
+      }
 
       // Default to Catppuccin Mocha if no theme is set
       let currentTheme =
         (await settingsAPI.getItem("currentTheme")) || "catppuccin-mocha";
+      
+      // Validate that the current theme exists in loaded themes
+      if (!themes[currentTheme]) {
+        console.warn(`Theme '${currentTheme}' not found in loaded themes, falling back to first available theme`);
+        const availableThemes = Object.keys(themes);
+        currentTheme = availableThemes.length > 0 ? availableThemes[0] : "custom";
+      }
+      
       themeManager.setCurrentTheme(currentTheme);
 
       if (!(await settingsAPI.getItem("currentTheme"))) {
-        await settingsAPI.setItem("currentTheme", "catppuccin-mocha");
-        eventsAPI.emit("theme:preset-change", { theme: "catppuccin-mocha" });
+        await settingsAPI.setItem("currentTheme", currentTheme);
+        eventsAPI.emit("theme:preset-change", { theme: currentTheme });
       }
 
       eventsAPI.addEventListener("theme:global-update", async (event: any) => {
@@ -341,41 +354,60 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (themePresetGrid) {
         themePresetGrid.innerHTML = "";
 
-        Object.entries(themes).forEach(([themeKey, theme]) => {
-          const themeButton = themeManager.generateThemePreview(theme);
+        const themeEntries = Object.entries(themes);
+        console.log("Creating theme buttons for:", themeEntries.length, "themes");
 
-          // Add active state if current theme
-          if (currentTheme === themeKey) {
-            themeButton.classList.add("active");
+        if (themeEntries.length === 0) {
+          console.error("No themes available to display");
+          themePresetGrid.innerHTML = `
+            <div class="text-red-500 text-sm p-4 border border-red-500 rounded">
+              ⚠️ Error: No themes could be loaded. Please check your connection and refresh the page.
+            </div>
+          `;
+          return;
+        }
+
+        themeEntries.forEach(([themeKey, theme]) => {
+          try {
+            const themeButton = themeManager.generateThemePreview(theme);
+
+            // Add active state if current theme
+            if (currentTheme === themeKey) {
+              themeButton.classList.add("active");
+              console.log("Marked theme as active:", themeKey);
+            }
+
+            // Add click handler with proper event emission
+            themeButton.addEventListener("click", async () => {
+              console.log("Theme button clicked:", themeKey);
+              currentTheme = themeKey;
+              await settingsAPI.setItem("currentTheme", themeKey);
+              themeManager.setCurrentTheme(themeKey);
+
+              // Emit local theme preset change (this will trigger global update)
+              eventsAPI.emit("theme:preset-change", { theme: themeKey });
+
+              // Update local UI immediately
+              updateThemeButtonStates(themeKey);
+              updateAccentColors(themeKey);
+              updateColorRoles(themeKey);
+              updateCustomColorVisibility(themeKey);
+
+              // Add preview animation
+              document.documentElement.classList.add("theme-preview-animation");
+              setTimeout(() => {
+                document.documentElement.classList.remove(
+                  "theme-preview-animation",
+                );
+              }, 400);
+
+              console.log("Theme changed to:", themeKey);
+            });
+
+            themePresetGrid.appendChild(themeButton);
+          } catch (error) {
+            console.error(`Failed to create theme button for ${themeKey}:`, error);
           }
-
-          // Add click handler with proper event emission
-          themeButton.addEventListener("click", async () => {
-            currentTheme = themeKey;
-            await settingsAPI.setItem("currentTheme", themeKey);
-            themeManager.setCurrentTheme(themeKey);
-
-            // Emit local theme preset change (this will trigger global update)
-            eventsAPI.emit("theme:preset-change", { theme: themeKey });
-
-            // Update local UI immediately
-            updateThemeButtonStates(themeKey);
-            updateAccentColors(themeKey);
-            updateColorRoles(themeKey);
-            updateCustomColorVisibility(themeKey);
-
-            // Add preview animation
-            document.documentElement.classList.add("theme-preview-animation");
-            setTimeout(() => {
-              document.documentElement.classList.remove(
-                "theme-preview-animation",
-              );
-            }, 400);
-
-            console.log("Theme changed to:", themeKey);
-          });
-
-          themePresetGrid.appendChild(themeButton);
         });
 
         // Initialize accent colors for current theme
@@ -481,10 +513,41 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       function getContrastTextColor(backgroundColor: string): string {
         // Simple function to determine if text should be black or white
-        const hex = backgroundColor.replace("#", "");
-        const r = parseInt(hex.substr(0, 2), 16);
-        const g = parseInt(hex.substr(2, 2), 16);
-        const b = parseInt(hex.substr(4, 6), 16);
+        // Handle both hex colors and rgba/rgb colors
+        let hex = backgroundColor;
+        
+        // If it's an rgb/rgba color, extract the values
+        if (backgroundColor.startsWith('rgb')) {
+          const rgbMatch = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+          if (rgbMatch) {
+            const r = parseInt(rgbMatch[1]);
+            const g = parseInt(rgbMatch[2]);
+            const b = parseInt(rgbMatch[3]);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128 ? "#000000" : "#ffffff";
+          }
+        }
+        
+        // Handle hex colors
+        hex = hex.replace("#", "");
+        
+        // Ensure we have a valid 6-character hex color
+        if (hex.length === 3) {
+          hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        } else if (hex.length !== 6) {
+          // Default to white text for invalid colors
+          return "#ffffff";
+        }
+        
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        // Check for invalid parsing results
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+          return "#ffffff";
+        }
+        
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         return brightness > 128 ? "#000000" : "#ffffff";
       }

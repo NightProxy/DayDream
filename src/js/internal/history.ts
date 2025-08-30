@@ -1,6 +1,7 @@
 import "../../css/global.css";
+import "../../css/internal.css";
 import "basecoat-css/all";
-import "../../js/global/theming.ts";
+import "./shared/themeInit";
 import { createIcons, icons } from "lucide";
 
 document.addEventListener("DOMContentLoaded", async () => {
