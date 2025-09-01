@@ -596,3 +596,29 @@ aside[aside="settings"] > * > button:not(#aside-close):hover {
   background-color: var(--hover-background-color);
   color: var(--hover-text-color);
 }
+
+.wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.half {
+  width: 50%;
+}
+
+.half > input {
+  width: 90%;
+  font-size: 14px;
+  padding: 5px 10px;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  border-radius: 9999px;
+  transition: 0.2s ease;
+  font-family: "Plus Jakarta Sans";
+  border: var(--border-color) 1px solid;
+  margin: 2rem;
+}

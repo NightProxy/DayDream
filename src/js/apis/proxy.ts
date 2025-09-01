@@ -67,7 +67,7 @@ class Proxy implements ProxyInterface {
     };
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
     await this.connection.setTransport("/reflux/index.mjs", [
-      { transport: transportFile, wisp: this.wispUrl },
+      { base: transportFile, wisp: this.wispUrl },
     ]);
     if (this.logging) {
       this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
@@ -220,28 +220,40 @@ class Proxy implements ProxyInterface {
   }
 
   async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
-    this.registerSW(swConfig[proxySetting].file).then(async () => {
-      await this.setTransports();
-    });
-    let swConfigSettings: Record<any, any> = {};
+    // Resolve the service worker configuration first (supports auto mode)
+    let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(this.search(url));
-      swConfigSettings = result;
+      swConfigSettings = await this.automatic(this.search(url), swConfig);
     } else {
       swConfigSettings = swConfig[proxySetting];
     }
-    let activeIframe: HTMLIFrameElement | null;
-    activeIframe = document.querySelector("iframe.active");
-    if (activeIframe) {
-      switch (swConfigSettings.type) {
-        case "sw":
-          let encodedUrl =
+
+    if (!swConfigSettings) return;
+
+    await this.registerSW(swConfigSettings);
+    await this.setTransports();
+
+    const activeIframe: HTMLIFrameElement | null = document.querySelector(
+      "iframe.active",
+    );
+    if (!activeIframe) return;
+
+    switch (swConfigSettings.type) {
+      case "sw": {
+        let encodedUrl: string;
+        // Mirror DY routing behavior used elsewhere
+        if (proxySetting === "dy") {
+          encodedUrl =
+            swConfigSettings.config.prefix +
+            "route?url=" +
+            window.__uv$config.encodeUrl(this.search(url));
+        } else {
+          encodedUrl =
             swConfigSettings.config.prefix +
             window.__uv$config.encodeUrl(this.search(url));
-          if (activeIframe) {
-            activeIframe.src = encodedUrl;
-          }
-          break;
+        }
+        activeIframe.src = encodedUrl;
+        break;
       }
     }
   }
@@ -251,23 +263,28 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
-    this.registerSW(swConfig[proxySetting].file).then(async () => {
-      await this.setTransports();
-    });
-    let swConfigSettings: Record<any, any>;
+    // Resolve the service worker configuration first (supports auto mode)
+    let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(this.search(url));
-      swConfigSettings = result;
+      swConfigSettings = await this.automatic(this.search(url), swConfig);
     } else {
       swConfigSettings = swConfig[proxySetting];
     }
+
+    if (!swConfigSettings) return;
+
+    await this.registerSW(swConfigSettings);
+    await this.setTransports();
+
     switch (swConfigSettings.type) {
-      case "sw":
-        let encodedUrl =
-          swConfigSettings.config.prefix +
-          window.__uv$config.encodeUrl(this.search(url));
+      case "sw": {
+        let encodedUrl: string;
+          encodedUrl =
+            swConfigSettings.config.prefix +
+            window.__uv$config.encodeUrl(this.search(url));
         location.href = encodedUrl;
         break;
+      }
     }
   }
 
@@ -276,19 +293,30 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
-    this.registerSW(swConfig[proxySetting].file).then(async () => {
-      await this.setTransports();
-    });
-    let swConfigSettings: Record<any, any>;
+    // Resolve the service worker configuration first (supports auto mode)
+    let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
-      const result = await swConfig.auto.func(this.search(url));
-      swConfigSettings = result;
+      swConfigSettings = await this.automatic(this.search(url), swConfig);
     } else {
       swConfigSettings = swConfig[proxySetting];
     }
-    let encodedUrl =
-      swConfigSettings.config.prefix +
-      window.__uv$config.encodeUrl(this.search(url));
+
+    if (!swConfigSettings) return this.search(url);
+
+    await this.registerSW(swConfigSettings);
+    await this.setTransports();
+
+    let encodedUrl: string;
+    if (proxySetting === "dy") {
+      encodedUrl =
+        swConfigSettings.config.prefix +
+        "route?url=" +
+        window.__uv$config.encodeUrl(this.search(url));
+    } else {
+      encodedUrl =
+        swConfigSettings.config.prefix +
+        window.__uv$config.encodeUrl(this.search(url));
+    }
     return encodedUrl;
   }
 

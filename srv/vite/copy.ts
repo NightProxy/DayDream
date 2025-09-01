@@ -16,6 +16,8 @@ export const routePaths = {
   reflux: "reflux",
 };
 
+const authPath = path.resolve("node_modules/@nightnetwork/night-auth/dist/login");
+
 const copyMap = {
   epoxy: {
     path: epoxyPath,
@@ -55,6 +57,11 @@ const copyMap = {
     path: refluxPath,
     files: ["*"],
     dest: routePaths.reflux,
+  },
+  auth: {
+    path: authPath,
+    files: ["*"],
+    dest: "auth",
   },
 };
 

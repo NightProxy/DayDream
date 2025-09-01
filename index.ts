@@ -11,6 +11,8 @@ import gradient from "gradient-string";
 import { version } from "./package.json";
 import { getPlatform } from "./srv/platform.ts";
 import routes from "./srv/router.ts";
+import { setupDB } from "./srv/api/store/dbSetup.ts";
+import { marketplaceAPI, catalogAssets } from "./srv/api/store/marketplace.ts";
 /*import Git from "./srv/git.js";
 import { execSync } from "child_process";
 
@@ -57,6 +59,9 @@ const server = Fastify({
   },
 });
 
+await catalogAssets.sync();
+await setupDB(catalogAssets);
+
 await server.register(fastifyCompress, {
   encodings: ["br", "gzip", "deflate"],
 });
@@ -67,6 +72,8 @@ await server.register(fastifyHelmet, {
   crossOriginOpenerPolicy: true,
   contentSecurityPolicy: false,
 });
+
+marketplaceAPI(server);
 
 server.register(routes);
 

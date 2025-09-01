@@ -6,3 +6,5 @@ node_modules/
 *-lock.yaml
 dist/
 ddxui/
+config.js
+database.sqlite
