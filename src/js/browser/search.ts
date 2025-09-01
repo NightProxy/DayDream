@@ -83,10 +83,10 @@ class Search implements SearchInterface {
 
     const suggestionList = this.ui.createElement("div", {
       class:
-        "suggestion-list fixed z-[9999] left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-[var(--bg-2)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm hidden",
+        "suggestion-list fixed z-[9999] left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-[var(--bg-2)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm",
       id: "suggestion-list",
       style:
-        "top: 50%; transform: translate(-50%, -50%); max-height: 60vh; overflow-y: auto;",
+        "top: 50%; transform: translate(-50%, -50%); max-height: 60vh; overflow-y: auto; display:none;",
     });
 
     this.sections = {

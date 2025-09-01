@@ -165,19 +165,6 @@ button {
   pointer-events: none;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 2px;
-  background-color: var(--internal-accent);
-  z-index: 99999;
-  opacity: 0.3;
-  pointer-events: none;
-}
-
 .internal-page {
   min-height: 100vh;
   background-color: var(--internal-bg);

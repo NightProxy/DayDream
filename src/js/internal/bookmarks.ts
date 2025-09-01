@@ -4,6 +4,7 @@ import "../../css/global.css";
 import "../../css/internal.css";
 import "basecoat-css/all";
 import "./shared/themeInit";
+import "../global/panic";
 import { createIcons, icons } from "lucide";
 
 import {

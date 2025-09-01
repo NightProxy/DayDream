@@ -9,8 +9,12 @@
     <link rel="stylesheet" href="/src/css/internal.css" />
 
     <style>
-      html.tw-wait {
-        opacity: 0;
+      .tw-wait {
+        opacity: 0 !important;
+        color: transparent !important;
+        background: transparent !important;
+        pointer-events: none;
+        user-select: none;
       }
     </style>
     <script>
@@ -23,7 +27,7 @@
       document.head.appendChild(s);
     </script>
 
-    <script type="module" defer src="/src/js/internal/extensions.ts"></script>
+    <script type="module"  src="/src/js/internal/extensions.ts"></script>
   </head>
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">

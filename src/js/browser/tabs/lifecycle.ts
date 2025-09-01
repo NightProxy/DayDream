@@ -27,7 +27,7 @@ export class TabLifecycle {
         component: "tab",
       },
       [
-        this.tabs.ui.createElement("div", { class: "tab-content" }, [
+        this.tabs.ui.createElement("div", { class: "tab-content flex gap-1 items-center" }, [
           this.tabs.ui.createElement("div", { class: "tab-group-color" }),
           this.tabs.ui.createElement("img", { class: "tab-favicon max-w-4 max-h-4" }),
           this.tabs.ui.createElement("div", { class: "tab-title" }, [tabTitle]),

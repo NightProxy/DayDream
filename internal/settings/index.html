@@ -19,29 +19,25 @@
     <link rel="stylesheet" href="/src/css/internal.css" />
 
     <style>
-      *.tw-wait {
-        opacity: 0;
+      .tw-wait {
+        opacity: 0 !important;
+        color: transparent !important;
+        background: transparent !important;
+        pointer-events: none;
+        user-select: none;
       }
     </style>
     <script>
-      document
-        .querySelectorAll("*")
-        .forEach((el) => el.classList.add("tw-wait"));
+      document.documentElement.classList.add("tw-wait");
       const s = document.createElement("script");
       s.type = "module";
       s.src = "/src/js/internal/settings.ts";
-      s.onload = () =>
-        document
-          .querySelectorAll("*")
-          .forEach((el) => el.classList.remove("tw-wait"));
-      s.onerror = () =>
-        document
-          .querySelectorAll("*")
-          .forEach((el) => el.classList.remove("tw-wait"));
+      s.onload = () => document.documentElement.classList.remove("tw-wait");
+      s.onerror = () => document.documentElement.classList.remove("tw-wait");
       document.head.appendChild(s);
     </script>
 
-    <script type="module" defer src="/src/js/internal/settings.ts"></script>
+    <script type="module" src="/src/js/internal/settings.ts"></script>
   </head>
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
@@ -300,12 +296,17 @@
                           <!-- Accent color buttons will be populated by JavaScript -->
                         </div>
                       </div>
-
-                      <div>
-                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
-                          Custom Color Picker
-                        </h5>
-                        <div class="colorPicker"></div>
+                        <div class="wrap">
+                          <div class="half">
+                            <div class="colorPicker"></div>
+                          </div>
+                          <div class="half">
+                            <input id="hexInput"></input>
+                            <br />
+                            <input id="rgbString"></input>
+                            <br />
+                            <input id="hslString"></input>
+                          </div>
                       </div>
                     </div>
                   </div>
@@ -459,7 +460,7 @@
               class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
             >
               <p class="text-sm text-[var(--proto)]">
-                Doesn't look like there's anything here for now.
+                <input type="text" id="panicKeybind" data-setting="panicKeybind" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" placeholder="No Keybind Set" />
               </p>
             </div>
           </section>
@@ -484,7 +485,7 @@
                   interface that is both fast and secure.
                 </p>
                 <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                  Our browser is heavily inspired by Opera GX and Arc, and we
+                  Our browser is heavily inspired by Vivaldi and Arc, and we
                   aim to provide a similar experience to our users without the
                   downsides of spyware or lack of support.
                 </p>
@@ -546,41 +547,9 @@
                     </h4>
                     <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
                       <li>- Many bug fixes</li>
-                      <li>- Wrote UI</li>
-                      <li>- Wrote all functionality</li>
+                      <li>- Wrote most of backend</li>
                       <li>- Wrote Extensions System and Other APIs</li>
-                      <li>- Wrote Docs</li>
                       <li>- Manages And runs DayDreamX and its stability</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 class="text-sm font-medium">
-                      <a
-                        href="https://guns.lol/kdust7"
-                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >
-                        KDust7 (Owner)
-                      </a>
-                    </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                      <li>- Polished pages UI</li>
-                      <li>- Optimizations</li>
-                      <li>- UI Optimizations / Polishing</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 class="text-sm font-medium">
-                      <a
-                        href="https://github.com/xnoctra"
-                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >
-                        Noctra (Dev)
-                      </a>
-                    </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1">
-                      <li>- Design Changes</li>
                     </ul>
                   </div>
 
@@ -593,12 +562,31 @@
                         Crllect (Owner)
                       </a>
                     </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1">
-                      <li>- emotional support</li>
+                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
+                      <li>- Designed and wrote all UI</li>
+                      <li>- Wrote some of tab functionality</li>
+                      <li>- Did skeletons for all pages</li>
+                      <li>- Wrote some frontend and backend</li>
                     </ul>
                   </div>
-                </div>
 
+                <div>
+                    <h4 class="text-sm font-medium">
+                      <a
+                        href="https://guns.lol/kdust7"
+                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      >
+                        KDust7 (Owner)
+                      </a>
+                    </h4>
+                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
+                      <li>- Helped with testing and debugging</li>
+                      <li>- Wrote Night+ backend</li>
+                      <li>- Manages link archive</li>
+                      
+                    </ul>
+                </div>
+</div>
                 <div class="mt-6 pt-6 border-t border-[var(--white-08)]">
                   <h3 class="text-lg font-semibold text-[var(--main)] mb-2">
                     Thank you for contributing to DayDreamX.

@@ -8,6 +8,7 @@ import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import iro from "@jaames/iro";
 import { themeManager } from "@js/utils/themeManager";
+import "../global/panic";
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
 import { createIcons, icons } from "lucide";
@@ -215,28 +216,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 100);
   });
 
-  var colorPicker = new (iro.ColorPicker as any)(".colorPicker", {
-    width: 80,
+  const colorPicker = new (iro as any).ColorPicker(".colorPicker", {
+    width: 280,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
-    borderWidth: 0,
-    layoutDirection: "horizontal",
-    layout: [
-      {
-        component: iro.ui.Box,
-      },
-      {
-        component: iro.ui.Slider,
-        options: {
-          sliderType: "hue",
-        },
-      },
-    ],
+    borderWidth: 1,
+    borderColor: "#fff"
   });
 
-  colorPicker.on("input:change", async function (color: any) {
+  const hexInput = document.getElementById("hexInput") as HTMLInputElement;
+  const rgbInput = document.getElementById("rgbString") as HTMLInputElement;
+  const hslInput = document.getElementById("hslString") as HTMLInputElement;
+
+  colorPicker.on(["color:init", "color:change"], (color: any) => {
+    hexInput.value = color.hexString;
+    rgbInput.value = color.rgbString;
+    hslInput.value = color.hslString;
+  });
+
+  hexInput.addEventListener("change", (_e: Event) => {
+    colorPicker.color.hexString = hexInput.value;
+    rgbInput.value = colorPicker.color.rgbString;
+    hslInput.value = colorPicker.color.hslString;
+
+    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+  });
+
+  rgbInput.addEventListener("change", (_e: Event) => {
+    colorPicker.color.rgbString = rgbInput.value;
+    hexInput.value = colorPicker.color.hexString;
+    hslInput.value = colorPicker.color.hslString;
+
+    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+  });
+
+  hslInput.addEventListener("change", (_e: Event) => {
+    colorPicker.color.hslString = hslInput.value;
+    hexInput.value = colorPicker.color.hexString;
+    rgbInput.value = colorPicker.color.rgbString;
+
+    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+  });
+
+  colorPicker.on("input:change", (color: any) => {
     eventsAPI.emit("theme:color-change", { color: color.rgbaString });
     console.log("Custom color changed to:", color.rgbaString);
   });
+
 
   await initializeThemeSystem();
 
@@ -624,3 +649,19 @@ if (uploadBGInput) {
     reader.readAsDataURL(file);
   });
 }
+
+const panicKeybindInput = document.getElementById("panicKeybind") as HTMLInputElement;
+const panicKey = panicKeybindInput?.getAttribute("data-key") || "panicKeybind";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  if (panicKeybindInput) {
+    const savedKeybind = (await settingsAPI.getItem(panicKey)) || "`";
+    panicKeybindInput.value = savedKeybind;
+    panicKeybindInput.addEventListener("change", async () => {
+      await settingsAPI.setItem(panicKey, panicKeybindInput.value);
+      console.log("Panic keybind changed to:", panicKeybindInput.value);
+    });
+  }
+});
+
+// await settingsAPI.setItem(panicKey, `${panicKeybind}`;
