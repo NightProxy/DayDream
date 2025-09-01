@@ -8,8 +8,12 @@
     <link rel="stylesheet" href="/src/css/internal.css" />
 
     <style>
-      html.tw-wait {
-        opacity: 0;
+      .tw-wait {
+        opacity: 0 !important;
+        color: transparent !important;
+        background: transparent !important;
+        pointer-events: none;
+        user-select: none;
       }
     </style>
     <script>
@@ -22,9 +26,14 @@
       document.head.appendChild(s);
     </script>
 
-    <script type="module" defer src="/src/js/internal/newtab.ts"></script>
+    <link rel="stylesheet" href="/auth/assets/nightloginflow.css" />
+    <script src="/auth/night-login-frame.umd.js"></script>
+    <script src="/auth/night-login.umd.js"></script>
+
+    <script type="module"  src="/src/js/internal/newtab.ts"></script>
   </head>
   <body class="bg-[var(--bg-2)] text-[var(--text)] select-none antialiased">
+    <div id="root"></div>
     <div class="min-h-dvh w-full relative overflow-hidden">
       <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
         <div class="flex items-center justify-center">
@@ -66,7 +75,7 @@
               </div>
 
               <span class="text-3xl tracking-widest text-[var(--text)] -mr-1"
-                >Daydream</span
+                >DayDream</span
               ><em
                 class="text-3xl font-bold tracking-widest text-[var(--main)] -ml-1"
                 >X</em
@@ -81,6 +90,7 @@
                 <i data-lucide="share-2" class="h-4 w-4 text-white"></i>
               </button>
             </div>
+            <div id="trigger"></div>
           </div>
         </div>
 

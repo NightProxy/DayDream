@@ -3,12 +3,52 @@ import "../../css/imports.css";
 import "../../css/global.css";
 import "../../css/internal.css";
 import "basecoat-css/all";
+import "../global/panic";
 import "./shared/themeInit";
 import { createIcons, icons } from "lucide";
 
 import { BookmarkManager, isBookmark } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
+/*(function waitForLibs() {
+  //@ts-expect-error
+    if (typeof NightLogin === 'undefined' || typeof NightLoginFrame === 'undefined') {
+      console.log("heh")
+        return setTimeout(waitForLibs, 50);
+    }
 
+    
+    console.log("initialize night login")
+    //@ts-expect-error
+    const nightLogin = new NightLogin({
+        service: 'DayDreamX',
+        theme: 'system',
+        
+        backdropBlur: '8px',
+        //@ts-expect-error
+        onSuccess: (token) => {
+            console.log('token ', token);
+        },
+        API_URL: "https://jwtauth-srv-api.night-x.com",
+        onCancel: () => {
+            console.log('Login cancelled');
+        }
+    });
+    nightLogin.renderTrigger('trigger')
+    function showLogin() {
+        nightLogin.show("root")
+    }
+    
+    document.addEventListener('click', function (e) {
+        var tgt = e.target;
+        try {
+            if (tgt && typeof tgt.closest === 'function' && tgt.closest('.signInWithNight')) {
+                showLogin();
+            }
+        } catch (err) {
+            // ignore
+        }
+    });
+})();*/
 interface Shortcut {
   id: string;
   title: string;

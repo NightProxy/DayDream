@@ -37,8 +37,9 @@
     "@mercuryworkshop/libcurl-transport": "^1.5.0",
     "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/latest/mercuryworkshop-scramjet-1.0.2-dev.tgz",
     "@mercuryworkshop/wisp-js": "^0.3.3",
+    "@nightnetwork/night-auth": "^1.0.0",
     "@nightnetwork/obscura": "^1.0.0",
-    "@nightnetwork/reflux": "^1.0.2",
+    "@nightnetwork/reflux": "^1.0.3",
     "@tailwindcss/vite": "^4.1.12",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "@types/content-type": "^1.1.9",
@@ -60,7 +61,10 @@
     "jszip": "^3.10.1",
     "localforage": "^1.10.0",
     "lucide": "^0.483.0",
+    "ora": "^8.2.0",
+    "sequelize": "^6.37.7",
     "sortablejs": "^1.15.6",
+    "sqlite3": "^5.1.7",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }

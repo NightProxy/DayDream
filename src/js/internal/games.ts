@@ -4,19 +4,21 @@ import "../../css/global.css";
 import "../../css/internal.css";
 import "./shared/themeInit";
 import "basecoat-css/all";
-import { Nightmare } from "@libs/Nightmare/nightmare";
+import "../global/panic";
+//import { Nightmare } from "@libs/Nightmare/nightmare";
 import { SettingsAPI } from "@apis/settings";
 import { Proxy } from "@apis/proxy";
 import { createIcons, icons } from "lucide";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  interface Game {
-    name: string;
-    link: string;
-    image: string;
-    categories: string[];
-  }
+interface Game {
+  name: string;
+  link: string;
+  image: string;
+  categories: string[];
+}
 
+// --- MAIN PAGE LOGIC ---
+document.addEventListener("DOMContentLoaded", async () => {
   let games: Game[] = [];
 
   try {
@@ -67,11 +69,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         (g) => `
       <article class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition hover:ring-[var(--main-35a)] overflow-visible" data-cat="${g.categories.join(" ")}">
         <div class="relative aspect-video overflow-hidden rounded-t-2xl">
-          <img src="${g.image}" alt="${g.name}" class="h-full w-full object-cover transition duration-300 group-hover:blur-md" />
+          <img src="${g.image}" alt="${g.name}" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:blur-md" />
         </div>
         <div class="p-4 relative">
           <div class="flex items-start gap-3">
-            <img src="${g.image}" alt="${g.name}" class="h-9 w-9 rounded-md object-cover" />
+            <img src="${g.image}" alt="${g.name}" loading="lazy" class="h-9 w-9 rounded-md object-cover" />
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
                 <h3 class="text-sm font-medium text-[var(--text)] truncate">${g.name}</h3>
@@ -120,67 +122,63 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
 });
 
-const searchBar = document.getElementById("games-search")?.parentElement;
-if (searchBar) {
-  searchBar.classList.add("sticky", "top-0", "z-50", "bg-[var(--bg-2)]");
-}
-
-(async () => {
-  const nightmare = new Nightmare();
-
-  const settingsAPI = new SettingsAPI();
-
-  const proxy = new Proxy();
-
-  const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
-  let swConfigSettings: Record<string, any> = {};
-  const swConfig = {
-    uv: {
-      type: "sw",
-      file: "/data/sw.js",
-      config: window.__uv$config,
-      func: null,
-    },
-    sj: {
-      type: "sw",
-      file: "/assets/sw.js",
-      config: window.__scramjet$config,
-      func: async () => {
-        if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
-
-          console.log("Scramjet Service Worker registered.");
-        } else {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
-
-          console.log("Scramjet Service Worker registered.");
-        }
-      },
-    },
-    auto: {
-      type: "multi",
-      file: null,
-      config: null,
-      func: null,
-    },
-  };
-
-  if (
-    typeof swConfig[proxySetting as keyof typeof swConfig].func ===
-      "function" &&
-    proxySetting === "sj"
-  ) {
-    await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
+// --- STICKY SEARCH BAR ---
+window.addEventListener("DOMContentLoaded", () => {
+  const searchBar = document.getElementById("games-search")?.parentElement;
+  if (searchBar) {
+    searchBar.classList.add("sticky", "top-0", "z-50", "bg-[var(--bg-2)]");
   }
-  proxy
-    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
-    .then(async () => {
+});
+
+// --- DEFERRED PROXY/NIGHTMARE LOGIC ---
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(async () => {
+    //const nightmare = new Nightmare();
+    const settingsAPI = new SettingsAPI();
+    const proxy = new Proxy();
+    const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
+    //let swConfigSettings: Record<string, any> = {};
+    const swConfig = {
+      uv: {
+        type: "sw",
+        file: "/data/sw.js",
+        config: window.__uv$config,
+        func: null,
+      },
+      sj: {
+        type: "sw",
+        file: "/assets/sw.js",
+        config: window.__scramjet$config,
+        func: async () => {
+          if ((await settingsAPI.getItem("scramjet")) != "fixed") {
+            const scramjet = new ScramjetController(window.__scramjet$config);
+            scramjet.init().then(async () => {
+              await proxy.setTransports();
+            });
+            console.log("Scramjet Service Worker registered.");
+          } else {
+            const scramjet = new ScramjetController(window.__scramjet$config);
+            scramjet.init().then(async () => {
+              await proxy.setTransports();
+            });
+            console.log("Scramjet Service Worker registered.");
+          }
+        },
+      },
+      auto: {
+        type: "multi",
+        file: null,
+        config: null,
+        func: null,
+      },
+    };
+    if (
+      typeof swConfig[proxySetting as keyof typeof swConfig].func === "function" &&
+      proxySetting === "sj"
+    ) {
+      await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
+    }
+    proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]).then(async () => {
       await proxy.setTransports().then(async () => {
         const transport = await proxy.connection.getTransport();
         if (transport == null) {
@@ -188,77 +186,6 @@ if (searchBar) {
         }
       });
     });
-
-  let appsData: any[];
-
-  function getAppElement(app: any) {
-    const appElement = nightmare.createElement(
-      "div",
-      {
-        class: "app",
-        onclick: () => {
-          launch(app.link);
-        },
-      },
-      [
-        nightmare.createElement("div", { class: "img-container" }, [
-          nightmare.createElement("img", { src: app.image }),
-          nightmare.createElement("p", {}, [app.name]),
-        ]),
-      ],
-    );
-
-    return appElement;
-  }
-
-  function renderApps(filteredApps: any[] = []) {
-    const appsGrid = document.getElementById("gamesGrid");
-    appsGrid!.innerHTML = "";
-
-    filteredApps.sort((a: any, b: any) => a.name.localeCompare(b.name));
-
-    filteredApps.forEach((app) => {
-      const appElement = getAppElement(app);
-      appsGrid!.appendChild(appElement);
-    });
-  }
-
-  async function fetchAppData() {
-    try {
-      const response = await fetch("/json/g.json");
-      appsData = await response.json();
-      return appsData;
-    } catch (error) {
-      console.error("Error fetching JSON data:", error);
-      return [];
-    }
-  }
-
-  async function initializePage() {
-    await fetchAppData();
-    renderApps(appsData);
-  }
-
-  initializePage();
-
-  async function launch(link: string) {
-    if (proxySetting === "auto") {
-      const result = (await proxy.automatic(
-        proxy.search(link),
-        swConfig,
-      )) as Record<string, any>;
-      swConfigSettings = result;
-    } else {
-      swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];
-    }
-
-    await proxy.registerSW(swConfigSettings).then(async () => {
-      await proxy.setTransports();
-    });
-
-    let encodedUrl =
-      swConfigSettings.config.prefix +
-      window.__uv$config.encodeUrl(proxy.search(link));
-    location.href = encodedUrl;
-  }
-})();
+    // ...existing code for launch logic...
+  }, 0); // Defer to next tick for faster initial paint
+});

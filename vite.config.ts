@@ -71,7 +71,8 @@ export default defineConfig({
   appType: "mpa",
   server: {
     allowedHosts: [
-      "qualifications-experienced-lighting-salaries.trycloudflare.com",
+      "desert-checklist-treo-hdtv.trycloudflare.com",
+      "significance-cindy-award-coated.trycloudflare.com"
     ],
   },
   build: {

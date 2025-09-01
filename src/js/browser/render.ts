@@ -430,6 +430,9 @@ class Render implements renderInterface {
                           "inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
                         "aria-label": "Home",
                         component: "home",
+                        onclick: () => {
+                          window.protocols.navigate("newtab");
+                        },
                       },
                       [
                         this.ui.createElement(
@@ -534,111 +537,141 @@ class Render implements renderInterface {
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://newtab/");
                                   },
                                 },
-                                ["New Tab"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "plus", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["New Tab"]),
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.windowing.newWindow();
                                   },
                                 },
-                                ["New window"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "monitor", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["New Window"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.windowing.aboutBlankWindow();
                                   },
                                 },
-                                ["New Cloaked Window"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "eye-off", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["A:B Window"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.functions.goFullscreen();
                                   },
                                 },
-                                ["Fullscreen"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "maximize", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Fullscreen"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://bookmarks/");
                                   },
                                 },
-                                ["Bookmarks"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "bookmark", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Bookmarks"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://history/");
                                   },
                                 },
-                                ["History"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "history", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["History"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://games/");
                                   },
                                 },
-                                ["Games"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "dices", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Games"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://extensions/");
                                   },
                                 },
-                                ["Extensions"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "puzzle", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Extensions"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.functions.inspectElement();
                                   },
                                 },
-                                ["Devtools"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "square-mouse-pointer", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Devtools"])
+                                ],
                               ),
                               this.ui.createElement(
                                 "li",
                                 {
                                   class:
-                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer",
+                                    "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                   onclick: () => {
                                     window.tabs.createTab("ddx://settings/");
                                   },
                                 },
-                                ["Settings"],
+                                [
+                                  this.ui.createElement("i", { "data-lucide": "settings", class: "h-4 w-4" }, []),
+                                  this.ui.createElement("span", {}, ["Settings"])
+                                ],
                               ),
                             ],
                           ),
