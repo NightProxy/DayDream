@@ -1,0 +1,477 @@
+.click-menu-container {
+  position: fixed;
+  z-index: 99999;
+  animation: bc-menu-appear 0.15s ease-out;
+  font-family: inherit;
+}
+
+@keyframes bc-menu-appear {
+  from {
+    opacity: 0;
+    @media (max-width: 768px) {
+      .click-menu-container > div {
+        min-width: 160px;
+      }
+    }
+
+    .tab-group-header[draggable="true"] {
+      cursor: grab;
+    }
+
+    .tab-group-header.dragging-group {
+      opacity: 0.6;
+      transform: scale(1.02);
+      cursor: grabbing;
+      z-index: 1000;
+    }
+
+    .tab-group-header.group-drag-over {
+      background: var(--accent-subtle);
+      transform: scale(1.02);
+    }
+
+    body.group-dragging .tab-group-header:not(.dragging-group) {
+      transition: all 0.2s ease;
+    }
+
+    body.group-dragging .tab-group-header:not(.dragging-group):hover {
+      background: var(--accent-subtle);
+      transform: scale(1.01);
+    }
+
+    .group-drop-indicator {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      z-index: 1001;
+      animation: pulse-indicator 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-indicator {
+      0%,
+      100% {
+        opacity: 0.8;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    body.group-dragging {
+      user-select: none;
+    }
+
+    .group-drop-indicator {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      z-index: 1001;
+      animation: pulse-indicator 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-indicator {
+      0%,
+      100% {
+        opacity: 0.8;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    body.group-dragging {
+      user-select: none;
+    }
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.click-menu-container > div {
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 8px;
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    0 0 0 1px var(--white-05);
+  backdrop-filter: blur(8px);
+  min-width: 192px;
+  padding: 8px;
+}
+
+.click-menu-container button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.click-menu-container button:hover {
+  background: var(--white-05);
+  transform: translateY(-1px);
+}
+
+.click-menu-container button:active {
+  transform: translateY(0);
+}
+
+.click-menu-container button i {
+  color: var(--text-70);
+  transition: color 0.15s ease;
+}
+
+.click-menu-container button:hover i {
+  color: var(--text);
+}
+
+.click-menu-container button.text-red-400 {
+  color: #f87171;
+}
+
+.click-menu-container button.text-red-400:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+}
+
+.click-menu-container button.text-red-400 i {
+  color: #f87171;
+}
+
+.click-menu-container button.text-red-400:hover i {
+  color: #fca5a5;
+}
+
+.click-menu-container .h-px {
+  height: 1px;
+  background: var(--white-08);
+  margin: 4px 0;
+}
+
+.click-menu-container .group > div:last-child {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 8px;
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    0 0 0 1px var(--white-05);
+  backdrop-filter: blur(8px);
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+  z-index: 100000;
+}
+
+.click-menu-container .group:hover > div:last-child {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.tab-group-header {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  isolation: isolate;
+  margin: calc(var(--scrollbar-size)) 0 0 0;
+  height: 100%;
+}
+
+.tab-group-header:hover {
+  color: var(--text);
+  border-color: var(--white-08);
+}
+
+.tab-group-header.collapsed {
+  opacity: 0.7;
+}
+
+.tab-group-header.collapsed:hover {
+  opacity: 1;
+}
+
+.tab-group-header::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tooltip-bg);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  border: 1px solid var(--tooltip-border);
+  backdrop-filter: blur(8px);
+}
+
+.tab-group-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--group-color, var(--main));
+  flex-shrink: 0;
+}
+
+.click-menu-container .group button span.w-4 {
+  border: 1px solid var(--white-20);
+  transition: all 0.15s ease;
+}
+
+.click-menu-container .group button:hover span.w-4 {
+  border-color: var(--white-40);
+  transform: scale(1.1);
+}
+
+.tab-group-header {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.tab-group-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tab[data-collapsed="true"] {
+  pointer-events: none;
+}
+
+.tab[data-group-id]:not([data-collapsed="true"]) {
+  pointer-events: all;
+}
+
+.tab-group-header:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.tab-group-header + .click-menu-container {
+  z-index: 1001;
+}
+
+.tab.drag-ghost {
+  opacity: 0.6;
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.tab.ungroup-indicator {
+  border: 2px dashed var(--error);
+  background: rgba(248, 139, 168, 0.1);
+  transform: scale(1.02);
+  position: relative;
+}
+
+.tab.ungroup-indicator::before {
+  opacity: 0.3;
+}
+
+body.tab-dragging .tab[data-group-id]:first-child::after,
+body.tab-dragging .tab[data-group-id]:last-child::after {
+  content: "Drop here to ungroup";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--error);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+body.tab-dragging .tab[data-group-id]:first-child::after {
+  left: -80px;
+}
+
+body.tab-dragging .tab[data-group-id]:last-child::after {
+  right: -80px;
+}
+
+body.tab-dragging .tab[data-group-id]:first-child:hover::after,
+body.tab-dragging .tab[data-group-id]:last-child:hover::after,
+body.tab-dragging .tab[data-group-id].ungroup-indicator::after {
+  opacity: 1;
+}
+
+body.tab-dragging .tab[data-group-id]:first-child::before,
+body.tab-dragging .tab[data-group-id]:last-child::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background: rgba(248, 139, 168, 0.1);
+  border: 1px dashed var(--error);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 999;
+}
+
+body.tab-dragging .tab[data-group-id]:first-child::before {
+  left: -60px;
+}
+
+body.tab-dragging .tab[data-group-id]:last-child::before {
+  right: -60px;
+}
+
+body.tab-dragging .tab[data-group-id].ungroup-indicator:first-child::before,
+body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
+  opacity: 0.7;
+}
+
+.tab[data-group-id] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.end-ungroup-zone,
+.start-ungroup-zone {
+  position: relative;
+  min-width: 100px;
+  height: 36px;
+  background: rgba(248, 139, 168, 0.1);
+  border: 2px dashed var(--error);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.end-ungroup-zone {
+  margin-left: 8px;
+}
+
+.start-ungroup-zone {
+  margin-right: 8px;
+}
+
+.end-ungroup-zone span,
+.start-ungroup-zone span {
+  font-size: 11px;
+  color: var(--error);
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.end-ungroup-zone.drag-over,
+.start-ungroup-zone.drag-over {
+  background: rgba(248, 139, 168, 0.3);
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.tab[data-group-id] .tab-title {
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .click-menu-container > div {
+    min-width: 160px;
+  }
+
+  .click-menu-container button {
+    padding: 10px 14px;
+    font-size: 16px;
+  }
+}
+
+.tab[data-group-id] .tab-content {
+  margin-left: 6px;
+}
+
+.tab[data-collapsed] {
+  animation: tab-hide 0.2s ease-out forwards;
+}
+
+.tab:not([data-collapsed]) {
+  animation: tab-show 0.2s ease-out forwards;
+}
+
+@keyframes tab-hide {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+    height: auto;
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0);
+    height: 0;
+  }
+}
+
+@keyframes tab-show {
+  from {
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    height: auto;
+  }
+}
+
+.tab-group-header.group-drag-over-tab {
+  background: var(--accent-subtle);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tab-group-drop-indicator {
+  position: absolute;
+  width: 3px;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  z-index: 1002;
+  animation: pulse-indicator 1s ease-in-out infinite;
+}

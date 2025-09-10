@@ -23,21 +23,57 @@ export class Navigation implements NavigationInterface {
     const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
-    iframe?.contentWindow?.history.back();
+    if (iframe?.contentWindow?.history) {
+      iframe.contentWindow.history.back();
+
+      window.dispatchEvent(
+        new CustomEvent("tabNavigated", {
+          detail: {
+            tabId: iframe.getAttribute("data-tab-id") || "unknown",
+            action: "back",
+            fromNavigation: true,
+          },
+        }),
+      );
+    }
   }
 
   forward(): void {
     const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
-    iframe?.contentWindow?.history.forward();
+    if (iframe?.contentWindow?.history) {
+      iframe.contentWindow.history.forward();
+
+      window.dispatchEvent(
+        new CustomEvent("tabNavigated", {
+          detail: {
+            tabId: iframe.getAttribute("data-tab-id") || "unknown",
+            action: "forward",
+            fromNavigation: true,
+          },
+        }),
+      );
+    }
   }
 
   refresh(): void {
     const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement;
-    iframe?.contentWindow?.location.reload();
+    if (iframe?.contentWindow?.location) {
+      iframe.contentWindow.location.reload();
+
+      window.dispatchEvent(
+        new CustomEvent("tabNavigated", {
+          detail: {
+            tabId: iframe.getAttribute("data-tab-id") || "unknown",
+            action: "refresh",
+            fromNavigation: true,
+          },
+        }),
+      );
+    }
   }
 
   zoomIn(): void {

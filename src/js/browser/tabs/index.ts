@@ -20,6 +20,7 @@ import { TabManipulation } from "./manipulation";
 import { TabContextMenu } from "./contextMenu";
 import { TabPageClient } from "./pageClient";
 import { TabMetaWatcher } from "./metaWatcher";
+import { TabHistoryIntegration } from "./historyIntegration";
 
 class Tabs implements TabsInterface {
   render: any;
@@ -52,6 +53,7 @@ class Tabs implements TabsInterface {
   private contextMenuModule: TabContextMenu;
   private pageClientModule: TabPageClient;
   private metaWatcherModule: TabMetaWatcher;
+  private historyIntegration: TabHistoryIntegration;
 
   constructor(render: any, proto: any, swConfig: any, proxySetting: string) {
     this.render = render;
@@ -89,12 +91,80 @@ class Tabs implements TabsInterface {
     this.contextMenuModule = new TabContextMenu(this);
     this.pageClientModule = new TabPageClient(this);
     this.metaWatcherModule = new TabMetaWatcher(this);
+    this.historyIntegration = new TabHistoryIntegration(this);
 
     this.initBookmarkManager();
+    this.initKeyboardShortcuts();
+  }
+
+  private initKeyboardShortcuts() {
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "G") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0) {
+          this.groupManager.createGroupWithTab(activeTabs[0].id);
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "U") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0 && activeTabs[0].groupId) {
+          this.groupManager.removeTabFromGroup(activeTabs[0].id);
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0) {
+          this.pinManager.togglePinTab(activeTabs[0].id);
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0) {
+          this.duplicateTab(activeTabs[0].id);
+        }
+      }
+
+      if (e.key === "F5") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0) {
+          this.refreshTab(activeTabs[0].id);
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "w") {
+        e.preventDefault();
+        const activeTabs = this.tabs.filter((tab) =>
+          tab.tab.classList.contains("active"),
+        );
+        if (activeTabs.length > 0) {
+          this.closeTabById(activeTabs[0].id);
+        }
+      }
+    });
   }
 
   private async initBookmarkManager() {
     await this.bookmarkModule.init();
+
+    this.groupManager.initializeGroupVisuals();
   }
 
   get tabEls() {
@@ -251,6 +321,18 @@ class Tabs implements TabsInterface {
     return this.groupManager.getGroupTabs(groupId);
   };
 
+  closeAllTabsInGroup = (groupId: string): boolean => {
+    return this.groupManager.closeAllTabsInGroup(groupId);
+  };
+
+  getHistoryManager = () => {
+    return this.historyIntegration.getHistoryManager();
+  };
+
+  layoutTabs = () => {
+    this.layoutModule.renderGroupHeaders();
+  };
+
   setupTabContextMenu = (tabElement: HTMLElement, tabId: string) => {
     return this.contextMenuModule.setupTabContextMenu(tabElement, tabId);
   };
@@ -266,6 +348,9 @@ class Tabs implements TabsInterface {
         tabEl.setAttribute("data-context-menu-setup", "true");
       }
     });
+
+    this.groupManager.initializeGroupVisuals();
+    this.layoutTabs();
   };
 }
 

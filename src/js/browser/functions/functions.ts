@@ -134,15 +134,84 @@ class Functions implements FuncInterface {
   }
 
   private setupAutoSave(): void {
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    let saveTimeout: NodeJS.Timeout | null = null;
+
+    localStorage.setItem = (key: string, value: string) => {
+      originalSetItem(key, value);
+
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      saveTimeout = setTimeout(async () => {
+        const currentProfile = this.profiles.getCurrentProfile();
+        if (currentProfile) {
+          try {
+            console.log(
+              `🔄 Auto-save triggered by localStorage change (key: ${key})`,
+            );
+            await this.profiles.saveProfile(currentProfile);
+            console.log(`✅ Auto-save completed after localStorage change`);
+          } catch (error) {
+            console.warn(
+              "Failed to auto-save after localStorage change:",
+              error,
+            );
+          }
+        }
+      }, 1000);
+    };
+
     window.addEventListener("beforeunload", async () => {
       const currentProfile = this.profiles.getCurrentProfile();
 
       if (currentProfile) {
         try {
-          await this.profiles.saveProfile(currentProfile);
+          console.log(
+            `🔄 Emergency save on beforeunload for profile: ${currentProfile}`,
+          );
+
+          const asyncSavePromise = this.profiles.saveProfile(currentProfile);
+          const emergencySuccess =
+            this.profiles.emergencySaveProfile(currentProfile);
+
+          if (emergencySuccess) {
+            console.log(
+              `✅ Emergency save completed for profile: ${currentProfile}`,
+            );
+          }
+
+          const timeoutPromise = new Promise((resolve) =>
+            setTimeout(resolve, 500),
+          );
+          await Promise.race([asyncSavePromise, timeoutPromise]);
+
           this.logger.createLog(`Auto-saved profile: ${currentProfile}`);
         } catch (error) {
           console.warn("Failed to auto-save profile data:", error);
+
+          this.profiles.emergencySaveProfile(currentProfile);
+        }
+      }
+    });
+
+    window.addEventListener("pagehide", async () => {
+      const currentProfile = this.profiles.getCurrentProfile();
+      if (currentProfile) {
+        try {
+          console.log(
+            `🔄 Emergency save on pagehide for profile: ${currentProfile}`,
+          );
+          await this.profiles.saveProfile(currentProfile);
+          console.log(
+            `✅ Emergency save on pagehide completed for profile: ${currentProfile}`,
+          );
+          this.logger.createLog(
+            `Auto-saved profile on pagehide: ${currentProfile}`,
+          );
+        } catch (error) {
+          console.warn("Failed to auto-save profile on pagehide:", error);
         }
       }
     });

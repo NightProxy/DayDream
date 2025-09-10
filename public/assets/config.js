@@ -1,4 +1,4 @@
-// this is my custom file for my setup. however it doesn't directly interfere with the actual config variable, so the init is still needed.
+
 
 self.__scramjet$config = {
   prefix: "/assets/res/",
@@ -7,7 +7,11 @@ self.__scramjet$config = {
     all: "/assets/all.js",
     sync: "/assets/sync.js",
   },
-  siteFlags: {},
+  siteFlags: {
+		"https://discord.com/.*": {
+			naiiveRewriter: true,
+		},
+	},
   flags: {
     captureErrors: true,
     cleanErrors: true,

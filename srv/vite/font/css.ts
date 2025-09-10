@@ -8,55 +8,30 @@ export const cssContent = `/* Global Font Obfuscation */
     font-style: normal;
 }
 
-@font-face {
-    font-family: 'jakarta-obf';
-    src: url('/jakarta-obf.woff2') format('woff2'),
-         url('/jakarta-obf.ttf') format('truetype');
-    font-display: block;
-    font-weight: normal;
-    font-style: normal;
-}
-
 :root {
     --ob-font-poppins: 'poppins-obf', monospace;
-    --ob-font-jakarta: 'jakarta-obf', monospace;
 }
 
+/* Apply obfuscated font to most elements */
 body.font-obfuscation-ready * {
     font-family: 'poppins-obf', monospace !important;
     font-variant-ligatures: none !important;
 }
 
+/* Specific obfuscated classes */
 .ob-p,
 body .ob-p,
-html .ob-p {
-    font-family: 'poppins-obf', monospace !important;
-    font-variant-ligatures: none;
-}
-
-.ob-j,
-body .ob-j,
-html .ob-j {
-    font-family: 'jakarta-obf', monospace !important;
-    font-variant-ligatures: none;
-}
-
+html .ob-p,
 .obfuscated,
 body .obfuscated,
 html .obfuscated {
     font-family: 'poppins-obf', monospace !important;
-    font-variant-ligatures: none;
+    font-variant-ligatures: none !important;
 }
 
+/* Exclude certain elements from obfuscation (preserve original styling) */
 .no-obfuscate,
 [data-no-obfuscate],
-input[type="password"],
-input[type="email"],
-input[type="url"],
-input[type="text"],
-input[type="search"],
-textarea,
-select,
 code,
 pre,
 script,
@@ -64,44 +39,29 @@ style,
 [data-lucide],
 .lucide,
 .lucide-icon,
-svg[data-lucide],
-.material-icons,
-.material-icons-outlined,
-.material-symbols-outlined,
-.material-icons-round,
-.material-icons-sharp,
-.material-icons-two-tone,
-i.material-icons,
-span.material-icons,
-.mat-icon {
+svg[data-lucide] {
     font-family: inherit !important;
 }
 
-.ob-p {
-    font-family: 'poppins-obf', monospace !important;
-    font-variant-ligatures: none;
+/* Input elements: don't change styling but still allow text obfuscation */
+input,
+textarea,
+select,
+option {
+    /* Keep original input styling - obfuscation will be handled in JS */
 }
 
-.ob-j {
-    font-family: 'jakarta-obf', monospace !important;
-    font-variant-ligatures: none;
-}
-
-.obfuscated {
-    font-family: 'poppins-obf', monospace !important;
-    font-variant-ligatures: none;
-}
-
+/* Specific selectors that should be obfuscated */
 .tab-title,
 .menu-text,
 .ui-text,
 [data-obfuscate] {
     font-family: 'poppins-obf', monospace !important;
-    font-variant-ligatures: none;
+    font-variant-ligatures: none !important;
 }
 
+/* Maintain proper text rendering */
 .ob-p,
-.ob-j,
 .obfuscated {
     letter-spacing: normal;
     word-spacing: normal;

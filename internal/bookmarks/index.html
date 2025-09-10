@@ -10,26 +10,7 @@
     <link rel="stylesheet" href="/src/css/pages/bookmarks.css" />
     <link rel="stylesheet" href="/src/css/internal.css" />
 
-    <style>
-      .tw-wait {
-        opacity: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        pointer-events: none;
-        user-select: none;
-      }
-    </style>
-    <script>
-      document.documentElement.classList.add("tw-wait");
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/src/js/internal/bookmarks.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
-      document.head.appendChild(s);
-    </script>
-
-    <script type="module"  src="/src/js/internal/bookmarks.ts"></script>
+    <script type="module" src="/src/js/internal/bookmarks.ts"></script>
   </head>
 
   <body

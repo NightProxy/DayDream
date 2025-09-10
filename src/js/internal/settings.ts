@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     width: 280,
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
     borderWidth: 1,
-    borderColor: "#fff"
+    borderColor: "#fff",
   });
 
   const hexInput = document.getElementById("hexInput") as HTMLInputElement;
@@ -238,7 +238,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     rgbInput.value = colorPicker.color.rgbString;
     hslInput.value = colorPicker.color.hslString;
 
-    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+    eventsAPI.emit("theme:color-change", {
+      color: colorPicker.color.rgbaString,
+    });
   });
 
   rgbInput.addEventListener("change", (_e: Event) => {
@@ -246,7 +248,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     hexInput.value = colorPicker.color.hexString;
     hslInput.value = colorPicker.color.hslString;
 
-    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+    eventsAPI.emit("theme:color-change", {
+      color: colorPicker.color.rgbaString,
+    });
   });
 
   hslInput.addEventListener("change", (_e: Event) => {
@@ -254,7 +258,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     hexInput.value = colorPicker.color.hexString;
     rgbInput.value = colorPicker.color.rgbString;
 
-    eventsAPI.emit("theme:color-change", { color: colorPicker.color.rgbaString });
+    eventsAPI.emit("theme:color-change", {
+      color: colorPicker.color.rgbaString,
+    });
   });
 
   colorPicker.on("input:change", (color: any) => {
@@ -262,17 +268,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("Custom color changed to:", color.rgbaString);
   });
 
-
   await initializeThemeSystem();
 
   async function initializeThemeSystem() {
     try {
       console.log("Initializing theme system...");
-      
+
       const themes = await themeManager.loadThemes();
       console.log("Loaded themes:", Object.keys(themes));
 
-      const themePresetGrid = document.getElementById("themePresetGrid") as HTMLElement;
+      const themePresetGrid = document.getElementById(
+        "themePresetGrid",
+      ) as HTMLElement;
       const accentColorGrid = document.getElementById("accentColorGrid");
       const customColorSection = document.getElementById("customColorSection");
 
@@ -281,17 +288,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // Default to Catppuccin Mocha if no theme is set
       let currentTheme =
         (await settingsAPI.getItem("currentTheme")) || "catppuccin-mocha";
-      
-      // Validate that the current theme exists in loaded themes
+
       if (!themes[currentTheme]) {
-        console.warn(`Theme '${currentTheme}' not found in loaded themes, falling back to first available theme`);
+        console.warn(
+          `Theme '${currentTheme}' not found in loaded themes, falling back to first available theme`,
+        );
         const availableThemes = Object.keys(themes);
-        currentTheme = availableThemes.length > 0 ? availableThemes[0] : "custom";
+        currentTheme =
+          availableThemes.length > 0 ? availableThemes[0] : "custom";
       }
-      
+
       themeManager.setCurrentTheme(currentTheme);
 
       if (!(await settingsAPI.getItem("currentTheme"))) {
@@ -320,7 +328,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           themeManager.setCurrentTheme(theme);
           await settingsAPI.setItem("currentTheme", theme);
 
-          // Update UI without emitting duplicate events
           updateThemeButtonStates(theme);
           updateAccentColors(theme);
           updateColorRoles(theme);
@@ -328,7 +335,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if ((type === "color" || type === "accent") && color) {
-          // Update color picker if needed
           try {
             colorPicker.color.set(color);
           } catch (e) {
@@ -337,12 +343,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (type === "colorRole" && colorRole) {
-          // Handle color role changes
           updateColorRoleStates(colorRole);
         }
       });
 
-      // Helper function to update theme button states
       function updateThemeButtonStates(activeThemeKey: string) {
         if (themePresetGrid) {
           themePresetGrid
@@ -363,7 +367,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      // Helper function to update color role selection states
       function updateColorRoleStates(selectedRole: string) {
         const colorRoleGrid = document.getElementById("colorRoleGrid");
         if (colorRoleGrid) {
@@ -380,7 +383,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         themePresetGrid.innerHTML = "";
 
         const themeEntries = Object.entries(themes);
-        console.log("Creating theme buttons for:", themeEntries.length, "themes");
+        console.log(
+          "Creating theme buttons for:",
+          themeEntries.length,
+          "themes",
+        );
 
         if (themeEntries.length === 0) {
           console.error("No themes available to display");
@@ -396,29 +403,24 @@ document.addEventListener("DOMContentLoaded", async () => {
           try {
             const themeButton = themeManager.generateThemePreview(theme);
 
-            // Add active state if current theme
             if (currentTheme === themeKey) {
               themeButton.classList.add("active");
               console.log("Marked theme as active:", themeKey);
             }
 
-            // Add click handler with proper event emission
             themeButton.addEventListener("click", async () => {
               console.log("Theme button clicked:", themeKey);
               currentTheme = themeKey;
               await settingsAPI.setItem("currentTheme", themeKey);
               themeManager.setCurrentTheme(themeKey);
 
-              // Emit local theme preset change (this will trigger global update)
               eventsAPI.emit("theme:preset-change", { theme: themeKey });
 
-              // Update local UI immediately
               updateThemeButtonStates(themeKey);
               updateAccentColors(themeKey);
               updateColorRoles(themeKey);
               updateCustomColorVisibility(themeKey);
 
-              // Add preview animation
               document.documentElement.classList.add("theme-preview-animation");
               setTimeout(() => {
                 document.documentElement.classList.remove(
@@ -431,11 +433,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             themePresetGrid.appendChild(themeButton);
           } catch (error) {
-            console.error(`Failed to create theme button for ${themeKey}:`, error);
+            console.error(
+              `Failed to create theme button for ${themeKey}:`,
+              error,
+            );
           }
         });
 
-        // Initialize accent colors for current theme
         updateAccentColors(currentTheme);
         updateColorRoles(currentTheme);
         updateCustomColorVisibility(currentTheme);
@@ -450,9 +454,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           accentColors.forEach((color) => {
             const button = themeManager.generateAccentColorButton(color);
 
-            // Update accent color buttons with proper event emission
             button.addEventListener("click", () => {
-              // Update selection state locally
               accentColorGrid
                 .querySelectorAll(".accent-color-button")
                 .forEach((btn) => {
@@ -460,7 +462,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
               button.classList.add("selected");
 
-              // Emit local accent change (this will trigger global update)
               eventsAPI.emit("theme:accent-change", { color });
 
               console.log("Accent color changed to:", color);
@@ -477,7 +478,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         let colorRoleGrid = document.getElementById("colorRoleGrid");
 
         if (!colorRoleGrid) {
-          // Create color role section if it doesn't exist
           const colorRoleSection = document.createElement("div");
           colorRoleSection.className = "space-y-3";
           colorRoleSection.innerHTML = `
@@ -511,12 +511,9 @@ document.addEventListener("DOMContentLoaded", async () => {
               button.style.color = getContrastTextColor(color);
               button.textContent = roleName;
 
-              // Add click handler with proper event emission
               button.addEventListener("click", () => {
-                // Emit local color role change (this will trigger global update)
                 eventsAPI.emit("theme:color-role-change", { roleName, color });
 
-                // Update button states locally
                 colorRoleGrid.querySelectorAll("button").forEach((btn) => {
                   (btn as HTMLElement).style.borderColor = "var(--white-10)";
                 });
@@ -537,13 +534,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       function getContrastTextColor(backgroundColor: string): string {
-        // Simple function to determine if text should be black or white
-        // Handle both hex colors and rgba/rgb colors
         let hex = backgroundColor;
-        
-        // If it's an rgb/rgba color, extract the values
-        if (backgroundColor.startsWith('rgb')) {
-          const rgbMatch = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+
+        if (backgroundColor.startsWith("rgb")) {
+          const rgbMatch = backgroundColor.match(
+            /rgba?\((\d+),\s*(\d+),\s*(\d+)/,
+          );
           if (rgbMatch) {
             const r = parseInt(rgbMatch[1]);
             const g = parseInt(rgbMatch[2]);
@@ -552,27 +548,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             return brightness > 128 ? "#000000" : "#ffffff";
           }
         }
-        
-        // Handle hex colors
+
         hex = hex.replace("#", "");
-        
-        // Ensure we have a valid 6-character hex color
+
         if (hex.length === 3) {
           hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
         } else if (hex.length !== 6) {
-          // Default to white text for invalid colors
           return "#ffffff";
         }
-        
+
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
-        
-        // Check for invalid parsing results
+
         if (isNaN(r) || isNaN(g) || isNaN(b)) {
           return "#ffffff";
         }
-        
+
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         return brightness > 128 ? "#000000" : "#ffffff";
       }
@@ -650,7 +642,9 @@ if (uploadBGInput) {
   });
 }
 
-const panicKeybindInput = document.getElementById("panicKeybind") as HTMLInputElement;
+const panicKeybindInput = document.getElementById(
+  "panicKeybind",
+) as HTMLInputElement;
 const panicKey = panicKeybindInput?.getAttribute("data-key") || "panicKeybind";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -663,5 +657,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
-
-// await settingsAPI.setItem(panicKey, `${panicKeybind}`;

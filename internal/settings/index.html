@@ -18,25 +18,6 @@
     /></noscript>
     <link rel="stylesheet" href="/src/css/internal.css" />
 
-    <style>
-      .tw-wait {
-        opacity: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        pointer-events: none;
-        user-select: none;
-      }
-    </style>
-    <script>
-      document.documentElement.classList.add("tw-wait");
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/src/js/internal/settings.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
-      document.head.appendChild(s);
-    </script>
-
     <script type="module" src="/src/js/internal/settings.ts"></script>
   </head>
 
@@ -296,17 +277,17 @@
                           <!-- Accent color buttons will be populated by JavaScript -->
                         </div>
                       </div>
-                        <div class="wrap">
-                          <div class="half">
-                            <div class="colorPicker"></div>
-                          </div>
-                          <div class="half">
-                            <input id="hexInput"></input>
-                            <br />
-                            <input id="rgbString"></input>
-                            <br />
-                            <input id="hslString"></input>
-                          </div>
+                      <div class="wrap">
+                        <div class="half">
+                          <div class="colorPicker"></div>
+                        </div>
+                        <div class="half">
+                          <input id="hexInput" />
+                          <br />
+                          <input id="rgbString" />
+                          <br />
+                          <input id="hslString" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -460,7 +441,13 @@
               class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
             >
               <p class="text-sm text-[var(--proto)]">
-                <input type="text" id="panicKeybind" data-setting="panicKeybind" class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" placeholder="No Keybind Set" />
+                <input
+                  type="text"
+                  id="panicKeybind"
+                  data-setting="panicKeybind"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="No Keybind Set"
+                />
               </p>
             </div>
           </section>
@@ -485,8 +472,8 @@
                   interface that is both fast and secure.
                 </p>
                 <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                  Our browser is heavily inspired by Vivaldi and Arc, and we
-                  aim to provide a similar experience to our users without the
+                  Our browser is heavily inspired by Vivaldi and Arc, and we aim
+                  to provide a similar experience to our users without the
                   downsides of spyware or lack of support.
                 </p>
                 <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
@@ -570,7 +557,7 @@
                     </ul>
                   </div>
 
-                <div>
+                  <div>
                     <h4 class="text-sm font-medium">
                       <a
                         href="https://guns.lol/kdust7"
@@ -583,10 +570,9 @@
                       <li>- Helped with testing and debugging</li>
                       <li>- Wrote Night+ backend</li>
                       <li>- Manages link archive</li>
-                      
                     </ul>
+                  </div>
                 </div>
-</div>
                 <div class="mt-6 pt-6 border-t border-[var(--white-08)]">
                   <h3 class="text-lg font-semibold text-[var(--main)] mb-2">
                     Thank you for contributing to DayDreamX.

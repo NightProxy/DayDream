@@ -1,7 +1,5 @@
 import axios from "axios";
 
-//creds to crllect for writing the og commit date function from space v1
-
 class Git {
   repo: string;
   constructor(githubRepo) {
