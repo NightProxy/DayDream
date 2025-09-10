@@ -3,10 +3,22 @@ import type { TabsInterface } from "./types";
 export class TabMetaWatcher {
   private tabs: TabsInterface;
   private currentActiveTabId: string | null = null;
+  private historyManager: any = null;
 
   constructor(tabs: TabsInterface) {
     this.tabs = tabs;
     this.setupEventListeners();
+    this.initHistoryManager();
+  }
+
+  private async initHistoryManager() {
+    try {
+      const { HistoryManager } = await import("../../apis/history");
+      this.historyManager = new HistoryManager();
+      await this.historyManager.loadFromStorage();
+    } catch (error) {
+      console.warn("Failed to initialize history manager:", error);
+    }
   }
 
   private setupEventListeners = () => {
@@ -58,11 +70,15 @@ export class TabMetaWatcher {
       console.warn("Could not access iframe content:", e);
     }
 
+    let pageTitle = "New Tab";
+    let currentUrl = tabData.url;
+    let faviconUrl: string | null = null;
+
     try {
       if (d) {
-        const title = d.title?.trim() || "New Tab";
-        if (titleEl && titleEl.textContent !== title) {
-          titleEl.textContent = title;
+        pageTitle = d.title?.trim() || "New Tab";
+        if (titleEl && titleEl.textContent !== pageTitle) {
+          titleEl.textContent = pageTitle;
         }
       }
     } catch (e) {
@@ -71,7 +87,7 @@ export class TabMetaWatcher {
 
     try {
       if (locHref && tabEl.classList.contains("active")) {
-        await this.updateAddressBar(locHref, tabId);
+        currentUrl = await this.updateAddressBar(locHref, tabId);
       }
     } catch (e) {
       console.warn("Could not update address bar:", e);
@@ -79,26 +95,47 @@ export class TabMetaWatcher {
 
     try {
       if (d && faviconEl) {
-        await this.updateFavicon(d, iframe, faviconEl, tabEl);
+        faviconUrl = await this.updateFavicon(d, iframe, faviconEl, tabEl);
       }
     } catch (e) {
       console.warn("Could not update favicon:", e);
     }
+
+    if (this.historyManager && currentUrl && pageTitle !== "New Tab") {
+      try {
+        if (
+          !currentUrl.startsWith("ddx://") &&
+          !currentUrl.includes("/internal/")
+        ) {
+          await this.historyManager.addEntry({
+            title: pageTitle,
+            url: currentUrl,
+            favicon: faviconUrl,
+            tabId: tabId,
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to add entry to browsing history:", error);
+      }
+    }
   };
 
-  private updateAddressBar = async (locHref: string, tabId: string) => {
+  private updateAddressBar = async (
+    locHref: string,
+    tabId: string,
+  ): Promise<string> => {
     if (
       this.tabs.items.addressBar &&
       document.activeElement === this.tabs.items.addressBar
     ) {
-      return;
+      return locHref;
     }
 
     let liveURL: URL | null = null;
     try {
       liveURL = new URL(locHref);
     } catch {
-      return;
+      return locHref;
     }
 
     const tabRef = this.tabs.tabs.find((t) => t.id === tabId);
@@ -135,12 +172,15 @@ export class TabMetaWatcher {
       }
     }
 
-    if (!nextVal || tabRef?.lastAddressShown === nextVal) return;
+    if (!nextVal || tabRef?.lastAddressShown === nextVal)
+      return nextVal || locHref;
 
     if (this.tabs.items.addressBar) {
       this.tabs.items.addressBar.value = nextVal;
       if (tabRef) tabRef.lastAddressShown = nextVal;
     }
+
+    return nextVal;
   };
 
   private updateFavicon = async (
@@ -148,7 +188,7 @@ export class TabMetaWatcher {
     iframe: HTMLIFrameElement,
     faviconEl: HTMLImageElement,
     tabEl: HTMLElement,
-  ) => {
+  ): Promise<string | null> => {
     const link = document.querySelector<HTMLLinkElement>(
       "link[rel~='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']",
     );
@@ -189,14 +229,18 @@ export class TabMetaWatcher {
           faviconEl.src = proxyFavicon;
           faviconEl.setAttribute("data-favicon", proxyFavicon);
           tabEl.classList.add("has-favicon");
+          return proxyFavicon;
         }
       } catch (e) {
         console.warn("Could not load favicon:", e);
         this.clearFavicon(faviconEl, tabEl);
+        return null;
       }
     } else {
       this.clearFavicon(faviconEl, tabEl);
     }
+
+    return null;
   };
 
   private clearFavicon = (faviconEl: HTMLImageElement, tabEl: HTMLElement) => {
@@ -213,9 +257,25 @@ export class TabMetaWatcher {
     this.updateTabMeta(tabId, iframe, tabEl);
   };
 
-  stopMetaWatcher = (_tabId: string) => {};
+  stopMetaWatcher = (tabId: string) => {
+    if (
+      this.historyManager &&
+      typeof this.historyManager.recordTabClose === "function"
+    ) {
+      this.historyManager.recordTabClose(tabId);
+    }
+  };
 
   destroy = () => {
+    if (
+      this.historyManager &&
+      typeof this.historyManager.endCurrentSession === "function"
+    ) {
+      this.historyManager.endCurrentSession().catch((error: any) => {
+        console.warn("Failed to end history session:", error);
+      });
+    }
+
     document.removeEventListener(
       "tabSelected",
       this.onTabSelected as EventListener,

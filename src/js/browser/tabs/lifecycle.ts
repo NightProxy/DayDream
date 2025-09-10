@@ -27,28 +27,36 @@ export class TabLifecycle {
         component: "tab",
       },
       [
-        this.tabs.ui.createElement("div", { class: "tab-content flex gap-1 items-center" }, [
-          this.tabs.ui.createElement("div", { class: "tab-group-color" }),
-          this.tabs.ui.createElement("img", { class: "tab-favicon max-w-4 max-h-4" }),
-          this.tabs.ui.createElement("div", { class: "tab-title" }, [tabTitle]),
-          this.tabs.ui.createElement("div", { class: "tab-drag-handle" }),
-          this.tabs.ui.createElement(
-            "button",
-            {
-              class: "tab-close",
-              id: `close-${id}`,
-            },
-            [
-              this.tabs.ui.createElement("span", { class: "x" }, [
-                this.tabs.ui.createElement(
-                  "i",
-                  { "data-lucide": "x", class: "h-3.5 w-3.5" },
-                  [],
-                ),
-              ]),
-            ],
-          ),
-        ]),
+        this.tabs.ui.createElement(
+          "div",
+          { class: "tab-content flex gap-1 items-center" },
+          [
+            this.tabs.ui.createElement("div", { class: "tab-group-color" }),
+            this.tabs.ui.createElement("img", {
+              class: "tab-favicon max-w-4 max-h-4",
+            }),
+            this.tabs.ui.createElement("div", { class: "tab-title" }, [
+              tabTitle,
+            ]),
+            this.tabs.ui.createElement("div", { class: "tab-drag-handle" }),
+            this.tabs.ui.createElement(
+              "button",
+              {
+                class: "tab-close",
+                id: `close-${id}`,
+              },
+              [
+                this.tabs.ui.createElement("span", { class: "x" }, [
+                  this.tabs.ui.createElement(
+                    "i",
+                    { "data-lucide": "x", class: "h-3.5 w-3.5" },
+                    [],
+                  ),
+                ]),
+              ],
+            ),
+          ],
+        ),
       ],
     );
 
@@ -120,6 +128,11 @@ export class TabLifecycle {
     this.tabs.tabs = this.tabs.tabs.filter((tab) => tab.id !== id);
     this.updateTabAttributes();
 
+    const tabClosedEvent = new CustomEvent("tabClosed", {
+      detail: { tabId: id },
+    });
+    document.dispatchEvent(tabClosedEvent);
+
     if (this.tabs.tabs.length > 0) {
       let nextTabToSelect: TabData | null = null;
 
@@ -161,6 +174,11 @@ export class TabLifecycle {
     const tabPosition = parseInt(activeTab.getAttribute("tab") || "0");
 
     this.tabs.stopMetaWatcher(activeTab.id);
+
+    const tabClosedEvent = new CustomEvent("tabClosed", {
+      detail: { tabId: activeTab.id },
+    });
+    document.dispatchEvent(tabClosedEvent);
 
     activeTab.remove();
     activeIFrame.remove();

@@ -18,7 +18,7 @@ export default async function routes(fastify: FastifyInstance) {
   });
 
   fastify.get(
-    "/results/:query",
+    "/api/results/:query",
     async (
       request: FastifyRequest<{
         Params: { query: string };
@@ -83,7 +83,6 @@ export default async function routes(fastify: FastifyInstance) {
     },
   );
 
-  // 404 handler
   fastify.setNotFoundHandler(
     async (request: FastifyRequest, reply: FastifyReply) => {
       return reply

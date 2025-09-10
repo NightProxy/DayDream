@@ -50,6 +50,7 @@ export class TabGroupManager {
     if (!group) return false;
 
     group.color = color;
+    this.updateGroupVisuals(groupId);
     this.tabs.layoutTabs();
     this.logger.createLog(`Changed group "${group.name}" color to ${color}`);
     return true;
@@ -63,6 +64,11 @@ export class TabGroupManager {
       const tab = this.tabs.tabs.find((t: any) => t.id === tabId);
       if (tab) {
         delete tab.groupId;
+        const tabElement = document.getElementById(tabId);
+        if (tabElement) {
+          tabElement.removeAttribute("data-group-id");
+          tabElement.style.removeProperty("--group-color");
+        }
       }
     });
 
@@ -76,17 +82,14 @@ export class TabGroupManager {
     const group = this.tabs.groups.find((g: any) => g.id === groupId);
     if (!group) return false;
 
-    if (confirm(`Delete group "${group.name}" and all its tabs?`)) {
-      group.tabIds.forEach((tabId: string) => {
-        this.tabs.closeTabById(tabId);
-      });
+    group.tabIds.forEach((tabId: string) => {
+      this.tabs.closeTabById(tabId);
+    });
 
-      this.tabs.groups = this.tabs.groups.filter((g: any) => g.id !== groupId);
-      this.tabs.layoutTabs();
-      this.logger.createLog(`Deleted group "${group.name}"`);
-      return true;
-    }
-    return false;
+    this.tabs.groups = this.tabs.groups.filter((g: any) => g.id !== groupId);
+    this.tabs.layoutTabs();
+    this.logger.createLog(`Deleted group "${group.name}"`);
+    return true;
   }
 
   createGroupWithTab(tabId: string, groupName?: string): string | null {
@@ -111,10 +114,11 @@ export class TabGroupManager {
     if (tab) {
       tab.groupId = groupId;
       if (this.tabs.isPinned(tabId)) {
-        this.tabs.ui.setState(tabId, "normal");
+        this.tabs.pinManager.togglePinTab(tabId);
       }
     }
 
+    this.updateGroupVisuals(groupId);
     this.tabs.layoutTabs();
     this.logger.createLog(`Created group "${name}" with tab ${tabId}`);
     return groupId;
@@ -137,15 +141,58 @@ export class TabGroupManager {
 
     const tabElement = document.getElementById(tabId);
     if (tabElement) {
-      tabElement.setAttribute("tab-group", groupId);
+      tabElement.setAttribute("data-group-id", groupId);
+      tabElement.style.setProperty("--group-color", group.color);
     }
 
     if (this.tabs.isPinned(tabId)) {
-      this.tabs.ui.setState(tabId, "normal");
+      this.tabs.pinManager.togglePinTab(tabId);
     }
 
+    this.updateGroupVisuals(groupId);
     this.tabs.layoutTabs();
     this.logger.createLog(`Added tab ${tabId} to group ${group.name}`);
+    return true;
+  }
+
+  private updateGroupVisuals(groupId: string): void {
+    const group = this.tabs.groups.find((g: any) => g.id === groupId);
+    if (!group) return;
+
+    group.tabIds.forEach((tabId: string) => {
+      const tabElement = document.getElementById(tabId);
+      if (tabElement) {
+        tabElement.setAttribute("data-group-id", groupId);
+        tabElement.style.setProperty("--group-color", group.color);
+      }
+    });
+  }
+
+  initializeGroupVisuals(): void {
+    this.tabs.groups.forEach((group: any) => {
+      this.updateGroupVisuals(group.id);
+    });
+  }
+
+  getGroupByColor(color: string): TabGroup | null {
+    return this.tabs.groups.find((g: any) => g.color === color) || null;
+  }
+
+  getAvailableColors(): string[] {
+    const usedColors = this.tabs.groups.map((g: any) => g.color);
+    return this.groupColors.filter((color) => !usedColors.includes(color));
+  }
+
+  closeAllTabsInGroup(groupId: string): boolean {
+    const group = this.tabs.groups.find((g: any) => g.id === groupId);
+    if (!group) return false;
+
+    const tabIds = [...group.tabIds];
+    tabIds.forEach((tabId: string) => {
+      this.tabs.closeTabById(tabId);
+    });
+
+    this.logger.createLog(`Closed all tabs in group "${group.name}"`);
     return true;
   }
 
@@ -169,7 +216,8 @@ export class TabGroupManager {
 
     const tabElement = document.getElementById(tabId);
     if (tabElement) {
-      tabElement.removeAttribute("tab-group");
+      tabElement.removeAttribute("data-group-id");
+      tabElement.style.removeProperty("--group-color");
     }
 
     this.tabs.layoutTabs();
@@ -182,6 +230,20 @@ export class TabGroupManager {
     if (!group) return false;
 
     group.isCollapsed = !group.isCollapsed;
+
+    group.tabIds.forEach((tabId: string) => {
+      const tabElement = document.getElementById(tabId);
+      if (tabElement) {
+        if (group.isCollapsed) {
+          tabElement.style.display = "none";
+          tabElement.setAttribute("data-collapsed", "true");
+        } else {
+          tabElement.style.display = "";
+          tabElement.removeAttribute("data-collapsed");
+        }
+      }
+    });
+
     this.tabs.layoutTabs();
     this.logger.createLog(
       `${group.isCollapsed ? "Collapsed" : "Expanded"} group ${group.name}`,

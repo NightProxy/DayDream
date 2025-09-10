@@ -24,17 +24,6 @@ class DDXGlobal implements DDXGlobalInterface {
     this.init();
   }
   async init() {
-    /*if ("serviceWorker" in navigator) {
-      await navigator.serviceWorker.register("/core.sw.js", { scope: "/" });
-      this.events.addEventListener("ddx.cache:reset", () => {
-        navigator.serviceWorker.getRegistration("/").then((reg) => {
-          reg?.active?.postMessage("reset");
-        });
-      });
-      this.events.addEventListener("ddx.cache:offline", () => {
-        console.log("We are offline")
-      })
-    }*/
     this.theming.init();
     if (
       window === window.top &&

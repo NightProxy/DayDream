@@ -1,10 +1,6 @@
 import { Themeing } from "@js/global/theming";
 import { EventSystem } from "@apis/events";
 
-/**
- * Universal Theme Initializer
- * Include this in any page to automatically set up cross-page theme synchronization
- */
 class UniversalThemeInit {
   private theming: Themeing;
   private events: EventSystem;
@@ -15,9 +11,6 @@ class UniversalThemeInit {
     this.events = new EventSystem();
   }
 
-  /**
-   * Initialize the theme system on the current page
-   */
   async init() {
     if (this.initialized) {
       console.warn("Theme system already initialized");
@@ -25,11 +18,9 @@ class UniversalThemeInit {
     }
 
     try {
-      // Initialize the theming system
       await this.theming.init();
       this.initialized = true;
 
-      // Add page-specific event listeners for debugging
       this.setupDebugListeners();
 
       console.log("Universal theme system initialized successfully");
@@ -38,9 +29,6 @@ class UniversalThemeInit {
     }
   }
 
-  /**
-   * Set up debug listeners to log theme changes
-   */
   private setupDebugListeners() {
     this.events.addEventListener("theme:global-update", (event: any) => {
       console.log(
@@ -78,47 +66,31 @@ class UniversalThemeInit {
     });
   }
 
-  /**
-   * Manually trigger a theme change
-   */
   async changeTheme(themeName: string) {
     this.events.emit("theme:preset-change", { theme: themeName });
   }
 
-  /**
-   * Manually trigger a color change
-   */
   async changeColor(color: string) {
     this.events.emit("theme:color-change", { color });
   }
 
-  /**
-   * Get the current theme instance
-   */
   getTheming(): Themeing {
     return this.theming;
   }
 
-  /**
-   * Get the events system instance
-   */
   getEvents(): EventSystem {
     return this.events;
   }
 }
 
-// Create a global instance
 const universalTheme = new UniversalThemeInit();
 
-// Auto-initialize when DOM is ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     universalTheme.init();
   });
 } else {
-  // DOM is already ready
   universalTheme.init();
 }
 
-// Export for manual usage
 export { UniversalThemeInit, universalTheme };

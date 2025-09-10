@@ -10,7 +10,7 @@ export class ThemeManager {
     try {
       console.log("Loading themes from /json/themes/presets.json");
       const response = await fetch("/json/themes/presets.json");
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -21,12 +21,11 @@ export class ThemeManager {
       }
 
       const themesData = await response.json();
-      
+
       if (!themesData || typeof themesData !== "object") {
         throw new Error("Invalid themes data format");
       }
 
-      // Validate themes have required properties
       const validatedThemes: Record<string, ThemePreset> = {};
       let validThemeCount = 0;
 
@@ -44,13 +43,15 @@ export class ThemeManager {
       }
 
       this.themes = validatedThemes;
-      console.log(`Successfully loaded ${validThemeCount} themes:`, Object.keys(validatedThemes));
+      console.log(
+        `Successfully loaded ${validThemeCount} themes:`,
+        Object.keys(validatedThemes),
+      );
       return this.themes;
     } catch (error) {
       console.error("Failed to load themes:", error);
       console.log("Using fallback theme");
-      
-      // Return fallback theme
+
       const fallbackThemes = this.getFallbackThemes();
       this.themes = fallbackThemes;
       return fallbackThemes;
@@ -62,19 +63,23 @@ export class ThemeManager {
       "name",
       "background-color",
       "text-color",
-      "main-color"
+      "main-color",
     ];
-    
-    return theme && 
-           typeof theme === "object" && 
-           requiredProperties.every(prop => prop in theme && typeof theme[prop] === "string");
+
+    return (
+      theme &&
+      typeof theme === "object" &&
+      requiredProperties.every(
+        (prop) => prop in theme && typeof theme[prop] === "string",
+      )
+    );
   }
 
   private getFallbackThemes(): Record<string, ThemePreset> {
     return {
-      "custom": {
-        "name": "Custom",
-        "description": "Create your own theme",
+      custom: {
+        name: "Custom",
+        description: "Create your own theme",
         "background-color": "rgba(0, 0, 0, 1)",
         "hover-background-color": "rgba(140, 0, 255, 0.13)",
         "input-background-color": "rgba(10, 10, 10, 1)",
@@ -94,13 +99,13 @@ export class ThemeManager {
           "#7b01cc",
           "#9900cc",
           "#b300ff",
-          "#cc01ff"
+          "#cc01ff",
         ],
-        "customizable": true
+        customizable: true,
       },
       "catppuccin-mocha": {
-        "name": "Catppuccin Mocha",
-        "description": "The warmer and darker variant of Catppuccin",
+        name: "Catppuccin Mocha",
+        description: "The warmer and darker variant of Catppuccin",
         "background-color": "rgba(24, 24, 37, 1)",
         "hover-background-color": "rgba(203, 166, 247, 0.13)",
         "input-background-color": "rgba(30, 30, 46, 1)",
@@ -120,18 +125,18 @@ export class ThemeManager {
           "#94e2d5",
           "#a6e3a1",
           "#f9e2af",
-          "#f38ba8"
+          "#f38ba8",
         ],
         "color-roles": {
-          "mauve": "#cba6f7",
-          "blue": "#89b4fa",
-          "teal": "#94e2d5",
-          "green": "#a6e3a1",
-          "yellow": "#f9e2af",
-          "pink": "#f38ba8"
+          mauve: "#cba6f7",
+          blue: "#89b4fa",
+          teal: "#94e2d5",
+          green: "#a6e3a1",
+          yellow: "#f9e2af",
+          pink: "#f38ba8",
         },
-        "customizable": true
-      }
+        customizable: true,
+      },
     };
   }
 

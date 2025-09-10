@@ -6,6 +6,7 @@ import { Protocols } from "@browser/protocols";
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { ModalUtilities } from "./modalUtilities";
+import { createIcons, icons } from "lucide";
 
 export class ProfileManager implements ProfileManagerInterface {
   private profiles: ProfilesAPI;
@@ -311,8 +312,12 @@ export class ProfileManager implements ProfileManagerInterface {
                       this.ui.createElement(
                         "div",
                         {
-                          class: "flex items-center gap-3 flex-1 cursor-pointer",
-                          style: currentProfile === profileId ? "cursor: default;" : "cursor: pointer;",
+                          class:
+                            "flex items-center gap-3 flex-1 cursor-pointer",
+                          style:
+                            currentProfile === profileId
+                              ? "cursor: default;"
+                              : "cursor: pointer;",
                           onclick:
                             currentProfile !== profileId
                               ? (e: Event) => {
@@ -620,6 +625,7 @@ export class ProfileManager implements ProfileManagerInterface {
           document.body.removeChild(dialog);
         }
       }, 200);
+      createIcons({ icons });
     };
 
     const closeBtn = document.createElement("button");
@@ -753,9 +759,13 @@ export class ProfileManager implements ProfileManagerInterface {
         this.logger.createLog(`Created profile: ${profileName}`);
 
         closeDialog();
-        
-        this.modalUtilities.showAlert("Profile created successfully!", "success");
-        
+
+        this.modalUtilities.showAlert(
+          "Profile created successfully!",
+          "success",
+        );
+
+        document.location.reload();
       } catch (error) {
         console.error("Failed to create profile:", error);
         this.modalUtilities.showAlert(
@@ -803,41 +813,45 @@ export class ProfileManager implements ProfileManagerInterface {
       dialogContent.style.transform = "scale(1)";
       input.focus();
     }, 10);
+    createIcons({ icons });
   }
 
-  /**
-   * Creates a new profile and handles saving current browser data based on existing profiles
-   * If no profiles exist, saves current data to the new profile
-   * If profiles exist, saves current data to the original profile first, then switches to new empty profile
-   */
   async createProfileWithPresetData(profileName: string): Promise<void> {
     console.log(`createProfileWithPresetData called with: ${profileName}`);
     const existingProfiles = await this.profiles.listProfiles();
     const isFirstProfile = existingProfiles.length === 0;
-    
-    console.log(`Existing profiles: ${existingProfiles.length}`, existingProfiles);
+
+    console.log(
+      `Existing profiles: ${existingProfiles.length}`,
+      existingProfiles,
+    );
     console.log(`Is first profile: ${isFirstProfile}`);
 
     if (isFirstProfile) {
       console.log("First profile creation path - creating with current data");
       await this.profiles.createProfileWithCurrentData(profileName);
-      
-      console.log(`First profile "${profileName}" created with current browser data`);
+
+      console.log(
+        `First profile "${profileName}" created with current browser data`,
+      );
     } else {
       console.log("Subsequent profile creation path");
       const currentProfile = this.profiles.getCurrentProfile();
-      
+
       if (currentProfile) {
-        console.log(`Current data will be saved to existing profile: ${currentProfile}`);
+        console.log(
+          `Current data will be saved to existing profile: ${currentProfile}`,
+        );
       }
-      
+
       console.log("Creating empty profile...");
       await this.profiles.createProfile(profileName);
       console.log("Switching to new profile...");
       await this.profiles.switchProfile(profileName);
-      
+
       console.log(`Created new profile "${profileName}" and switched to it`);
     }
+    createIcons({ icons });
   }
 
   async exportCurrentProfile(): Promise<void> {
@@ -861,7 +875,13 @@ export class ProfileManager implements ProfileManagerInterface {
     }
 
     try {
+      await this.flushPendingChanges();
+
+      console.log(`💾 Manual save initiated for profile: ${currentProfile}`);
       await this.profiles.saveProfile(currentProfile);
+
+      await this.profiles.flushStorageOperations();
+
       this.logger.createLog(`Saved profile: ${currentProfile}`);
       this.modalUtilities.showAlert("Profile saved successfully!", "success");
     } catch (error) {
@@ -873,32 +893,113 @@ export class ProfileManager implements ProfileManagerInterface {
     }
   }
 
+  private async flushPendingChanges(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => resolve(undefined)),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    try {
+      const testKey = "__profile_flush_test__";
+      const testValue = Date.now().toString();
+      localStorage.setItem(testKey, testValue);
+      const readValue = localStorage.getItem(testKey);
+      if (readValue === testValue) {
+        localStorage.removeItem(testKey);
+        console.log("✅ localStorage flush test passed");
+      } else {
+        console.warn(
+          "⚠️ localStorage flush test failed - storage might be delayed",
+        );
+      }
+    } catch (e) {
+      console.warn("⚠️ localStorage flush test error:", e);
+    }
+  }
+
   async switchToProfile(profileId: string): Promise<void> {
     try {
       console.log(`Switching to profile: ${profileId}`);
-      
+
       const currentProfile = this.profiles.getCurrentProfile();
       if (currentProfile) {
-        console.log(`Saving current profile data for: ${currentProfile}`);
-        const currentData = await this.profiles.getCurrentBrowserState();
-        console.log('Current browser data:', {
-          cookiesCount: Object.keys(JSON.parse(currentData.Cookies || '{}')).length,
-          localStorageCount: Object.keys(JSON.parse(currentData.LocalStorage || '{}')).length,
-          idbCount: Object.keys(JSON.parse(currentData.IDB || '{}')).length
+        console.log(`Current profile before switch: ${currentProfile}`);
+
+        await this.flushPendingChanges();
+
+        const dataBefore = await this.profiles.getCurrentBrowserState();
+        console.log("Data before save:", {
+          cookiesCount: Object.keys(JSON.parse(dataBefore.Cookies || "{}"))
+            .length,
+          localStorageCount: Object.keys(
+            JSON.parse(dataBefore.LocalStorage || "{}"),
+          ).length,
+          idbCount: Object.keys(JSON.parse(dataBefore.IDB || "{}")).length,
+          localStorageKeys: Object.keys(
+            JSON.parse(dataBefore.LocalStorage || "{}"),
+          ).slice(0, 10),
         });
+
+        console.log(
+          `🔒 Explicitly saving current profile "${currentProfile}" before switch`,
+        );
+        await this.profiles.saveProfile(currentProfile);
+        console.log(
+          `✅ Current profile "${currentProfile}" saved successfully`,
+        );
+
+        const emergencySuccess =
+          this.profiles.emergencySaveProfile(currentProfile);
+        if (emergencySuccess) {
+          console.log(
+            `✅ Emergency backup created for profile "${currentProfile}"`,
+          );
+        } else {
+          console.warn(
+            `⚠️ Emergency backup failed for profile "${currentProfile}"`,
+          );
+        }
+
+        await this.profiles.flushStorageOperations();
+
+        const savedData = await this.profiles.getProfileData(currentProfile);
+        if (savedData) {
+          console.log("✅ Verified saved data:", {
+            cookiesCount: Object.keys(savedData.cookies).length,
+            localStorageCount: Object.keys(savedData.localStorage).length,
+            idbCount: Object.keys(savedData.idb).length,
+            localStorageKeys: Object.keys(savedData.localStorage).slice(0, 10),
+          });
+        } else {
+          console.error(
+            "❌ Failed to verify saved data - profile data is null",
+          );
+        }
       }
-      
-      await this.profiles.switchProfile(profileId);
+
+      await this.profiles.switchProfile(profileId, true);
       this.logger.createLog(`Switched to profile: ${profileId}`);
-      
+
+      await this.profiles.flushStorageOperations();
+      console.log(
+        `✅ All storage operations flushed after switch to: ${profileId}`,
+      );
+
       this.nightmarePlugins.sidemenu.closeMenu();
-      
-      this.modalUtilities.showAlert(`Switched to profile: ${profileId}`, "success");
-      
+
+      this.modalUtilities.showAlert(
+        `Switched to profile: ${profileId}`,
+        "success",
+      );
+
+      console.log(`🔄 Preparing to reload page in 2 seconds...`);
       setTimeout(() => {
+        console.log(`🔄 Reloading page after profile switch to: ${profileId}`);
         window.location.reload();
-      }, 1000);
-      
+      }, 2000);
     } catch (error) {
       console.error("Failed to switch profile:", error);
       this.modalUtilities.showAlert(
@@ -1049,7 +1150,7 @@ export class ProfileManager implements ProfileManagerInterface {
       const cookies = this.profiles.decode(currentData.Cookies);
       const localStorage = this.profiles.decode(currentData.LocalStorage);
       const idb = this.profiles.decode(currentData.IDB);
-      
+
       console.log("=== CURRENT BROWSER DATA INSPECTION ===");
       console.log("Cookies:", Object.keys(cookies).length, "entries");
       console.log("LocalStorage:", Object.keys(localStorage).length, "entries");
@@ -1057,14 +1158,17 @@ export class ProfileManager implements ProfileManagerInterface {
       console.log("Cookie keys:", Object.keys(cookies));
       console.log("LocalStorage keys:", Object.keys(localStorage));
       console.log("IndexedDB databases:", Object.keys(idb));
-      
+
       if (localStorage.testProfileData) {
-        console.log("✅ Found test profile data:", localStorage.testProfileData);
+        console.log(
+          "✅ Found test profile data:",
+          localStorage.testProfileData,
+        );
       }
       if (cookies.testProfileCookie) {
         console.log("✅ Found test profile cookie:", cookies.testProfileCookie);
       }
-      
+
       return { cookies, localStorage, idb };
     } catch (error) {
       console.error("Failed to inspect current data:", error);
@@ -1078,22 +1182,40 @@ export class ProfileManager implements ProfileManagerInterface {
         console.log(`❌ Profile "${profileId}" not found`);
         return;
       }
-      
+
       console.log(`=== PROFILE "${profileId}" DATA INSPECTION ===`);
-      console.log("Cookies:", Object.keys(profileData.cookies).length, "entries");
-      console.log("LocalStorage:", Object.keys(profileData.localStorage).length, "entries");
-      console.log("IndexedDB:", Object.keys(profileData.idb).length, "databases");
+      console.log(
+        "Cookies:",
+        Object.keys(profileData.cookies).length,
+        "entries",
+      );
+      console.log(
+        "LocalStorage:",
+        Object.keys(profileData.localStorage).length,
+        "entries",
+      );
+      console.log(
+        "IndexedDB:",
+        Object.keys(profileData.idb).length,
+        "databases",
+      );
       console.log("Cookie keys:", Object.keys(profileData.cookies));
       console.log("LocalStorage keys:", Object.keys(profileData.localStorage));
       console.log("IndexedDB databases:", Object.keys(profileData.idb));
-      
+
       if (profileData.localStorage.testProfileData) {
-        console.log("✅ Found test profile data:", profileData.localStorage.testProfileData);
+        console.log(
+          "✅ Found test profile data:",
+          profileData.localStorage.testProfileData,
+        );
       }
       if (profileData.cookies.testProfileCookie) {
-        console.log("✅ Found test profile cookie:", profileData.cookies.testProfileCookie);
+        console.log(
+          "✅ Found test profile cookie:",
+          profileData.cookies.testProfileCookie,
+        );
       }
-      
+
       return profileData;
     } catch (error) {
       console.error(`Failed to inspect profile "${profileId}":`, error);
@@ -1102,19 +1224,31 @@ export class ProfileManager implements ProfileManagerInterface {
 
   async createTestData(): Promise<void> {
     try {
-      localStorage.setItem("testProfileData", `Test data created at ${new Date().toISOString()}`);
-      localStorage.setItem("profileTestKey", "This should be saved with the profile");
-      
+      localStorage.setItem(
+        "testProfileData",
+        `Test data created at ${new Date().toISOString()}`,
+      );
+      localStorage.setItem(
+        "profileTestKey",
+        "This should be saved with the profile",
+      );
+
       document.cookie = `testProfileCookie=TestValue_${Date.now()}; path=/`;
-      
+
       console.log("✅ Test data created:");
       console.log("- localStorage: testProfileData, profileTestKey");
       console.log("- Cookie: testProfileCookie");
-      
-      this.modalUtilities.showAlert("Test data created! Check console for details.", "success");
+
+      this.modalUtilities.showAlert(
+        "Test data created! Check console for details.",
+        "success",
+      );
     } catch (error) {
       console.error("Failed to create test data:", error);
-      this.modalUtilities.showAlert(`Failed to create test data: ${error}`, "error");
+      this.modalUtilities.showAlert(
+        `Failed to create test data: ${error}`,
+        "error",
+      );
     }
   }
 }

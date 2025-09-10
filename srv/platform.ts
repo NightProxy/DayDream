@@ -1,5 +1,3 @@
-// I moved this here even though its a simple function because it looks messy in the main file, and i have no better way of doing this currently.
-
 export function getPlatform(PORT: number): {
   method: string;
   extLink: string;

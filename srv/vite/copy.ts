@@ -1,9 +1,9 @@
-//@ts-expect-error
+//@ts-ignore
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
-import { scramjetPath } from "@mercuryworkshop/scramjet";
+import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 import path from "path";
 
@@ -14,9 +14,12 @@ export const routePaths = {
   baremux: "baremux",
   uv: "data",
   reflux: "reflux",
+  auth: "",
 };
 
-const authPath = path.resolve("node_modules/@nightnetwork/night-auth/dist/login");
+const authPath = path.resolve(
+  "node_modules/@nightnetwork/night-auth/dist/login",
+);
 
 const copyMap = {
   epoxy: {
@@ -60,8 +63,27 @@ const copyMap = {
   },
   auth: {
     path: authPath,
-    files: ["*"],
-    dest: "auth",
+    files: [
+      "assets/nightloginflow.css",
+      "night-login-frame.umd.js",
+      "night-login.umd.js",
+      "night-login.es.js.map",
+      "vite.svg",
+      "nightlogo.png",
+      "nightloginflow.css",
+      "bg_alt.jpeg",
+      "nightplus.png",
+      "nightplusheader.png",
+      "nightplus_icon.png",
+      "night-login-frame.es.js",
+      "night-login.umd.js.map",
+      "night-login-frame.es.js.map",
+      "night-login-frame.umd.js.map",
+      "night-login.es.js",
+      "bg.png",
+      "bg_alt_2.png",
+    ],
+    dest: routePaths.auth,
   },
 };
 
@@ -89,7 +111,6 @@ function generateStaticCopyTargets(map: typeof copyMap) {
     }
   }
 
-  // Add additional targets
   targets.push({
     src: `node_modules/eruda/eruda.js`,
     dest: "core",

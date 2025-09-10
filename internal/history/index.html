@@ -5,26 +5,12 @@
     <title>History</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="preload" href="/src/css/pages/history.css" as="style" />
+    <link rel="stylesheet" href="/src/css/pages/history.css" />
     <link rel="stylesheet" href="/src/css/internal.css" />
 
-    <style>
-      *.tw-wait {
-        opacity: 0;
-      }
-    </style>
-    <script>
-      document
-        .querySelectorAll("*")
-        .forEach((el) => el.classList.add("tw-wait"));
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/src/js/internal/history.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
-      document.head.appendChild(s);
-    </script>
-
-    <script type="module"  src="/src/js/internal/history.ts"></script>
+    <script type="module" src="/src/js/internal/history.ts"></script>
   </head>
 
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
@@ -85,25 +71,46 @@
         </div>
 
         <div class="mt-8 relative">
-          <div
-            class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
-          >
-            <i data-lucide="search" class="h-4 w-4 text-[var(--proto)]"></i>
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <div class="flex-1 relative">
+              <div
+                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
+              >
+                <i data-lucide="search" class="h-4 w-4 text-[var(--proto)]"></i>
+              </div>
+              <input
+                id="history-search"
+                class="w-full rounded-xl bg-[var(--bg-2)] pl-12 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+                placeholder="Search your history..."
+                aria-label="Search history"
+                autocomplete="off"
+              />
+              <button
+                id="history-search-clear"
+                class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                aria-label="Clear search"
+              >
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                id="export-history"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Export History"
+              >
+                <i data-lucide="download" class="h-4 w-4"></i>
+              </button>
+              <button
+                id="import-history"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Import History"
+              >
+                <i data-lucide="upload" class="h-4 w-4"></i>
+              </button>
+            </div>
           </div>
-          <input
-            id="history-search"
-            class="w-full rounded-xl bg-[var(--bg-2)] pl-12 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
-            placeholder="Search your history..."
-            aria-label="Search history"
-            autocomplete="off"
-          />
-          <button
-            id="history-search-clear"
-            class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-            aria-label="Clear search"
-          >
-            <i data-lucide="x" class="h-4 w-4"></i>
-          </button>
         </div>
 
         <section class="mt-6" id="history-empty" hidden>
@@ -197,8 +204,19 @@
         <a
           class="group relative rounded-2xl bg-[var(--bg-2)] p-3 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition flex items-center gap-3"
           role="listitem"
+          data-history-id=""
+          data-history-url=""
         >
-          <img class="h-5 w-5 rounded-sm history_favicon" alt="favicon" />
+          <div
+            class="flex-shrink-0 h-5 w-5 rounded-sm overflow-hidden bg-[var(--white-05)] flex items-center justify-center"
+          >
+            <img
+              class="h-5 w-5 rounded-sm history_favicon"
+              alt="favicon"
+              style="display: none"
+            />
+            <i data-lucide="globe" class="h-4 w-4 text-[var(--proto)]"></i>
+          </div>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm text-[var(--text)] history_title"></p>
             <div class="flex items-center gap-2 text-xs text-[var(--proto)]">
@@ -208,7 +226,7 @@
             </div>
           </div>
           <button
-            class="grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            class="flex-shrink-0 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)] opacity-0 group-hover:opacity-100 transition-opacity"
             aria-label="Delete"
             data-action="delete"
           >

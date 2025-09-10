@@ -37,6 +37,7 @@ class Render implements renderInterface {
     document.body.appendChild(bgElement);
 
     const UI = this.ui.createElement("div", { class: "flex h-full" }, [
+      this.ui.createElement("div", { id: "root" }),
       this.ui.createElement(
         "aside",
         {
@@ -126,7 +127,10 @@ class Render implements renderInterface {
               ]),
               this.ui.createElement(
                 "div",
-                { class: "flex flex-col flex-1 justify-center gap-2" },
+                {
+                  class: "flex flex-col flex-1 justify-center gap-2",
+                  id: "extensions-sidebar",
+                },
                 [
                   this.ui.createElement("li", { class: "self-center" }, [
                     this.ui.createElement(
@@ -278,7 +282,7 @@ class Render implements renderInterface {
                   "div",
                   {
                     class:
-                      "flex items-center gap-1 rounded-xl bg-[var(--bg-2)] p-1 ring-1 ml-2 ring-inset ring-[var(--main-35a)]",
+                      "flex items-center gap-1 rounded-xl bg-[var(--bg-2)] p-1 ring-1 ml-2 ring-inset ring-[var(--main-35a)] cursor-pointer",
                   },
                   [
                     this.ui.createElement(
@@ -286,7 +290,7 @@ class Render implements renderInterface {
                       {
                         component: "profiles",
                         class:
-                          "flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--main-20a)]",
+                          "flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--main-20a)] cursor-pointer",
                         "aria-label": "Profiles",
                       },
                       [
@@ -543,8 +547,14 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "plus", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["New Tab"]),
+                                  this.ui.createElement(
+                                    "i",
+                                    { "data-lucide": "plus", class: "h-4 w-4" },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "New Tab",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -557,8 +567,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "monitor", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["New Window"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "monitor",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "New Window",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -571,8 +590,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "eye-off", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["A:B Window"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "eye-off",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "A:B Window",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -585,8 +613,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "maximize", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Fullscreen"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "maximize",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "Fullscreen",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -599,8 +636,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "bookmark", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Bookmarks"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "bookmark",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "Bookmarks",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -613,8 +659,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "history", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["History"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "history",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "History",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -627,8 +682,15 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "dices", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Games"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "dices",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, ["Games"]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -641,8 +703,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "puzzle", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Extensions"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "puzzle",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "Extensions",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -655,8 +726,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "square-mouse-pointer", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Devtools"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "square-mouse-pointer",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "Devtools",
+                                  ]),
                                 ],
                               ),
                               this.ui.createElement(
@@ -669,8 +749,17 @@ class Render implements renderInterface {
                                   },
                                 },
                                 [
-                                  this.ui.createElement("i", { "data-lucide": "settings", class: "h-4 w-4" }, []),
-                                  this.ui.createElement("span", {}, ["Settings"])
+                                  this.ui.createElement(
+                                    "i",
+                                    {
+                                      "data-lucide": "settings",
+                                      class: "h-4 w-4",
+                                    },
+                                    [],
+                                  ),
+                                  this.ui.createElement("span", {}, [
+                                    "Settings",
+                                  ]),
                                 ],
                               ),
                             ],
