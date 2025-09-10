@@ -9,7 +9,7 @@ function fontObfuscationRuntime() {
   if (typeof window !== "undefined" && window.FONT_OBFUSCATION_CONFIG) {
     const config = window.FONT_OBFUSCATION_CONFIG;
     globalObfuscationEnabled = config.enabled !== false;
-    defaultFontType = config.defaultFont || "poppins";
+    defaultFontType = "poppins";
   }
 
   const obfuscationConfig = {
@@ -21,78 +21,48 @@ function fontObfuscationRuntime() {
       "link",
       "[data-no-obfuscate]",
       ".no-obfuscate",
-      "input",
-      "textarea",
-      "select",
-      "option",
-      'input[type="password"]',
-      'input[type="email"]',
-      'input[type="url"]',
       "code",
       "pre",
       "[data-lucide]",
       ".lucide",
       ".lucide-icon",
       "svg[data-lucide]",
-      ".material-icons",
-      ".material-icons-outlined",
-      ".material-symbols-outlined",
-      ".material-icons-round",
-      ".material-icons-sharp",
-      ".material-icons-two-tone",
-      "i.material-icons",
-      "span.material-icons",
-      ".mat-icon",
     ],
     forceObfuscateSelectors: [
       ".obfuscated",
       ".ob-p",
-      ".ob-j",
       "[data-obfuscate]",
       ".tab-title",
       ".menu-text",
       ".ui-text",
     ],
+    inputElements: ["input", "textarea", "select", "option"],
   };
 
   async function initMappings() {
     if (initialized) return;
     try {
       console.log("Font obfuscation: Starting initialization...");
-      const [poppinsMap, poppinsRev, jakartaMap, jakartaRev] =
-        await Promise.all([
-          fetch("/poppins-obf-mappings.json")
-            .then((r) => r.json())
-            .catch((e) => {
-              console.error("Failed to load poppins mappings:", e);
-              return {};
-            }),
-          fetch("/poppins-obf-reverse-mappings.json")
-            .then((r) => r.json())
-            .catch((e) => {
-              console.error("Failed to load poppins reverse mappings:", e);
-              return {};
-            }),
-          fetch("/jakarta-obf-mappings.json")
-            .then((r) => r.json())
-            .catch((e) => {
-              console.error("Failed to load jakarta mappings:", e);
-              return {};
-            }),
-          fetch("/jakarta-obf-reverse-mappings.json")
-            .then((r) => r.json())
-            .catch((e) => {
-              console.error("Failed to load jakarta reverse mappings:", e);
-              return {};
-            }),
-        ]);
+      const [poppinsMap, poppinsRev] = await Promise.all([
+        fetch("/poppins-obf-mappings.json")
+          .then((r) => r.json())
+          .catch((e) => {
+            console.error("Failed to load poppins mappings:", e);
+            return {};
+          }),
+        fetch("/poppins-obf-reverse-mappings.json")
+          .then((r) => r.json())
+          .catch((e) => {
+            console.error("Failed to load poppins reverse mappings:", e);
+            return {};
+          }),
+      ]);
 
-      mappings = { poppins: poppinsMap, jakarta: jakartaMap };
-      reverseMappings = { poppins: poppinsRev, jakarta: jakartaRev };
+      mappings = { poppins: poppinsMap };
+      reverseMappings = { poppins: poppinsRev };
       initialized = true;
       console.log("Font obfuscation mappings loaded successfully");
       console.log("Poppins mappings count:", Object.keys(poppinsMap).length);
-      console.log("Jakarta mappings count:", Object.keys(jakartaMap).length);
 
       setTimeout(() => processExistingDOM(), 100);
     } catch (e) {
@@ -121,11 +91,7 @@ function fontObfuscationRuntime() {
   }
 
   function detectFontType(element) {
-    if (!element || !element.classList) return defaultFontType;
-    if (element.classList.contains("ob-p")) return "poppins";
-    if (element.classList.contains("ob-j")) return "jakarta";
-    if (element.classList.contains("obfuscated")) return defaultFontType;
-    return defaultFontType;
+    return "poppins";
   }
 
   function shouldObfuscate(element) {
@@ -146,18 +112,15 @@ function fontObfuscationRuntime() {
       } catch (e) {}
     }
 
-    if (element.hasAttribute && element.hasAttribute("data-lucide")) {
-      return false;
+    for (const selector of obfuscationConfig.inputElements) {
+      try {
+        if (element.matches && element.matches(selector)) {
+          return true;
+        }
+      } catch (e) {}
     }
 
-    const computedStyle = window.getComputedStyle(element);
-    const fontFamily = computedStyle.fontFamily;
-    if (
-      fontFamily &&
-      (fontFamily.includes("Material Icons") ||
-        fontFamily.includes("Material Symbols") ||
-        fontFamily.includes("material-icons"))
-    ) {
+    if (element.hasAttribute && element.hasAttribute("data-lucide")) {
       return false;
     }
 
@@ -179,20 +142,29 @@ function fontObfuscationRuntime() {
 
   function applyObfuscatedFont(element) {
     if (!element || !shouldObfuscate(element)) return;
+
+    const isInputElement = obfuscationConfig.inputElements.some((selector) => {
+      try {
+        return element.matches && element.matches(selector);
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (isInputElement) {
+      return;
+    }
+
     const fontType = detectFontType(element);
 
     if (
       !element.classList.contains("ob-p") &&
-      !element.classList.contains("ob-j") &&
       !element.classList.contains("obfuscated")
     ) {
-      element.classList.add("ob-" + fontType);
+      element.classList.add("ob-p");
     }
 
-    element.style.fontFamily =
-      fontType === "jakarta"
-        ? "'jakarta-obf', monospace"
-        : "'poppins-obf', monospace";
+    element.style.fontFamily = "'poppins-obf', monospace";
     element.style.fontVariantLigatures = "none";
   }
 
@@ -370,10 +342,6 @@ function fontObfuscationRuntime() {
   function processExistingDOM() {
     if (!initialized) return;
 
-    if (document.title && shouldObfuscate(document.documentElement)) {
-      document.title = encode(document.title, defaultFontType);
-    }
-
     const walker = document.createTreeWalker(
       document.body || document.documentElement,
       NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
@@ -434,20 +402,6 @@ function fontObfuscationRuntime() {
     });
   }
 
-  let originalTitle = document.title;
-  Object.defineProperty(document, "title", {
-    get: () => originalTitle,
-    set: (newTitle) => {
-      originalTitle = newTitle;
-      if (shouldObfuscate(document.documentElement)) {
-        document.getElementsByTagName("title")[0].textContent = encode(
-          newTitle,
-          defaultFontType,
-        );
-      }
-    },
-  });
-
   window.fontObfuscation = {
     encode,
     decode,
@@ -471,9 +425,6 @@ function fontObfuscationRuntime() {
           document.fonts.load("16px poppins-obf"),
           document.fonts.load("14px poppins-obf"),
           document.fonts.load("18px poppins-obf"),
-          document.fonts.load("16px jakarta-obf"),
-          document.fonts.load("14px jakarta-obf"),
-          document.fonts.load("18px jakarta-obf"),
         ]);
         await new Promise((resolve) => setTimeout(resolve, 100));
         console.log("Obfuscated fonts loaded successfully");

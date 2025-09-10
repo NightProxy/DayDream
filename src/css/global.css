@@ -241,7 +241,7 @@ li {
 }
 
 #menu-popup * {
-  z-index: 99999999999 !important;
+  z-index: 9999 !important;
   position: relative;
 }
 
@@ -251,14 +251,14 @@ li {
 
 [data-tooltip] {
   position: relative;
-  z-index: 999999999;
+  z-index: 9999;
   overflow: visible !important;
 }
 
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  z-index: 99999 !important;
+  z-index: 999 !important;
   overflow: visible !important;
   max-width: 28rem;
   padding: 6px 8px;
@@ -344,6 +344,14 @@ li {
 .profile-manager-menu {
   font-family: inherit;
   line-height: 1.4;
+  top: 2rem;
+  left: 3.5rem;
+  position: fixed;
+  box-shadow:
+    #000000 0px 5px 5px -3px,
+    #000000 0px 4px 6px -2px,
+    inset 0 0 8px 3px var(--shadow-inner),
+    inset 0 0 12px 6px var(--shadow-inner);
 }
 
 .profile-manager-menu button {
@@ -424,7 +432,6 @@ li {
 
 @keyframes fadeIn {
   from {
-    opacity: 0;
   }
   to {
     opacity: 1;
@@ -433,8 +440,6 @@ li {
 
 @keyframes slideIn {
   from {
-    transform: scale(0.95);
-    opacity: 0;
   }
   to {
     transform: scale(1);
@@ -468,15 +473,11 @@ li {
 }
 
 .tab-anim {
-  opacity: 0;
-  transform: translateY(-8px);
   animation: tab-fade-in var(--tab-enter-duration) var(--tab-enter-ease) both;
 }
 
 @keyframes tab-fade-in {
   from {
-    opacity: 0;
-    transform: translateY(-8px);
   }
 
   to {
@@ -649,4 +650,120 @@ div[component="utility-bar"] {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
+}
+
+.click-menu-container {
+  position: fixed;
+  z-index: 99999;
+  animation: context-menu-appear 0.15s ease-out;
+}
+
+@keyframes context-menu-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.click-menu-container .group:hover > div:last-child {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.click-menu-container .group > div:last-child {
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.tab[data-group-id]::after {
+  transition: all 0.2s ease;
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  border-radius: 0 0 12px 12px;
+  background: color-mix(
+    in oklab,
+    var(--group-color, var(--main)) 85%,
+    transparent
+  );
+  opacity: 0.8;
+  pointer-events: none;
+  box-shadow: 0 2px 2px -1px
+    color-mix(in oklab, var(--group-color, var(--main)) 75%, transparent);
+}
+
+.tab[data-group-id].active::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 4px;
+  border-radius: 0 0 12px 12px;
+  background: color-mix(
+    in oklab,
+    var(--group-color, var(--main)) 85%,
+    transparent
+  );
+  opacity: 0.8;
+  pointer-events: none;
+  box-shadow: 0 2px 2px -1px
+    color-mix(in oklab, var(--group-color, var(--main)) 75%, transparent);
+}
+
+.tab-group-header {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-70);
+  background: var(--bg-2);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-group-header:hover {
+  color: var(--text);
+}
+
+.tab-group-header.collapsed {
+  opacity: 0.9;
+}
+
+.tab-group-header.collapsed > .tab-group-indicator {
+  width: 20px;
+  height: 20px;
+  margin: 0px;
+  margin-left: 2px;
+}
+
+.tab-group-indicator {
+  width: 24px;
+  height: 24px;
+  margin: -4px;
+  margin-right: 0;
+  margin-left: 0;
+  border-radius: 6px;
+  background: var(--group-color, var(--main));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tab-group-indicator > span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
 }

@@ -78,6 +78,7 @@ export interface TabsInterface {
 
   setupTabContextMenu: (tabElement: HTMLElement, tabId: string) => void;
   setupSortable: () => void;
+  layoutTabs: () => void;
 
   renameGroup: (groupId: string, newName?: string) => boolean;
   changeGroupColor: (groupId: string, color: string) => boolean;
@@ -89,6 +90,7 @@ export interface TabsInterface {
   toggleGroup: (groupId: string) => boolean;
   getTabGroup: (tabId: string) => TabGroup | null;
   getGroupTabs: (groupId: string) => TabData[];
+  closeAllTabsInGroup: (groupId: string) => boolean;
 
   togglePinTab: (tabId: string) => void;
   isPinned: (tabId: string) => boolean;

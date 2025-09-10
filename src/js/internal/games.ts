@@ -5,7 +5,7 @@ import "../../css/internal.css";
 import "./shared/themeInit";
 import "basecoat-css/all";
 import "../global/panic";
-//import { Nightmare } from "@libs/Nightmare/nightmare";
+
 import { SettingsAPI } from "@apis/settings";
 import { Proxy } from "@apis/proxy";
 import { createIcons, icons } from "lucide";
@@ -17,7 +17,6 @@ interface Game {
   categories: string[];
 }
 
-// --- MAIN PAGE LOGIC ---
 document.addEventListener("DOMContentLoaded", async () => {
   let games: Game[] = [];
 
@@ -122,7 +121,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
 });
 
-// --- STICKY SEARCH BAR ---
 window.addEventListener("DOMContentLoaded", () => {
   const searchBar = document.getElementById("games-search")?.parentElement;
   if (searchBar) {
@@ -130,14 +128,12 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// --- DEFERRED PROXY/NIGHTMARE LOGIC ---
 window.addEventListener("DOMContentLoaded", () => {
   setTimeout(async () => {
-    //const nightmare = new Nightmare();
     const settingsAPI = new SettingsAPI();
     const proxy = new Proxy();
     const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
-    //let swConfigSettings: Record<string, any> = {};
+
     const swConfig = {
       uv: {
         type: "sw",
@@ -173,19 +169,23 @@ window.addEventListener("DOMContentLoaded", () => {
       },
     };
     if (
-      typeof swConfig[proxySetting as keyof typeof swConfig].func === "function" &&
+      typeof swConfig[proxySetting as keyof typeof swConfig].func ===
+        "function" &&
       proxySetting === "sj"
     ) {
-      await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
+      await (
+        swConfig[proxySetting as keyof typeof swConfig].func as Function
+      )();
     }
-    proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]).then(async () => {
-      await proxy.setTransports().then(async () => {
-        const transport = await proxy.connection.getTransport();
-        if (transport == null) {
-          proxy.setTransports();
-        }
+    proxy
+      .registerSW(swConfig[proxySetting as keyof typeof swConfig])
+      .then(async () => {
+        await proxy.setTransports().then(async () => {
+          const transport = await proxy.connection.getTransport();
+          if (transport == null) {
+            proxy.setTransports();
+          }
+        });
       });
-    });
-    // ...existing code for launch logic...
-  }, 0); // Defer to next tick for faster initial paint
+  }, 0);
 });

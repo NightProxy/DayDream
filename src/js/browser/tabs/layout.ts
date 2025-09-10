@@ -1,4 +1,5 @@
 import type { TabsInterface } from "./types";
+import { createIcons, icons } from "lucide";
 
 export class TabLayout {
   private tabs: TabsInterface;
@@ -117,4 +118,409 @@ export class TabLayout {
   popGlow = (el: HTMLElement) => {
     el.style.transition = ".4s ease-out";
   };
+
+  renderGroupHeaders = (): void => {
+    const existingHeaders = this.tabs.el.querySelectorAll(".tab-group-header");
+    existingHeaders.forEach((header) => header.remove());
+
+    const groupedTabs = new Map<string, any[]>();
+    let ungroupedTabs: any[] = [];
+
+    this.tabs.tabs.forEach((tab) => {
+      if (tab.groupId) {
+        if (!groupedTabs.has(tab.groupId)) {
+          groupedTabs.set(tab.groupId, []);
+        }
+        groupedTabs.get(tab.groupId)!.push(tab);
+      } else {
+        ungroupedTabs.push(tab);
+      }
+    });
+
+    groupedTabs.forEach((groupTabs, groupId) => {
+      const group = this.tabs.groups.find((g: any) => g.id === groupId);
+      if (!group || groupTabs.length === 0) return;
+
+      const firstTabElement = document.getElementById(groupTabs[0].id);
+      if (!firstTabElement) return;
+
+      const groupHeader = this.tabs.ui.createElement(
+        "div",
+        {
+          class: `tab-group-header ${group.isCollapsed ? "collapsed" : ""}`,
+          "data-group-id": groupId,
+          "data-tooltip": `${group.isCollapsed ? "Click to expand" : "Click to collapse"} • ${groupTabs.length} tabs • Drag to move group`,
+          onclick: () => this.tabs.groupManager.toggleGroup(groupId),
+          draggable: true,
+        },
+        [
+          this.tabs.ui.createElement(
+            "div",
+            {
+              class: "tab-group-indicator",
+              style: `background-color: ${group.color};`,
+            },
+            [
+              this.tabs.ui.createElement(
+                "span",
+                {
+                  class: "text-xs opacity-60",
+                },
+                [`${groupTabs.length}`],
+              ),
+            ],
+          ),
+          this.tabs.ui.createElement("span", {}, [group.name]),
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": group.isCollapsed
+                ? "chevron-right"
+                : "chevron-down",
+              class: "h-3 w-3 ml-1",
+            },
+            [],
+          ),
+        ],
+      );
+
+      firstTabElement.parentNode!.insertBefore(groupHeader, firstTabElement);
+
+      this.setupGroupHeaderContextMenu(groupHeader, group);
+    });
+  };
+
+  private setupGroupHeaderContextMenu = (
+    headerElement: HTMLElement,
+    group: any,
+  ) => {
+    const menuItems = [];
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            this.tabs.groupManager.renameGroup(group.id);
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "edit-3",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Rename Group"]),
+        ],
+      ),
+    );
+
+    const colorSubmenu = this.tabs.ui.createElement(
+      "div",
+      { class: "relative group" },
+      [
+        this.tabs.ui.createElement(
+          "button",
+          {
+            class:
+              "flex items-center justify-between gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md",
+          },
+          [
+            this.tabs.ui.createElement(
+              "div",
+              { class: "flex items-center gap-3" },
+              [
+                this.tabs.ui.createElement(
+                  "i",
+                  {
+                    "data-lucide": "palette",
+                    class: "h-4 w-4",
+                  },
+                  [],
+                ),
+                this.tabs.ui.createElement("span", {}, ["Change Color"]),
+              ],
+            ),
+            this.tabs.ui.createElement(
+              "i",
+              {
+                "data-lucide": "chevron-right",
+                class: "h-3 w-3",
+              },
+              [],
+            ),
+          ],
+        ),
+        this.tabs.ui.createElement(
+          "div",
+          {
+            class:
+              "absolute left-full top-0 ml-1 min-w-32 bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50",
+          },
+          [
+            "#EF4444",
+            "#F97316",
+            "#EAB308",
+            "#22C55E",
+            "#06B6D4",
+            "#3B82F6",
+            "#8B5CF6",
+            "#EC4899",
+          ].map((color) =>
+            this.tabs.ui.createElement(
+              "button",
+              {
+                class:
+                  "flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left",
+                onclick: () => {
+                  this.tabs.groupManager.changeGroupColor(group.id, color);
+                  this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+                },
+              },
+              [
+                this.tabs.ui.createElement("span", {
+                  class: "w-4 h-4 rounded-full border border-[var(--white-08)]",
+                  style: `background-color: ${color};`,
+                }),
+                this.tabs.ui.createElement("span", { class: "text-xs" }, [
+                  color.toUpperCase(),
+                ]),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+    menuItems.push(colorSubmenu);
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            this.tabs.groupManager.toggleGroup(group.id);
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": group.isCollapsed
+                ? "folder-open"
+                : "folder-closed",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, [
+            group.isCollapsed ? "Expand Group" : "Collapse Group",
+          ]),
+        ],
+      ),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement("div", {
+        class: "h-px bg-[var(--white-08)] my-1",
+      }),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            group.tabIds.forEach((tabId: string) => {
+              this.tabs.selectTabById(tabId);
+            });
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "mouse-pointer-click",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Select All Tabs"]),
+        ],
+      ),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            group.tabIds.forEach((tabId: string) => {
+              const tab = this.tabs.tabs.find((t: any) => t.id === tabId);
+              if (tab) {
+                const tabElement = document.getElementById(tabId);
+                let title = tab.url;
+                if (tabElement) {
+                  const titleEl = tabElement.querySelector(
+                    ".tab-title, [data-tab-title]",
+                  );
+                  if (titleEl?.textContent) {
+                    title = titleEl.textContent.trim();
+                  }
+                }
+                this.tabs.bookmarkManager.addBookmark(tab.url, title);
+              }
+            });
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "bookmark-plus",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Bookmark All Tabs"]),
+        ],
+      ),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement("div", {
+        class: "h-px bg-[var(--white-08)] my-1",
+      }),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 text-yellow-400 hover:text-yellow-300 transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            if (confirm(`Ungroup all tabs from "${group.name}"?`)) {
+              this.tabs.groupManager.ungroupAllTabs(group.id);
+            }
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "folder-open",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Ungroup All Tabs"]),
+        ],
+      ),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            if (confirm(`Close all tabs in "${group.name}"?`)) {
+              this.tabs.closeAllTabsInGroup(group.id);
+            }
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "folder-x",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Close All Tabs"]),
+        ],
+      ),
+    );
+
+    menuItems.push(
+      this.tabs.ui.createElement(
+        "button",
+        {
+          class:
+            "flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md",
+          onclick: () => {
+            if (confirm(`Delete group "${group.name}" and all its tabs?`)) {
+              this.tabs.groupManager.deleteGroup(group.id);
+            }
+            this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
+          },
+        },
+        [
+          this.tabs.ui.createElement(
+            "i",
+            {
+              "data-lucide": "trash-2",
+              class: "h-4 w-4",
+            },
+            [],
+          ),
+          this.tabs.ui.createElement("span", {}, ["Delete Group"]),
+        ],
+      ),
+    );
+
+    const menu = this.tabs.ui.createElement(
+      "div",
+      {
+        class:
+          "fixed z-50 bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 min-w-48",
+        style: "backdrop-filter: blur(8px);",
+      },
+      menuItems,
+    );
+
+    this.initializeLucideIcons(menu);
+
+    this.tabs.nightmarePlugins.rightclickmenu.attachTo(headerElement, () => {
+      return menu;
+    });
+    createIcons({ icons });
+  };
+
+  private initializeLucideIcons(container: HTMLElement) {
+    if (typeof window !== "undefined" && (window as any).lucide) {
+      try {
+        const icons = container.querySelectorAll("[data-lucide]");
+        if (icons.length > 0) {
+          (window as any).lucide.createIcons({
+            nameAttr: "data-lucide",
+            icons: (window as any).lucide.icons,
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to initialize Lucide icons:", error);
+      }
+    }
+  }
 }
+
+createIcons({ icons });

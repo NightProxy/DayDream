@@ -18,26 +18,36 @@ export class InternalPageTheme {
     }
 
     try {
-      console.log(`[${window.location.pathname}] Initializing internal page theme system...`);
-      
+      console.log(
+        `[${window.location.pathname}] Initializing internal page theme system...`,
+      );
+
       await this.theming.init();
-      
+
       this.setupThemeSynchronization();
-      
+
       await this.applyCurrentTheme();
-      
+
       this.initialized = true;
-      
-      console.log(`[${window.location.pathname}] Internal page theme system initialized successfully`);
+
+      console.log(
+        `[${window.location.pathname}] Internal page theme system initialized successfully`,
+      );
     } catch (error) {
-      console.error(`[${window.location.pathname}] Failed to initialize internal page theme system:`, error);
+      console.error(
+        `[${window.location.pathname}] Failed to initialize internal page theme system:`,
+        error,
+      );
     }
   }
 
   private setupThemeSynchronization(): void {
     this.events.addEventListener("theme:global-update", async (event: any) => {
       if (!event.detail) {
-        console.warn("Received theme:global-update event without detail:", event);
+        console.warn(
+          "Received theme:global-update event without detail:",
+          event,
+        );
         return;
       }
 
@@ -47,30 +57,42 @@ export class InternalPageTheme {
         return;
       }
 
-      console.log(`[${window.location.pathname}] Received global theme update:`, event.detail);
+      console.log(
+        `[${window.location.pathname}] Received global theme update:`,
+        event.detail,
+      );
 
       switch (type) {
         case "preset":
           if (theme && theme !== this.theming.currentTheme) {
-            console.log(`[${window.location.pathname}] Applying theme preset: ${theme}`);
+            console.log(
+              `[${window.location.pathname}] Applying theme preset: ${theme}`,
+            );
             await this.theming.applyTheme(theme);
           }
           break;
 
         case "color":
         case "accent":
-          if (color && (this.theming.currentTheme === "custom" || 
-              this.theming.themes[this.theming.currentTheme]?.customizable)) {
-            console.log(`[${window.location.pathname}] Applying custom color: ${color}`);
+          if (
+            color &&
+            (this.theming.currentTheme === "custom" ||
+              this.theming.themes[this.theming.currentTheme]?.customizable)
+          ) {
+            console.log(
+              `[${window.location.pathname}] Applying custom color: ${color}`,
+            );
             await this.theming.applyCustomMainColor(color);
           }
           break;
 
         case "colorRole":
           if (colorRole) {
-            console.log(`[${window.location.pathname}] Applying color role: ${colorRole}`);
+            console.log(
+              `[${window.location.pathname}] Applying color role: ${colorRole}`,
+            );
             await this.theming.applyColorRole(colorRole);
-            
+
             if (color) {
               await this.theming.applyCustomMainColor(color);
             }
@@ -80,7 +102,9 @@ export class InternalPageTheme {
     });
 
     this.events.addEventListener("theme:template-change", async () => {
-      console.log(`[${window.location.pathname}] Template change detected, reapplying theme`);
+      console.log(
+        `[${window.location.pathname}] Template change detected, reapplying theme`,
+      );
       await this.applyCurrentTheme();
     });
 
@@ -93,26 +117,29 @@ export class InternalPageTheme {
   private async applyCurrentTheme(): Promise<void> {
     try {
       await this.theming.applyTheme(this.theming.currentTheme);
-      
-      if (this.theming.customMainColor && 
-          (this.theming.currentTheme === "custom" || 
-           this.theming.themes[this.theming.currentTheme]?.customizable)) {
+
+      if (
+        this.theming.customMainColor &&
+        (this.theming.currentTheme === "custom" ||
+          this.theming.themes[this.theming.currentTheme]?.customizable)
+      ) {
         await this.theming.applyCustomMainColor(this.theming.customMainColor);
       }
 
       if (this.theming.selectedColorRole) {
         await this.theming.applyColorRole(this.theming.selectedColorRole);
       }
-      
     } catch (error) {
-      console.error(`[${window.location.pathname}] Failed to apply current theme:`, error);
+      console.error(
+        `[${window.location.pathname}] Failed to apply current theme:`,
+        error,
+      );
     }
   }
 
   getTheming(): Themeing {
     return this.theming;
   }
-
 
   getEvents(): EventSystem {
     return this.events;

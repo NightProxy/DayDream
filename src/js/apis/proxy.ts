@@ -220,7 +220,6 @@ class Proxy implements ProxyInterface {
   }
 
   async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
-    // Resolve the service worker configuration first (supports auto mode)
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -233,15 +232,14 @@ class Proxy implements ProxyInterface {
     await this.registerSW(swConfigSettings);
     await this.setTransports();
 
-    const activeIframe: HTMLIFrameElement | null = document.querySelector(
-      "iframe.active",
-    );
+    const activeIframe: HTMLIFrameElement | null =
+      document.querySelector("iframe.active");
     if (!activeIframe) return;
 
     switch (swConfigSettings.type) {
       case "sw": {
         let encodedUrl: string;
-        // Mirror DY routing behavior used elsewhere
+
         if (proxySetting === "dy") {
           encodedUrl =
             swConfigSettings.config.prefix +
@@ -263,7 +261,6 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
-    // Resolve the service worker configuration first (supports auto mode)
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -279,9 +276,9 @@ class Proxy implements ProxyInterface {
     switch (swConfigSettings.type) {
       case "sw": {
         let encodedUrl: string;
-          encodedUrl =
-            swConfigSettings.config.prefix +
-            window.__uv$config.encodeUrl(this.search(url));
+        encodedUrl =
+          swConfigSettings.config.prefix +
+          window.__uv$config.encodeUrl(this.search(url));
         location.href = encodedUrl;
         break;
       }
@@ -293,7 +290,6 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
-    // Resolve the service worker configuration first (supports auto mode)
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);

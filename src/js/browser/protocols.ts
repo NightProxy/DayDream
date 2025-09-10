@@ -153,8 +153,21 @@ class Protocols implements ProtoInterface {
     const iframe = this.items.frameContainer!.querySelector(
       "iframe.active",
     ) as HTMLIFrameElement | null;
-    iframe!.setAttribute("src", processedUrl);
-    this.logging.createLog(`Navigated to: ${processedUrl}`);
+
+    if (iframe) {
+      iframe.setAttribute("src", processedUrl);
+      this.logging.createLog(`Navigated to: ${processedUrl}`);
+
+      window.dispatchEvent(
+        new CustomEvent("tabNavigated", {
+          detail: {
+            tabId: iframe.getAttribute("data-tab-id") || "unknown",
+            url: processedUrl,
+            fromProtocol: true,
+          },
+        }),
+      );
+    }
   }
 
   private joinURL(base: string, path: string): string {

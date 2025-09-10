@@ -19,6 +19,7 @@ interface ThemePreset {
   "faded-main-color": string;
   "accent-colors": string[];
   "color-roles"?: Record<string, string>;
+  "background-image"?: string;
   customizable?: boolean;
 }
 
@@ -100,7 +101,6 @@ class Themeing implements ThemeingInterface {
         }
         await this.applyTheme(this.currentTheme);
 
-        // Emit cross-page update for other pages/iframes
         this.events.emit("theme:global-update", {
           type: "preset",
           theme: theme,
@@ -120,7 +120,6 @@ class Themeing implements ThemeingInterface {
         }
       }
 
-      // If we're in custom mode or a theme that allows customization, apply the color
       if (
         this.customMainColor &&
         (this.currentTheme === "custom" ||
@@ -128,7 +127,6 @@ class Themeing implements ThemeingInterface {
       ) {
         await this.applyCustomMainColor(this.customMainColor);
 
-        // Emit cross-page update for other pages/iframes
         this.events.emit("theme:global-update", {
           type: "color",
           color: this.customMainColor,
@@ -148,7 +146,6 @@ class Themeing implements ThemeingInterface {
         this.customMainColor = color;
         await this.settings.setItem("themeColor", color);
 
-        // Emit cross-page update for other pages/iframes
         this.events.emit("theme:global-update", {
           type: "accent",
           color: color,
@@ -164,7 +161,6 @@ class Themeing implements ThemeingInterface {
         const { roleName, color } = event.detail;
         await this.applyColorRole(roleName);
 
-        // If a specific color is provided with the role, use it
         if (color) {
           await this.applyCustomMainColor(color);
           this.customMainColor = color;
@@ -174,7 +170,6 @@ class Themeing implements ThemeingInterface {
         this.selectedColorRole = roleName;
         await this.settings.setItem("selectedColorRole", roleName);
 
-        // Emit cross-page update for other pages/iframes
         this.events.emit("theme:global-update", {
           type: "colorRole",
           colorRole: roleName,
@@ -185,9 +180,7 @@ class Themeing implements ThemeingInterface {
       },
     );
 
-    // Listen for global theme updates from other pages
     this.events.addEventListener("theme:global-update", async (event: any) => {
-      // Safety check for event.detail
       if (!event.detail) {
         console.warn(
           "Received theme:global-update event without detail:",
@@ -198,7 +191,6 @@ class Themeing implements ThemeingInterface {
 
       const { type, theme, color, colorRole, timestamp } = event.detail;
 
-      // Prevent processing our own events (basic loop prevention)
       if (timestamp && Date.now() - timestamp < 100) {
         return;
       }
@@ -266,9 +258,11 @@ class Themeing implements ThemeingInterface {
     try {
       console.log("Loading theme presets from /json/themes/presets.json");
       const response = await fetch("/json/themes/presets.json");
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to load theme presets`);
+        throw new Error(
+          `HTTP ${response.status}: Failed to load theme presets`,
+        );
       }
 
       const contentType = response.headers.get("content-type");
@@ -277,12 +271,11 @@ class Themeing implements ThemeingInterface {
       }
 
       const themesData = await response.json();
-      
+
       if (!themesData || typeof themesData !== "object") {
         throw new Error("Invalid theme data format");
       }
 
-      // Validate and count themes
       const validThemeCount = Object.keys(themesData).length;
       if (validThemeCount === 0) {
         throw new Error("No themes found in data");
@@ -293,8 +286,7 @@ class Themeing implements ThemeingInterface {
     } catch (error) {
       console.error("Error loading theme presets:", error);
       console.log("Using fallback themes");
-      
-      // Enhanced fallback themes if loading fails
+
       this.themes = {
         custom: {
           name: "Custom",
@@ -344,15 +336,15 @@ class Themeing implements ThemeingInterface {
             "#94e2d5",
             "#a6e3a1",
             "#f9e2af",
-            "#f38ba8"
+            "#f38ba8",
           ],
           "color-roles": {
-            "mauve": "#cba6f7",
-            "blue": "#89b4fa",
-            "teal": "#94e2d5",
-            "green": "#a6e3a1",
-            "yellow": "#f9e2af",
-            "pink": "#f38ba8"
+            mauve: "#cba6f7",
+            blue: "#89b4fa",
+            teal: "#94e2d5",
+            green: "#a6e3a1",
+            yellow: "#f9e2af",
+            pink: "#f38ba8",
           },
           customizable: true,
         },
@@ -371,15 +363,16 @@ class Themeing implements ThemeingInterface {
     const theme = this.themes[themeName];
     const root = document.documentElement;
 
-    // Apply all theme properties
     Object.entries(theme).forEach(([property, value]) => {
       if (
         property === "name" ||
         property === "description" ||
         property === "accent-colors" ||
+        property === "color-roles" ||
+        property === "background-image" ||
         property === "customizable"
       ) {
-        return; // Skip metadata properties
+        return;
       }
 
       if (typeof value === "string") {
@@ -387,17 +380,14 @@ class Themeing implements ThemeingInterface {
       }
     });
 
-    // Apply background color to body as well
     if (theme["background-color"]) {
       document.body.style.backgroundColor = theme["background-color"];
     }
 
-    // Apply text color to body as well
     if (theme["text-color"]) {
       document.body.style.color = theme["text-color"];
     }
 
-    // Update legacy CSS variables for compatibility
     if (theme["background-color"]) {
       root.style.setProperty("--bg-2", theme["background-color"]);
     }
@@ -408,7 +398,6 @@ class Themeing implements ThemeingInterface {
       root.style.setProperty("--text", theme["text-color"]);
     }
 
-    // Apply custom main color if available and theme allows it
     if (
       this.customMainColor &&
       (themeName === "custom" || theme.customizable)
@@ -416,16 +405,27 @@ class Themeing implements ThemeingInterface {
       await this.applyCustomMainColor(this.customMainColor);
     }
 
-    // Update the main color CSS variable for compatibility
     const mainColor = this.customMainColor || theme["main-color"];
     root.style.setProperty("--main-color", mainColor);
-    root.style.setProperty("--main", mainColor); // For compatibility
+    root.style.setProperty("--main", mainColor);
 
-    // Generate and apply color variations
     const colorVariations = this.generateColorVariations(mainColor);
     Object.entries(colorVariations).forEach(([property, value]) => {
       root.style.setProperty(`--${property}`, value);
     });
+
+    if (theme["background-image"]) {
+      try {
+        await this.settings.setItem(
+          "theme:background-image",
+          theme["background-image"],
+        );
+      } catch (error) {
+        console.warn("Could not save theme background image:", error);
+      }
+    }
+
+    await this.setBackgroundImage();
 
     console.log(`Applied theme: ${theme.name}`);
   }
@@ -434,15 +434,13 @@ class Themeing implements ThemeingInterface {
     const root = document.documentElement;
 
     root.style.setProperty("--main-color", color);
-    root.style.setProperty("--main", color); // For compatibility
+    root.style.setProperty("--main", color);
 
-    // Generate and apply color variations
     const variations = this.generateColorVariations(color);
     Object.entries(variations).forEach(([property, value]) => {
       root.style.setProperty(`--${property}`, value);
     });
 
-    // Update hover background color based on main color
     const fadedMainColor = this.fadeColor(color, 0.26);
     root.style.setProperty("--faded-main-color", fadedMainColor);
     root.style.setProperty(
@@ -460,10 +458,54 @@ class Themeing implements ThemeingInterface {
   }
 
   async setBackgroundImage() {
-    // Background image functionality removed - using theme background colors only
-    console.log(
-      "Background image functionality disabled - using theme background colors",
-    );
+    try {
+      const backgroundImage = await this.settings.getItem(
+        "theme:background-image",
+      );
+      const root = document.documentElement;
+
+      if (backgroundImage) {
+        // Set the background image URL
+        root.style.setProperty(
+          "--background-image-url",
+          `url("${backgroundImage}")`,
+        );
+        root.style.setProperty("--has-background-image", "1");
+
+        // Apply background image to body for internal pages
+        if (window.location.pathname.startsWith("/internal/")) {
+          document.body.style.backgroundImage = `url("${backgroundImage}")`;
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundPosition = "center";
+          document.body.style.backgroundRepeat = "no-repeat";
+          document.body.style.backgroundAttachment = "fixed";
+
+          // Add a class to indicate background image is present
+          document.documentElement.classList.add("has-background-image");
+        }
+
+        console.log("Applied background image successfully");
+      } else {
+        // Remove background image properties
+        root.style.removeProperty("--background-image-url");
+        root.style.removeProperty("--has-background-image");
+
+        if (window.location.pathname.startsWith("/internal/")) {
+          document.body.style.removeProperty("background-image");
+          document.body.style.removeProperty("background-size");
+          document.body.style.removeProperty("background-position");
+          document.body.style.removeProperty("background-repeat");
+          document.body.style.removeProperty("background-attachment");
+
+          // Remove the background image class
+          document.documentElement.classList.remove("has-background-image");
+        }
+
+        console.log("Removed background image");
+      }
+    } catch (error) {
+      console.error("Error setting background image:", error);
+    }
   }
 
   getAccentColors(themeName?: string): string[] {
@@ -526,7 +568,6 @@ class Themeing implements ThemeingInterface {
     );
 
     if (!colorMatch) {
-      // Try hex color
       const hexMatch = color.match(/^#([0-9a-f]{3,8})$/i);
       if (hexMatch) {
         const hex = hexMatch[1];
@@ -560,22 +601,17 @@ class Themeing implements ThemeingInterface {
   }
 }
 
-// Create a global instance for use across the application
 const globalTheming = new Themeing();
 
-// Auto-initialize the theming system when imported
-if (typeof window !== 'undefined') {
-  // Check if we're in a browser environment
+if (typeof window !== "undefined") {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       globalTheming.init();
     });
   } else {
-    // DOM is already ready
     globalTheming.init();
   }
-  
-  // Make theming available globally for debugging and cross-page access
+
   (window as any).globalTheming = globalTheming;
 }
 

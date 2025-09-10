@@ -74,9 +74,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
   };
 
-  const render = new Render(
-    document.getElementById("browser-container") as HTMLDivElement,
-  );
+  const container: HTMLDivElement | null = document.getElementById(
+    "browser-container",
+  ) as HTMLDivElement;
+
+  const render = new Render(container);
 
   setTimeout(() => {
     const theming = universalTheme.getTheming();

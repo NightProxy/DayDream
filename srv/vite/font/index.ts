@@ -12,7 +12,6 @@ export function fontObfuscationPlugin() {
   return {
     name: "vite-plugin-font-obfuscation",
     configureServer(server: any) {
-      // Serve placeholder files during development
       server.middlewares.use("/ob-fonts.css", (_req: any, res: any) => {
         res.setHeader("Content-Type", "text/css");
         res.end("/* Obfuscated fonts loading... */");
@@ -25,9 +24,8 @@ export function fontObfuscationPlugin() {
       });
     },
     transformIndexHtml: {
-      order: "pre",
+      order: "pre" as const,
       handler(html: string, ctx: any) {
-        // Add obfuscated fonts CSS and JS to all HTML files
         return html.replace(
           /<\/head>/,
           `    <link rel="stylesheet" href="/ob-fonts.css">
@@ -35,10 +33,10 @@ export function fontObfuscationPlugin() {
       // Global font obfuscation configuration
       window.FONT_OBFUSCATION_CONFIG = {
         enabled: true,
-        defaultFont: 'poppins', // 'poppins' or 'jakarta'
-        excludeInputs: true,     // Don't obfuscate form inputs
-        obfuscateTitle: true,    // Obfuscate document title
-        obfuscatePlaceholders: true // Obfuscate input placeholders
+        defaultFont: 'poppins',       // Only Poppins is supported
+        excludeInputs: false,         // Obfuscate input text but preserve styling
+        obfuscateTitle: false,        // Obfuscate document title
+        obfuscatePlaceholders: false  // Obfuscate input placeholders
       };
     </script>
     <script src="/ob-fonts.js"></script>
@@ -49,10 +47,6 @@ export function fontObfuscationPlugin() {
     async generateBundle(options: any, bundle: any) {
       const availableFonts = [
         { path: "./public/ttf/Poppins-Regular.ttf", name: "poppins-obf" },
-        {
-          path: "./public/ttf/PlusJakartaSans-Regular.ttf",
-          name: "jakarta-obf",
-        },
       ];
 
       function shuffle(arr: any[]) {
@@ -66,21 +60,17 @@ export function fontObfuscationPlugin() {
       function getChineseChars(count = 52) {
         const chars: string[] = [];
 
-        // main chinese chars
         for (let i = 0x4e00; i <= 0x9fff; i++) {
           try {
             const ch = String.fromCodePoint(i);
             if (ch.length <= 2 && ch.trim() !== "") {
               chars.push(ch);
             }
-          } catch (e) {
-            // skip invalid chars
-          }
+          } catch (e) {}
 
           if (chars.length >= count * 10) break;
         }
 
-        // some extras if needed
         if (chars.length < count * 2) {
           for (let i = 0x3400; i <= 0x4dbf; i++) {
             try {
@@ -107,7 +97,6 @@ export function fontObfuscationPlugin() {
         return unique.slice(0, count);
       }
 
-      // Generate fonts for each available font
       for (const fontConfig of availableFonts) {
         if (!fs.existsSync(fontConfig.path)) {
           console.log(`Font not found: ${fontConfig.path}, skipping...`);
@@ -135,7 +124,6 @@ export function fontObfuscationPlugin() {
           });
         });
 
-        // .notdef glyph
         const notdefGlyph = new opentype.Glyph({
           name: ".notdef",
           unicode: 0,
@@ -187,11 +175,9 @@ export function fontObfuscationPlugin() {
           glyphs: glyphs,
         });
 
-        // Generate font files and add them to the bundle
         const ttfBuffer = Buffer.from(font.toArrayBuffer());
         const woff2Buffer = ttf2woff2(ttfBuffer);
 
-        // Add font files to Vite bundle
         this.emitFile({
           type: "asset",
           fileName: `${fontConfig.name}.ttf`,
@@ -204,7 +190,6 @@ export function fontObfuscationPlugin() {
           source: woff2Buffer,
         });
 
-        // Generate mappings
         const mapping: Record<string, string> = {};
         const reverseMapping: Record<string, string> = {};
 
@@ -213,7 +198,6 @@ export function fontObfuscationPlugin() {
           reverseMapping[visibleChars[i]] = inputChars[i];
         }
 
-        // Add mapping files to bundle
         this.emitFile({
           type: "asset",
           fileName: `${fontConfig.name}-mappings.json`,
@@ -229,16 +213,12 @@ export function fontObfuscationPlugin() {
         console.log(`✓ Generated obfuscated font: ${fontConfig.name}`);
       }
 
-      // Generate combined CSS file with global obfuscation support
-
-      // Add CSS file to bundle
       this.emitFile({
         type: "asset",
         fileName: "ob-fonts.css",
         source: cssContent,
       });
 
-      // Add JavaScript runtime to bundle
       this.emitFile({
         type: "asset",
         fileName: "ob-fonts.js",

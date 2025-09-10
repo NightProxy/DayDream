@@ -1,11 +1,10 @@
-/** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "./internal/**/*.{html,js,ts,jsx,tsx}",
     "./ddxui/**/*.{html,js,ts,jsx,tsx}",
-    "./node_modules/basecoat-css/**/*.css", // <-- add this
+    "./node_modules/basecoat-css/**/*.css",
   ],
   theme: {
     extend: {

@@ -13,25 +13,7 @@ import { getPlatform } from "./srv/platform.ts";
 import routes from "./srv/router.ts";
 import { setupDB } from "./srv/api/store/dbSetup.ts";
 import { marketplaceAPI, catalogAssets } from "./srv/api/store/marketplace.ts";
-/*import Git from "./srv/git.js";
-import { execSync } from "child_process";
-
-let git_url = "https://github.com/NightProxy/DayDreamX";
-let commit = "Unable to get this information.";
-
-try {
-    git_url = execSync("git config --get remote.origin.url").toString().trim();
-} catch (e) {
-    console.log("Unable to get current repo url; using default");
-}
-
-try {
-    commit = execSync("git rev-parse HEAD").toString().trim();
-} catch (e) {
-    console.log("Unable to get commit info");
-}
-
-const git = new Git(git_url);*/
+import { plusAPI } from "./srv/api/plus.ts";
 
 const server = Fastify({
   logger: false,
@@ -74,6 +56,7 @@ await server.register(fastifyHelmet, {
 });
 
 marketplaceAPI(server);
+plusAPI(server);
 
 server.register(routes);
 
@@ -106,16 +89,7 @@ server.listen({ port: PORT, host: "0.0.0.0" }, async (error) => {
 `;
 
   console.log(gradient(Object.values(ddx)).multiline(startupText));
-  /*console.log(
-          gitColor("Last Updated on: "),
-          chalk.whiteBright((await git.fetchLastCommitDate()) + " "),
-          gitColor("Commit:"),
-          chalk.whiteBright(await git.fetchLastCommitID()),
-          gitColor("Up to Date:"),
-          chalk.whiteBright(
-            commit === (await git.fetchLastCommitID()) ? "✅" : "❌",
-          ),
-        );*/
+
   console.log(theme("Version: "), chalk.whiteBright("v" + version));
   const hostingInfo = getPlatform(PORT);
   console.log(

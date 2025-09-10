@@ -5,35 +5,16 @@
     <title>New Tab</title>
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.cdnfonts.com/css/onest" rel="stylesheet" />
+    <link rel="stylesheet" href="/nightloginflow.css" />
     <link rel="stylesheet" href="/src/css/internal.css" />
+    <script src="/night-login-frame.umd.js"></script>
+    <script src="/night-login.umd.js"></script>
 
-    <style>
-      .tw-wait {
-        opacity: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        pointer-events: none;
-        user-select: none;
-      }
-    </style>
-    <script>
-      document.documentElement.classList.add("tw-wait");
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/src/js/internal/newtab.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
-      document.head.appendChild(s);
-    </script>
-
-    <link rel="stylesheet" href="/auth/assets/nightloginflow.css" />
-    <script src="/auth/night-login-frame.umd.js"></script>
-    <script src="/auth/night-login.umd.js"></script>
-
-    <script type="module"  src="/src/js/internal/newtab.ts"></script>
+    <script type="module" src="/src/js/internal/newtab.ts"></script>
   </head>
+
   <body class="bg-[var(--bg-2)] text-[var(--text)] select-none antialiased">
-    <div id="root"></div>
     <div class="min-h-dvh w-full relative overflow-hidden">
       <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
         <div class="flex items-center justify-center">
@@ -95,23 +76,12 @@
         </div>
 
         <div class="mt-8 relative">
-          <div
-            class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
-          >
-            <i data-lucide="lock" class="h-4 w-4 text-[var(--success)]"></i>
-            <span class="text-sm font-medium text-[var(--proto)]">ddx</span>
-          </div>
           <input
-            class="w-full rounded-xl bg-[var(--bg-2)] pl-20 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
-            placeholder="Search ddx for anything..."
+            class="w-full rounded-xl bg-[var(--bg-2)] pl-4 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+            placeholder="Search for anything..."
             aria-label="Search"
+            id="searchInput"
           />
-          <button
-            class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-            aria-label="Bookmark"
-          >
-            <i data-lucide="star" class="h-4 w-4"></i>
-          </button>
         </div>
 
         <section
@@ -172,6 +142,15 @@
         </div>
       </div>
 
+      <div class="absolute bottom-16 left-0 right-0 flex justify-center">
+        <button
+          id="nightPlusSignIn"
+          class="pointer-events-auto px-6 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors text-sm font-medium"
+        >
+          Sign into Night+
+        </button>
+      </div>
+
       <footer
         class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
       >
@@ -181,8 +160,7 @@
         >
         <nav class="pointer-events-auto flex items-center gap-4">
           <a
-            href="https://github.com"
-            target="_blank"
+            href="https://gitlab.com/nightnetwork/daydreamx"
             rel="noreferrer"
             class="hover:text-[var(--text)]"
             >Github</a
@@ -190,7 +168,6 @@
           <span>\</span>
           <a
             href="https://discord.com"
-            target="_blank"
             rel="noreferrer"
             class="hover:text-[var(--text)]"
             >Discord</a
@@ -224,6 +201,41 @@
           });
         document.documentElement.classList.remove("pre-anim");
       });
+    </script>
+    <script>
+      (function waitForLibs() {
+        if (
+          typeof NightLogin === "undefined" ||
+          typeof NightLoginFrame === "undefined"
+        ) {
+          console.log("heh");
+          return setTimeout(waitForLibs, 50);
+        }
+
+        console.log("initialize night login");
+
+        const nightLogin = new NightLogin({
+          service: "DayDreamX",
+          theme: "system",
+
+          backdropBlur: "8px",
+
+          onSuccess: (token) => {
+            alert(token);
+          },
+          API_URL: "/api/plus",
+          onCancel: () => {
+            console.log("Login cancelled");
+          },
+        });
+
+        // Add click handler for Night+ sign in button
+        document
+          .getElementById("nightPlusSignIn")
+          .addEventListener("click", () => {
+            nightLogin.show();
+          });
+      })();
     </script>
   </body>
 </html>

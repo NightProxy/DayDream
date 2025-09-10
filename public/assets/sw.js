@@ -3,7 +3,7 @@ if (navigator.userAgent.includes("Firefox")) {
     value: true,
     writable: false,
   });
-} // firefox fix
+}
 
 importScripts("/assets/all.js");
 const { ScramjetServiceWorker } = $scramjetLoadWorker();

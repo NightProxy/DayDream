@@ -9,46 +9,6 @@ import { createIcons, icons } from "lucide";
 
 import { BookmarkManager, isBookmark } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
-/*(function waitForLibs() {
-  //@ts-expect-error
-    if (typeof NightLogin === 'undefined' || typeof NightLoginFrame === 'undefined') {
-      console.log("heh")
-        return setTimeout(waitForLibs, 50);
-    }
-
-    
-    console.log("initialize night login")
-    //@ts-expect-error
-    const nightLogin = new NightLogin({
-        service: 'DayDreamX',
-        theme: 'system',
-        
-        backdropBlur: '8px',
-        //@ts-expect-error
-        onSuccess: (token) => {
-            console.log('token ', token);
-        },
-        API_URL: "https://jwtauth-srv-api.night-x.com",
-        onCancel: () => {
-            console.log('Login cancelled');
-        }
-    });
-    nightLogin.renderTrigger('trigger')
-    function showLogin() {
-        nightLogin.show("root")
-    }
-    
-    document.addEventListener('click', function (e) {
-        var tgt = e.target;
-        try {
-            if (tgt && typeof tgt.closest === 'function' && tgt.closest('.signInWithNight')) {
-                showLogin();
-            }
-        } catch (err) {
-            // ignore
-        }
-    });
-})();*/
 interface Shortcut {
   id: string;
   title: string;
@@ -271,7 +231,7 @@ class NewTabShortcuts {
         return;
       }
 
-      window.location.href = url;
+      window.parent.protocols.navigate(url);
     } catch (error) {
       console.error("Failed to navigate:", error);
       window.open(url, "_blank");
@@ -455,4 +415,25 @@ document.addEventListener("DOMContentLoaded", () => {
   createIcons({ icons });
   const shortcutsManager = new NewTabShortcuts();
   (window as any).shortcutsManager = shortcutsManager;
+
+  const input = document.getElementById("searchInput") as HTMLInputElement;
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const value = input.value.trim();
+        window.parent.protocols.navigate(window.parent.proxy.search(value));
+      }
+    });
+  }
+
+  const links = document.querySelectorAll("a");
+  links.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const url = link.getAttribute("href");
+      if (url) {
+        window.parent.protocols.navigate(url);
+      }
+    });
+  });
 });

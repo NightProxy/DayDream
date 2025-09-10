@@ -7,25 +7,8 @@
     <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
     <meta property="og:image" content="/res/logo.png" />
     <link rel="stylesheet" href="/src/css/internal.css" />
-    <style>
-      .tw-wait {
-        opacity: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        pointer-events: none;
-        user-select: none;
-      }
-    </style>
-    <script>
-      document.documentElement.classList.add("tw-wait");
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/src/js/internal/updates.ts";
-      s.onload = () => document.documentElement.classList.remove("tw-wait");
-      s.onerror = () => document.documentElement.classList.remove("tw-wait");
-      document.head.appendChild(s);
-    </script>
-    <script type="module"  src="/src/js/internal/updates.ts"></script>
+
+    <script type="module" src="/src/js/internal/updates.ts"></script>
   </head>
   <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
     <div class="min-h-screen w-full relative overflow-hidden">
@@ -150,224 +133,54 @@
                 class="absolute left-4 top-0 bottom-0 w-px bg-[var(--white-08)]"
               ></div>
               <div id="updates-list" class="space-y-4">
-                <details
-                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] [&[open]]:ring-[var(--main-35a)] transition data-[hidden=true]:hidden"
-                  data-tags="release annc"
-                  open
-                >
-                  <summary class="list-none cursor-pointer">
-                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
-                      <div
-                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--main)] shadow-[0_0_0_3px_var(--bg-2)]"
-                      ></div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span
-                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
-                            >Release</span
-                          >
-                          <span
-                            class="inline-flex items-center gap-1 rounded-md bg-[var(--main-20a)] px-2 py-0.5 text-[10px] text-[var(--bg-2)] ring-1 ring-inset ring-[var(--main-35a)]"
-                            >v0.8.0</span
-                          >
-                          <time class="text-[10px] text-[var(--proto)]"
-                            >Aug 20, 2025</time
-                          >
-                        </div>
-                        <h3 class="mt-1 text-sm font-semibold">
-                          Faster New Tab, Smarter History, Prettier Everything
-                        </h3>
-                        <p
-                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
-                        >
-                          Lorem ipsum dolor sit amet, consectetur adipiscing
-                          elit. Pellentesque non viverra urna. Vestibulum
-                          faucibus, mi non maximus venenatis, mauris nunc
-                          elementum arcu, vitae vulputate arcu eros et massa.
-                        </p>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="star"
-                        >
-                          <i data-lucide="star" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="pin"
-                        >
-                          <i data-lucide="pin" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="hide"
-                        >
-                          <i data-lucide="eye-off" class="h-4 w-4"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </summary>
-                  <div class="px-10 pb-4 space-y-4">
-                    <div class="grid gap-3 sm:grid-cols-3">
-                      <img
-                        src="/res/updates/shot-1.png"
-                        alt=""
-                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
-                      />
-                      <img
-                        src="/res/updates/shot-2.png"
-                        alt=""
-                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
-                      />
-                      <img
-                        src="/res/updates/shot-3.png"
-                        alt=""
-                        class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] aspect-video object-cover"
-                      />
-                    </div>
-                    <ul class="text-sm leading-6 list-disc pl-6">
-                      <li>New tab paint time reduced by 37% on average</li>
-                      <li>History page live search and keyboard navigation</li>
-                      <li>Refined gradients and focus rings across UI</li>
+                <section id="updates-raw" class="cursor-pointer" hidden>
+                  <div
+                    data-tags="release annc"
+                    data-title="DaydreamX v2 release. Best UI, faster speeds and lots of features"
+                    data-type="Release"
+                    data-version="v2.0.0"
+                    data-date="Sep 1, 2025"
+                    data-dot="main"
+                  >
+                    <p class="hidden">
+                      We are excited to announce the release of DaydreamX v2, a
+                      major update that brings a host of new features,
+                      performance improvements, and a sleek new user interface.
+                      This version is designed to enhance your experience and
+                      provide more customization options.
+                    </p>
+                    <p>Key Features:</p>
+                    <ul class="list-disc list-inside">
+                      <li>
+                        Revamped User Interface: A modern and intuitive design
+                        that makes navigation easier and more enjoyable.
+                      </li>
+                      <li>
+                        Performance Enhancements: Faster load times and smoother
+                        transitions for a seamless experience.
+                      </li>
+                      <li>
+                        New Customization Options: More themes, layouts, and
+                        settings.
+                      </li>
+                      <li>
+                        Improved Security: Enhanced proxy features and backend.
+                      </li>
+                      <li>
+                        Bug Fixes: Addressed and fixed various issues and
+                        improved overall stability.
+                      </li>
                     </ul>
+                    <p>
+                      Thanks for supporting DaydreamX, - Amplify, Crllect, and
+                      Dust
+                    </p>
                   </div>
-                </details>
 
-                <details
-                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
-                  data-tags="maintenance annc"
-                >
-                  <summary class="list-none cursor-pointer">
-                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
-                      <div
-                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--white-20)] shadow-[0_0_0_3px_var(--bg-2)]"
-                      ></div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span
-                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
-                            >Maintenance</span
-                          >
-                          <time class="text-[10px] text-[var(--proto)]"
-                            >Aug 15, 2025</time
-                          >
-                        </div>
-                        <h3 class="mt-1 text-sm font-semibold">
-                          Backend rotation and transport hardening
-                        </h3>
-                        <p
-                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
-                        >
-                          Mauris sit amet interdum ipsum. Cras dictum, metus vel
-                          efficitur mattis, nibh augue faucibus neque, ac
-                          aliquet eros arcu id metus. Integer ac dolor quis
-                          sapien aliquam feugiat.
-                        </p>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="star"
-                        >
-                          <i data-lucide="star" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="pin"
-                        >
-                          <i data-lucide="pin" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="hide"
-                        >
-                          <i data-lucide="eye-off" class="h-4 w-4"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </summary>
-                  <div class="px-10 pb-4 space-y-4">
-                    <div
-                      class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
-                    >
-                      Window: 01:00–02:00 UTC. Intermittent reconnects expected
-                      on Wisp endpoints. Ultraviolet nodes recycled with updated
-                      cert chains.
-                    </div>
-                  </div>
-                </details>
+                  <!-- <div data-tags="maintenance annc" data-title="Backend rotation and transport hardening" data-type="Maintenance" data-date="Aug 15, 2025" data-dot="white-20"> -->
 
-                <details
-                  class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
-                  data-tags="devlog"
-                >
-                  <summary class="list-none cursor-pointer">
-                    <div class="pl-10 pr-3 py-4 flex items-start gap-4">
-                      <div
-                        class="absolute left-3 top-5 h-3 w-3 rounded-full bg-[var(--proto)] shadow-[0_0_0_3px_var(--bg-2)]"
-                      ></div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span
-                            class="inline-flex items-center gap-1 rounded-md bg-[var(--white-05)] px-2 py-0.5 text-[10px] ring-1 ring-inset ring-[var(--white-08)]"
-                            >Devlog</span
-                          >
-                          <time class="text-[10px] text-[var(--proto)]"
-                            >Aug 8, 2025</time
-                          >
-                        </div>
-                        <h3 class="mt-1 text-sm font-semibold">
-                          Nightmare API preview and extension hooks
-                        </h3>
-                        <p
-                          class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
-                        >
-                          Sed ut perspiciatis unde omnis iste natus error sit
-                          voluptatem accusantium doloremque laudantium. Nemo
-                          enim ipsam voluptatem quia voluptas sit aspernatur aut
-                          odit aut fugit.
-                        </p>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="star"
-                        >
-                          <i data-lucide="star" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="pin"
-                        >
-                          <i data-lucide="pin" class="h-4 w-4"></i>
-                        </button>
-                        <button
-                          class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                          data-action="hide"
-                        >
-                          <i data-lucide="eye-off" class="h-4 w-4"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </summary>
-                  <div class="px-10 pb-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                      <div
-                        class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
-                      >
-                        Early hooks for install, enable, permissions, and
-                        context menu entries. Subject to change.
-                      </div>
-                      <div
-                        class="rounded-xl bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] p-4 text-sm"
-                      >
-                        Prototype profiler for tab startup showing CPU and
-                        network slices.
-                      </div>
-                    </div>
-                  </div>
-                </details>
+                  <!-- <div data-tags="devlog" data-title="Nightmare API preview and extension hooks" data-type="Devlog" data-date="Aug 8, 2025" data-dot="proto"> -->
+                </section>
               </div>
             </div>
 
@@ -404,12 +217,6 @@
                   Starred
                 </button>
                 <button
-                  data-qf="pinned"
-                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
-                >
-                  Pinned
-                </button>
-                <button
                   data-qf="new"
                   class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
                 >
@@ -422,9 +229,7 @@
             >
               <h4 class="text-sm font-semibold mb-2">Changelog</h4>
               <ul class="text-xs text-[var(--proto)] space-y-1">
-                <li>v0.8.0 Released</li>
-                <li>Transport maintenance</li>
-                <li>Devlog additions</li>
+                <li>v2.0.0 Released</li>
               </ul>
             </div>
           </aside>
@@ -456,18 +261,6 @@
                 >
                   <i data-lucide="star" class="h-4 w-4"></i>
                 </button>
-                <button
-                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                  data-action="pin"
-                >
-                  <i data-lucide="pin" class="h-4 w-4"></i>
-                </button>
-                <button
-                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
-                  data-action="hide"
-                >
-                  <i data-lucide="eye-off" class="h-4 w-4"></i>
-                </button>
               </div>
             </div>
           </summary>
@@ -483,11 +276,11 @@
           <span id="updates-count" class="text-[var(--text)]/80">3</span></span
         >
         <nav class="pointer-events-auto flex items-center gap-4">
-          <a href="/internal/newtab.html" class="hover:text-[var(--text)]"
+          <a href="/internal/newtab/" class="hover:text-[var(--text)]"
             >New Tab</a
           >
           <span>\</span>
-          <a href="/internal/settings.html" class="hover:text-[var(--text)]"
+          <a href="/internal/settings/" class="hover:text-[var(--text)]"
             >Settings</a
           >
         </nav>

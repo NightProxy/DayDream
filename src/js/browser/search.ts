@@ -83,10 +83,10 @@ class Search implements SearchInterface {
 
     const suggestionList = this.ui.createElement("div", {
       class:
-        "suggestion-list fixed z-[9999] left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-[var(--bg-2)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm",
+        "suggestion-list fixed z-[9999] left-1/2 transform w-full max-w-2xl bg-[var(--bg-2)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm",
       id: "suggestion-list",
       style:
-        "top: 50%; transform: translate(-50%, -50%); max-height: 60vh; overflow-y: auto; display:none;",
+        "top: 30%; transform: translate(-50%, -50%); min-height: 20vh; max-height: 40vh; overflow-y: auto; display: none;",
     });
 
     this.sections = {
@@ -382,7 +382,7 @@ class Search implements SearchInterface {
 
   private async fetchSearchSuggestions(query: string): Promise<string[]> {
     try {
-      const response = await fetch(`/results/${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/results/${encodeURIComponent(query)}`);
       if (!response.ok) return [];
 
       const data = await response.json();
@@ -439,7 +439,7 @@ class Search implements SearchInterface {
 
   async generatePredictedUrls(query: string): Promise<string[]> {
     try {
-      const response = await fetch(`/results/${query}`);
+      const response = await fetch(`/api/results/${query}`);
       if (!response || !response.ok)
         throw new Error("Network response was not ok");
       const data = await response.json();
@@ -775,10 +775,35 @@ class Search implements SearchInterface {
           ) as HTMLIFrameElement | null;
           if (iframe) {
             iframe.setAttribute("src", processedUrl);
+
+            window.dispatchEvent(
+              new CustomEvent("tabNavigated", {
+                detail: {
+                  tabId: iframe.getAttribute("data-tab-id") || "unknown",
+                  url: processedUrl,
+                  fromSearch: true,
+                },
+              }),
+            );
           }
         }
       } else {
         await this.proxy.redirect(this.swConfig, this.proxySetting, input);
+
+        const iframe = document.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement | null;
+        if (iframe) {
+          window.dispatchEvent(
+            new CustomEvent("tabNavigated", {
+              detail: {
+                tabId: iframe.getAttribute("data-tab-id") || "unknown",
+                url: input,
+                fromSearch: true,
+              },
+            }),
+          );
+        }
       }
     } catch (error) {
       console.error("Direct navigation error:", error);
@@ -797,6 +822,22 @@ class Search implements SearchInterface {
 
     try {
       await this.proxy.redirect(this.swConfig, this.proxySetting, game.link);
+
+      const iframe = document.querySelector(
+        "iframe.active",
+      ) as HTMLIFrameElement | null;
+      if (iframe) {
+        window.dispatchEvent(
+          new CustomEvent("tabNavigated", {
+            detail: {
+              tabId: iframe.getAttribute("data-tab-id") || "unknown",
+              url: game.link,
+              fromGame: true,
+              gameTitle: game.name,
+            },
+          }),
+        );
+      }
     } catch (error) {
       console.error("Game navigation error:", error);
       this.data.createLog(`Game navigation error: ${error}`);
