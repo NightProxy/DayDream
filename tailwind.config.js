@@ -3,7 +3,6 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "./internal/**/*.{html,js,ts,jsx,tsx}",
-    "./ddxui/**/*.{html,js,ts,jsx,tsx}",
     "./node_modules/basecoat-css/**/*.css",
   ],
   theme: {

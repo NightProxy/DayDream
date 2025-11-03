@@ -160,14 +160,17 @@ class Render implements renderInterface {
                       {
                         class:
                           "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
-                        "data-tooltip": "Search",
+                        "data-tooltip": "Bookmarks",
                         "data-side": "right",
                         "data-align": "center",
+                        onclick: async () => {
+                          await window.tabs.createTab("ddx://bookmarks/");
+                        },
                       },
                       [
                         this.ui.createElement(
                           "i",
-                          { class: "h-4 w-4", "data-lucide": "search" },
+                          { class: "h-4 w-4", "data-lucide": "folder-heart" },
                           [],
                         ),
                       ],
@@ -179,14 +182,17 @@ class Render implements renderInterface {
                       {
                         class:
                           "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
-                        "data-tooltip": "Messages",
+                        "data-tooltip": "History",
                         "data-side": "right",
                         "data-align": "center",
+                        onclick: async () => {
+                          await window.tabs.createTab("ddx://history/");
+                        },
                       },
                       [
                         this.ui.createElement(
                           "i",
-                          { class: "h-4 w-4", "data-lucide": "message-square" },
+                          { class: "h-4 w-4", "data-lucide": "history" },
                           [],
                         ),
                       ],
@@ -223,17 +229,19 @@ class Render implements renderInterface {
                     {
                       class:
                         "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
-                      "data-tooltip": "History",
+                      "data-tooltip": "Discord",
                       "data-side": "right",
                       "data-align": "center",
                       onclick: async () => {
-                        await window.tabs.createTab("ddx://history/");
+                        await window.tabs.createTab(
+                          "https://discord.night-x.com",
+                        );
                       },
                     },
                     [
                       this.ui.createElement(
                         "i",
-                        { class: "h-4 w-4", "data-lucide": "history" },
+                        { class: "h-4 w-4", "data-lucide": "message-square" },
                         [],
                       ),
                     ],

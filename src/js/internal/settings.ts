@@ -83,6 +83,7 @@ const initSwitch = async (
   switchId: string,
   settingsKey: string,
   onChangeCallback: Function | null = null,
+  defaultValue: boolean = false,
 ) => {
   const switchElement = document.getElementById(switchId) as HTMLInputElement;
 
@@ -92,7 +93,12 @@ const initSwitch = async (
   }
 
   const savedValue = await settingsAPI.getItem(settingsKey);
-  switchElement.checked = savedValue === "true";
+  if (savedValue === null || savedValue === undefined) {
+    switchElement.checked = defaultValue;
+    await settingsAPI.setItem(settingsKey, defaultValue.toString());
+  } else {
+    switchElement.checked = savedValue === "true";
+  }
 
   switchElement.addEventListener("change", async () => {
     await settingsAPI.setItem(settingsKey, switchElement.checked.toString());
@@ -198,14 +204,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     firstLink.classList.add("bg-[var(--white-05)]");
   }
 
-  await initializeSelect("tabCloakSelect", "tabCloak", "off");
   await initializeSelect("URL-cloakSelect", "URL_Cloak", "off");
 
   await initSwitch("autoCloakSwitch", "autoCloak", () => {
     eventsAPI.emit("cloaking:auto-toggle", null);
   });
 
-  await initSwitch("antiCloseSwitch", "antiClose", null);
+  await initSwitch(
+    "disableTabCloseSwitch",
+    "disableTabClose",
+    async () => {
+      const isEnabled = await settingsAPI.getItem("disableTabClose");
+      if (isEnabled === "true") {
+        window.addEventListener("beforeunload", (e) => {
+          e.preventDefault();
+          e.returnValue = "";
+        });
+      }
+    },
+    true,
+  );
+
+  await initializeTabCloakSystem();
 
   await initializeSelect("UIStyleSelect", "UIStyle", "operagx", () => {
     eventsAPI.emit("UI:changeStyle", null);
@@ -269,6 +289,162 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   await initializeThemeSystem();
+
+  async function initializeTabCloakSystem() {
+    try {
+      console.log("Initializing tab cloak system...");
+
+      const response = await fetch("/json/c.json");
+      const data = await response.json();
+      const presets = data.presets;
+
+      const tabCloakSelect = document.getElementById(
+        "tabCloakSelect",
+      ) as HTMLSelectElement;
+      const customTabCloakOptions = document.getElementById(
+        "customTabCloakOptions",
+      ) as HTMLElement;
+      const customTabTitle = document.getElementById(
+        "customTabTitle",
+      ) as HTMLInputElement;
+      const customTabFavicon = document.getElementById(
+        "customTabFavicon",
+      ) as HTMLInputElement;
+      const uploadFaviconBtn = document.getElementById(
+        "uploadFaviconBtn",
+      ) as HTMLButtonElement;
+      const faviconUpload = document.getElementById(
+        "faviconUpload",
+      ) as HTMLInputElement;
+      const faviconPreviewImg = document.getElementById(
+        "faviconPreviewImg",
+      ) as HTMLImageElement;
+      const titlePreview = document.getElementById(
+        "titlePreview",
+      ) as HTMLElement;
+
+      if (!tabCloakSelect) {
+        console.error("Tab cloak select element not found");
+        return;
+      }
+
+      tabCloakSelect.innerHTML = "";
+      presets.forEach((preset: any) => {
+        const option = document.createElement("option");
+        option.value = preset.id;
+        option.textContent = preset.name;
+        tabCloakSelect.appendChild(option);
+      });
+
+      const currentTabCloak = (await settingsAPI.getItem("tabCloak")) || "off";
+      tabCloakSelect.value = currentTabCloak;
+
+      const savedCustomTitle =
+        (await settingsAPI.getItem("customTabTitle")) || "";
+      const savedCustomFavicon =
+        (await settingsAPI.getItem("customTabFavicon")) || "";
+      if (customTabTitle) customTabTitle.value = savedCustomTitle;
+      if (customTabFavicon) customTabFavicon.value = savedCustomFavicon;
+
+      const toggleCustomOptions = () => {
+        if (tabCloakSelect.value === "custom") {
+          customTabCloakOptions?.classList.remove("hidden");
+        } else {
+          customTabCloakOptions?.classList.add("hidden");
+        }
+      };
+      toggleCustomOptions();
+
+      const applyTabCloak = async () => {
+        const selectedPreset = presets.find(
+          (p: any) => p.id === tabCloakSelect.value,
+        );
+
+        if (!selectedPreset) return;
+
+        let title = selectedPreset.title;
+        let favicon = selectedPreset.favicon;
+
+        if (tabCloakSelect.value === "custom") {
+          title = customTabTitle?.value || title;
+          favicon = customTabFavicon?.value || favicon;
+        }
+
+        if (title) {
+          document.title = title;
+        }
+        if (favicon) {
+          let link = document.querySelector(
+            "link[rel~='icon']",
+          ) as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement("link");
+            link.rel = "icon";
+            document.head.appendChild(link);
+          }
+          link.href = favicon;
+        }
+
+        if (titlePreview) {
+          titlePreview.textContent = title;
+        }
+        if (faviconPreviewImg && favicon) {
+          faviconPreviewImg.src = favicon;
+          faviconPreviewImg.classList.remove("hidden");
+          faviconPreviewImg.previousElementSibling?.classList.add("hidden");
+        }
+
+        await settingsAPI.setItem("tabCloakTitle", title);
+        await settingsAPI.setItem("tabCloakFavicon", favicon);
+      };
+
+      tabCloakSelect.addEventListener("change", async () => {
+        await settingsAPI.setItem("tabCloak", tabCloakSelect.value);
+        toggleCustomOptions();
+        await applyTabCloak();
+        eventsAPI.emit("tabCloak:change", null);
+      });
+
+      customTabTitle?.addEventListener("input", async () => {
+        await settingsAPI.setItem("customTabTitle", customTabTitle.value);
+        await applyTabCloak();
+        eventsAPI.emit("tabCloak:change", null);
+      });
+
+      customTabFavicon?.addEventListener("input", async () => {
+        await settingsAPI.setItem("customTabFavicon", customTabFavicon.value);
+        await applyTabCloak();
+        eventsAPI.emit("tabCloak:change", null);
+      });
+
+      uploadFaviconBtn?.addEventListener("click", () => {
+        faviconUpload?.click();
+      });
+
+      faviconUpload?.addEventListener("change", async (event: any) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const dataUrl = e.target?.result as string;
+          if (customTabFavicon) {
+            customTabFavicon.value = dataUrl;
+          }
+          await settingsAPI.setItem("customTabFavicon", dataUrl);
+          await applyTabCloak();
+          eventsAPI.emit("tabCloak:change", null);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      await applyTabCloak();
+
+      console.log("Tab cloak system initialized successfully");
+    } catch (error) {
+      console.error("Error initializing tab cloak system:", error);
+    }
+  }
 
   async function initializeThemeSystem() {
     try {
@@ -583,7 +759,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  await initializeSelect("proxySelect", "proxy", "uv");
+  await initializeSelect("proxySelect", "proxy", "sj");
   await initializeSelect("transportSelect", "transports", "libcurl");
   await initializeSelect(
     "searchSelect",
@@ -597,6 +773,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     location.host +
     "/wisp/";
   await initTextInput("wispSetting", "wisp", defaultWispUrl);
+
+  const refluxToggle = document.getElementById(
+    "refluxToggle",
+  ) as HTMLInputElement;
+  if (refluxToggle) {
+    const savedRefluxStatus = await settingsAPI.getItem("RefluxStatus");
+    if (savedRefluxStatus === null || savedRefluxStatus === undefined) {
+      await settingsAPI.setItem("RefluxStatus", "true");
+      refluxToggle.checked = true;
+    } else {
+      refluxToggle.checked = savedRefluxStatus !== "false";
+    }
+
+    refluxToggle.addEventListener("change", async () => {
+      await settingsAPI.setItem(
+        "RefluxStatus",
+        refluxToggle.checked.toString(),
+      );
+      console.log("Reflux toggle changed to:", refluxToggle.checked);
+      location.reload();
+    });
+  }
+
+  await initTextInput("proxyServerSetting", "prx-server", "");
+
+  initButton("saveProxyServerSetting", async () => {
+    const proxyServerInput = document.getElementById(
+      "proxyServerSetting",
+    ) as HTMLInputElement;
+    const value = proxyServerInput.value.trim();
+    await settingsAPI.setItem("prx-server", value);
+    console.log("Remote proxy server saved:", value);
+    location.reload();
+  });
+
+  initButton("resetProxyServerSetting", async () => {
+    await settingsAPI.setItem("prx-server", "");
+    const proxyServerInput = document.getElementById(
+      "proxyServerSetting",
+    ) as HTMLInputElement;
+    proxyServerInput.value = "";
+    console.log("Remote proxy server disabled");
+    location.reload();
+  });
 
   initButton("bgUpload", () => {
     const uploadBGInput = document.getElementById(

@@ -15,6 +15,11 @@ export default async function routes(fastify: FastifyInstance) {
     prefix: "/",
     index: ["index.html"],
     extensions: ["html"],
+    setHeaders: (res, path) => {
+      if (path.includes("/res/g/")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
   });
 
   fastify.get(

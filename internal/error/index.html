@@ -93,6 +93,30 @@
                   We hit a snag while loading this page. You can retry, go back,
                   or explore other sections below.
                 </p>
+                <div
+                  class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] bg-[var(--bg-1)]/60 p-3"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <label
+                      for="error-textarea"
+                      class="text-xs text-[var(--proto)]"
+                      >Error Details</label
+                    >
+                    <button
+                      id="copy-error-textarea"
+                      class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                    >
+                      <i data-lucide="copy" class="h-3 w-3"></i>
+                      Copy
+                    </button>
+                  </div>
+                  <textarea
+                    id="error-textarea"
+                    readonly
+                    class="w-full h-32 resize-y bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-08)] rounded-lg p-3 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="Error details will appear here..."
+                  ></textarea>
+                </div>
                 <div class="grid gap-3 sm:grid-cols-3">
                   <a
                     href="/internal/newtab/"
@@ -266,7 +290,7 @@ No stack available</pre
           <span
             >Need help?
             <a
-              href="https://github.com/NightProxy/DayDreamX"
+              href="https://gitlab.com/nightnetwork/daydreamx"
               class="text-[var(--text)] hover:text-[var(--main)]"
               >Submit an issue
             </a></span

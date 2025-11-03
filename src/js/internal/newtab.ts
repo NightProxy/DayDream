@@ -9,6 +9,8 @@ import { createIcons, icons } from "lucide";
 
 import { BookmarkManager, isBookmark } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
+import { Nightmare } from "@libs/Nightmare/nightmare";
+
 interface Shortcut {
   id: string;
   title: string;
@@ -19,6 +21,7 @@ interface Shortcut {
 class NewTabShortcuts {
   private bookmarkManager: BookmarkManager;
   private proxy: Proxy;
+  private ui: Nightmare;
   private shortcuts: Shortcut[] = [];
   private currentEditingId: string | null = null;
 
@@ -40,6 +43,7 @@ class NewTabShortcuts {
   constructor() {
     this.bookmarkManager = new BookmarkManager();
     this.proxy = new Proxy();
+    this.ui = new Nightmare();
 
     this.proxy.setBookmarkManager(this.bookmarkManager);
 
@@ -49,9 +53,445 @@ class NewTabShortcuts {
   private async init() {
     await this.bookmarkManager.loadFromStorage();
     await this.loadShortcuts();
-    this.renderShortcuts();
+    this.renderNewtab();
     this.setupEventListeners();
     createIcons({ icons });
+  }
+
+  private renderNewtab() {
+    document.body.innerHTML = "";
+
+    const mainContainer = this.ui.createElement("div", {
+      class: "bg-[var(--bg-2)] text-[var(--text)] select-none antialiased",
+      component: "newtab-main",
+    });
+
+    const contentWrapper = this.ui.createElement("div", {
+      class: "min-h-dvh w-full relative overflow-hidden",
+      component: "content-wrapper",
+    });
+
+    const main = this.ui.createElement("main", {
+      class: "mx-auto max-w-6xl px-4 pt-28 pb-24",
+      component: "main-content",
+    });
+
+    const header = this.renderHeader();
+    main.appendChild(header);
+
+    const searchBar = this.renderSearchBar();
+    main.appendChild(searchBar);
+
+    const shortcutsSection = this.renderShortcuts();
+    main.appendChild(shortcutsSection);
+
+    contentWrapper.appendChild(main);
+
+    const modal = this.renderModal();
+    contentWrapper.appendChild(modal);
+
+    const signInButton = this.renderSignInButton();
+    contentWrapper.appendChild(signInButton);
+
+    const footer = this.renderFooter();
+    contentWrapper.appendChild(footer);
+
+    mainContainer.appendChild(contentWrapper);
+    document.body.appendChild(mainContainer);
+  }
+
+  private renderHeader() {
+    return this.ui.createElement(
+      "div",
+      {
+        class: "flex items-center justify-center",
+        component: "header",
+      },
+      [
+        this.ui.createElement("div", { class: "relative" }, [
+          this.ui.createElement(
+            "div",
+            {
+              class:
+                "inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]",
+              component: "logo-container",
+            },
+            [
+              this.ui.createElement("div", { class: "stack h-10 w-10" }, [
+                this.ui.createElement(
+                  "div",
+                  {
+                    class: "masked-shape",
+                    style:
+                      "width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('/res/logo/mask.png'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('/res/logo/mask.png'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;",
+                  },
+                  [
+                    this.ui.createElement("img", {
+                      class: "overlay",
+                      src: "/res/logo/overlay.png",
+                      alt: "overlay gradient",
+                      style:
+                        "width: 100%; height: 100%; mix-blend-mode: multiply; pointer-events: none;",
+                    }),
+                  ],
+                ),
+              ]),
+              this.ui.createElement(
+                "span",
+                {
+                  class: "text-3xl tracking-widest text-[var(--text)] -mr-1",
+                },
+                ["DayDream"],
+              ),
+              this.ui.createElement(
+                "em",
+                {
+                  class:
+                    "text-3xl font-bold tracking-widest text-[var(--main)] -ml-1",
+                },
+                ["X"],
+              ),
+              this.ui.createElement(
+                "button",
+                {
+                  class:
+                    "ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                  "data-tooltip": "Share",
+                  "data-side": "right",
+                  "data-align": "center",
+                  "aria-label": "Share",
+                  component: "share-button",
+                },
+                [
+                  this.ui.createElement("i", {
+                    "data-lucide": "share-2",
+                    class: "h-4 w-4 text-white",
+                  }),
+                ],
+              ),
+            ],
+          ),
+          this.ui.createElement("div", { id: "trigger" }),
+        ]),
+      ],
+    );
+  }
+
+  private renderSearchBar() {
+    return this.ui.createElement(
+      "div",
+      {
+        class: "mt-8 relative",
+        component: "search-bar",
+      },
+      [
+        this.ui.createElement("input", {
+          class:
+            "w-full rounded-xl bg-[var(--bg-2)] pl-4 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]",
+          placeholder: "Search for anything...",
+          "aria-label": "Search",
+          id: "searchInput",
+          component: "search-input",
+          onkeydown: (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+              const target = e.target as HTMLInputElement;
+              const value = target.value.trim();
+              window.parent.protocols.navigate(
+                window.parent.proxy.search(value),
+              );
+            }
+          },
+        }),
+      ],
+    );
+  }
+
+  private renderShortcuts() {
+    const section = this.ui.createElement("section", {
+      id: "shortcuts-section",
+      component: "shortcuts-section",
+      class: "mt-8 grid grid-cols-6 gap-4 max-w-4xl mx-auto",
+    });
+
+    this.shortcuts.forEach((shortcut) => {
+      const shortcutElement = this.createShortcutElement(shortcut);
+      section.appendChild(shortcutElement);
+    });
+
+    const remaining = 12 - this.shortcuts.length;
+    for (let i = 0; i < remaining; i++) {
+      const emptySlot = this.createEmptySlot();
+      section.appendChild(emptySlot);
+    }
+
+    return section;
+  }
+
+  private renderModal() {
+    return this.ui.createElement(
+      "div",
+      {
+        id: "editShortcutModal",
+        component: "shortcut-modal",
+        class:
+          "fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center",
+      },
+      [
+        this.ui.createElement(
+          "div",
+          {
+            class:
+              "bg-[var(--bg-1)] rounded-xl border border-[var(--white-08)] p-6 w-full max-w-md mx-4",
+            component: "modal-content",
+          },
+          [
+            this.ui.createElement(
+              "h3",
+              {
+                class: "text-lg font-semibold text-[var(--text)] mb-4",
+              },
+              ["Edit Shortcut"],
+            ),
+            this.ui.createElement(
+              "form",
+              {
+                id: "editShortcutForm",
+                component: "shortcut-form",
+                class: "space-y-4",
+              },
+              [
+                this.ui.createElement("div", {}, [
+                  this.ui.createElement(
+                    "label",
+                    {
+                      class:
+                        "block text-sm font-medium text-[var(--text)] mb-2",
+                    },
+                    ["Title"],
+                  ),
+                  this.ui.createElement("input", {
+                    type: "text",
+                    id: "shortcutTitle",
+                    component: "title-input",
+                    required: true,
+                    class:
+                      "w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent",
+                  }),
+                ]),
+                this.ui.createElement("div", {}, [
+                  this.ui.createElement(
+                    "label",
+                    {
+                      class:
+                        "block text-sm font-medium text-[var(--text)] mb-2",
+                    },
+                    ["URL"],
+                  ),
+                  this.ui.createElement("input", {
+                    type: "url",
+                    id: "shortcutUrl",
+                    component: "url-input",
+                    required: true,
+                    class:
+                      "w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent",
+                  }),
+                ]),
+                this.ui.createElement(
+                  "div",
+                  {
+                    class: "flex justify-end gap-3",
+                  },
+                  [
+                    this.ui.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        id: "cancelEditShortcut",
+                        component: "cancel-button",
+                        class:
+                          "px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors",
+                      },
+                      ["Cancel"],
+                    ),
+                    this.ui.createElement(
+                      "button",
+                      {
+                        type: "submit",
+                        component: "save-button",
+                        class:
+                          "px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors",
+                      },
+                      ["Save Changes"],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  private renderSignInButton() {
+    return this.ui.createElement(
+      "div",
+      {
+        class: "absolute bottom-16 left-0 right-0 flex justify-center",
+        component: "signin-container",
+      },
+      [
+        this.ui.createElement(
+          "button",
+          {
+            id: "nightPlusSignIn",
+            component: "signin-button",
+            class:
+              "pointer-events-auto px-6 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors text-sm font-medium",
+          },
+          ["Sign into Night+"],
+        ),
+      ],
+    );
+  }
+
+  private renderFooter() {
+    const latencySpan = this.ui.createElement(
+      "span",
+      {
+        id: "latency",
+        component: "latency",
+        class: "text-[var(--text)]/80 ml-1",
+      },
+      ["..."],
+    );
+
+    const pingButton = this.ui.createElement(
+      "button",
+      {
+        id: "ping-button",
+        component: "ping-button",
+        class:
+          "ml-2 text-xs hover:opacity-70 transition-opacity cursor-pointer flex items-center",
+        title: "Check latency",
+        onclick: () => this.checkLatency(),
+      },
+      [
+        this.ui.createElement("i", {
+          "data-lucide": "refresh-cw",
+          class: "h-3 w-3",
+        }),
+      ],
+    );
+
+    return this.ui.createElement(
+      "footer",
+      {
+        class:
+          "pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]",
+        component: "footer",
+      },
+      [
+        this.ui.createElement(
+          "span",
+          {
+            class: "pointer-events-auto flex items-center",
+            component: "latency-container",
+          },
+          ["Server Latency: ", latencySpan, pingButton],
+        ),
+        this.ui.createElement(
+          "nav",
+          {
+            class: "pointer-events-auto flex items-center gap-4",
+            component: "footer-nav",
+          },
+          [
+            this.ui.createElement(
+              "a",
+              {
+                href: "https://gitlab.com/nightnetwork/daydreamx",
+                rel: "noreferrer",
+                class: "hover:text-[var(--text)]",
+                component: "github-link",
+                onclick: (e: Event) => {
+                  e.preventDefault();
+                  const url = (e.target as HTMLAnchorElement).getAttribute(
+                    "href",
+                  );
+                  if (url) window.parent.protocols.navigate(url);
+                },
+              },
+              ["Github"],
+            ),
+            this.ui.createElement("span", {}, ["\\"]),
+            this.ui.createElement(
+              "a",
+              {
+                href: "https://discord.com",
+                rel: "noreferrer",
+                class: "hover:text-[var(--text)]",
+                component: "discord-link",
+                onclick: (e: Event) => {
+                  e.preventDefault();
+                  const url = (e.target as HTMLAnchorElement).getAttribute(
+                    "href",
+                  );
+                  if (url) window.parent.protocols.navigate(url);
+                },
+              },
+              ["Discord"],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  private async checkLatency() {
+    const latencyElement =
+      this.ui.queryComponent("latency") || document.getElementById("latency");
+    const pingButton =
+      this.ui.queryComponent("ping-button") ||
+      document.getElementById("ping-button");
+
+    if (!latencyElement || !pingButton) return;
+
+    try {
+      pingButton.innerHTML =
+        '<i data-lucide="loader-2" class="h-3 w-3 animate-spin"></i>';
+      (pingButton as HTMLButtonElement).disabled = true;
+
+      const result = await window.parent.proxy.ping(
+        window.parent.proxy.wispUrl,
+      );
+
+      if (result.online) {
+        latencyElement.textContent = `${result.ping}ms`;
+        latencyElement.classList.remove("text-red-500");
+        latencyElement.classList.remove("text-[var(--text)]/80");
+        latencyElement.classList.add("text-green-500");
+        //latencyElement.parentElement?.classList.add("text-green-500");
+      } else {
+        latencyElement.textContent = "Offline";
+        latencyElement.classList.remove("text-green-500");
+        latencyElement.classList.remove("text-[var(--text)]/80");
+        latencyElement.classList.add("text-red-500");
+        //latencyElement.parentElement?.classList.add("text-red-500");
+      }
+
+      pingButton.innerHTML = '<i data-lucide="refresh-cw" class="h-3 w-3"></i>';
+      (pingButton as HTMLButtonElement).disabled = false;
+
+      createIcons({ icons });
+    } catch (error) {
+      latencyElement.textContent = "Error";
+      latencyElement.style.color = "red";
+      pingButton.innerHTML = '<i data-lucide="refresh-cw" class="h-3 w-3"></i>';
+      (pingButton as HTMLButtonElement).disabled = false;
+      createIcons({ icons });
+      console.error("Latency check failed:", error);
+    }
   }
 
   private async getFavicon(url: string): Promise<string> {
@@ -158,69 +598,80 @@ class NewTabShortcuts {
     return shortcutsFolder.id;
   }
 
-  private renderShortcuts() {
-    const section = document.getElementById("shortcuts-section");
-    if (!section) return;
-
-    section.innerHTML = "";
-
-    this.shortcuts.forEach((shortcut) => {
-      const shortcutElement = this.createShortcutElement(shortcut);
-      section.appendChild(shortcutElement);
-    });
-
-    const remaining = 12 - this.shortcuts.length;
-    for (let i = 0; i < remaining; i++) {
-      const emptySlot = this.createEmptySlot();
-      section.appendChild(emptySlot);
-    }
-
-    setTimeout(() => createIcons({ icons }), 0);
-  }
-
   private createShortcutElement(shortcut: Shortcut): HTMLElement {
-    const shortcutDiv = document.createElement("div");
-    shortcutDiv.className = "shortcut-item relative group";
-
-    shortcutDiv.innerHTML = `
-      <div class="shortcut-link block relative rounded-xl bg-[var(--bg-2)] p-3 h-24 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition group cursor-pointer">
-        <div class="flex flex-col items-center justify-center h-full text-center">
-          <div class="w-8 h-8 mb-2 flex items-center justify-center">
-            <img
-              src="${shortcut.favicon || this.getFallbackFavicon()}"
-              alt="${shortcut.title}"
-              class="w-8 h-8 object-contain"
-              onerror="this.src='${this.getFallbackFavicon()}'"
-            />
-          </div>
-          <span class="text-xs text-[var(--text)] font-medium truncate w-full">${shortcut.title}</span>
-        </div>
-      </div>
-      <button
-        class="edit-shortcut-btn absolute -top-1 -right-1 w-6 h-6 bg-[var(--bg-1)] border border-[var(--white-20)] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-[var(--white-10)]"
-        title="Edit shortcut"
-      >
-        <i data-lucide="edit" class="h-3 w-3 text-[var(--text-secondary)]"></i>
-      </button>
-    `;
-
-    const linkElement = shortcutDiv.querySelector(
-      ".shortcut-link",
-    ) as HTMLElement;
-    linkElement.addEventListener("click", (e) => {
-      e.preventDefault();
-      this.handleShortcutNavigation(shortcut.url);
-    });
-
-    const editBtn = shortcutDiv.querySelector(
-      ".edit-shortcut-btn",
-    ) as HTMLElement;
-    editBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.openEditShortcutModal(shortcut.id);
-    });
-
-    return shortcutDiv;
+    return this.ui.createElement(
+      "div",
+      {
+        class: "shortcut-item relative group",
+        component: `shortcut-${shortcut.id}`,
+      },
+      [
+        this.ui.createElement(
+          "div",
+          {
+            class:
+              "shortcut-link block relative rounded-xl bg-[var(--bg-2)] p-3 h-24 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition group cursor-pointer",
+            component: "shortcut-link",
+            onclick: (e: Event) => {
+              e.preventDefault();
+              this.handleShortcutNavigation(shortcut.url);
+            },
+          },
+          [
+            this.ui.createElement(
+              "div",
+              {
+                class:
+                  "flex flex-col items-center justify-center h-full text-center",
+              },
+              [
+                this.ui.createElement(
+                  "div",
+                  {
+                    class: "w-8 h-8 mb-2 flex items-center justify-center",
+                  },
+                  [
+                    this.ui.createElement("img", {
+                      src: shortcut.favicon || this.getFallbackFavicon(),
+                      alt: shortcut.title,
+                      class: "w-8 h-8 object-contain",
+                      onerror: `this.src='${this.getFallbackFavicon()}'`,
+                    }),
+                  ],
+                ),
+                this.ui.createElement(
+                  "span",
+                  {
+                    class:
+                      "text-xs text-[var(--text)] font-medium truncate w-full",
+                  },
+                  [shortcut.title],
+                ),
+              ],
+            ),
+          ],
+        ),
+        this.ui.createElement(
+          "button",
+          {
+            class:
+              "edit-shortcut-btn absolute -top-1 -right-1 w-6 h-6 bg-[var(--bg-1)] border border-[var(--white-20)] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-[var(--white-10)]",
+            title: "Edit shortcut",
+            component: "edit-button",
+            onclick: (e: Event) => {
+              e.stopPropagation();
+              this.openEditShortcutModal(shortcut.id);
+            },
+          },
+          [
+            this.ui.createElement("i", {
+              "data-lucide": "edit",
+              class: "h-3 w-3 text-[var(--text-secondary)]",
+            }),
+          ],
+        ),
+      ],
+    );
   }
 
   private handleShortcutNavigation(url: string): void {
@@ -239,39 +690,59 @@ class NewTabShortcuts {
   }
 
   private createEmptySlot(): HTMLElement {
-    const emptyDiv = document.createElement("div");
-    emptyDiv.className = "empty-slot relative group cursor-pointer";
-    emptyDiv.innerHTML = `
-      <div class="block relative rounded-xl bg-[var(--bg-2)] border-2 border-dashed border-[var(--white-20)] p-3 h-24 hover:border-[var(--main-35a)] transition group">
-        <div class="flex flex-col items-center justify-center h-full text-center">
-          <div class="w-8 h-8 mb-2 flex items-center justify-center">
-            <i data-lucide="plus" class="w-6 h-6 text-[var(--white-50)]"></i>
-          </div>
-          <span class="text-xs text-[var(--white-50)] font-medium">Add shortcut</span>
-        </div>
-      </div>
-    `;
-
-    emptyDiv.addEventListener("click", () => this.openAddShortcutModal());
-    return emptyDiv;
+    return this.ui.createElement(
+      "div",
+      {
+        class: "empty-slot relative group cursor-pointer",
+        component: "empty-slot",
+        onclick: () => this.openAddShortcutModal(),
+      },
+      [
+        this.ui.createElement(
+          "div",
+          {
+            class:
+              "block relative rounded-xl bg-[var(--bg-2)] border-2 border-dashed border-[var(--white-20)] p-3 h-24 hover:border-[var(--main-35a)] transition group",
+          },
+          [
+            this.ui.createElement(
+              "div",
+              {
+                class:
+                  "flex flex-col items-center justify-center h-full text-center",
+              },
+              [
+                this.ui.createElement(
+                  "div",
+                  {
+                    class: "w-8 h-8 mb-2 flex items-center justify-center",
+                  },
+                  [
+                    this.ui.createElement("i", {
+                      "data-lucide": "plus",
+                      class: "w-6 h-6 text-[var(--white-50)]",
+                    }),
+                  ],
+                ),
+                this.ui.createElement(
+                  "span",
+                  {
+                    class: "text-xs text-[var(--white-50)] font-medium",
+                  },
+                  ["Add shortcut"],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   private setupEventListeners() {
-    document.addEventListener("click", (e) => {
-      const editBtn = (e.target as HTMLElement).closest(".edit-shortcut-btn");
-      if (editBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const shortcutId = editBtn.getAttribute("data-shortcut-id");
-        if (shortcutId) {
-          this.openEditShortcutModal(shortcutId);
-        }
-      }
-    });
-
-    const modal = document.getElementById("editShortcutModal");
-    const form = document.getElementById("editShortcutForm") as HTMLFormElement;
-    const cancelBtn = document.getElementById("cancelEditShortcut");
+    const modal = this.ui.queryComponent("shortcut-modal");
+    const form = this.ui.queryComponent("shortcut-form");
+    const cancelBtn = this.ui.queryComponent("cancel-button");
 
     if (cancelBtn) {
       cancelBtn.addEventListener("click", () => this.closeModal());
@@ -294,6 +765,8 @@ class NewTabShortcuts {
         this.closeModal();
       }
     });
+
+    setTimeout(() => this.checkLatency(), 1000);
   }
 
   private openEditShortcutModal(shortcutId: string) {
@@ -302,10 +775,10 @@ class NewTabShortcuts {
 
     this.currentEditingId = shortcutId;
 
-    const titleInput = document.getElementById(
-      "shortcutTitle",
+    const titleInput = this.ui.queryComponent(
+      "title-input",
     ) as HTMLInputElement;
-    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+    const urlInput = this.ui.queryComponent("url-input") as HTMLInputElement;
 
     if (titleInput) titleInput.value = shortcut.title;
     if (urlInput) urlInput.value = shortcut.url;
@@ -316,10 +789,10 @@ class NewTabShortcuts {
   private openAddShortcutModal() {
     this.currentEditingId = null;
 
-    const titleInput = document.getElementById(
-      "shortcutTitle",
+    const titleInput = this.ui.queryComponent(
+      "title-input",
     ) as HTMLInputElement;
-    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+    const urlInput = this.ui.queryComponent("url-input") as HTMLInputElement;
 
     if (titleInput) titleInput.value = "";
     if (urlInput) urlInput.value = "";
@@ -328,13 +801,13 @@ class NewTabShortcuts {
   }
 
   private showModal() {
-    const modal = document.getElementById("editShortcutModal");
+    const modal = this.ui.queryComponent("shortcut-modal");
     if (modal) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
 
-      const titleInput = document.getElementById(
-        "shortcutTitle",
+      const titleInput = this.ui.queryComponent(
+        "title-input",
       ) as HTMLInputElement;
       if (titleInput) {
         setTimeout(() => titleInput.focus(), 100);
@@ -343,7 +816,7 @@ class NewTabShortcuts {
   }
 
   private closeModal() {
-    const modal = document.getElementById("editShortcutModal");
+    const modal = this.ui.queryComponent("shortcut-modal");
     if (modal) {
       modal.classList.add("hidden");
       modal.classList.remove("flex");
@@ -352,17 +825,17 @@ class NewTabShortcuts {
   }
 
   private isModalOpen(): boolean {
-    const modal = document.getElementById("editShortcutModal");
+    const modal = this.ui.queryComponent("shortcut-modal");
     return modal ? !modal.classList.contains("hidden") : false;
   }
 
   private async handleSubmit(e: Event) {
     e.preventDefault();
 
-    const titleInput = document.getElementById(
-      "shortcutTitle",
+    const titleInput = this.ui.queryComponent(
+      "title-input",
     ) as HTMLInputElement;
-    const urlInput = document.getElementById("shortcutUrl") as HTMLInputElement;
+    const urlInput = this.ui.queryComponent("url-input") as HTMLInputElement;
 
     if (!titleInput || !urlInput) return;
 
@@ -379,7 +852,7 @@ class NewTabShortcuts {
         });
 
         await this.loadShortcuts();
-        this.renderShortcuts();
+        this.refreshShortcuts();
       } else {
         if (this.shortcuts.length >= 12) {
           alert("Maximum of 12 shortcuts allowed");
@@ -394,7 +867,7 @@ class NewTabShortcuts {
         });
 
         await this.loadShortcuts();
-        this.renderShortcuts();
+        this.refreshShortcuts();
       }
 
       this.closeModal();
@@ -404,10 +877,30 @@ class NewTabShortcuts {
     }
   }
 
+  private refreshShortcuts() {
+    const section = this.ui.queryComponent("shortcuts-section");
+    if (!section) return;
+
+    section.innerHTML = "";
+
+    this.shortcuts.forEach((shortcut) => {
+      const shortcutElement = this.createShortcutElement(shortcut);
+      section.appendChild(shortcutElement);
+    });
+
+    const remaining = 12 - this.shortcuts.length;
+    for (let i = 0; i < remaining; i++) {
+      const emptySlot = this.createEmptySlot();
+      section.appendChild(emptySlot);
+    }
+
+    setTimeout(() => createIcons({ icons }), 0);
+  }
+
   public async refresh() {
     await this.bookmarkManager.loadFromStorage();
     await this.loadShortcuts();
-    this.renderShortcuts();
+    this.refreshShortcuts();
   }
 }
 
@@ -415,25 +908,4 @@ document.addEventListener("DOMContentLoaded", () => {
   createIcons({ icons });
   const shortcutsManager = new NewTabShortcuts();
   (window as any).shortcutsManager = shortcutsManager;
-
-  const input = document.getElementById("searchInput") as HTMLInputElement;
-  if (input) {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const value = input.value.trim();
-        window.parent.protocols.navigate(window.parent.proxy.search(value));
-      }
-    });
-  }
-
-  const links = document.querySelectorAll("a");
-  links.forEach((link) => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      const url = link.getAttribute("href");
-      if (url) {
-        window.parent.protocols.navigate(url);
-      }
-    });
-  });
 });

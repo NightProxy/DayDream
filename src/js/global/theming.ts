@@ -465,14 +465,12 @@ class Themeing implements ThemeingInterface {
       const root = document.documentElement;
 
       if (backgroundImage) {
-        // Set the background image URL
         root.style.setProperty(
           "--background-image-url",
           `url("${backgroundImage}")`,
         );
         root.style.setProperty("--has-background-image", "1");
 
-        // Apply background image to body for internal pages
         if (window.location.pathname.startsWith("/internal/")) {
           document.body.style.backgroundImage = `url("${backgroundImage}")`;
           document.body.style.backgroundSize = "cover";
@@ -480,13 +478,11 @@ class Themeing implements ThemeingInterface {
           document.body.style.backgroundRepeat = "no-repeat";
           document.body.style.backgroundAttachment = "fixed";
 
-          // Add a class to indicate background image is present
           document.documentElement.classList.add("has-background-image");
         }
 
         console.log("Applied background image successfully");
       } else {
-        // Remove background image properties
         root.style.removeProperty("--background-image-url");
         root.style.removeProperty("--has-background-image");
 
@@ -497,7 +493,6 @@ class Themeing implements ThemeingInterface {
           document.body.style.removeProperty("background-repeat");
           document.body.style.removeProperty("background-attachment");
 
-          // Remove the background image class
           document.documentElement.classList.remove("has-background-image");
         }
 

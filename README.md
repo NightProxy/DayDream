@@ -1,10 +1,10 @@
 # DayDream X
 <div align="center">
-    <img src="https://github.com/NightProxy/DayDreamX/blob/main/assets/DDXBanner.png" style="width: 1200px"/>
+    <img src="https://gitlab.com/nightnetwork/daydreamx/blob/main/assets/DDXBanner.png" style="width: 1200px"/>
     <h2>Explore the Web with DayDream X</h2>
 </div>
 
-![inpreview](https://github.com/NightProxy/DayDreamX/blob/main/assets/daydreamx.png)
+![inpreview](https://gitlab.com/nightnetwork/daydreamx/blob/main/assets/daydreamx.png)
 
 > [!IMPORTANT]
 > Please consider giving the original repository a star if you fork this project.
@@ -42,7 +42,7 @@ If you do not wish to use Corepack due to its experimental status, you may insta
 ### Hosting Instructions
 
 ```bash
-git clone https://github.com/NightProxy/DayDreamX.git
+git clone https://gitlab.com/nightnetwork/daydreamx.git
 cd DayDreamX
 bun install
 bun start
@@ -73,11 +73,11 @@ For assistance, deployment methods, or to access links, join our [Discord Server
 
 ## Contributing
 
-To contribute, fork the repository, implement your changes, and submit a pull request. Please test your code thoroughly before submission. For detailed contribution guidelines, refer to [CONTRIB.md](https://github.com/NightProxy/DayDreamX/blob/main/CONTRIB.md).
+To contribute, fork the repository, implement your changes, and submit a pull request. Please test your code thoroughly before submission. For detailed contribution guidelines, refer to [CONTRIB.md](https://gitlab.com/nightnetwork/daydreamx/blob/main/CONTRIB.md).
 
 ## Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=nightproxy/daydreamx)](https://github.com/NightProxy/DayDreamX/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=nightproxy/daydreamx)](https://gitlab.com/nightnetwork/daydreamx/graphs/contributors)
 
 ## Community
 

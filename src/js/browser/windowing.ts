@@ -1,4 +1,5 @@
 import { SettingsAPI } from "@apis/settings";
+import { tabCloakManager } from "@js/utils/tabCloak";
 
 interface WindowingInterface {
   settings: SettingsAPI;
@@ -25,17 +26,25 @@ class Windowing implements WindowingInterface {
         "style",
         "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;",
       );
-      aboutBlankTab!.document.title = document.title;
+
+      const cloakSettings = await tabCloakManager.getSettings();
+
+      aboutBlankTab!.document.title = cloakSettings.title || document.title;
       const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
+        cloakSettings.favicon ||
         (await this.settings.getItem("favicon")) ||
         location.href + "/res/logo.png";
-      aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
-        event.preventDefault();
-        event.returnValue = "";
-      });
+
+      if (cloakSettings.disableTabClose) {
+        aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
+          event.preventDefault();
+          event.returnValue = "";
+        });
+      }
+
       aboutBlankTab!.document.head.appendChild(link);
       aboutBlankTab!.document.body.appendChild(iframe);
     } else {
@@ -52,17 +61,25 @@ class Windowing implements WindowingInterface {
         "style",
         "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;",
       );
-      aboutBlankTab!.document.title = document.title;
+
+      const cloakSettings = await tabCloakManager.getSettings();
+
+      aboutBlankTab!.document.title = cloakSettings.title || document.title;
       const link = aboutBlankTab!.document.createElement("link");
       link.rel = "icon";
       link.type = "image/x-icon";
       link.href =
+        cloakSettings.favicon ||
         (await this.settings.getItem("favicon")) ||
         location.href + "/res/logo.png";
-      aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
-        event.preventDefault();
-        event.returnValue = "";
-      });
+
+      if (cloakSettings.disableTabClose) {
+        aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
+          event.preventDefault();
+          event.returnValue = "";
+        });
+      }
+
       aboutBlankTab!.document.head.appendChild(link);
       aboutBlankTab!.document.body.appendChild(iframe);
 
@@ -77,17 +94,28 @@ class Windowing implements WindowingInterface {
     if (window === window.top) {
       const aboutBlankTab = window.open("about:blank", "_blank");
       const docMain = aboutBlankTab!.document;
+
+      const cloakSettings = await tabCloakManager.getSettings();
+      const title = cloakSettings.title || document.title;
+      const favicon =
+        cloakSettings.favicon ||
+        (await this.settings.getItem("favicon")) ||
+        location.href + "/res/logo.png";
+      const beforeUnloadScript = cloakSettings.disableTabClose
+        ? `window.addEventListener("beforeunload", function(event) {
+            event.preventDefault();
+            event.returnValue = "";
+          });`
+        : "";
+
       docMain.write(`
 <!DOCTYPE html>
 <html>
 <head>
-  <title>${document.title}</title>
-  <link rel="icon" type="image/x-icon" href="${(await this.settings.getItem("favicon")) || location.href + "/res/logo.png"}">
+  <title>${title}</title>
+  <link rel="icon" type="image/x-icon" href="${favicon}">
   <script>
-    window.addEventListener("beforeunload", function(event) {
-      event.preventDefault();
-      event.returnValue = "";
-    });
+    ${beforeUnloadScript}
   </script>
 </head>
 <body style="margin: 0; padding: 0; height: 100%; overflow: hidden;">
@@ -124,8 +152,10 @@ class Windowing implements WindowingInterface {
     }
   }
 
-  BlobWindow() {
+  async BlobWindow() {
     if (window === window.top) {
+      const cloakSettings = await tabCloakManager.getSettings();
+
       const htmlContent = `
               <!DOCTYPE html>
               <html>
@@ -154,10 +184,13 @@ class Windowing implements WindowingInterface {
       const blobUrl = URL.createObjectURL(blob);
 
       const blobPage = window.open(blobUrl, "_blank");
-      blobPage!.window.addEventListener("beforeunload", (event) => {
-        event.preventDefault();
-        event.returnValue = "";
-      });
+
+      if (cloakSettings.disableTabClose) {
+        blobPage!.window.addEventListener("beforeunload", (event) => {
+          event.preventDefault();
+          event.returnValue = "";
+        });
+      }
     } else {
       console.log("already in blob or iframe");
     }
@@ -166,6 +199,9 @@ class Windowing implements WindowingInterface {
   async BlobWindowGG() {
     if (window === window.top) {
       const originalUrl = window.location.href;
+
+      const cloakSettings = await tabCloakManager.getSettings();
+
       const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -201,10 +237,13 @@ class Windowing implements WindowingInterface {
       const blobUrl = URL.createObjectURL(blob);
 
       const blobPage = window.open(blobUrl, "_blank");
-      blobPage!.window.addEventListener("beforeunload", (event) => {
-        event.preventDefault();
-        event.returnValue = "";
-      });
+
+      if (cloakSettings.disableTabClose) {
+        blobPage!.window.addEventListener("beforeunload", (event) => {
+          event.preventDefault();
+          event.returnValue = "";
+        });
+      }
     } else {
       console.log("already in blob or iframe");
     }
