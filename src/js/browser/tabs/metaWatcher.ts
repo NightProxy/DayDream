@@ -79,6 +79,7 @@ export class TabMetaWatcher {
         pageTitle = d.title?.trim() || "New Tab";
         if (titleEl && titleEl.textContent !== pageTitle) {
           titleEl.textContent = pageTitle;
+          titleEl.setAttribute("title", pageTitle);
         }
       }
     } catch (e) {

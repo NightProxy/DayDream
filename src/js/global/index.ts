@@ -2,6 +2,7 @@ import { SettingsAPI } from "@apis/settings";
 import { Themeing } from "@js/global/theming";
 import { Windowing } from "@browser/windowing";
 import { EventSystem } from "@apis/events";
+import { tabCloakManager } from "@js/utils/tabCloak";
 
 interface DDXGlobalInterface {
   settings: SettingsAPI;
@@ -25,6 +26,17 @@ class DDXGlobal implements DDXGlobalInterface {
   }
   async init() {
     this.theming.init();
+
+    if (window === window.top) {
+      await tabCloakManager.applyTabCloak();
+      await tabCloakManager.applyDisableTabClose();
+
+      this.events.addEventListener("tabCloak:change", async (_event: any) => {
+        console.log("Tab cloak change detected, reapplying...");
+        await tabCloakManager.applyTabCloak();
+      });
+    }
+
     if (
       window === window.top &&
       this.windowing != null &&

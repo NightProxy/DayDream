@@ -65,10 +65,35 @@ class Proxy implements ProxyInterface {
       epoxy: "/epoxy/index.mjs",
       libcurl: "/libcurl/index.mjs",
     };
+
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
-    await this.connection.setTransport("/reflux/index.mjs", [
-      { base: transportFile, wisp: this.wispUrl },
-    ]);
+
+    const transportOptions: Record<string, any> = {
+      wisp: this.wispUrl,
+    };
+
+    const remoteProxyServer = await this.getRemoteProxyServer();
+    if (
+      remoteProxyServer &&
+      remoteProxyServer !== "undefined" &&
+      remoteProxyServer !== "null" &&
+      remoteProxyServer !== "disabled" &&
+      remoteProxyServer !== "false" &&
+      transportFile === "/libcurl/index.mjs"
+    ) {
+      transportOptions.remoteProxy = remoteProxyServer;
+    }
+
+    const isRefluxEnabled = await this.getRefluxStatus();
+
+    if (isRefluxEnabled) {
+      await this.connection.setTransport("/reflux/index.mjs", [
+        { base: transportFile, ...transportOptions },
+      ]);
+    } else {
+      await this.connection.setTransport(transportFile, [transportOptions]);
+    }
+
     if (this.logging) {
       this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
     }
@@ -153,7 +178,7 @@ class Proxy implements ProxyInterface {
 
   async fetchProxyMapping() {
     try {
-      const response = await fetch("/json/proxy.json");
+      const response = await fetch("/json/p.json");
       if (!response.ok) throw new Error("Failed to load proxy mappings.");
       return await response.json();
     } catch (error) {
@@ -184,7 +209,7 @@ class Proxy implements ProxyInterface {
     if (proxyMapping) {
       return proxyMapping[domain] || proxyMapping["default"];
     }
-    return "uv";
+    return "sj";
   }
 
   async automatic(input: string, swConfig: Record<any, any>) {
@@ -402,6 +427,54 @@ class Proxy implements ProxyInterface {
       console.warn("Failed to fetch favicon:", error);
       return null;
     }
+  }
+
+  async ping(
+    server: string,
+  ): Promise<{ online: boolean; ping: number | string }> {
+    return new Promise((resolve) => {
+      const websocket = new WebSocket(server);
+      const startTime = Date.now();
+      websocket.addEventListener("open", () => {
+        const pingTime = Date.now() - startTime;
+        websocket.close();
+        resolve({ online: true, ping: pingTime });
+      });
+      websocket.addEventListener("message", () => {
+        const pingTime = Date.now() - startTime;
+        websocket.close();
+        resolve({ online: true, ping: pingTime });
+      });
+      websocket.addEventListener("error", () => {
+        websocket.close();
+        resolve({ online: false, ping: "N/A" });
+      });
+      setTimeout(() => {
+        websocket.close();
+        resolve({ online: false, ping: "N/A" });
+      }, 5000);
+    });
+  }
+
+  async setRemoteProxyServer(server: string) {
+    await this.settings.setItem("prx-server", server);
+  }
+
+  async getRemoteProxyServer(): Promise<string> {
+    return await this.settings.getItem("prx-server");
+  }
+
+  async disableReflux() {
+    await this.settings.setItem("RefluxStatus", "false");
+  }
+
+  async enableReflux() {
+    await this.settings.setItem("RefluxStatus", "true");
+  }
+
+  async getRefluxStatus(): Promise<boolean> {
+    const status = await this.settings.getItem("RefluxStatus");
+    return status !== "false";
   }
 }
 

@@ -1,44 +1,32 @@
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { ViteMinifyPlugin } from "vite-plugin-minify";
-import path from "path";
-import obfuscatorPlugin from "vite-plugin-javascript-obfuscator";
-import vitePluginBundleObfuscator from "vite-plugin-bundle-obfuscator";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-import htmlMinify from "vite-plugin-html-minify";
+import { ViteMinifyPlugin } from "vite-plugin-minify";
+import vitePluginBundleObfuscator from "vite-plugin-bundle-obfuscator";
 import { fontObfuscationPlugin } from "./srv/vite/font";
-
 import { prettyUrlsPlugin, pageRoutes } from "./srv/vite/routes";
-import { copyRoutes, routePaths } from "./srv/vite/copy";
-
+import { copyRoutes } from "./srv/vite/copy";
 import tailwindcss from "@tailwindcss/vite";
 import { obfuscationConfig } from "./srv/vite/obfusc-config";
+import { minifyConfig } from "./srv/vite/minify-config";
+import { ContentInsertionPlugin } from "./srv/vite/contentInsertion";
+import { allowedHosts } from "./srv/vite/hosts";
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
     tsconfigPaths(),
-    ViteMinifyPlugin(),
+    ViteMinifyPlugin(minifyConfig),
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
+    ContentInsertionPlugin(),
     viteStaticCopy(copyRoutes()),
 
-    vitePluginBundleObfuscator(obfuscationConfig) as any,
-    htmlMinify({
-      collapseWhitespace: true,
-      removeComments: true,
-      removeRedundantAttributes: true,
-      useShortDoctype: true,
-      minifyCSS: true,
-      minifyJS: false,
-    }),
+    vitePluginBundleObfuscator(obfuscationConfig as any),
   ],
   appType: "mpa",
   server: {
-    allowedHosts: [
-      "desert-checklist-treo-hdtv.trycloudflare.com",
-      "significance-cindy-award-coated.trycloudflare.com",
-    ],
+    allowedHosts: allowedHosts,
     proxy: {
       "/api": {
         target: "http://localhost:8080",
@@ -54,33 +42,128 @@ export default defineConfig({
   },
   build: {
     emptyOutDir: true,
+    target: ["es2020", "chrome80", "firefox78", "safari14"],
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        arguments: true,
+        drop_console: process.env.NODE_ENV === "production",
+        drop_debugger: true,
+        hoist_funs: false, // Reduces processing time
+        hoist_props: false, // Reduces processing time
+        hoist_vars: false,
+        inline: 1, // Reduced from 2 for faster builds
+        join_vars: true,
+        loops: true,
+        passes: 1, // Reduced from 3 - single pass is much faster
+        pure_funcs: [
+          "console.log",
+          "console.info",
+          "console.debug",
+          "console.warn",
+        ],
+        reduce_vars: false, // EXPENSIVE - disabled for performance
+        sequences: true,
+        side_effects: false,
+        switches: true,
+        top_retain: [],
+        typeofs: false, // Reduces processing time
+        unsafe: false,
+        unsafe_arrows: false, // Conservative for compatibility
+        unsafe_methods: false, // Conservative for compatibility
+        unsafe_proto: false, // Conservative for compatibility
+        unused: true,
+      },
+      mangle: {
+        properties: false,
+        toplevel: true,
+        safari10: false,
+      },
+      format: {
+        comments: false,
+        beautify: false,
+        preserve_annotations: false,
+      },
+      maxWorkers: 4, // Parallel terser processing
+    },
     rollupOptions: {
       input: pageRoutes(),
       output: {
-        entryFileNames: "[hash].js",
-        chunkFileNames: (chunk) => {
-          if (chunk.name === "vendor-modules")
-            return "chunks/vendor-modules.js";
-          return "chunks/[hash].js";
+        entryFileNames: (chunkInfo) => {
+          const hash = Math.random().toString(36).substring(2, 12);
+          return `${hash}.js`;
         },
-        assetFileNames: "assets/[hash].[ext]",
+        chunkFileNames: (chunk) => {
+          if (chunk.name === "vendor-modules") {
+            const hash = Math.random().toString(36).substring(2, 10);
+            return `chunks/vendor-${hash}.js`;
+          }
+          const hash = Math.random().toString(36).substring(2, 12);
+          return `chunks/${hash}.js`;
+        },
+        // Increase chunk size to reduce number of files to obfuscate
+        experimentalMinChunkSize: 50000, // 50kb minimum
+        assetFileNames: (assetInfo) => {
+          if (
+            assetInfo.name?.endsWith(".woff2") ||
+            assetInfo.name?.endsWith(".ttf")
+          ) {
+            // Keep font files as-is for the font obfuscation system
+            return `assets/${assetInfo.name}`;
+          }
+          const hash = Math.random().toString(36).substring(2, 12);
+          const ext = assetInfo.name?.split(".").pop();
+          return `assets/${hash}.${ext}`;
+        },
         manualChunks(id) {
           if (id.includes("node_modules")) return "vendor-modules";
+          // Split proxy-related code into separate chunks for better obfuscation
+          if (
+            id.includes("scramjet") ||
+            id.includes("ultraviolet") ||
+            id.includes("rammerhead") ||
+            id.includes("wisp") ||
+            id.includes("bare")
+          ) {
+            return "proxy-core";
+          }
         },
       },
     },
+    sourcemap: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 2000,
   },
   esbuild: {
     legalComments: "none",
+    treeShaking: true,
+    minifyIdentifiers: true,
+    minifySyntax: true,
+    minifyWhitespace: true,
+    target: "es2020",
   },
   css: {
     modules: {
       generateScopedName: () => {
-        return (
-          String.fromCharCode(97 + Math.floor(Math.random() * 17)) +
-          Math.random().toString(36).substring(2, 8)
-        );
+        const chars = "abcdefghijklmnopqrstuvwxyz";
+        const numbers = "0123456789";
+        let result = chars[Math.floor(Math.random() * chars.length)];
+
+        for (let i = 0; i < 7; i++) {
+          const useNumber = Math.random() > 0.7;
+          const charset = useNumber ? numbers : chars;
+          result += charset[Math.floor(Math.random() * charset.length)];
+        }
+
+        return result;
       },
     },
+  },
+  define: {
+    // Define environment variables for runtime obfuscation
+    __OBFUSCATION_SEED__: JSON.stringify(
+      Math.random().toString(36).substring(2),
+    ),
+    __BUILD_TIME__: JSON.stringify(Date.now()),
   },
 });
