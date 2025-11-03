@@ -2,13 +2,12 @@ import "../../css/vars.css";
 import "../../css/imports.css";
 import "../../css/global.css";
 import "../../css/internal.css";
-import "./shared/themeInit";
 import "basecoat-css/all";
 import "../global/panic";
+import "./shared/themeInit";
 
-import { SettingsAPI } from "@apis/settings";
-import { Proxy } from "@apis/proxy";
 import { createIcons, icons } from "lucide";
+import { Nightmare } from "@libs/Nightmare/nightmare";
 
 interface Game {
   name: string;
@@ -18,6 +17,8 @@ interface Game {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const ui = new Nightmare();
+
   let games: Game[] = [];
 
   try {
@@ -63,37 +64,123 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     }
 
-    grid.innerHTML = filtered
-      .map(
-        (g) => `
-      <article class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition hover:ring-[var(--main-35a)] overflow-visible" data-cat="${g.categories.join(" ")}">
-        <div class="relative aspect-video overflow-hidden rounded-t-2xl">
-          <img src="${g.image}" alt="${g.name}" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:blur-md" />
-        </div>
-        <div class="p-4 relative">
-          <div class="flex items-start gap-3">
-            <img src="${g.image}" alt="${g.name}" loading="lazy" class="h-9 w-9 rounded-md object-cover" />
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <h3 class="text-sm font-medium text-[var(--text)] truncate">${g.name}</h3>
-                <button data-action="bookmark" aria-pressed="false" class="grid place-items-center h-8 w-8 rounded-lg hover:bg-[var(--white-05)] z-[99999]">
-                  <i data-lucide="bookmark" class="h-4 w-4"></i>
-                </button>
-              </div>
-              <p class="text-xs text-[var(--proto)] truncate">Hosted by ${extractHost(g.link)}</p>
-            </div>
-          </div>
-          <div class="absolute bottom-full left-0 right-0 bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] rounded-t-xl p-3 opacity-0 translate-y-2 transition duration-200 group-hover:opacity-100 group-hover:translate-y-0 flex flex-col gap-2">
-            <a href="${g.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-semibold rounded-lg px-4 py-2 ring-1 ring-inset ring-[var(--white-08)] bg-[var(--bg-2)]/70 backdrop-blur hover:bg-[var(--white-05)]">
-              <i data-lucide="play" class="h-4 w-4"></i>
-              Play
-            </a>
-          </div>
-        </div>
-      </article>
-    `,
-      )
-      .join("");
+    grid.innerHTML = "";
+
+    filtered.forEach((g) => {
+      const article = ui.createElement("article", {
+        class:
+          "group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition hover:ring-[var(--main-35a)] overflow-visible",
+        "data-cat": g.categories.join(" "),
+      });
+
+      const imageContainer = ui.createElement("div", {
+        class: "relative aspect-video overflow-hidden rounded-t-2xl",
+      });
+
+      const mainImage = ui.createElement("img", {
+        src: g.image,
+        alt: g.name,
+        loading: "lazy",
+        class:
+          "h-full w-full object-cover transition duration-300 group-hover:blur-md",
+      });
+
+      imageContainer.appendChild(mainImage);
+
+      const contentDiv = ui.createElement("div", {
+        class: "p-4 relative",
+      });
+
+      const flexDiv = ui.createElement("div", {
+        class: "flex items-start gap-3",
+      });
+
+      const thumbnailImage = ui.createElement("img", {
+        src: g.image,
+        alt: g.name,
+        loading: "lazy",
+        class: "h-9 w-9 rounded-md object-cover",
+      });
+
+      const textContainer = ui.createElement("div", {
+        class: "min-w-0 flex-1",
+      });
+
+      const headerDiv = ui.createElement("div", {
+        class: "flex items-center justify-between gap-2",
+      });
+
+      const title = ui.createElement(
+        "h3",
+        {
+          class: "text-sm font-medium text-[var(--text)] truncate",
+        },
+        [g.name],
+      );
+
+      const bookmarkBtn = ui.createElement("button", {
+        "data-action": "bookmark",
+        "aria-pressed": "false",
+        class:
+          "grid place-items-center h-8 w-8 rounded-lg hover:bg-[var(--white-05)] z-[99999]",
+      });
+
+      const bookmarkIcon = ui.createElement("i", {
+        "data-lucide": "bookmark",
+        class: "h-4 w-4",
+      });
+
+      bookmarkBtn.appendChild(bookmarkIcon);
+      headerDiv.appendChild(title);
+      headerDiv.appendChild(bookmarkBtn);
+
+      const hostText = ui.createElement(
+        "p",
+        {
+          class: "text-xs text-[var(--proto)] truncate",
+        },
+        [`Hosted by ${extractHost(g.link)}`],
+      );
+
+      textContainer.appendChild(headerDiv);
+      textContainer.appendChild(hostText);
+
+      flexDiv.appendChild(thumbnailImage);
+      flexDiv.appendChild(textContainer);
+
+      const hoverMenu = ui.createElement("div", {
+        class:
+          "absolute bottom-full left-0 right-0 bg-[var(--bg-1)] ring-1 ring-inset ring-[var(--white-08)] rounded-t-xl p-3 opacity-0 translate-y-2 transition duration-200 group-hover:opacity-100 group-hover:translate-y-0 flex flex-col gap-2",
+      });
+
+      const playButton = ui.createElement("button", {
+        class:
+          "inline-flex items-center gap-2 text-sm font-semibold rounded-lg px-4 py-2 ring-1 ring-inset ring-[var(--white-08)] bg-[var(--bg-2)]/70 backdrop-blur hover:bg-[var(--white-05)]",
+        onclick: () => {
+          (window.parent as any).protocols.navigate(
+            (window.parent as any).proxy.search(g.link),
+          );
+        },
+      });
+
+      const playIcon = ui.createElement("i", {
+        "data-lucide": "play",
+        class: "h-4 w-4",
+      });
+
+      playButton.appendChild(playIcon);
+      playButton.appendChild(document.createTextNode("Play"));
+
+      hoverMenu.appendChild(playButton);
+
+      contentDiv.appendChild(flexDiv);
+      contentDiv.appendChild(hoverMenu);
+
+      article.appendChild(imageContainer);
+      article.appendChild(contentDiv);
+
+      grid.appendChild(article);
+    });
 
     createIcons({ icons });
   }
@@ -119,73 +206,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   render();
-});
 
-window.addEventListener("DOMContentLoaded", () => {
   const searchBar = document.getElementById("games-search")?.parentElement;
   if (searchBar) {
     searchBar.classList.add("sticky", "top-0", "z-50", "bg-[var(--bg-2)]");
   }
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(async () => {
-    const settingsAPI = new SettingsAPI();
-    const proxy = new Proxy();
-    const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
-
-    const swConfig = {
-      uv: {
-        type: "sw",
-        file: "/data/sw.js",
-        config: window.__uv$config,
-        func: null,
-      },
-      sj: {
-        type: "sw",
-        file: "/assets/sw.js",
-        config: window.__scramjet$config,
-        func: async () => {
-          if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-            const scramjet = new ScramjetController(window.__scramjet$config);
-            scramjet.init().then(async () => {
-              await proxy.setTransports();
-            });
-            console.log("Scramjet Service Worker registered.");
-          } else {
-            const scramjet = new ScramjetController(window.__scramjet$config);
-            scramjet.init().then(async () => {
-              await proxy.setTransports();
-            });
-            console.log("Scramjet Service Worker registered.");
-          }
-        },
-      },
-      auto: {
-        type: "multi",
-        file: null,
-        config: null,
-        func: null,
-      },
-    };
-    if (
-      typeof swConfig[proxySetting as keyof typeof swConfig].func ===
-        "function" &&
-      proxySetting === "sj"
-    ) {
-      await (
-        swConfig[proxySetting as keyof typeof swConfig].func as Function
-      )();
-    }
-    proxy
-      .registerSW(swConfig[proxySetting as keyof typeof swConfig])
-      .then(async () => {
-        await proxy.setTransports().then(async () => {
-          const transport = await proxy.connection.getTransport();
-          if (transport == null) {
-            proxy.setTransports();
-          }
-        });
-      });
-  }, 0);
 });

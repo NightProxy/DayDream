@@ -817,39 +817,26 @@ export class ProfileManager implements ProfileManagerInterface {
   }
 
   async createProfileWithPresetData(profileName: string): Promise<void> {
-    console.log(`createProfileWithPresetData called with: ${profileName}`);
     const existingProfiles = await this.profiles.listProfiles();
     const isFirstProfile = existingProfiles.length === 0;
 
-    console.log(
-      `Existing profiles: ${existingProfiles.length}`,
-      existingProfiles,
-    );
-    console.log(`Is first profile: ${isFirstProfile}`);
-
     if (isFirstProfile) {
-      console.log("First profile creation path - creating with current data");
       await this.profiles.createProfileWithCurrentData(profileName);
-
-      console.log(
-        `First profile "${profileName}" created with current browser data`,
-      );
     } else {
-      console.log("Subsequent profile creation path");
       const currentProfile = this.profiles.getCurrentProfile();
 
       if (currentProfile) {
-        console.log(
-          `Current data will be saved to existing profile: ${currentProfile}`,
-        );
+        await this.flushPendingChanges();
+        await this.profiles.saveProfile(currentProfile);
+        await this.profiles.flushStorageOperations();
+      } else if (existingProfiles.length === 1) {
+        await this.flushPendingChanges();
+        await this.profiles.saveProfile(existingProfiles[0]);
+        await this.profiles.flushStorageOperations();
       }
 
-      console.log("Creating empty profile...");
       await this.profiles.createProfile(profileName);
-      console.log("Switching to new profile...");
-      await this.profiles.switchProfile(profileName);
-
-      console.log(`Created new profile "${profileName}" and switched to it`);
+      await this.profiles.switchProfile(profileName, true);
     }
     createIcons({ icons });
   }
@@ -876,10 +863,7 @@ export class ProfileManager implements ProfileManagerInterface {
 
     try {
       await this.flushPendingChanges();
-
-      console.log(`💾 Manual save initiated for profile: ${currentProfile}`);
       await this.profiles.saveProfile(currentProfile);
-
       await this.profiles.flushStorageOperations();
 
       this.logger.createLog(`Saved profile: ${currentProfile}`);
@@ -894,112 +878,35 @@ export class ProfileManager implements ProfileManagerInterface {
   }
 
   private async flushPendingChanges(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
+    await new Promise((resolve) => setTimeout(resolve, 150));
     await new Promise((resolve) =>
       requestAnimationFrame(() => resolve(undefined)),
     );
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    try {
-      const testKey = "__profile_flush_test__";
-      const testValue = Date.now().toString();
-      localStorage.setItem(testKey, testValue);
-      const readValue = localStorage.getItem(testKey);
-      if (readValue === testValue) {
-        localStorage.removeItem(testKey);
-        console.log("✅ localStorage flush test passed");
-      } else {
-        console.warn(
-          "⚠️ localStorage flush test failed - storage might be delayed",
-        );
-      }
-    } catch (e) {
-      console.warn("⚠️ localStorage flush test error:", e);
-    }
   }
 
   async switchToProfile(profileId: string): Promise<void> {
     try {
-      console.log(`Switching to profile: ${profileId}`);
-
       const currentProfile = this.profiles.getCurrentProfile();
       if (currentProfile) {
-        console.log(`Current profile before switch: ${currentProfile}`);
-
         await this.flushPendingChanges();
-
-        const dataBefore = await this.profiles.getCurrentBrowserState();
-        console.log("Data before save:", {
-          cookiesCount: Object.keys(JSON.parse(dataBefore.Cookies || "{}"))
-            .length,
-          localStorageCount: Object.keys(
-            JSON.parse(dataBefore.LocalStorage || "{}"),
-          ).length,
-          idbCount: Object.keys(JSON.parse(dataBefore.IDB || "{}")).length,
-          localStorageKeys: Object.keys(
-            JSON.parse(dataBefore.LocalStorage || "{}"),
-          ).slice(0, 10),
-        });
-
-        console.log(
-          `🔒 Explicitly saving current profile "${currentProfile}" before switch`,
-        );
         await this.profiles.saveProfile(currentProfile);
-        console.log(
-          `✅ Current profile "${currentProfile}" saved successfully`,
-        );
-
-        const emergencySuccess =
-          this.profiles.emergencySaveProfile(currentProfile);
-        if (emergencySuccess) {
-          console.log(
-            `✅ Emergency backup created for profile "${currentProfile}"`,
-          );
-        } else {
-          console.warn(
-            `⚠️ Emergency backup failed for profile "${currentProfile}"`,
-          );
-        }
-
+        this.profiles.emergencySaveProfile(currentProfile);
         await this.profiles.flushStorageOperations();
-
-        const savedData = await this.profiles.getProfileData(currentProfile);
-        if (savedData) {
-          console.log("✅ Verified saved data:", {
-            cookiesCount: Object.keys(savedData.cookies).length,
-            localStorageCount: Object.keys(savedData.localStorage).length,
-            idbCount: Object.keys(savedData.idb).length,
-            localStorageKeys: Object.keys(savedData.localStorage).slice(0, 10),
-          });
-        } else {
-          console.error(
-            "❌ Failed to verify saved data - profile data is null",
-          );
-        }
       }
 
       await this.profiles.switchProfile(profileId, true);
       this.logger.createLog(`Switched to profile: ${profileId}`);
-
       await this.profiles.flushStorageOperations();
-      console.log(
-        `✅ All storage operations flushed after switch to: ${profileId}`,
-      );
 
       this.nightmarePlugins.sidemenu.closeMenu();
-
       this.modalUtilities.showAlert(
         `Switched to profile: ${profileId}`,
         "success",
       );
 
-      console.log(`🔄 Preparing to reload page in 2 seconds...`);
       setTimeout(() => {
-        console.log(`🔄 Reloading page after profile switch to: ${profileId}`);
         window.location.reload();
-      }, 2000);
+      }, 500);
     } catch (error) {
       console.error("Failed to switch profile:", error);
       this.modalUtilities.showAlert(
@@ -1087,13 +994,7 @@ export class ProfileManager implements ProfileManagerInterface {
             await this.profiles.setLocalStorage(profileData.localStorage);
           }
           if (profileData.indexedDB && profileData.indexedDB.length > 0) {
-            const idbData: Record<string, any> = {};
-            profileData.indexedDB.forEach((db: any) => {
-              if (db.name && db.data) {
-                idbData[db.name] = db.data;
-              }
-            });
-            await this.profiles.setIDBData(idbData);
+            await this.profiles.setIDBData(profileData.indexedDB);
           }
 
           await this.profiles.saveProfile(profileName.trim());
@@ -1147,17 +1048,20 @@ export class ProfileManager implements ProfileManagerInterface {
   async inspectCurrentData(): Promise<any> {
     try {
       const currentData = await this.profiles.getCurrentBrowserState();
-      const cookies = this.profiles.decode(currentData.Cookies);
-      const localStorage = this.profiles.decode(currentData.LocalStorage);
-      const idb = this.profiles.decode(currentData.IDB);
+      const cookies = currentData.cookies;
+      const localStorage = currentData.localStorage;
+      const idb = currentData.indexedDB;
 
       console.log("=== CURRENT BROWSER DATA INSPECTION ===");
       console.log("Cookies:", Object.keys(cookies).length, "entries");
       console.log("LocalStorage:", Object.keys(localStorage).length, "entries");
-      console.log("IndexedDB:", Object.keys(idb).length, "databases");
+      console.log("IndexedDB:", idb.length, "databases");
       console.log("Cookie keys:", Object.keys(cookies));
       console.log("LocalStorage keys:", Object.keys(localStorage));
-      console.log("IndexedDB databases:", Object.keys(idb));
+      console.log(
+        "IndexedDB databases:",
+        idb.map((db) => db.name),
+      );
 
       if (localStorage.testProfileData) {
         console.log(
@@ -1194,14 +1098,13 @@ export class ProfileManager implements ProfileManagerInterface {
         Object.keys(profileData.localStorage).length,
         "entries",
       );
-      console.log(
-        "IndexedDB:",
-        Object.keys(profileData.idb).length,
-        "databases",
-      );
+      console.log("IndexedDB:", profileData.indexedDB.length, "databases");
       console.log("Cookie keys:", Object.keys(profileData.cookies));
       console.log("LocalStorage keys:", Object.keys(profileData.localStorage));
-      console.log("IndexedDB databases:", Object.keys(profileData.idb));
+      console.log(
+        "IndexedDB databases:",
+        profileData.indexedDB.map((db) => db.name),
+      );
 
       if (profileData.localStorage.testProfileData) {
         console.log(

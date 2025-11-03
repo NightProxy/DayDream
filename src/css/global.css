@@ -472,6 +472,14 @@ li {
   display: flex;
 }
 
+.tab-title {
+  display: block;
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tab-anim {
   animation: tab-fade-in var(--tab-enter-duration) var(--tab-enter-ease) both;
 }

@@ -1,0 +1,100 @@
+{
+  "presets": [
+    {
+      "id": "off",
+      "name": "Off (Default)",
+      "title": "DayDreamX",
+      "favicon": "/res/logo.png"
+    },
+    {
+      "id": "google",
+      "name": "Google",
+      "title": "Google",
+      "favicon": "/res/c/google.ico"
+    },
+    {
+      "id": "google-docs",
+      "name": "Google Docs",
+      "title": "Google Docs",
+      "favicon": "/res/c/google-docs.ico"
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive",
+      "title": "My Drive - Google Drive",
+      "favicon": "/res/c/google-drive.png"
+    },
+    {
+      "id": "google-classroom",
+      "name": "Google Classroom",
+      "title": "Classes",
+      "favicon": "/res/c/google-classroom.png"
+    },
+    {
+      "id": "gmail",
+      "name": "Gmail",
+      "title": "Gmail",
+      "favicon": "/res/c/gmail.ico"
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "title": "YouTube",
+      "favicon": "/res/c/youtube.png"
+    },
+    {
+      "id": "canvas",
+      "name": "Canvas LMS",
+      "title": "Dashboard",
+      "favicon": "/res/c/canvas.ico"
+    },
+    {
+      "id": "schoology",
+      "name": "Schoology",
+      "title": "Home | Schoology",
+      "favicon": "/res/c/schoology.ico"
+    },
+    {
+      "id": "clever",
+      "name": "Clever",
+      "title": "Clever | Portal",
+      "favicon": "/res/c/clever.ico"
+    },
+    {
+      "id": "khan-academy",
+      "name": "Khan Academy",
+      "title": "Khan Academy",
+      "favicon": "/res/c/khan-academy.ico"
+    },
+    {
+      "id": "wikipedia",
+      "name": "Wikipedia",
+      "title": "Wikipedia",
+      "favicon": "/res/c/wikipedia.ico"
+    },
+    {
+      "id": "ixl",
+      "name": "IXL",
+      "title": "IXL | Dashboard",
+      "favicon": "/res/c/ixl.ico"
+    },
+    {
+      "id": "desmos",
+      "name": "Desmos",
+      "title": "Desmos | Graphing Calculator",
+      "favicon": "/res/c/desmos.ico"
+    },
+    {
+      "id": "new-tab",
+      "name": "New Tab",
+      "title": "New Tab",
+      "favicon": "/res/c/newtab.png"
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "title": "",
+      "favicon": ""
+    }
+  ]
+}

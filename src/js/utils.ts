@@ -19,62 +19,6 @@ class Utils implements UtilsInterface {
     this.settings = new SettingsAPI();
   }
 
-  setFavicon(tabElement: HTMLElement, iframe: HTMLIFrameElement): void {
-    iframe.addEventListener("load", async () => {
-      try {
-        if (!iframe.contentDocument) {
-          console.error(
-            "Unable to access iframe content due to cross-origin restrictions.",
-          );
-          return;
-        }
-
-        let favicon: HTMLLinkElement | null = null;
-        const nodeList =
-          iframe.contentDocument.querySelectorAll("link[rel~='icon']");
-
-        for (let i = 0; i < nodeList.length; i++) {
-          const relAttr = nodeList[i].getAttribute("rel");
-          if (relAttr && relAttr.includes("icon")) {
-            favicon = nodeList[i] as HTMLLinkElement;
-            break;
-          }
-        }
-
-        if (favicon) {
-          let faviconUrl = favicon.href || favicon.getAttribute("href");
-          const faviconImage = tabElement.querySelector(
-            ".tab-favicon",
-          ) as HTMLImageElement;
-
-          faviconUrl = await this.getFavicon(faviconUrl as string);
-
-          if (faviconUrl && faviconImage) {
-            faviconImage.src = faviconUrl;
-          } else {
-            console.error("Favicon URL or favicon element is missing.");
-          }
-        } else {
-          console.error(
-            "No favicon link element found within the iframe document.",
-          );
-        }
-      } catch (error) {
-        console.error("An error occurred while setting the favicon:", error);
-      }
-    });
-  }
-
-  async getFavicon(url: string): Promise<string | null> {
-    try {
-      const googleFaviconUrl = `/internal/icons/${encodeURIComponent(url)}`;
-      return googleFaviconUrl;
-    } catch (error) {
-      console.error("Error fetching favicon as data URL:", error);
-      return null;
-    }
-  }
-
   closest(value: number, array: number[]): number {
     let closest = Infinity;
     let closestIndex = -1;

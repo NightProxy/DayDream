@@ -13,9 +13,9 @@
       as="style"
       onload="this.rel='stylesheet'"
     />
-    <noscript
-      ><link rel="stylesheet" href="/src/css/pages/settings.css"
-    /></noscript>
+    <noscript>
+      <link rel="stylesheet" href="/src/css/pages/settings.css" />
+    </noscript>
     <link rel="stylesheet" href="/src/css/internal.css" />
 
     <script type="module" src="/src/js/internal/settings.ts"></script>
@@ -160,17 +160,81 @@
                 <h3 class="text-sm font-medium text-[var(--text)] mb-3">
                   Tab Cloaking
                 </h3>
+                <p class="text-xs text-[var(--proto)] mb-3">
+                  Change your tab's title and favicon to disguise your browsing
+                </p>
                 <select
                   id="tabCloakSelect"
                   component="dropdown"
                   data-setting="tabCloak"
                   class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
-                >
-                  <option value="off">Off</option>
-                  <option value="custom">Custom</option>
-                  <option value="google">Google</option>
-                  <option value="newtab">New Tab</option>
-                </select>
+                ></select>
+
+                <div id="customTabCloakOptions" class="mt-4 space-y-3 hidden">
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-[var(--text)] mb-1"
+                    >
+                      Custom Title
+                    </label>
+                    <input
+                      type="text"
+                      id="customTabTitle"
+                      data-setting="customTabTitle"
+                      placeholder="Enter custom tab title"
+                      class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-[var(--text)] mb-1"
+                    >
+                      Custom Favicon
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        id="customTabFavicon"
+                        data-setting="customTabFavicon"
+                        placeholder="Enter favicon URL or upload image"
+                        class="flex-1 rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                      />
+                      <input
+                        type="file"
+                        id="faviconUpload"
+                        accept="image/*"
+                        class="hidden"
+                      />
+                      <button
+                        id="uploadFaviconBtn"
+                        component="button"
+                        class="px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
+                      >
+                        Upload
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 pt-2">
+                    <div class="flex items-center gap-2">
+                      <div
+                        id="faviconPreview"
+                        class="w-8 h-8 rounded border border-[var(--white-10)] bg-[var(--bg-2)] flex items-center justify-center overflow-hidden"
+                      >
+                        <img
+                          id="faviconPreviewImg"
+                          class="w-full h-full object-contain hidden"
+                        />
+                        <span class="text-xs text-[var(--text)]/40"
+                          >Preview</span
+                        >
+                      </div>
+                      <span
+                        id="titlePreview"
+                        class="text-sm text-[var(--text)]"
+                      ></span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div
@@ -179,18 +243,19 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <h3 class="text-sm font-medium text-[var(--text)]">
-                      Anti-Close
+                      Disable Tab Close
                     </h3>
                     <p class="text-xs text-[var(--proto)] mt-1">
-                      Prevent accidental tab closure
+                      Prevent tabs from closing accidentally with beforeunload
+                      warning
                     </p>
                   </div>
                   <label class="relative inline-flex cursor-pointer">
                     <input
-                      id="antiCloseSwitch"
+                      id="disableTabCloseSwitch"
                       component="switch"
                       type="checkbox"
-                      data-setting="antiClose"
+                      data-setting="disableTabClose"
                       class="sr-only peer"
                     />
                     <div
@@ -198,6 +263,29 @@
                     ></div>
                   </label>
                 </div>
+              </div>
+            </div>
+            <div
+              class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-medium text-[var(--text)]">
+                    Panic Key
+                  </h3>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Set a keybind to quickly redirect to a safe page
+                  </p>
+                </div>
+                <p class="text-sm text-[var(--proto)]">
+                  <input
+                    type="text"
+                    id="panicKeybind"
+                    data-setting="panicKeybind"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="No Keybind Set"
+                  />
+                </p>
               </div>
             </div>
           </section>
@@ -217,33 +305,6 @@
                 class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
               >
                 <h3 class="text-lg font-medium text-[var(--text)] mb-4">
-                  Formatting
-                </h3>
-
-                <div class="space-y-4">
-                  <div>
-                    <h4 class="text-sm font-medium text-[var(--text)] mb-2">
-                      UI Style
-                    </h4>
-                    <select
-                      id="UIStyleSelect"
-                      component="dropdown"
-                      data-setting="UIStyle"
-                      class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
-                    >
-                      <option value="operagx">Opera GX</option>
-                      <option value="opera">Opera</option>
-                      <option value="arc">Arc</option>
-                      <option value="vivaldi">Vivaldi</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
-              >
-                <h3 class="text-lg font-medium text-[var(--text)] mb-4">
                   Theme Presets
                 </h3>
 
@@ -252,9 +313,10 @@
                     <h4 class="text-sm font-medium text-[var(--text)] mb-3">
                       Choose a Theme
                     </h4>
-                    <div id="themePresetGrid" class="grid grid-cols-2 gap-3">
-                      <!-- Theme preset buttons will be populated by JavaScript -->
-                    </div>
+                    <div
+                      id="themePresetGrid"
+                      class="grid grid-cols-2 gap-3"
+                    ></div>
                   </div>
 
                   <div
@@ -273,9 +335,7 @@
                         <div
                           id="accentColorGrid"
                           class="grid grid-cols-6 gap-2"
-                        >
-                          <!-- Accent color buttons will be populated by JavaScript -->
-                        </div>
+                        ></div>
                       </div>
                       <div class="wrap">
                         <div class="half">
@@ -346,8 +406,8 @@
                   class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
                 >
                   <option value="auto">Automatic</option>
-                  <option value="uv">Ultraviolet</option>
                   <option value="sj">Scramjet</option>
+                  <option value="uv">Ultraviolet</option>
                 </select>
               </div>
 
@@ -424,6 +484,70 @@
                   </div>
                 </div>
               </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-sm font-medium text-[var(--text)]">
+                      Enable Reflux
+                    </h3>
+                    <p class="text-xs text-[var(--proto)] mt-1">
+                      Enhanced proxy plugin system for additional features
+                    </p>
+                  </div>
+                  <label class="relative inline-flex cursor-pointer">
+                    <input
+                      id="refluxToggle"
+                      component="switch"
+                      type="checkbox"
+                      data-setting="RefluxStatus"
+                      class="sr-only peer"
+                    />
+                    <div
+                      class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"
+                    ></div>
+                  </label>
+                </div>
+              </div>
+
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                  Remote Proxy Server
+                </h3>
+                <p class="text-xs text-[var(--proto)] mb-3">
+                  Configure an external proxy server URL (supports SOCKS5,
+                  SOCKS4 & HTTP - only works with LibCurl transport)
+                </p>
+                <div class="space-y-3">
+                  <input
+                    type="text"
+                    id="proxyServerSetting"
+                    data-setting="prx-server"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="https://example.com/proxy or leave empty to disable"
+                  />
+                  <div class="flex gap-3">
+                    <button
+                      id="saveProxyServerSetting"
+                      component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      id="resetProxyServerSetting"
+                      component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]"
+                    >
+                      Disable
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -434,20 +558,6 @@
               </h2>
               <p class="text-sm text-[var(--proto)]">
                 Additional settings and options
-              </p>
-            </div>
-
-            <div
-              class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
-            >
-              <p class="text-sm text-[var(--proto)]">
-                <input
-                  type="text"
-                  id="panicKeybind"
-                  data-setting="panicKeybind"
-                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
-                  placeholder="No Keybind Set"
-                />
               </p>
             </div>
           </section>
@@ -580,7 +690,7 @@
                   <p class="text-sm text-[var(--text)]">
                     If you would like to contribute, check out our
                     <a
-                      href="https://github.com/NightProxy/DayDreamX"
+                      href="https://gitlab.com/nightnetwork/daydreamx"
                       class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
                       >GitHub</a
                     >

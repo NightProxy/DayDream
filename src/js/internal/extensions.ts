@@ -37,6 +37,41 @@ class ExtensionsManager {
     }
   }
 
+  private async getEnabledExtensions(): Promise<string[]> {
+    try {
+      const enabled = await this.settingsAPI.getItem("enabledExtensions");
+      return enabled ? JSON.parse(enabled as string) : [];
+    } catch (error) {
+      console.error("Failed to load enabled extensions list:", error);
+      return [];
+    }
+  }
+
+  private async saveEnabledExtensions(extensionIds: string[]): Promise<void> {
+    try {
+      await this.settingsAPI.setItem(
+        "enabledExtensions",
+        JSON.stringify(extensionIds),
+      );
+    } catch (error) {
+      console.error("Failed to save enabled extensions list:", error);
+    }
+  }
+
+  private async addToEnabledList(extensionId: string): Promise<void> {
+    const enabled = await this.getEnabledExtensions();
+    if (!enabled.includes(extensionId)) {
+      enabled.push(extensionId);
+      await this.saveEnabledExtensions(enabled);
+    }
+  }
+
+  private async removeFromEnabledList(extensionId: string): Promise<void> {
+    const enabled = await this.getEnabledExtensions();
+    const filtered = enabled.filter((id) => id !== extensionId);
+    await this.saveEnabledExtensions(filtered);
+  }
+
   private async saveUserInstalledExtensions(
     extensionIds: string[],
   ): Promise<void> {
@@ -74,6 +109,7 @@ class ExtensionsManager {
         const assets = data.assets || {};
 
         const userInstalledExtensions = await this.getUserInstalledExtensions();
+        const enabledExtensions = await this.getEnabledExtensions();
 
         this.extensions.clear();
 
@@ -81,23 +117,74 @@ class ExtensionsManager {
           const asset = assets[packageName];
           const isUserInstalled = userInstalledExtensions.includes(packageName);
 
+          const isEnabled =
+            isUserInstalled &&
+            (enabledExtensions.includes(packageName) ||
+              (enabledExtensions.length === 0 && isUserInstalled));
+
           const extension: ExtensionState = {
             id: packageName,
             name: asset.title || packageName,
             description: asset.description,
             author: asset.author,
             version: asset.version,
-            enabled: isUserInstalled,
+            enabled: isEnabled,
             installed: isUserInstalled,
             icon: asset.image,
           };
           this.extensions.set(packageName, extension);
         });
 
+        if (
+          enabledExtensions.length === 0 &&
+          userInstalledExtensions.length > 0
+        ) {
+          await this.saveEnabledExtensions(userInstalledExtensions);
+        }
+
+        await this.syncEnabledStateWithReflux();
+
         this.notifyStateChanged();
       }
     } catch (error) {
       console.error("Failed to load extensions from backend:", error);
+    }
+  }
+
+  private async syncEnabledStateWithReflux() {
+    try {
+      if (
+        !(window as any).RefluxAPIInstance &&
+        !(window as any).RefluxAPIModule
+      ) {
+        const scriptExists =
+          document.querySelector('script[src="/reflux/api.js"]') ||
+          document.querySelector('script[data-src="/reflux/api.js"]');
+        if (!scriptExists) {
+          console.info("Reflux API not available, skipping sync");
+          return;
+        }
+      }
+
+      const api = await this.getRefluxAPI();
+      const installedExtensions = this.getInstalledExtensions();
+
+      for (const extension of installedExtensions) {
+        if (extension.enabled) {
+          if (typeof api.enablePlugin === "function") {
+            await api.enablePlugin(extension.id);
+          }
+        } else {
+          if (typeof api.disablePlugin === "function") {
+            await api.disablePlugin(extension.id);
+          }
+        }
+      }
+    } catch (error) {
+      console.info(
+        "Could not sync enabled state with Reflux (may not be available):",
+        error,
+      );
     }
   }
 
@@ -146,6 +233,10 @@ class ExtensionsManager {
 
     await this.addToUserInstalledList(id);
 
+    if (extension.enabled) {
+      await this.addToEnabledList(id);
+    }
+
     this.notifyStateChanged();
 
     try {
@@ -163,17 +254,26 @@ class ExtensionsManager {
     if (!extension) return false;
 
     extension.enabled = !extension.enabled;
+
+    if (extension.enabled) {
+      await this.addToEnabledList(id);
+    } else {
+      await this.removeFromEnabledList(id);
+    }
+
     this.notifyStateChanged();
 
     try {
       const api = await this.getRefluxAPI();
+      const pluginIdentifier = extension.id;
+
       if (extension.enabled) {
         if (typeof api.enablePlugin === "function") {
-          await api.enablePlugin(extension.name);
+          await api.enablePlugin(pluginIdentifier);
         }
       } else {
         if (typeof api.disablePlugin === "function") {
-          await api.disablePlugin(extension.name);
+          await api.disablePlugin(pluginIdentifier);
         }
       }
     } catch (error) {
@@ -191,13 +291,14 @@ class ExtensionsManager {
     extension.enabled = false;
 
     await this.removeFromUserInstalledList(id);
+    await this.removeFromEnabledList(id);
 
     this.notifyStateChanged();
 
     try {
       const api = await this.getRefluxAPI();
       if (typeof api.removePlugin === "function") {
-        await api.removePlugin(extension.name);
+        await api.removePlugin(extension.id);
       }
     } catch (error) {
       console.error("Failed to remove extension from Reflux:", error);
@@ -506,6 +607,22 @@ async function renderInstalledExtensions() {
   });
 
   try {
+    if (
+      !(window as any).RefluxAPIInstance &&
+      !(window as any).RefluxAPIModule
+    ) {
+      const scriptExists =
+        document.querySelector('script[src="/reflux/api.js"]') ||
+        document.querySelector('script[data-src="/reflux/api.js"]');
+      if (!scriptExists) {
+        console.info(
+          "Reflux API not available, skipping Reflux extensions sync",
+        );
+        createIcons({ icons });
+        return;
+      }
+    }
+
     const api = await ensureRefluxInstance();
     if (typeof api.getInstalledPlugins === "function") {
       const refluxExtensions = await api.getInstalledPlugins();
@@ -537,7 +654,10 @@ async function renderInstalledExtensions() {
       });
     }
   } catch (error) {
-    console.warn("Could not load extensions from Reflux backend:", error);
+    console.info(
+      "Could not load extensions from Reflux backend (may not be available):",
+      error,
+    );
   }
 
   createIcons({ icons });
@@ -1075,7 +1195,8 @@ async function renderMarketplace(containerId = "extensionsGrid") {
     card.setAttribute("data-tags", (asset.tags || []).join(" "));
     card.setAttribute("data-desc", asset.description || "");
 
-    const isInstalled = extensionsManager.getExtension(asset.package_name);
+    const extension = extensionsManager.getExtension(asset.package_name);
+    const isInstalled = extension && extension.installed;
 
     card.innerHTML = `
       <div class="flex items-start gap-3">
@@ -1121,7 +1242,7 @@ async function renderMarketplace(containerId = "extensionsGrid") {
         </div>
         <div class="rounded-xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-3">
           <p class="text-[10px] uppercase tracking-wide text-[var(--proto)] mb-1">Status</p>
-          <p class="text-sm">${isInstalled ? (isInstalled.enabled ? "Active" : "Inactive") : "Available"}</p>
+          <p class="text-sm">${isInstalled ? (extension!.enabled ? "Active" : "Inactive") : "Available"}</p>
         </div>
         <div class="col-span-2 rounded-xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-3">
           <p class="text-xs text-[var(--text)]" data-desc>${asset.description || "No description available"}</p>
@@ -1131,10 +1252,10 @@ async function renderMarketplace(containerId = "extensionsGrid") {
             isInstalled
               ? `<div class="flex items-center gap-2">
                  <label class="extension-toggle">
-                   <input type="checkbox" ${isInstalled.enabled ? "checked" : ""} data-extension-toggle="${asset.package_name}">
+                   <input type="checkbox" ${extension!.enabled ? "checked" : ""} data-extension-toggle="${asset.package_name}">
                    <div class="extension-toggle-slider"></div>
                  </label>
-                 <span class="text-xs text-[var(--proto)]">${isInstalled.enabled ? "Enabled" : "Disabled"}</span>
+                 <span class="text-xs text-[var(--proto)]">${extension!.enabled ? "Enabled" : "Disabled"}</span>
                </div>
                <button class="px-3 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600" data-remove-extension="${asset.package_name}">Remove</button>`
               : `<button class="px-3 py-2 rounded-lg bg-[var(--main)] text-[var(--bg-2)] text-sm hover:bg-[var(--main)]/90" data-install-extension="${asset.package_name}">Install</button>

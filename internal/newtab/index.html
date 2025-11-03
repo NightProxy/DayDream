@@ -177,19 +177,6 @@
     </div>
 
     <script>
-      async function measureLatency() {
-        const start = performance.now();
-        try {
-          await fetch("/internal/newtab.html", { cache: "no-store" });
-          const end = performance.now();
-          document.getElementById("latency").textContent =
-            `${Math.round(end - start)}ms`;
-        } catch (err) {
-          document.getElementById("latency").textContent =
-            "Oh lord oh jesus everything is fucked";
-        }
-      }
-
       document.documentElement.classList.add("pre-anim");
       window.addEventListener("load", () => {
         document
@@ -229,7 +216,6 @@
           },
         });
 
-        // Add click handler for Night+ sign in button
         document
           .getElementById("nightPlusSignIn")
           .addEventListener("click", () => {
