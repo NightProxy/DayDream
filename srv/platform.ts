@@ -14,7 +14,7 @@ export function getPlatform(PORT: number): {
     process.env.CODESPACE_NAME &&
     process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
   ) {
-    method = "Github Codespaces";
+    method = "GitHub Codespaces";
     extLink = ` https://${process.env.CODESPACE_NAME}-${PORT}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`;
   } else if (
     process.env.HOSTNAME &&

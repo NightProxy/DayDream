@@ -28,7 +28,7 @@ class NewTabShortcuts {
   private defaultShortcuts: Omit<Shortcut, "id" | "favicon">[] = [
     { title: "Google", url: "https://google.com" },
     { title: "YouTube", url: "https://youtube.com" },
-    { title: "GitHub", url: "https://github.com" },
+    { title: "GitLab", url: "https://gitlab.com" },
     { title: "Reddit", url: "https://reddit.com" },
     { title: "Twitter", url: "https://twitter.com" },
     { title: "Wikipedia", url: "https://wikipedia.org" },
@@ -413,7 +413,7 @@ class NewTabShortcuts {
                 href: "https://gitlab.com/nightnetwork/daydreamx",
                 rel: "noreferrer",
                 class: "hover:text-[var(--text)]",
-                component: "github-link",
+                component: "gitlab-link",
                 onclick: (e: Event) => {
                   e.preventDefault();
                   const url = (e.target as HTMLAnchorElement).getAttribute(
@@ -422,13 +422,13 @@ class NewTabShortcuts {
                   if (url) window.parent.protocols.navigate(url);
                 },
               },
-              ["Github"],
+              ["GitLab"],
             ),
             this.ui.createElement("span", {}, ["\\"]),
             this.ui.createElement(
               "a",
               {
-                href: "https://discord.com",
+                href: "https://discord.night-x.com",
                 rel: "noreferrer",
                 class: "hover:text-[var(--text)]",
                 component: "discord-link",
@@ -441,6 +441,26 @@ class NewTabShortcuts {
                 },
               },
               ["Discord"],
+            ),
+            this.ui.createElement("span", {}, ["\\"]),
+            this.ui.createElement(
+              "a",
+              {
+                href: "/internal/privacy/",
+                class: "hover:text-[var(--text)]",
+                component: "privacy-link",
+              },
+              ["Privacy"],
+            ),
+            this.ui.createElement("span", {}, ["\\"]),
+            this.ui.createElement(
+              "a",
+              {
+                href: "/internal/terms/",
+                class: "hover:text-[var(--text)]",
+                component: "terms-link",
+              },
+              ["Terms"],
             ),
           ],
         ),
@@ -760,6 +780,9 @@ class NewTabShortcuts {
       form.addEventListener("submit", (e) => this.handleSubmit(e));
     }
 
+    // Setup Night+ button - wait for NightLogin library to load
+    this.setupNightPlusButton();
+
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this.isModalOpen()) {
         this.closeModal();
@@ -767,6 +790,75 @@ class NewTabShortcuts {
     });
 
     setTimeout(() => this.checkLatency(), 1000);
+  }
+
+  private async setupNightPlusButton() {
+    const nightPlusBtn =
+      this.ui.queryComponent("signin-button") ||
+      document.getElementById("nightPlusSignIn");
+
+    if (!nightPlusBtn) {
+      console.warn("Night+ button not found");
+      return;
+    }
+
+    // Wait for NightLogin library to load
+    const waitForNightLogin = () => {
+      return new Promise<void>((resolve) => {
+        const checkLibs = () => {
+          if (
+            typeof (window as any).NightLogin !== "undefined" &&
+            typeof (window as any).NightLoginFrame !== "undefined"
+          ) {
+            resolve();
+          } else {
+            setTimeout(checkLibs, 50);
+          }
+        };
+        checkLibs();
+      });
+    };
+
+    await waitForNightLogin();
+    console.log("Night+ libraries loaded, initializing login");
+
+    const { setAccessToken, dumpNightPlusData } = await import(
+      "@apis/nightplus"
+    );
+
+    const NightLogin = (window as any).NightLogin;
+    const nightLogin = new NightLogin({
+      service: "DayDreamX",
+      theme: "system",
+      backdropBlur: "8px",
+      API_URL: "/api/plus",
+      onSuccess: async (token: string) => {
+        console.log("Night+ login successful!");
+        console.log("Received token:", token);
+
+        try {
+          await setAccessToken(token);
+          console.log("Token stored successfully");
+
+          await dumpNightPlusData();
+          console.log("Night+ data cached successfully");
+        } catch (error) {
+          console.error("Error storing Night+ token:", error);
+          alert(
+            "Login successful, but failed to store token. Please try again.",
+          );
+        }
+      },
+      onCancel: () => {
+        console.log("Login cancelled");
+      },
+    });
+
+    nightPlusBtn.addEventListener("click", () => {
+      nightLogin.show();
+    });
+
+    console.log("Night+ button event listener attached");
   }
 
   private openEditShortcutModal(shortcutId: string) {

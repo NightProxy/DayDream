@@ -1,6 +1,8 @@
 import * as BareMux from "@mercuryworkshop/bare-mux";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
+import { HostingAPI } from "@apis/static/hosting";
+import { ServerListAPI } from "@apis/static/serverlist";
 
 interface ProxyInterface {
   connection: BareMux.BareMuxConnection;
@@ -9,6 +11,9 @@ interface ProxyInterface {
   wispUrl: string;
   logging: Logger;
   settings: SettingsAPI;
+  hosting: HostingAPI;
+  serverList: ServerListAPI;
+  isStaticBuild: boolean;
   setTransports(): Promise<void>;
   search(input: string): string;
   registerSW(swConfig: any): Promise<void>;
@@ -23,13 +28,10 @@ interface ProxyInterface {
     proxySetting: string,
     url: string,
   ): Promise<void>;
-  inFrame_Redirect(
-    swConfig: Record<any, any>,
-    proxySetting: string,
-    url: string,
-  ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(url: string): Promise<string | null>;
+  findWorkingWispServer(): Promise<string>;
+  setupStaticBuild(): Promise<void>;
 }
 class Proxy implements ProxyInterface {
   connection!: BareMux.BareMuxConnection;
@@ -38,23 +40,39 @@ class Proxy implements ProxyInterface {
   wispUrl!: string;
   settings!: SettingsAPI;
   logging!: Logger;
+  hosting!: HostingAPI;
+  serverList!: ServerListAPI;
+  isStaticBuild: boolean = false;
 
   constructor() {
     this.connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
     this.settings = new SettingsAPI();
+    this.hosting = new HostingAPI();
+    this.serverList = new ServerListAPI();
+
     (async () => {
+      // Detect if running on static build
+      this.isStaticBuild = !(await this.hosting.detectServer());
+
       this.searchVar =
         (await this.settings.getItem("search")) ||
         "https://www.duckduckgo.com/?q=%s";
       this.transportVar =
         (await this.settings.getItem("transports")) || "libcurl";
-      this.wispUrl =
-        (await this.settings.getItem("wisp")) ||
-        (location.protocol === "https:" ? "wss" : "ws") +
-          "://" +
-          location.host +
-          "/wisp/";
+
+      // Setup wisp URL based on build type
+      if (this.isStaticBuild) {
+        await this.setupStaticBuild();
+      } else {
+        this.wispUrl =
+          (await this.settings.getItem("wisp")) ||
+          (location.protocol === "https:" ? "wss" : "ws") +
+            "://" +
+            location.host +
+            "/wisp/";
+      }
+
       this.logging = new Logger();
     })();
   }
@@ -281,35 +299,6 @@ class Proxy implements ProxyInterface {
     }
   }
 
-  async inFrame_Redirect(
-    swConfig: Record<any, any>,
-    proxySetting: string,
-    url: string,
-  ) {
-    let swConfigSettings: Record<any, any> | null = null;
-    if (proxySetting === "auto") {
-      swConfigSettings = await this.automatic(this.search(url), swConfig);
-    } else {
-      swConfigSettings = swConfig[proxySetting];
-    }
-
-    if (!swConfigSettings) return;
-
-    await this.registerSW(swConfigSettings);
-    await this.setTransports();
-
-    switch (swConfigSettings.type) {
-      case "sw": {
-        let encodedUrl: string;
-        encodedUrl =
-          swConfigSettings.config.prefix +
-          window.__uv$config.encodeUrl(this.search(url));
-        location.href = encodedUrl;
-        break;
-      }
-    }
-  }
-
   async convertURL(
     swConfig: Record<any, any>,
     proxySetting: string,
@@ -475,6 +464,104 @@ class Proxy implements ProxyInterface {
   async getRefluxStatus(): Promise<boolean> {
     const status = await this.settings.getItem("RefluxStatus");
     return status !== "false";
+  }
+
+  async findWorkingWispServer(): Promise<string> {
+    try {
+      const customWisp = await this.settings.getItem("wisp");
+      if (customWisp && customWisp !== "") {
+        const result = await this.ping(customWisp);
+        if (result.online) {
+          return customWisp;
+        }
+      }
+
+      const servers = await this.serverList.fetchServerList();
+
+      if (!servers || servers.length === 0) {
+        throw new Error("No wisp servers available");
+      }
+
+      const maxParallel = 5;
+      const workingServers: Array<{ url: string; ping: number }> = [];
+
+      for (let i = 0; i < servers.length; i += maxParallel) {
+        const batch = servers.slice(i, i + maxParallel);
+        const results = await Promise.all(
+          batch.map(async (server) => {
+            const result = await this.ping(server.url);
+            if (result.online && typeof result.ping === "number") {
+              return { url: server.url, ping: result.ping };
+            }
+            return null;
+          }),
+        );
+
+        results.forEach((result) => {
+          if (result) workingServers.push(result);
+        });
+
+        if (workingServers.length > 0) break;
+      }
+
+      if (workingServers.length === 0) {
+        throw new Error("No working wisp servers found");
+      }
+
+      workingServers.sort((a, b) => a.ping - b.ping);
+      const fastestServer = workingServers[0].url;
+
+      await this.settings.setItem("static-wisp-server", fastestServer);
+
+      if (this.logging) {
+        this.logging.createLog(
+          `Selected wisp server: ${fastestServer} (${workingServers[0].ping}ms)`,
+        );
+      }
+
+      return fastestServer;
+    } catch (error) {
+      console.error("Error finding working wisp server:", error);
+      return "wss://wisp.mercurywork.shop/wisp/";
+    }
+  }
+
+  async setupStaticBuild(): Promise<void> {
+    try {
+      const cachedWisp = await this.settings.getItem("static-wisp-server");
+      if (cachedWisp && cachedWisp !== "") {
+        const result = await this.ping(cachedWisp);
+        if (result.online) {
+          this.wispUrl = cachedWisp;
+          if (this.logging) {
+            this.logging.createLog(`Using cached wisp server: ${cachedWisp}`);
+          }
+        } else {
+          this.wispUrl = await this.findWorkingWispServer();
+        }
+      } else {
+        this.wispUrl = await this.findWorkingWispServer();
+      }
+
+      if ("serviceWorker" in navigator) {
+        try {
+          await navigator.serviceWorker.register("/static.sw.js", {
+            scope: "/api/",
+          });
+
+          if (this.logging) {
+            this.logging.createLog(
+              "Static build API proxy service worker registered",
+            );
+          }
+        } catch (swError) {
+          console.warn("Failed to register API proxy service worker:", swError);
+        }
+      }
+    } catch (error) {
+      console.error("Error setting up static build:", error);
+      this.wispUrl = "wss://wisp.mercurywork.shop/wisp/";
+    }
   }
 }
 

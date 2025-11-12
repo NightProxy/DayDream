@@ -256,8 +256,8 @@ class Themeing implements ThemeingInterface {
 
   async loadThemePresets() {
     try {
-      console.log("Loading theme presets from /json/themes/presets.json");
-      const response = await fetch("/json/themes/presets.json");
+      console.log("Loading theme presets from /json/t.json");
+      const response = await fetch("/json/t.json");
 
       if (!response.ok) {
         throw new Error(

@@ -45,6 +45,12 @@ export class MenuManager implements MenuInterface {
         open ? closeMenu() : openMenu();
       });
 
+      menuPopup.querySelectorAll("li").forEach((item) => {
+        item.addEventListener("click", () => {
+          closeMenu();
+        });
+      });
+
       document.addEventListener("click", (e) => {
         if (!menuPopup.contains(e.target as Node) && e.target !== menuBtn)
           closeMenu();

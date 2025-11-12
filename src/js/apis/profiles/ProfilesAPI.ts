@@ -13,7 +13,7 @@ class ProfilesAPI {
   private exportManager: ExportManager;
 
   constructor(
-    canExceedProfileLimit: (() => boolean) | null = null,
+    canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
     maxProfiles: number = 3,
   ) {
     this.currentProfile = null;

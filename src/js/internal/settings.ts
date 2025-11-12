@@ -12,6 +12,7 @@ import "../global/panic";
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
 import { createIcons, icons } from "lucide";
+import { checkNightPlusStatus, getPremiumWispServers } from "@apis/nightplus";
 
 document.addEventListener("DOMContentLoaded", () => {
   const aside = document.querySelector<HTMLElement>('#aside[aside="settings"]');
@@ -145,6 +146,193 @@ const initButton = (buttonId: string, action: () => void) => {
 
   buttonElement.addEventListener("click", action);
 };
+
+// Check if user has Night+ premium subscription
+async function isNightPlusActive(): Promise<boolean> {
+  try {
+    return await checkNightPlusStatus();
+  } catch (error) {
+    console.error("Error checking Night+ status:", error);
+    return false;
+  }
+}
+
+// Initialize WISP server selector with free and premium servers
+async function initializeWispSelect() {
+  const wispSelect = document.getElementById("wispSelect") as HTMLSelectElement;
+  const useCustomBtn = document.getElementById(
+    "useCustomWisp",
+  ) as HTMLButtonElement;
+  const customInput = document.getElementById("wispCustomInput") as HTMLElement;
+  const customSetting = document.getElementById(
+    "wispCustomSetting",
+  ) as HTMLInputElement;
+  const saveCustomBtn = document.getElementById(
+    "saveWispSetting",
+  ) as HTMLButtonElement;
+  const cancelCustomBtn = document.getElementById(
+    "cancelWispCustom",
+  ) as HTMLButtonElement;
+  const nightPlusNotice = document.getElementById(
+    "nightPlusWispNotice",
+  ) as HTMLElement;
+  const proxyRoutingToggle = document.getElementById(
+    "proxyRoutingToggle",
+  ) as HTMLInputElement;
+
+  if (!wispSelect) {
+    console.error("WISP select element not found");
+    return;
+  }
+
+  const defaultWispUrl =
+    (location.protocol === "https:" ? "wss" : "ws") +
+    "://" +
+    location.host +
+    "/wisp/";
+
+  // Check Night+ status
+  const hasNightPlus = await isNightPlusActive();
+
+  // Clear existing options except "auto"
+  wispSelect.innerHTML = '<option value="auto">Automatic (Default)</option>';
+
+  // Add free tier servers
+  const freeServers = [
+    { name: "Default Server", url: defaultWispUrl },
+    // Add more free servers here as needed
+  ];
+
+  freeServers.forEach((server) => {
+    const option = document.createElement("option");
+    option.value = server.url;
+    option.textContent = server.name;
+    wispSelect.appendChild(option);
+  });
+
+  // If Night+ is active, fetch and add premium servers
+  if (hasNightPlus) {
+    try {
+      const premiumServers = await getPremiumWispServers();
+
+      if (premiumServers.length > 0) {
+        const optgroup = document.createElement("optgroup");
+        optgroup.label = "⭐ Premium Servers (Night+)";
+
+        premiumServers.forEach((server) => {
+          const option = document.createElement("option");
+          option.value = server.url;
+          option.textContent = `${server.name} (${server.region})`;
+          optgroup.appendChild(option);
+        });
+
+        wispSelect.appendChild(optgroup);
+      }
+
+      // Hide Night+ notice since user has premium
+      if (nightPlusNotice) {
+        nightPlusNotice.classList.add("hidden");
+      }
+
+      // Enable premium proxy routing
+      if (proxyRoutingToggle) {
+        proxyRoutingToggle.disabled = false;
+      }
+    } catch (error) {
+      console.error("Failed to fetch premium WISP servers:", error);
+    }
+  } else {
+    // Show Night+ notice for free users
+    if (nightPlusNotice) {
+      nightPlusNotice.classList.remove("hidden");
+    }
+  }
+
+  // Add "Custom" option at the end
+  const customOption = document.createElement("option");
+  customOption.value = "custom";
+  customOption.textContent = "Custom WISP Server";
+  wispSelect.appendChild(customOption);
+
+  // Load saved WISP setting
+  const savedWisp = (await settingsAPI.getItem("wisp")) || "auto";
+  const savedCustomWisp = await settingsAPI.getItem("wisp-custom");
+
+  if (savedCustomWisp) {
+    wispSelect.value = "custom";
+    if (customSetting) {
+      customSetting.value = savedCustomWisp;
+    }
+  } else {
+    wispSelect.value = savedWisp;
+  }
+
+  // Handle WISP selection change
+  wispSelect.addEventListener("change", async () => {
+    if (wispSelect.value === "custom") {
+      // Show custom input
+      if (customInput) {
+        customInput.classList.remove("hidden");
+      }
+      if (useCustomBtn) {
+        useCustomBtn.classList.add("hidden");
+      }
+    } else {
+      // Hide custom input and save selection
+      if (customInput) {
+        customInput.classList.add("hidden");
+      }
+      if (useCustomBtn) {
+        useCustomBtn.classList.remove("hidden");
+      }
+
+      if (wispSelect.value === "auto") {
+        await settingsAPI.removeItem("wisp");
+        await settingsAPI.removeItem("wisp-custom");
+      } else {
+        await settingsAPI.setItem("wisp", wispSelect.value);
+        await settingsAPI.removeItem("wisp-custom");
+      }
+      location.reload();
+    }
+  });
+
+  // Handle custom WISP button
+  if (useCustomBtn) {
+    useCustomBtn.addEventListener("click", () => {
+      wispSelect.value = "custom";
+      if (customInput) {
+        customInput.classList.remove("hidden");
+      }
+      useCustomBtn.classList.add("hidden");
+    });
+  }
+
+  // Handle save custom WISP
+  if (saveCustomBtn) {
+    saveCustomBtn.addEventListener("click", async () => {
+      if (customSetting && customSetting.value.trim()) {
+        await settingsAPI.setItem("wisp-custom", customSetting.value.trim());
+        await settingsAPI.removeItem("wisp");
+        console.log("Custom WISP server saved:", customSetting.value.trim());
+        location.reload();
+      }
+    });
+  }
+
+  // Handle cancel custom WISP
+  if (cancelCustomBtn) {
+    cancelCustomBtn.addEventListener("click", () => {
+      wispSelect.value = savedWisp === "custom" ? "auto" : savedWisp;
+      if (customInput) {
+        customInput.classList.add("hidden");
+      }
+      if (useCustomBtn) {
+        useCustomBtn.classList.remove("hidden");
+      }
+    });
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   document.querySelectorAll(".settingItem").forEach((link) => {
@@ -767,12 +955,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     "https://duckduckgo.com/?q=%s",
   );
 
-  const defaultWispUrl =
-    (location.protocol === "https:" ? "wss" : "ws") +
-    "://" +
-    location.host +
-    "/wisp/";
-  await initTextInput("wispSetting", "wisp", defaultWispUrl);
+  // Initialize WISP server dropdown
+  await initializeWispSelect();
 
   const refluxToggle = document.getElementById(
     "refluxToggle",
@@ -828,19 +1012,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initButton("bgRemove", async () => {
     await settingsAPI.removeItem("theme:background-image");
     eventsAPI.emit("theme:background-change", null);
-  });
-
-  initButton("saveWispSetting", async () => {
-    const wispInput = document.getElementById(
-      "wispSetting",
-    ) as HTMLInputElement;
-    await settingsAPI.setItem("wisp", wispInput.value);
-    location.reload();
-  });
-
-  initButton("resetWispSetting", async () => {
-    await settingsAPI.removeItem("wisp");
-    location.reload();
   });
 });
 

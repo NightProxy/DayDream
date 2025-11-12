@@ -3,12 +3,12 @@ import type { ProfileData } from "./types";
 import { PROFILE_VERSION } from "./constants";
 
 export class ProfileManager {
-  private canExceedProfileLimit: (() => boolean) | null;
+  private canExceedProfileLimit: (() => boolean | Promise<boolean>) | null;
   private maxProfiles: number;
   private profileStore: LocalForage;
 
   constructor(
-    canExceedProfileLimit: (() => boolean) | null = null,
+    canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
     maxProfiles: number = 3,
   ) {
     this.canExceedProfileLimit = canExceedProfileLimit;
@@ -36,9 +36,12 @@ export class ProfileManager {
 
     const profiles = await this.listProfiles();
     if (profiles.length >= this.maxProfiles) {
-      if (!this.canExceedProfileLimit || !this.canExceedProfileLimit()) {
+      if (
+        !this.canExceedProfileLimit ||
+        !(await this.canExceedProfileLimit())
+      ) {
         throw new Error(
-          `Maximum number of profiles (${this.maxProfiles}) reached`,
+          `Maximum number of profiles (${this.maxProfiles}) reached. Upgrade to Night+ for unlimited profiles.`,
         );
       }
     }
@@ -70,9 +73,12 @@ export class ProfileManager {
 
     const profiles = await this.listProfiles();
     if (profiles.length >= this.maxProfiles) {
-      if (!this.canExceedProfileLimit || !this.canExceedProfileLimit()) {
+      if (
+        !this.canExceedProfileLimit ||
+        !(await this.canExceedProfileLimit())
+      ) {
         throw new Error(
-          `Maximum number of profiles (${this.maxProfiles}) reached`,
+          `Maximum number of profiles (${this.maxProfiles}) reached. Upgrade to Night+ for unlimited profiles.`,
         );
       }
     }

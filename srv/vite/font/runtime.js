@@ -5,11 +5,11 @@ function fontObfuscationRuntime() {
   let reverseMappings = {};
   let initialized = false;
   let globalObfuscationEnabled = true;
-  let defaultFontType = "poppins";
+  let defaultFontType = "plusjakartasans";
   if (typeof window !== "undefined" && window.FONT_OBFUSCATION_CONFIG) {
     const config = window.FONT_OBFUSCATION_CONFIG;
     globalObfuscationEnabled = config.enabled !== false;
-    defaultFontType = "poppins";
+    defaultFontType = "plusjakartasans";
   }
 
   const obfuscationConfig = {
@@ -43,26 +43,35 @@ function fontObfuscationRuntime() {
     if (initialized) return;
     try {
       console.log("Font obfuscation: Starting initialization...");
-      const [poppinsMap, poppinsRev] = await Promise.all([
-        fetch("/poppins-obf-mappings.json")
+      const [plusjakartasansMap, plusjakartasansRev] = await Promise.all([
+        fetch("/plusjakartasans-obf-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
-            console.error("Failed to load poppins mappings:", e);
+            console.error("Failed to load Plus Jakarta Sans mappings:", e);
             return {};
           }),
-        fetch("/poppins-obf-reverse-mappings.json")
+        fetch("/plusjakartasans-obf-reverse-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
-            console.error("Failed to load poppins reverse mappings:", e);
+            console.error(
+              "Failed to load Plus Jakarta Sans reverse mappings:",
+              e,
+            );
             return {};
           }),
       ]);
 
-      mappings = { poppins: poppinsMap };
-      reverseMappings = { poppins: poppinsRev };
+      mappings = { plusjakartasans: plusjakartasansMap };
+      reverseMappings = { plusjakartasans: plusjakartasansRev };
       initialized = true;
       console.log("Font obfuscation mappings loaded successfully");
-      console.log("Poppins mappings count:", Object.keys(poppinsMap).length);
+      console.log(
+        "Plus Jakarta Sans mappings count:",
+        Object.keys(plusjakartasansMap).length,
+      );
+
+      // Setup clipboard interceptor after mappings are loaded
+      setupClipboardInterceptor();
 
       setTimeout(() => processExistingDOM(), 100);
     } catch (e) {
@@ -91,7 +100,7 @@ function fontObfuscationRuntime() {
   }
 
   function detectFontType(element) {
-    return "poppins";
+    return "plusjakartasans";
   }
 
   function shouldObfuscate(element) {
@@ -164,7 +173,7 @@ function fontObfuscationRuntime() {
       element.classList.add("ob-p");
     }
 
-    element.style.fontFamily = "'poppins-obf', monospace";
+    element.style.fontFamily = "'plusjakartasans-obf', sans-serif";
     element.style.fontVariantLigatures = "none";
   }
 
@@ -402,6 +411,67 @@ function fontObfuscationRuntime() {
     });
   }
 
+  // Clipboard deobfuscation interceptor
+  function setupClipboardInterceptor() {
+    // Intercept copy events
+    document.addEventListener("copy", (e) => {
+      if (!initialized) return;
+
+      try {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        // Get the selected text
+        const selectedText = selection.toString();
+
+        // Check if the text contains obfuscated characters (CJK characters)
+        const hasCJK = /[\u3400-\u4DBF\u4E00-\u9FFF]/.test(selectedText);
+
+        if (hasCJK) {
+          // Deobfuscate the text
+          const deobfuscated = decode(selectedText, defaultFontType);
+
+          // Prevent default copy behavior
+          e.preventDefault();
+
+          // Write deobfuscated text to clipboard
+          if (e.clipboardData) {
+            e.clipboardData.setData("text/plain", deobfuscated);
+            console.log("[Font Obfuscation] Clipboard text deobfuscated");
+          }
+        }
+      } catch (error) {
+        console.warn(
+          "[Font Obfuscation] Clipboard interception failed:",
+          error,
+        );
+      }
+    });
+
+    // Intercept modern clipboard API writes
+    const originalWriteText = navigator.clipboard?.writeText;
+    if (originalWriteText) {
+      navigator.clipboard.writeText = async function (text) {
+        if (!initialized) {
+          return originalWriteText.call(this, text);
+        }
+
+        // Check if text contains obfuscated characters
+        const hasCJK = /[\u3400-\u4DBF\u4E00-\u9FFF]/.test(text);
+
+        if (hasCJK) {
+          const deobfuscated = decode(text, defaultFontType);
+          console.log("[Font Obfuscation] Async clipboard write deobfuscated");
+          return originalWriteText.call(this, deobfuscated);
+        }
+
+        return originalWriteText.call(this, text);
+      };
+    }
+
+    console.log("[Font Obfuscation] Clipboard interceptor initialized");
+  }
+
   window.fontObfuscation = {
     encode,
     decode,
@@ -416,15 +486,16 @@ function fontObfuscationRuntime() {
       defaultFontType = fontType;
     },
     config: obfuscationConfig,
+    setupClipboardInterceptor, // Expose for manual initialization if needed
   };
 
   async function waitForFontsToLoad() {
     if ("fonts" in document) {
       try {
         await Promise.all([
-          document.fonts.load("16px poppins-obf"),
-          document.fonts.load("14px poppins-obf"),
-          document.fonts.load("18px poppins-obf"),
+          document.fonts.load("16px plusjakartasans-obf"),
+          document.fonts.load("14px plusjakartasans-obf"),
+          document.fonts.load("18px plusjakartasans-obf"),
         ]);
         await new Promise((resolve) => setTimeout(resolve, 100));
         console.log("Obfuscated fonts loaded successfully");

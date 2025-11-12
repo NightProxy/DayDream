@@ -134,18 +134,25 @@ class Search implements SearchInterface {
         return;
       }
 
-      if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey)
-        return;
-
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
+
+      if (
+        numSuggestions > 0 &&
+        (event.key === "ArrowDown" || event.key === "ArrowUp")
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey)
+        return;
 
       if (numSuggestions === 0) return;
 
       suggestionList.style.display = "block";
 
       if (event.key === "ArrowDown") {
-        event.preventDefault();
         if (this.selectedSuggestionIndex + 1 >= numSuggestions) {
           this.moveToNextSection();
           this.selectedSuggestionIndex = 0;
@@ -155,7 +162,6 @@ class Search implements SearchInterface {
         }
         this.updateSelectedSuggestion();
       } else if (event.key === "ArrowUp") {
-        event.preventDefault();
         if (this.selectedSuggestionIndex === 0) {
           this.moveToPreviousSection();
         } else {
@@ -273,7 +279,7 @@ class Search implements SearchInterface {
   getCurrentSuggestionItems(): NodeListOf<HTMLDivElement> {
     return Object.values(this.sections)[
       this.currentSectionIndex
-    ].searchResults.querySelectorAll("div");
+    ].searchResults.querySelectorAll(":scope > div");
   }
 
   moveToPreviousSection(): void {
@@ -326,7 +332,17 @@ class Search implements SearchInterface {
           "bg-[var(--main-35a)]",
           "border-l-[var(--main)]",
         );
-        item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        const parent = item.parentElement;
+        if (parent) {
+          const parentRect = parent.getBoundingClientRect();
+          const itemRect = item.getBoundingClientRect();
+
+          if (itemRect.top < parentRect.top) {
+            parent.scrollTop -= parentRect.top - itemRect.top;
+          } else if (itemRect.bottom > parentRect.bottom) {
+            parent.scrollTop += itemRect.bottom - parentRect.bottom;
+          }
+        }
       } else {
         item.classList.remove(
           "selected",
@@ -621,6 +637,7 @@ class Search implements SearchInterface {
       {
         class:
           "flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--main-20a)] hover:border-l-2 hover:border-l-[var(--main)] cursor-pointer transition-all group border-l-2 border-l-transparent",
+        tabindex: "-1",
       },
       [
         this.ui.createElement("i", {
@@ -674,6 +691,7 @@ class Search implements SearchInterface {
       {
         class:
           "flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--main-20a)] hover:border-l-2 hover:border-l-[var(--main)] cursor-pointer transition-all group border-l-2 border-l-transparent",
+        tabindex: "-1",
       },
       [
         this.ui.createElement(
