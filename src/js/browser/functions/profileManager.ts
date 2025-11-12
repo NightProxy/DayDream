@@ -245,7 +245,7 @@ export class ProfileManager implements ProfileManagerInterface {
 
         this.createProfilesList(profilesList, currentProfile),
 
-        this.createFooterActions(),
+        this.createFooterActions(profilesList.length),
       ],
     );
 
@@ -511,7 +511,10 @@ export class ProfileManager implements ProfileManagerInterface {
     );
   }
 
-  private createFooterActions() {
+  private createFooterActions(profileCount: number = 0) {
+    const maxProfiles = 3; // Free tier limit
+    // TODO: Check if user has Night+ and adjust maxProfiles accordingly
+
     return this.ui.createElement(
       "div",
       {
@@ -519,6 +522,48 @@ export class ProfileManager implements ProfileManagerInterface {
         style: "border-top: 1px solid var(--white-10);",
       },
       [
+        // Profile count indicator
+        this.ui.createElement(
+          "div",
+          {
+            class: "mb-3 p-3 rounded-lg",
+            style: `
+              background: var(--main-20a);
+              border: 1px solid var(--main-35a);
+              font-size: 12px;
+            `,
+          },
+          [
+            this.ui.createElement(
+              "div",
+              {
+                class: "flex items-center gap-2",
+              },
+              [
+                this.ui.createElement(
+                  "i",
+                  {
+                    "data-lucide":
+                      profileCount >= maxProfiles ? "alert-circle" : "info",
+                    style: `width: 14px; height: 14px; color: var(${profileCount >= maxProfiles ? "--error, #ef4444" : "--main"}); flex-shrink: 0;`,
+                  },
+                  [],
+                ),
+                (() => {
+                  const div = this.ui.createElement("div", {
+                    style: "color: var(--text); line-height: 1.4;",
+                  });
+                  div.innerHTML =
+                    profileCount >= maxProfiles
+                      ? `<strong style="color: var(--error, #ef4444);">Profile Limit Reached (${profileCount}/${maxProfiles})</strong><br/><span style="opacity: 0.9;">Upgrade to <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Night+</a> for unlimited profiles.</span>`
+                      : `<strong style="color: var(--main);">Profiles: ${profileCount}/${maxProfiles}</strong><br/><span style="opacity: 0.9;">${maxProfiles - profileCount} remaining. <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Upgrade to Night+</a> for unlimited.</span>`;
+                  return div;
+                })(),
+              ],
+            ),
+          ],
+        ),
+
         this.ui.createElement(
           "div",
           {
@@ -577,6 +622,15 @@ export class ProfileManager implements ProfileManagerInterface {
   }
 
   async showCreateProfileDialog(): Promise<void> {
+    // Check current profile count
+    const profilesList = await this.profiles.listProfiles();
+    const currentCount = profilesList.length;
+    const maxProfiles = 3; // Free tier limit
+
+    // TODO: Check if user has Night+ and adjust maxProfiles accordingly
+    // const hasNightPlus = await checkNightPlusStatus();
+    // if (hasNightPlus) maxProfiles = Infinity;
+
     const dialog = document.createElement("div");
     dialog.className = "bc-dialog-overlay";
     dialog.style.cssText = `
@@ -686,6 +740,50 @@ export class ProfileManager implements ProfileManagerInterface {
     inputGroup.appendChild(input);
     inputGroup.appendChild(helpText);
 
+    // Add profile limit indicator
+    const profileLimitInfo = document.createElement("div");
+    profileLimitInfo.style.cssText = `
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      ${
+        currentCount >= maxProfiles
+          ? "background: var(--error-20a, rgba(239, 68, 68, 0.1)); border: 1px solid var(--error-35a, rgba(239, 68, 68, 0.2));"
+          : "background: var(--main-20a); border: 1px solid var(--main-35a);"
+      }
+    `;
+
+    if (currentCount >= maxProfiles) {
+      profileLimitInfo.innerHTML = `
+        <div class="flex items-start gap-2">
+          <i data-lucide="alert-circle" style="width: 16px; height: 16px; color: var(--error, #ef4444); margin-top: 2px; flex-shrink: 0;"></i>
+          <div style="color: var(--text);">
+            <strong style="color: var(--error, #ef4444);">Profile Limit Reached</strong>
+            <p style="margin: 4px 0 0 0; opacity: 0.9;">
+              You've reached the maximum of ${maxProfiles} profiles on the free tier.
+              <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline; margin-left: 4px;">Upgrade to Night+</a> for unlimited profiles.
+            </p>
+          </div>
+        </div>
+      `;
+    } else {
+      profileLimitInfo.innerHTML = `
+        <div class="flex items-start gap-2">
+          <i data-lucide="info" style="width: 16px; height: 16px; color: var(--main); margin-top: 2px; flex-shrink: 0;"></i>
+          <div style="color: var(--text);">
+            <strong style="color: var(--main);">Profile Count: ${currentCount} / ${maxProfiles}</strong>
+            <p style="margin: 4px 0 0 0; opacity: 0.9;">
+              ${maxProfiles - currentCount} profile${maxProfiles - currentCount !== 1 ? "s" : ""} remaining on free tier.
+              <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline; margin-left: 4px;">Upgrade to Night+</a> for unlimited profiles.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    form.appendChild(profileLimitInfo);
+
     const actions = document.createElement("div");
     actions.className = "flex items-center justify-end gap-3 mt-4";
 
@@ -727,12 +825,21 @@ export class ProfileManager implements ProfileManagerInterface {
       cursor: pointer;
       transition: all 0.15s ease;
     `;
-    createBtn.onmouseenter = () => {
-      createBtn.style.transform = "scale(1.02)";
-    };
-    createBtn.onmouseleave = () => {
-      createBtn.style.transform = "scale(1)";
-    };
+
+    // Disable button if profile limit reached
+    if (currentCount >= maxProfiles) {
+      createBtn.disabled = true;
+      createBtn.style.opacity = "0.5";
+      createBtn.style.cursor = "not-allowed";
+      createBtn.textContent = "Profile Limit Reached";
+    } else {
+      createBtn.onmouseenter = () => {
+        createBtn.style.transform = "scale(1.02)";
+      };
+      createBtn.onmouseleave = () => {
+        createBtn.style.transform = "scale(1)";
+      };
+    }
 
     actions.appendChild(cancelBtn);
     actions.appendChild(createBtn);

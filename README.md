@@ -22,7 +22,7 @@
 ## Deployment
 
 > [!WARNING]
-> DayDream X cannot be hosted on static web hosting platforms such as Netlify, Github Pages, or Cloudflare Pages.
+> DayDream X cannot be hosted on static web hosting platforms such as Netlify, GitHub Pages, or Cloudflare Pages.
 
 ### Installation & Setup
 
@@ -69,15 +69,11 @@ git pull --force --allow-unrelated-histories
 
 ## Support
 
-For assistance, deployment methods, or to access links, join our [Discord Server](https://discord.night-x.com) or open a discussion on GitHub.
+For assistance, deployment methods, or to access links, join our [Discord Server](https://discord.night-x.com) or open a discussion on GitLab.
 
 ## Contributing
 
 To contribute, fork the repository, implement your changes, and submit a pull request. Please test your code thoroughly before submission. For detailed contribution guidelines, refer to [CONTRIB.md](https://gitlab.com/nightnetwork/daydreamx/blob/main/CONTRIB.md).
-
-## Contributors
-
-[![Contributors](https://contrib.rocks/image?repo=nightproxy/daydreamx)](https://gitlab.com/nightnetwork/daydreamx/graphs/contributors)
 
 ## Community
 

@@ -30,13 +30,12 @@ export function fontObfuscationPlugin() {
           /<\/head>/,
           `    <link rel="stylesheet" href="/ob-fonts.css">
     <script>
-      // Global font obfuscation configuration
       window.FONT_OBFUSCATION_CONFIG = {
         enabled: true,
-        defaultFont: 'poppins',       // Only Poppins is supported
-        excludeInputs: false,         // Obfuscate input text but preserve styling
-        obfuscateTitle: false,        // Obfuscate document title
-        obfuscatePlaceholders: false  // Obfuscate input placeholders
+        defaultFont: 'plusjakartasans',
+        excludeInputs: false,
+        obfuscateTitle: false,
+        obfuscatePlaceholders: false
       };
     </script>
     <script src="/ob-fonts.js"></script>
@@ -46,7 +45,10 @@ export function fontObfuscationPlugin() {
     },
     async generateBundle(options: any, bundle: any) {
       const availableFonts = [
-        { path: "./public/ttf/Poppins-Regular.ttf", name: "poppins-obf" },
+        {
+          path: "./public/ttf/PlusJakartaSans-Regular.ttf",
+          name: "plusjakartasans-obf",
+        },
       ];
 
       function shuffle(arr: any[]) {
@@ -59,38 +61,34 @@ export function fontObfuscationPlugin() {
 
       function getChineseChars(count = 52) {
         const chars: string[] = [];
+        const ranges = [
+          { start: 0x4e00, end: 0x9fff, priority: 1 },
+          { start: 0x3400, end: 0x4dbf, priority: 2 },
+        ];
 
-        for (let i = 0x4e00; i <= 0x9fff; i++) {
-          try {
-            const ch = String.fromCodePoint(i);
-            if (ch.length <= 2 && ch.trim() !== "") {
-              chars.push(ch);
-            }
-          } catch (e) {}
-
-          if (chars.length >= count * 10) break;
-        }
-
-        if (chars.length < count * 2) {
-          for (let i = 0x3400; i <= 0x4dbf; i++) {
+        for (const range of ranges) {
+          for (let i = range.start; i <= range.end; i++) {
             try {
               const ch = String.fromCodePoint(i);
-              if (ch.length <= 2 && ch.trim() !== "") {
+              if (ch.length === 1 && ch.trim() !== "") {
                 chars.push(ch);
               }
             } catch (e) {}
 
-            if (chars.length >= count * 5) break;
+            if (chars.length >= count * 15) break;
           }
+          if (chars.length >= count * 15) break;
         }
 
         const unique = [...new Set(chars)];
         shuffle(unique);
 
-        console.log(`Got ${unique.length} chinese chars`);
+        console.log(`Got ${unique.length} CJK characters for obfuscation`);
 
         if (unique.length < count) {
-          console.log(`Only found ${unique.length}`);
+          console.log(
+            `Warning: Only found ${unique.length} characters, needed ${count}`,
+          );
           return unique;
         }
 
@@ -106,7 +104,7 @@ export function fontObfuscationPlugin() {
         console.log(`Generating obfuscated font: ${fontConfig.name}`);
 
         const visibleChars = shuffle(
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?;:1234567890".split(
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?;:'\"1234567890-_()[]{}/@#$%&*+=<>|\\~`".split(
             "",
           ),
         );

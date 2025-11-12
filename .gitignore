@@ -5,7 +5,9 @@ node_modules/
 *.lockb
 *-lock.yaml
 dist/
-ddxui/
 config.js
 database.sqlite
 .VSCodeCounter/
+plus/
+.github/
+concepting/

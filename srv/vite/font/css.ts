@@ -1,35 +1,39 @@
-export const cssContent = `/* Global Font Obfuscation */
-@font-face {
-    font-family: 'poppins-obf';
-    src: url('/poppins-obf.woff2') format('woff2'),
-         url('/poppins-obf.ttf') format('truetype');
+export const cssContent = `@font-face {
+    font-family: 'plusjakartasans-obf';
+    src: url('/plusjakartasans-obf.woff2') format('woff2'),
+         url('/plusjakartasans-obf.ttf') format('truetype');
     font-display: block;
     font-weight: normal;
     font-style: normal;
 }
 
 :root {
-    --ob-font-poppins: 'poppins-obf', monospace;
+    --ob-font-plusjakartasans: 'plusjakartasans-obf', sans-serif;
 }
 
-/* Apply obfuscated font to most elements */
 body.font-obfuscation-ready * {
-    font-family: 'poppins-obf', monospace !important;
+    font-family: 'plusjakartasans-obf', sans-serif !important;
     font-variant-ligatures: none !important;
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
 }
 
-/* Specific obfuscated classes */
 .ob-p,
 body .ob-p,
 html .ob-p,
 .obfuscated,
 body .obfuscated,
 html .obfuscated {
-    font-family: 'poppins-obf', monospace !important;
+    font-family: 'plusjakartasans-obf', sans-serif !important;
     font-variant-ligatures: none !important;
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    letter-spacing: 0 !important;
+    word-spacing: normal !important;
 }
 
-/* Exclude certain elements from obfuscation (preserve original styling) */
 .no-obfuscate,
 [data-no-obfuscate],
 code,
@@ -43,27 +47,25 @@ svg[data-lucide] {
     font-family: inherit !important;
 }
 
-/* Input elements: don't change styling but still allow text obfuscation */
 input,
 textarea,
 select,
 option {
-    /* Keep original input styling - obfuscation will be handled in JS */
 }
 
-/* Specific selectors that should be obfuscated */
 .tab-title,
 .menu-text,
 .ui-text,
 [data-obfuscate] {
-    font-family: 'poppins-obf', monospace !important;
+    font-family: 'plusjakartasans-obf', sans-serif !important;
     font-variant-ligatures: none !important;
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
 }
 
-/* Maintain proper text rendering */
 .ob-p,
 .obfuscated {
-    letter-spacing: normal;
-    word-spacing: normal;
     line-height: inherit;
+    font-feature-settings: normal !important;
 }`;

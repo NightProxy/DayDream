@@ -109,40 +109,6 @@
     },
     "customizable": true
   },
-  "catppuccin-latte": {
-    "name": "Catppuccin Latte",
-    "description": "The lighter variant of Catppuccin",
-    "background-color": "rgba(239, 241, 245, 1)",
-    "hover-background-color": "rgba(136, 57, 239, 0.13)",
-    "input-background-color": "rgba(230, 233, 239, 1)",
-    "tab-bg-color": "rgba(220, 224, 232, 1)",
-    "tab-active-bg-color": "rgba(204, 208, 218, 1)",
-    "utility-background-color": "rgba(220, 224, 232, 1)",
-    "dark-translucent-bg": "rgba(156, 160, 176, 0.43)",
-    "border-color": "rgba(156, 160, 176, 1)",
-    "text-color": "rgba(76, 79, 105, 1)",
-    "hover-text-color": "rgba(76, 79, 105, 0.7)",
-    "active-text-color": "rgba(136, 57, 239, 1)",
-    "main-color": "rgba(136, 57, 239, 1)",
-    "faded-main-color": "rgba(136, 57, 239, 0.26)",
-    "accent-colors": [
-      "#8839ef",
-      "#1e66f5",
-      "#179299",
-      "#40a02b",
-      "#df8e1d",
-      "#d20f39"
-    ],
-    "color-roles": {
-      "mauve": "#8839ef",
-      "blue": "#1e66f5",
-      "teal": "#179299",
-      "green": "#40a02b",
-      "yellow": "#df8e1d",
-      "red": "#d20f39"
-    },
-    "customizable": true
-  },
   "nord": {
     "name": "Nord",
     "description": "An arctic, north-bluish color palette",

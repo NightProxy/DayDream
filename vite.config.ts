@@ -11,22 +11,29 @@ import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { ContentInsertionPlugin } from "./srv/vite/contentInsertion";
 import { allowedHosts } from "./srv/vite/hosts";
+import { htmlObfuscationPlugin } from "./srv/vite/html-obfuscation";
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    tsconfigPaths(),
-    ViteMinifyPlugin(minifyConfig),
+    tsconfigPaths({
+      ignoreConfigErrors: true,
+      projects: ["./tsconfig.json"],
+    }),
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
     ContentInsertionPlugin(),
     viteStaticCopy(copyRoutes()),
-
+    ViteMinifyPlugin(minifyConfig),
     vitePluginBundleObfuscator(obfuscationConfig as any),
+    htmlObfuscationPlugin(),
   ],
   appType: "mpa",
   server: {
     allowedHosts: allowedHosts,
+    watch: {
+      ignored: ["**/concepting/**", "**/plus/**", "**/.github/**"],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:8080",

@@ -14,7 +14,7 @@ export const obfuscationConfig = {
 
     // Dead code injection for stealth (minimal threshold)
     deadCodeInjection: true,
-    deadCodeInjectionThreshold: 0.1, // Reduced from 0.2 for speed
+    deadCodeInjectionThreshold: 0.2, // Reduced from 0.2 for speed
 
     // Debug protection
     debugProtection: false,

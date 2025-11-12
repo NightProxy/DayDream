@@ -8,8 +8,8 @@ export class ThemeManager {
 
   async loadThemes(): Promise<Record<string, ThemePreset>> {
     try {
-      console.log("Loading themes from /json/themes/presets.json");
-      const response = await fetch("/json/themes/presets.json");
+      console.log("Loading themes from /json/t.json");
+      const response = await fetch("/json/t.json");
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
