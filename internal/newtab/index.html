@@ -163,15 +163,21 @@
             href="https://gitlab.com/nightnetwork/daydreamx"
             rel="noreferrer"
             class="hover:text-[var(--text)]"
-            >Github</a
+            >GitLab</a
           >
           <span>\</span>
           <a
-            href="https://discord.com"
+            href="https://discord.night-x.com"
             rel="noreferrer"
             class="hover:text-[var(--text)]"
             >Discord</a
           >
+          <span>\</span>
+          <a href="/internal/privacy/" class="hover:text-[var(--text)]"
+            >Privacy</a
+          >
+          <span>\</span>
+          <a href="/internal/terms/" class="hover:text-[var(--text)]">Terms</a>
         </nav>
       </footer>
     </div>
@@ -188,40 +194,6 @@
           });
         document.documentElement.classList.remove("pre-anim");
       });
-    </script>
-    <script>
-      (function waitForLibs() {
-        if (
-          typeof NightLogin === "undefined" ||
-          typeof NightLoginFrame === "undefined"
-        ) {
-          console.log("heh");
-          return setTimeout(waitForLibs, 50);
-        }
-
-        console.log("initialize night login");
-
-        const nightLogin = new NightLogin({
-          service: "DayDreamX",
-          theme: "system",
-
-          backdropBlur: "8px",
-
-          onSuccess: (token) => {
-            alert(token);
-          },
-          API_URL: "/api/plus",
-          onCancel: () => {
-            console.log("Login cancelled");
-          },
-        });
-
-        document
-          .getElementById("nightPlusSignIn")
-          .addEventListener("click", () => {
-            nightLogin.show();
-          });
-      })();
     </script>
   </body>
 </html>

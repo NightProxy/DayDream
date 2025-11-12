@@ -20,6 +20,8 @@ import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
 import { Search } from "@browser/search";
 import { universalTheme } from "@js/global/universalTheme";
+import { checkNightPlusStatus } from "@apis/nightplus";
+import { initClipboardDeobfuscator } from "@js/utils/clipboardDeobfuscator";
 
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
@@ -27,12 +29,18 @@ const { ScramjetController } = $scramjetLoadController();
 document.addEventListener("DOMContentLoaded", async () => {
   await universalTheme.init();
 
+  setTimeout(() => {
+    initClipboardDeobfuscator({ debug: false });
+  }, 500);
+
   const nightmare = new Nightmare();
   const nightmarePlugins = new NightmarePlugins();
 
   const settingsAPI = new SettingsAPI();
   const eventsAPI = new EventSystem();
-  const profilesAPI = new ProfilesAPI();
+
+  const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
+
   const loggingAPI = new Logger();
 
   const proxy = new Proxy();
@@ -51,19 +59,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       file: "/assets/sw.js",
       config: window.__scramjet$config,
       func: async () => {
-        if ((await settingsAPI.getItem("scramjet")) != "fixed") {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
-        } else {
-          const scramjet = new ScramjetController(window.__scramjet$config);
-          scramjet.init().then(async () => {
-            await proxy.setTransports();
-          });
-
-          console.log("Scramjet Service Worker registered.");
-        }
+        const scramjet = new ScramjetController(window.__scramjet$config);
+        scramjet.init().then(async () => {
+          await proxy.setTransports();
+        });
+        console.log("Scramjet Service Worker registered.");
       },
     },
     auto: {
