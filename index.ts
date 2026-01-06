@@ -11,19 +11,19 @@ import gradient from "gradient-string";
 import { version } from "./package.json";
 import { getPlatform } from "./srv/platform.ts";
 import routes from "./srv/router.ts";
-import { setupDB } from "./srv/api/store/dbSetup.ts";
-import { marketplaceAPI, catalogAssets } from "./srv/api/store/marketplace.ts";
-import { plusAPI } from "./srv/api/plus.ts";
+import { config } from "./config.js";
 
 const server = Fastify({
   logger: false,
-  ignoreDuplicateSlashes: true,
-  ignoreTrailingSlash: true,
+  routerOptions: {
+    ignoreDuplicateSlashes: true,
+    ignoreTrailingSlash: true,
+  },
   serverFactory: (handler) => {
     const srv = http.createServer();
     logging.set_level(logging.ERROR);
     wisp.options.dns_method = "resolve";
-    wisp.options.dns_servers = ["1.1.1.3", "1.0.0.3"];
+    wisp.options.dns_servers = ["1.1.1.1", "1.0.0.1"];
     wisp.options.dns_result_order = "ipv4first";
     wisp.options.wisp_version = 2;
     wisp.options.wisp_motd = "WISP server";
@@ -41,9 +41,6 @@ const server = Fastify({
   },
 });
 
-await catalogAssets.sync();
-await setupDB(catalogAssets);
-
 await server.register(fastifyCompress, {
   encodings: ["br", "gzip", "deflate"],
 });
@@ -55,18 +52,14 @@ await server.register(fastifyHelmet, {
   contentSecurityPolicy: false,
 });
 
-marketplaceAPI(server);
-plusAPI(server);
 
 server.register(routes);
 
-const PORT: number = Number(process.env.PORT) || 8080;
+const PORT: number = Number(process.env.PORT) || config.server?.port || 8080;
+const HOST: string = process.env.HOST || config.server?.host || "127.0.0.1";
 
-server.listen({ port: PORT, host: "0.0.0.0" }, async (error) => {
-  if (error) {
-    server.log.error(error);
-    process.exit(1);
-  }
+try {
+  await server.listen({ port: PORT, host: HOST });
   const serverInstance = server.server as Server;
   const address = serverInstance.address() as AddressInfo;
   const theme = chalk.hex("#630aba").bold;
@@ -91,18 +84,50 @@ server.listen({ port: PORT, host: "0.0.0.0" }, async (error) => {
   console.log(gradient(Object.values(ddx)).multiline(startupText));
 
   console.log(theme("Version: "), chalk.whiteBright("v" + version));
-  const hostingInfo = getPlatform(PORT);
+  const platformUrl = getPlatform(PORT);
+  const deploymentMethod = platformUrl ? "Platform" : "Self-Hosted";
   console.log(
     theme("🌐 Deployment Method: "),
-    chalk.whiteBright(hostingInfo.method),
+    chalk.whiteBright(deploymentMethod),
   );
   console.log(host("🔗 Deployment Entrypoints: "));
   console.log(
     `  ${chalk.bold(host("Local System IPv4:"))}            http://${address.address}:${PORT}`,
   );
 
-  if (hostingInfo.selfHosted !== true)
+  if (platformUrl)
     console.log(
-      `  ${chalk.bold(host(hostingInfo.method + ":"))}           ${hostingInfo.extLink}`,
+      `  ${chalk.bold(host("Platform:"))}                     ${platformUrl}`,
     );
-});
+
+  if (HOST === "0.0.0.0") {
+    console.log(
+      "\n" +
+      chalk.yellow.bold("⚠️  WARNING: Server is listening on 0.0.0.0 (all network interfaces)") +
+      "\n" +
+      chalk.yellow("   This means the server is accessible from other machines on your network.") +
+      "\n" +
+      chalk.yellow("   For production deployments, ensure you have:") +
+      "\n" +
+      chalk.yellow("   • A reverse proxy (nginx, Caddy, etc.) configured") +
+      "\n" +
+      chalk.yellow("   • HTTPS enabled with valid certificates") +
+      "\n" +
+      chalk.yellow("   • Firewall rules to restrict access") +
+      "\n" +
+      chalk.yellow("   For local development, consider using host: '127.0.0.1' in config.js") +
+      "\n"
+    );
+  } else if (HOST === "127.0.0.1" || HOST === "localhost") {
+    console.log(
+      "\n" +
+      chalk.green("✅ Server is running in local mode (127.0.0.1)") +
+      "\n" +
+      chalk.green("   Only accessible from this machine - safe for development.") +
+      "\n"
+    );
+  }
+} catch (error) {
+  server.log.error(error);
+  process.exit(1);
+}

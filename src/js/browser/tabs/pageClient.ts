@@ -2,6 +2,8 @@ import type { TabsInterface } from "./types";
 
 export class TabPageClient {
   private tabs: TabsInterface;
+  private observers: Map<string, MutationObserver> = new Map();
+  private intervalIds: Map<string, number[]> = new Map();
 
   constructor(tabs: TabsInterface) {
     this.tabs = tabs;
@@ -11,6 +13,31 @@ export class TabPageClient {
     this.setupWindowOpenInterceptor(iframe);
     this.setupClickListener(iframe);
     this.setupErrorPageRedirect(iframe);
+    this.setupNavigationTracking(iframe);
+  };
+
+  cleanupIframe = (iframeId: string): void => {
+    const observer = this.observers.get(iframeId);
+    if (observer) {
+      observer.disconnect();
+      this.observers.delete(iframeId);
+    }
+
+    const intervals = this.intervalIds.get(iframeId);
+    if (intervals) {
+      intervals.forEach((id) => clearTimeout(id));
+      this.intervalIds.delete(iframeId);
+    }
+  };
+
+  cleanupAll = (): void => {
+    this.observers.forEach((observer) => observer.disconnect());
+    this.observers.clear();
+
+    this.intervalIds.forEach((intervals) => {
+      intervals.forEach((id) => clearTimeout(id));
+    });
+    this.intervalIds.clear();
   };
 
   private setupWindowOpenInterceptor(iframe: HTMLIFrameElement): void {
@@ -42,6 +69,62 @@ export class TabPageClient {
     iframe.contentWindow?.document.body.addEventListener("click", () => {
       window.parent.eventsAPI.emit("ddx:page.clicked", null);
     });
+  }
+
+  private setupNavigationTracking(iframe: HTMLIFrameElement): void {
+    if (!iframe.contentWindow) return;
+
+    const iframeId = iframe.id;
+    let lastKnownUrl = iframe.contentWindow.location.href;
+
+    const checkUrlChange = () => {
+      try {
+        const currentUrl = iframe.contentWindow?.location?.href;
+        if (currentUrl && currentUrl !== lastKnownUrl) {
+          lastKnownUrl = currentUrl;
+          this.handleUrlChange(iframe);
+        }
+      } catch (e) {
+        console.warn("Could not check URL change:", e);
+      }
+    };
+
+    iframe.contentWindow.document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "A" || target.closest("a")) {
+        setTimeout(checkUrlChange, 100);
+        setTimeout(checkUrlChange, 500);
+        setTimeout(checkUrlChange, 1000);
+      }
+    });
+
+    iframe.contentWindow.document.addEventListener("submit", () => {
+      setTimeout(checkUrlChange, 100);
+      setTimeout(checkUrlChange, 500);
+      setTimeout(checkUrlChange, 1000);
+    });
+
+    const observer = new MutationObserver(() => {
+      checkUrlChange();
+    });
+
+    observer.observe(iframe.contentWindow.document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+
+    this.observers.set(iframeId, observer);
+  }
+
+  private handleUrlChange(iframe: HTMLIFrameElement): void {
+    const iframeLoadedEvent = new CustomEvent("iframeLoaded", {
+      detail: {
+        tabId: iframe.id.replace("iframe-", "tab-"),
+        iframe,
+        tabElement: document.getElementById(iframe.id.replace("iframe-", "tab-")),
+      },
+    });
+    document.dispatchEvent(iframeLoadedEvent);
   }
 
   private setupErrorPageRedirect(iframe: HTMLIFrameElement): void {

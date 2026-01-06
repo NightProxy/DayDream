@@ -42,7 +42,7 @@ class NewTabShortcuts {
 
   constructor() {
     this.bookmarkManager = new BookmarkManager();
-    this.proxy = new Proxy();
+    this.proxy = window.parent.proxy;
     this.ui = new Nightmare();
 
     this.proxy.setBookmarkManager(this.bookmarkManager);
@@ -419,7 +419,9 @@ class NewTabShortcuts {
                   const url = (e.target as HTMLAnchorElement).getAttribute(
                     "href",
                   );
-                  if (url) window.parent.protocols.navigate(url);
+                  if (url && window.parent.tabs) {
+                    window.parent.tabs.createTab(url);
+                  }
                 },
               },
               ["GitLab"],
@@ -437,7 +439,9 @@ class NewTabShortcuts {
                   const url = (e.target as HTMLAnchorElement).getAttribute(
                     "href",
                   );
-                  if (url) window.parent.protocols.navigate(url);
+                  if (url && window.parent.tabs) {
+                    window.parent.tabs.createTab(url);
+                  }
                 },
               },
               ["Discord"],
@@ -696,16 +700,37 @@ class NewTabShortcuts {
 
   private handleShortcutNavigation(url: string): void {
     try {
-      if (url.startsWith("javascript:")) {
-        const js = url.slice("javascript:".length);
-        eval(js);
+      const ALLOWED_SCHEMES = ['http:', 'https:', 'mailto:', 'tel:', 'ftp:', 'ddx:'];
+      
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url, window.location.origin);
+      } catch {
+        console.warn("Invalid URL format:", url);
         return;
       }
 
-      window.parent.protocols.navigate(url);
+      if (parsedUrl.protocol === 'javascript:') {
+        console.warn(
+          "Blocked javascript: URL for security reasons. " +
+          "Executing arbitrary JavaScript from shortcuts is not allowed to prevent XSS attacks."
+        );
+        return;
+      }
+
+      if (!ALLOWED_SCHEMES.includes(parsedUrl.protocol)) {
+        console.warn(
+          `Blocked URL with unsupported scheme: ${parsedUrl.protocol}. ` +
+          `Allowed schemes: ${ALLOWED_SCHEMES.join(', ')}`
+        );
+        return;
+      }
+
+      if (window.parent.protocols) {
+        window.parent.protocols.navigate(url);
+      }
     } catch (error) {
       console.error("Failed to navigate:", error);
-      window.open(url, "_blank");
     }
   }
 
@@ -780,7 +805,6 @@ class NewTabShortcuts {
       form.addEventListener("submit", (e) => this.handleSubmit(e));
     }
 
-    // Setup Night+ button - wait for NightLogin library to load
     this.setupNightPlusButton();
 
     document.addEventListener("keydown", (e) => {
@@ -802,29 +826,67 @@ class NewTabShortcuts {
       return;
     }
 
-    // Wait for NightLogin library to load
     const waitForNightLogin = () => {
-      return new Promise<void>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
+        const maxWaitMs = 10_000;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        let intervalId: ReturnType<typeof setTimeout> | null = null;
+
+        const cleanup = () => {
+          if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          if (intervalId !== null) {
+            clearTimeout(intervalId);
+            intervalId = null;
+          }
+        };
+
         const checkLibs = () => {
           if (
             typeof (window as any).NightLogin !== "undefined" &&
             typeof (window as any).NightLoginFrame !== "undefined"
           ) {
+            cleanup();
             resolve();
           } else {
-            setTimeout(checkLibs, 50);
+            intervalId = setTimeout(checkLibs, 50);
           }
         };
+
+        timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error(`Night+ libraries failed to load within ${maxWaitMs}ms`));
+        }, maxWaitMs);
+
         checkLibs();
       });
     };
 
-    await waitForNightLogin();
-    console.log("Night+ libraries loaded, initializing login");
+    try {
+      await waitForNightLogin();
+      console.log("Night+ libraries loaded, initializing login");
+    } catch (error) {
+      console.error("Failed to load Night+ libraries:", error);
+      return;
+    }
 
     const { setAccessToken, dumpNightPlusData } = await import(
       "@apis/nightplus"
     );
+    
+    let plusClient: any;
+    try {
+      const basePath = "/plus";
+      const fileName = "index.mjs";
+      const mod = await import(`${basePath}/${fileName}`);
+      const PlusClient = mod.default;
+      plusClient = new PlusClient();
+    } catch (error) {
+      console.error("Failed to load plus client module:", error);
+      return;
+    }
 
     const NightLogin = (window as any).NightLogin;
     const nightLogin = new NightLogin({
@@ -839,6 +901,12 @@ class NewTabShortcuts {
         try {
           await setAccessToken(token);
           console.log("Token stored successfully");
+
+          const authUrl = await window.parent.proxy.getAuthUrl();
+          console.log("Using auth URL:", authUrl);
+          
+          await plusClient.authenticate(token, authUrl);
+          console.log("Session token obtained and stored");
 
           await dumpNightPlusData();
           console.log("Night+ data cached successfully");

@@ -1,10 +1,10 @@
 # DayDream X
 <div align="center">
-    <img src="https://gitlab.com/nightnetwork/daydreamx/blob/main/assets/DDXBanner.png" style="width: 1200px"/>
+    <img src="https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/DDXBanner.png" style="width: 1200px"/>
     <h2>Explore the Web with DayDream X</h2>
 </div>
 
-![inpreview](https://gitlab.com/nightnetwork/daydreamx/blob/main/assets/daydreamx.png)
+![inpreview](https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/daydreamx.png)
 
 > [!IMPORTANT]
 > Please consider giving the original repository a star if you fork this project.
@@ -41,12 +41,92 @@ If you do not wish to use Corepack due to its experimental status, you may insta
 
 ### Hosting Instructions
 
+#### Development Setup
+
+For local development, the default configuration is already secure:
+
 ```bash
 git clone https://gitlab.com/nightnetwork/daydreamx.git
 cd DayDreamX
 bun install
 bun start
 ```
+
+The app will run on `http://127.0.0.1:8080` (localhost only, not accessible from other machines).
+
+#### Production Deployment
+
+For production deployments, you need to configure security settings:
+
+1. **Copy and configure the config file:**
+   ```bash
+   cp config.example.js config.js
+   ```
+
+2. **Update security settings in `config.js`:**
+   - Change `server.host` to `"0.0.0.0"` to accept external connections
+   - Generate a secure marketplace PSK:
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+     ```
+   - Replace `"changeme"` in `marketplace.psk` with the generated value
+
+3. **Set up a reverse proxy (REQUIRED for production):**
+   
+   Never expose the Node.js server directly to the internet. Always use a reverse proxy:
+
+   **nginx example:**
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+       
+       location / {
+           proxy_pass http://127.0.0.1:8080;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+   **Caddy example:**
+   ```
+   your-domain.com {
+       reverse_proxy localhost:8080
+   }
+   ```
+
+4. **Enable HTTPS:**
+   Use Let's Encrypt with certbot (nginx) or Caddy's automatic HTTPS.
+
+5. **Configure firewall:**
+   ```bash
+   # Allow only necessary ports (example using ufw)
+   sudo ufw allow 80/tcp    # HTTP
+   sudo ufw allow 443/tcp   # HTTPS
+   sudo ufw allow 22/tcp    # SSH (if needed)
+   sudo ufw enable
+   
+   # Block direct access to Node.js port
+   sudo ufw deny 8080/tcp
+   ```
+
+6. **Start the application:**
+   ```bash
+   bun start
+   ```
+
+> [!WARNING]
+> **Production Security Checklist:**
+> - ✅ Changed marketplace PSK from "changeme"
+> - ✅ Set `host: "0.0.0.0"` in config.js
+> - ✅ Reverse proxy (nginx/Caddy) configured
+> - ✅ HTTPS enabled with valid certificate
+> - ✅ Firewall rules configured
+> - ✅ config.js added to .gitignore (do not commit secrets)
 
 Alternative package managers:
 ```bash
@@ -64,10 +144,6 @@ pnpm start
 ```bash
 git pull --force --allow-unrelated-histories
 ```
-
-<a target="_blank" href="https://app.koyeb.com/deploy?type=git&repository=github.com/NightProxy/DayDreamX"><img alt="Deploy to Koyeb" src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/koyeb.svg"></a>
-
-## Support
 
 For assistance, deployment methods, or to access links, join our [Discord Server](https://discord.night-x.com) or open a discussion on GitLab.
 

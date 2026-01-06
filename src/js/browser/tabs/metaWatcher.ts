@@ -4,6 +4,7 @@ export class TabMetaWatcher {
   private tabs: TabsInterface;
   private currentActiveTabId: string | null = null;
   private historyManager: any = null;
+  private metaWatchers: Map<string, MutationObserver> = new Map();
 
   constructor(tabs: TabsInterface) {
     this.tabs = tabs;
@@ -105,7 +106,7 @@ export class TabMetaWatcher {
     if (this.historyManager && currentUrl && pageTitle !== "New Tab") {
       try {
         if (
-          !currentUrl.startsWith("ddx://") &&
+          !window.protocols?.isRegisteredProtocol(currentUrl) &&
           !currentUrl.includes("/internal/")
         ) {
           await this.historyManager.addEntry({
@@ -125,10 +126,15 @@ export class TabMetaWatcher {
     locHref: string,
     tabId: string,
   ): Promise<string> => {
+    console.log("[updateAddressBar] Called with:", { locHref, tabId });
+    console.log("[updateAddressBar] addressBar element:", this.tabs.items.addressBar);
+    console.log("[updateAddressBar] activeElement:", document.activeElement);
+
     if (
       this.tabs.items.addressBar &&
       document.activeElement === this.tabs.items.addressBar
     ) {
+      console.log("[updateAddressBar] Skipping - user is typing in address bar");
       return locHref;
     }
 
@@ -136,52 +142,79 @@ export class TabMetaWatcher {
     try {
       liveURL = new URL(locHref);
     } catch {
+      console.log("[updateAddressBar] Failed to parse URL:", locHref);
       return locHref;
     }
 
     const tabRef = this.tabs.tabs.find((t) => t.id === tabId);
-    const maybeInternal = await this.tabs.proto.getInternalURL(
-      liveURL.pathname,
-    );
-    let nextVal: string | null = null;
+    
+    const internalCheck = await this.tabs.proto.getInternalURL(liveURL.pathname);
+    if (
+      typeof internalCheck === "string" &&
+      window.protocols?.isRegisteredProtocol(internalCheck)
+    ) {
+      const nextVal = internalCheck;
+      if (tabRef) {
+        tabRef.lastInternalRoute = nextVal;
+      }
+      console.log("[updateAddressBar] Internal URL detected:", nextVal);
+      if (this.tabs.items.addressBar && nextVal) {
+        this.tabs.items.addressBar.value = nextVal;
+        if (tabRef) tabRef.lastAddressShown = nextVal;
+      }
+      return nextVal;
+    }
+    
+    const prefix =
+      window.SWconfig[window.ProxySettings as keyof typeof window.SWconfig]
+        .config.prefix;
+    let path = liveURL.pathname.replace(prefix, "");
+    let decoded: string;
+
+    try {
+      decoded = (window as any).__uv$config.decodeUrl(path);
+      const hash = liveURL.hash || "";
+      decoded =
+        decoded.indexOf("#") === -1
+          ? hash
+            ? decoded + hash
+            : decoded
+          : decoded;
+      console.log("[updateAddressBar] Decoded URL:", decoded);
+    } catch {
+      console.log("[updateAddressBar] Failed to decode, using pathname");
+      decoded = liveURL.pathname;
+    }
+
+    const maybeInternal = await this.tabs.proto.getInternalURL(decoded);
+    let nextVal: string;
 
     if (
       typeof maybeInternal === "string" &&
-      maybeInternal.startsWith("ddx://")
+      window.protocols?.isRegisteredProtocol(maybeInternal)
     ) {
       nextVal = maybeInternal;
       if (tabRef) {
         tabRef.lastInternalRoute = nextVal;
       }
+      console.log("[updateAddressBar] Protocol URL detected:", nextVal);
     } else {
-      const prefix =
-        window.SWconfig[window.ProxySettings as keyof typeof window.SWconfig]
-          .config.prefix;
-      let path = liveURL.pathname.replace(prefix, "");
-
-      try {
-        const decoded = (window as any).__uv$config.decodeUrl(path);
-        const hash = liveURL.hash || "";
-        nextVal =
-          decoded.indexOf("#") === -1
-            ? hash
-              ? decoded + hash
-              : decoded
-            : decoded;
-      } catch {
-        nextVal = locHref;
-      }
+      nextVal = decoded;
+      console.log("[updateAddressBar] Using decoded URL:", nextVal);
     }
 
-    if (!nextVal || tabRef?.lastAddressShown === nextVal)
-      return nextVal || locHref;
+    console.log("[updateAddressBar] lastAddressShown:", tabRef?.lastAddressShown);
+    console.log("[updateAddressBar] nextVal:", nextVal);
 
-    if (this.tabs.items.addressBar) {
+    if (this.tabs.items.addressBar && nextVal) {
+      console.log("[updateAddressBar] Setting address bar to:", nextVal);
+      console.log("[updateAddressBar] Address bar element before update:", this.tabs.items.addressBar, "value:", this.tabs.items.addressBar.value);
       this.tabs.items.addressBar.value = nextVal;
+      console.log("[updateAddressBar] Address bar element after update:", this.tabs.items.addressBar, "value:", this.tabs.items.addressBar.value);
       if (tabRef) tabRef.lastAddressShown = nextVal;
     }
 
-    return nextVal;
+    return nextVal || locHref;
   };
 
   private updateFavicon = async (
@@ -256,9 +289,28 @@ export class TabMetaWatcher {
     tabEl: HTMLElement,
   ) => {
     this.updateTabMeta(tabId, iframe, tabEl);
+
+    const observer = new MutationObserver(() => {
+      this.updateTabMeta(tabId, iframe, tabEl);
+    });
+
+    iframe.addEventListener("load", () => {
+      const targetNode = iframe.contentDocument?.querySelector("title");
+      if (targetNode) {
+        observer.observe(targetNode, { childList: true, subtree: true });
+      }
+    });
+
+    this.metaWatchers.set(tabId, observer);
   };
 
   stopMetaWatcher = (tabId: string) => {
+    const observer = this.metaWatchers.get(tabId);
+    if (observer) {
+      observer.disconnect();
+      this.metaWatchers.delete(tabId);
+    }
+
     if (
       this.historyManager &&
       typeof this.historyManager.recordTabClose === "function"

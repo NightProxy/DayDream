@@ -104,6 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
     list.appendChild(frag);
   });
 
+  const updatesCountEl = document.getElementById("updates-count");
+  if (updatesCountEl) {
+    updatesCountEl.textContent = raw.length.toString();
+  }
+
   createIcons({ icons });
   document
     .querySelectorAll<HTMLDetailsElement>("#updates-list details")

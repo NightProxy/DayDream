@@ -55,8 +55,8 @@ export class KeyboardManager implements KeyboardInterface {
     return event.altKey && event.key === "w";
   }
 
-  private handleCloseTab(_event: KeyboardEvent): void {
-    this.tabs.closeCurrentTab();
+  private async handleCloseTab(_event: KeyboardEvent): Promise<void> {
+    await this.tabs.closeCurrentTab();
   }
 
   private isNavigationShortcut(event: KeyboardEvent): boolean {
@@ -71,10 +71,14 @@ export class KeyboardManager implements KeyboardInterface {
     ) as HTMLIFrameElement;
 
     if (activeIframe) {
-      if (event.key === "ArrowLeft") {
-        activeIframe?.contentWindow?.history.back();
-      } else if (event.key === "ArrowRight") {
-        activeIframe?.contentWindow?.history.forward();
+      try {
+        if (event.key === "ArrowLeft") {
+          activeIframe?.contentWindow?.history.back();
+        } else if (event.key === "ArrowRight") {
+          activeIframe?.contentWindow?.history.forward();
+        }
+      } catch (error) {
+        console.warn("Could not perform keyboard navigation:", error);
       }
     }
   }
@@ -92,7 +96,11 @@ export class KeyboardManager implements KeyboardInterface {
     ) as HTMLIFrameElement;
 
     if (activeIframe) {
-      activeIframe?.contentWindow?.location.reload();
+      try {
+        activeIframe?.contentWindow?.location.reload();
+      } catch (error) {
+        console.warn("Could not reload via keyboard shortcut:", error);
+      }
     }
   }
 

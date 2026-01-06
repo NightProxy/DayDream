@@ -14,7 +14,6 @@ declare global {
     globals: DDXGlobal;
     renderer: Render;
     items: Items;
-    utils: Utils;
     tabs: Tabs;
     windowing: Windowing;
     functions: Functions;

@@ -17,6 +17,7 @@ interface ProtoInterface {
   processUrl(url: string): Promise<string | void>;
   getInternalURL(url: string): Promise<string | void>;
   navigate(url: string): void;
+  isRegisteredProtocol(url: string): boolean;
 }
 
 class Protocols implements ProtoInterface {
@@ -28,11 +29,11 @@ class Protocols implements ProtoInterface {
   private swConfig: Record<any, any>;
   private proxySetting: string;
 
-  constructor(swConfig: Record<any, any>, proxySetting: string) {
+  constructor(swConfig: Record<any, any>, proxySetting: string, proxy: Proxy) {
     this.logging = new Logger();
     this.settings = new SettingsAPI();
     this.items = new Items();
-    this.proxy = new Proxy();
+    this.proxy = proxy;
     this.routes = new Map();
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
@@ -44,10 +45,14 @@ class Protocols implements ProtoInterface {
     if (!this.routes.has(cleanProto)) {
       this.routes.set(cleanProto, new Map());
     }
-    this.routes.get(cleanProto)!.set(path, { url, proxy });
+    const protoMap = this.routes.get(cleanProto)!;
+    const isOverride = protoMap.has(path);
+    protoMap.set(path, { url, proxy });
+    console.log(`[Protocols] ${isOverride ? 'Overriding' : 'Registering'} ${cleanProto}://${path} -> ${url} (proxy: ${proxy})`);
   }
 
   async processUrl(url: string): Promise<string | void> {
+    console.log("[Protocols] processUrl() called with:", url);
     if (url.startsWith("javascript:")) {
       const js = url.slice("javascript:".length);
       const iframe = document.querySelector(
@@ -59,10 +64,14 @@ class Protocols implements ProtoInterface {
     }
 
     const match = url.match(/^([a-zA-Z0-9+.-]+):\/\/(.+)/);
+    
     if (match) {
       const proto = match[1].toLowerCase();
-      const path = match[2];
+      const pathRaw = match[2];
+      const path = pathRaw.replace(/\/+$/, "");
       const protoRoutes = this.routes.get(proto);
+
+      console.log("[Protocols] Matched protocol:", proto, "raw path:", pathRaw, "normalized:", path);
 
       if (protoRoutes) {
         let resolved: RouteEntry | undefined;
@@ -73,6 +82,7 @@ class Protocols implements ProtoInterface {
           const wildcard = protoRoutes.get("*");
           if (wildcard) {
             const fullUrl = this.joinURL(wildcard.url, path);
+            console.log("[Protocols] Using wildcard route, fullUrl:", fullUrl, "proxy:", wildcard.proxy);
             return wildcard.proxy
               ? await this.proxy.convertURL(
                   this.swConfig,
@@ -84,6 +94,7 @@ class Protocols implements ProtoInterface {
         }
 
         if (resolved) {
+          console.log("[Protocols] Resolved route, url:", resolved.url, "proxy:", resolved.proxy);
           return resolved.proxy
             ? await this.proxy.convertURL(
                 this.swConfig,
@@ -145,28 +156,39 @@ class Protocols implements ProtoInterface {
   }
 
   async navigate(url: string): Promise<void> {
-    const processedUrl = (await this.processUrl(url)) || "/internal/error/";
-    if (!this.items.frameContainer) {
-      this.logging.createLog("iframeContainer is not available.");
-      return;
-    }
-    const iframe = this.items.frameContainer!.querySelector(
-      "iframe.active",
-    ) as HTMLIFrameElement | null;
+    console.log("[Protocols] navigate() called with url:", url);
+    try {
+      const processedUrl = (await this.processUrl(url)) || "/internal/error/";
+      console.log("[Protocols] Processed URL:", processedUrl);
+      
+      if (!this.items.frameContainer) {
+        this.logging.createLog("iframeContainer is not available.");
+        return;
+      }
+      
+      const iframe = this.items.frameContainer!.querySelector(
+        "iframe.active",
+      ) as HTMLIFrameElement | null;
+      
+      if (iframe) {
+        console.log("[Protocols] Setting iframe src to:", processedUrl);
+        iframe.setAttribute("src", processedUrl);
+        this.logging.createLog(`Navigated to: ${processedUrl}`);
 
-    if (iframe) {
-      iframe.setAttribute("src", processedUrl);
-      this.logging.createLog(`Navigated to: ${processedUrl}`);
-
-      window.dispatchEvent(
-        new CustomEvent("tabNavigated", {
-          detail: {
-            tabId: iframe.getAttribute("data-tab-id") || "unknown",
-            url: processedUrl,
-            fromProtocol: true,
-          },
-        }),
-      );
+        window.dispatchEvent(
+          new CustomEvent("tabNavigated", {
+            detail: {
+              tabId: iframe.getAttribute("data-tab-id") || "unknown",
+              url: processedUrl,
+              fromProtocol: true,
+            },
+          }),
+        );
+      } else {
+        console.log("[Protocols] No active iframe found");
+      }
+    } catch (error) {
+      console.error("[Protocols] Error in navigate():", error);
     }
   }
 
@@ -179,6 +201,15 @@ class Protocols implements ProtoInterface {
       return base + "/" + path;
     }
     return base + path;
+  }
+
+  isRegisteredProtocol(url: string): boolean {
+    const match = url.match(/^([a-zA-Z0-9+.-]+):\/\//);
+    if (!match) {
+      return false;
+    }
+    const proto = match[1].toLowerCase();
+    return this.routes.has(proto);
   }
 }
 

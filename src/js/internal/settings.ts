@@ -147,7 +147,6 @@ const initButton = (buttonId: string, action: () => void) => {
   buttonElement.addEventListener("click", action);
 };
 
-// Check if user has Night+ premium subscription
 async function isNightPlusActive(): Promise<boolean> {
   try {
     return await checkNightPlusStatus();
@@ -157,7 +156,6 @@ async function isNightPlusActive(): Promise<boolean> {
   }
 }
 
-// Initialize WISP server selector with free and premium servers
 async function initializeWispSelect() {
   const wispSelect = document.getElementById("wispSelect") as HTMLSelectElement;
   const useCustomBtn = document.getElementById(
@@ -179,6 +177,9 @@ async function initializeWispSelect() {
   const proxyRoutingToggle = document.getElementById(
     "proxyRoutingToggle",
   ) as HTMLInputElement;
+  const proxyRoutingNotice = document.getElementById(
+    "proxyRoutingNotice",
+  ) as HTMLElement;
 
   if (!wispSelect) {
     console.error("WISP select element not found");
@@ -191,16 +192,12 @@ async function initializeWispSelect() {
     location.host +
     "/wisp/";
 
-  // Check Night+ status
   const hasNightPlus = await isNightPlusActive();
 
-  // Clear existing options except "auto"
   wispSelect.innerHTML = '<option value="auto">Automatic (Default)</option>';
 
-  // Add free tier servers
   const freeServers = [
     { name: "Default Server", url: defaultWispUrl },
-    // Add more free servers here as needed
   ];
 
   freeServers.forEach((server) => {
@@ -210,13 +207,35 @@ async function initializeWispSelect() {
     wispSelect.appendChild(option);
   });
 
-  // If Night+ is active, fetch and add premium servers
+  const vpnOptgroup = document.createElement("optgroup");
+  vpnOptgroup.label = "🔒 VPN Servers (Night+)";
+
+  const vpnServers = [
+    { name: "Germany", path: "germany" },
+    { name: "Japan", path: "japan" },
+    { name: "Mexico", path: "mexico" },
+    { name: "Switzerland", path: "switzerland" },
+    { name: "United Kingdom", path: "uk" },
+    { name: "US East", path: "useast" },
+    { name: "Canada East", path: "caeast" },
+    { name: "US West", path: "uswest" }
+  ];
+
+  vpnServers.forEach((server) => {
+    const option = document.createElement("option");
+    option.value = `wss://demoplussrv.night-x.com/api/servers/${server.path}/`;
+    option.textContent = server.name;
+    vpnOptgroup.appendChild(option);
+  });
+
+  wispSelect.appendChild(vpnOptgroup);
+
   if (hasNightPlus) {
     try {
       const premiumServers = await getPremiumWispServers();
 
       if (premiumServers.length > 0) {
-        const optgroup = document.createElement("optgroup");
+        /*const optgroup = document.createElement("optgroup");
         optgroup.label = "⭐ Premium Servers (Night+)";
 
         premiumServers.forEach((server) => {
@@ -226,35 +245,37 @@ async function initializeWispSelect() {
           optgroup.appendChild(option);
         });
 
-        wispSelect.appendChild(optgroup);
+        wispSelect.appendChild(optgroup);*/
       }
 
-      // Hide Night+ notice since user has premium
       if (nightPlusNotice) {
         nightPlusNotice.classList.add("hidden");
       }
 
-      // Enable premium proxy routing
+      if (proxyRoutingNotice) {
+        proxyRoutingNotice.classList.add("hidden");
+      }
+
       if (proxyRoutingToggle) {
         proxyRoutingToggle.disabled = false;
       }
     } catch (error) {
       console.error("Failed to fetch premium WISP servers:", error);
     }
+    if (proxyRoutingNotice) {
+      proxyRoutingNotice.classList.remove("hidden");
+    }
   } else {
-    // Show Night+ notice for free users
     if (nightPlusNotice) {
       nightPlusNotice.classList.remove("hidden");
     }
   }
 
-  // Add "Custom" option at the end
   const customOption = document.createElement("option");
   customOption.value = "custom";
   customOption.textContent = "Custom WISP Server";
   wispSelect.appendChild(customOption);
 
-  // Load saved WISP setting
   const savedWisp = (await settingsAPI.getItem("wisp")) || "auto";
   const savedCustomWisp = await settingsAPI.getItem("wisp-custom");
 
@@ -267,10 +288,8 @@ async function initializeWispSelect() {
     wispSelect.value = savedWisp;
   }
 
-  // Handle WISP selection change
   wispSelect.addEventListener("change", async () => {
     if (wispSelect.value === "custom") {
-      // Show custom input
       if (customInput) {
         customInput.classList.remove("hidden");
       }
@@ -278,7 +297,6 @@ async function initializeWispSelect() {
         useCustomBtn.classList.add("hidden");
       }
     } else {
-      // Hide custom input and save selection
       if (customInput) {
         customInput.classList.add("hidden");
       }
@@ -297,7 +315,6 @@ async function initializeWispSelect() {
     }
   });
 
-  // Handle custom WISP button
   if (useCustomBtn) {
     useCustomBtn.addEventListener("click", () => {
       wispSelect.value = "custom";
@@ -308,7 +325,6 @@ async function initializeWispSelect() {
     });
   }
 
-  // Handle save custom WISP
   if (saveCustomBtn) {
     saveCustomBtn.addEventListener("click", async () => {
       if (customSetting && customSetting.value.trim()) {
@@ -320,7 +336,6 @@ async function initializeWispSelect() {
     });
   }
 
-  // Handle cancel custom WISP
   if (cancelCustomBtn) {
     cancelCustomBtn.addEventListener("click", () => {
       wispSelect.value = savedWisp === "custom" ? "auto" : savedWisp;
@@ -955,7 +970,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     "https://duckduckgo.com/?q=%s",
   );
 
-  // Initialize WISP server dropdown
   await initializeWispSelect();
 
   const refluxToggle = document.getElementById(
@@ -980,20 +994,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  await initTextInput("proxyServerSetting", "prx-server", "");
+  await initTextInput("proxyServerSetting", "proxyServer", "");
 
   initButton("saveProxyServerSetting", async () => {
     const proxyServerInput = document.getElementById(
       "proxyServerSetting",
     ) as HTMLInputElement;
     const value = proxyServerInput.value.trim();
-    await settingsAPI.setItem("prx-server", value);
+    await settingsAPI.setItem("proxyServer", value);
     console.log("Remote proxy server saved:", value);
     location.reload();
   });
 
   initButton("resetProxyServerSetting", async () => {
-    await settingsAPI.setItem("prx-server", "");
+    await settingsAPI.setItem("proxyServer", "");
     const proxyServerInput = document.getElementById(
       "proxyServerSetting",
     ) as HTMLInputElement;

@@ -1,7 +1,6 @@
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Protocols } from "@browser/protocols";
-import { Utils } from "@js/utils";
 import { Items } from "@browser/items";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
@@ -26,7 +25,6 @@ class Tabs implements TabsInterface {
   render: any;
   ui: UI;
   proto: Protocols;
-  utils: Utils;
   items: Items;
   logger: Logger;
   settings: SettingsAPI;
@@ -51,16 +49,22 @@ class Tabs implements TabsInterface {
   private lifecycleModule: TabLifecycle;
   private manipulationModule: TabManipulation;
   private contextMenuModule: TabContextMenu;
-  private pageClientModule: TabPageClient;
+  pageClientModule: TabPageClient;
   private metaWatcherModule: TabMetaWatcher;
   private historyIntegration: TabHistoryIntegration;
 
-  constructor(render: any, proto: any, swConfig: any, proxySetting: string) {
+  constructor(
+    render: any,
+    proto: any,
+    swConfig: any,
+    proxySetting: string,
+    items: Items,
+    proxy: Proxy,
+  ) {
     this.render = render;
     this.ui = new UI();
     this.proto = proto;
-    this.utils = new Utils();
-    this.items = new Items();
+    this.items = items;
     this.logger = new Logger();
     this.settings = new SettingsAPI();
     this.eventsAPI = new EventSystem();
@@ -68,7 +72,7 @@ class Tabs implements TabsInterface {
     this.tabs = [];
     this.groups = [];
     this.el = render.container;
-    this.proxy = new Proxy();
+    this.proxy = proxy;
     this.bookmarkManager = new BM();
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
@@ -217,12 +221,12 @@ class Tabs implements TabsInterface {
     return await this.lifecycleModule.closeTabById(id);
   };
 
-  closeCurrentTab = () => {
-    return this.lifecycleModule.closeCurrentTab();
+  closeCurrentTab = async () => {
+    return await this.lifecycleModule.closeCurrentTab();
   };
 
-  closeAllTabs = () => {
-    return this.lifecycleModule.closeAllTabs();
+  closeAllTabs = async () => {
+    return await this.lifecycleModule.closeAllTabs();
   };
 
   selectTab = async (tabId: string) => {
@@ -269,8 +273,8 @@ class Tabs implements TabsInterface {
     return this.metaWatcherModule.startMetaWatcher(tabId, iframe, tabEl);
   };
 
-  stopMetaWatcher = (tabId: string) => {
-    return this.metaWatcherModule.stopMetaWatcher(tabId);
+  stopMetaWatcher = async (tabId: string) => {
+    return await this.metaWatcherModule.stopMetaWatcher(tabId);
   };
 
   renameGroup = (groupId: string, newName?: string): boolean => {

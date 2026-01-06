@@ -8,6 +8,7 @@ dist/
 config.js
 database.sqlite
 .VSCodeCounter/
-plus/
+plus-backend/
 .github/
 concepting/
+*.uo.ts

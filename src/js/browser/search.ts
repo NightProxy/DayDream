@@ -1,6 +1,5 @@
 import { Nightmare as UI } from "@libs/Nightmare/nightmare";
 import { Protocols } from "@browser/protocols";
-import { Utils } from "@js/utils";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { Proxy } from "@apis/proxy";
@@ -18,7 +17,6 @@ interface GameData {
 
 interface SearchInterface {
   proto: Protocols;
-  utils: Utils;
   ui: UI;
   data: Logger;
   settings: SettingsAPI;
@@ -36,7 +34,6 @@ interface SearchInterface {
 
 class Search implements SearchInterface {
   proto: Protocols;
-  utils: Utils;
   ui: UI;
   data: Logger;
   settings: SettingsAPI;
@@ -54,6 +51,39 @@ class Search implements SearchInterface {
   private lastQuery: string = "";
   private readonly DOMAIN_REGEX =
     /^(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/;
+  private internalPagesList: Array<{ name: string; url: string; keywords: string[] }> = [];
+
+  private async loadInternalPages(): Promise<void> {
+    if (this.internalPagesList.length > 0) return;
+
+    const INTERNAL_PAGES_MAP: Record<string, { name: string; keywords: string[] }> = {
+      bookmarks: { name: "Bookmarks", keywords: ["bookmarks", "favorites", "saved"] },
+      error: { name: "Error", keywords: ["error", "404", "not found"] },
+      extensions: { name: "Extensions", keywords: ["extensions", "addons", "plugins"] },
+      games: { name: "Games", keywords: ["games", "play", "entertainment"] },
+      history: { name: "History", keywords: ["history", "visited", "past"] },
+      newtab: { name: "New Tab", keywords: ["newtab", "home", "start"] },
+      privacy: { name: "Privacy", keywords: ["privacy", "policy", "terms"] },
+      settings: { name: "Settings", keywords: ["settings", "config", "preferences"] },
+      terms: { name: "Terms", keywords: ["terms", "service", "legal"] },
+      updates: { name: "Updates", keywords: ["updates", "changelog", "news", "whats new"] },
+    };
+
+    for (const [path, meta] of Object.entries(INTERNAL_PAGES_MAP)) {
+      try {
+        const response = await fetch(`/internal/${path}/index.html`, { method: "HEAD" });
+        if (response.ok) {
+          this.internalPagesList.push({
+            name: meta.name,
+            url: `ddx://${path}`,
+            keywords: meta.keywords,
+          });
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
 
   constructor(
     proxy: Proxy,
@@ -62,7 +92,6 @@ class Search implements SearchInterface {
     proto: Protocols,
   ) {
     this.proto = proto;
-    this.utils = new Utils();
     this.ui = new UI();
     this.data = new Logger();
     this.settings = new SettingsAPI();
@@ -383,7 +412,7 @@ class Search implements SearchInterface {
 
   private isValidUrl(input: string): boolean {
     if (
-      input.startsWith("ddx://") ||
+      window.protocols?.isRegisteredProtocol(input) ||
       input.startsWith("http://") ||
       input.startsWith("https://")
     ) {
@@ -416,35 +445,46 @@ class Search implements SearchInterface {
     searchbar: HTMLInputElement,
   ): Promise<void> {
     try {
-      const internalCheck = await this.proto.getInternalURL(
-        new URL(iframe.src).pathname,
-      );
+      let url = new URL(iframe.src).pathname;
 
+      const internalCheck = await this.proto.getInternalURL(url);
       if (
         typeof internalCheck === "string" &&
-        internalCheck.startsWith("ddx://")
+        this.proto.isRegisteredProtocol(internalCheck)
       ) {
         searchbar.value = internalCheck;
-      } else {
-        let url = new URL(iframe.src).pathname;
+        return;
+      }
 
-        const windowObj = window as any;
-        const proxyConfig = windowObj.SWconfig?.[windowObj.ProxySettings];
+      const windowObj = window as any;
+      const proxyConfig = windowObj.SWconfig?.[windowObj.ProxySettings];
 
-        if (proxyConfig?.config?.prefix) {
-          url = url.replace(proxyConfig.config.prefix, "");
+      if (proxyConfig?.config?.prefix) {
+        url = url.replace(proxyConfig.config.prefix, "");
+      }
+
+      let decodedUrl = url;
+      if (windowObj.__uv$config?.decodeUrl) {
+        try {
+          decodedUrl = windowObj.__uv$config.decodeUrl(url);
+        } catch {
+          decodedUrl = iframe.src;
         }
+      }
 
-        if (windowObj.__uv$config?.decodeUrl) {
-          try {
-            const decodedUrl = windowObj.__uv$config.decodeUrl(url);
-            const urlObj = new URL(decodedUrl);
-            searchbar.value = urlObj.origin + urlObj.pathname;
-          } catch {
-            searchbar.value = iframe.src;
-          }
-        } else {
-          searchbar.value = iframe.src;
+      const decodedCheck = await this.proto.getInternalURL(decodedUrl);
+
+      if (
+        typeof decodedCheck === "string" &&
+        this.proto.isRegisteredProtocol(decodedCheck)
+      ) {
+        searchbar.value = decodedCheck;
+      } else {
+        try {
+          const urlObj = new URL(decodedUrl);
+          searchbar.value = urlObj.href;
+        } catch {
+          searchbar.value = decodedUrl;
         }
       }
     } catch (error) {
@@ -502,41 +542,10 @@ class Search implements SearchInterface {
     const { searchResults, section } = this.sections.internalPages;
     let hasResults = false;
 
-    const internalPages = [
-      {
-        name: "Settings",
-        url: "ddx://settings",
-        keywords: ["settings", "config", "preferences"],
-      },
-      {
-        name: "Bookmarks",
-        url: "ddx://bookmarks",
-        keywords: ["bookmarks", "favorites", "saved"],
-      },
-      {
-        name: "History",
-        url: "ddx://history",
-        keywords: ["history", "visited", "past"],
-      },
-      {
-        name: "Extensions",
-        url: "ddx://extensions",
-        keywords: ["extensions", "addons", "plugins"],
-      },
-      {
-        name: "Games",
-        url: "ddx://games",
-        keywords: ["games", "play", "entertainment"],
-      },
-      {
-        name: "About",
-        url: "ddx://about",
-        keywords: ["about", "info", "version"],
-      },
-    ];
+    await this.loadInternalPages();
 
     const lowerQuery = query.toLowerCase();
-    const filteredPages = internalPages
+    const filteredPages = this.internalPagesList
       .filter(
         (page) =>
           page.name.toLowerCase().includes(lowerQuery) ||
@@ -758,7 +767,7 @@ class Search implements SearchInterface {
     }
 
     try {
-      if (suggestion.startsWith("ddx://")) {
+      if (this.proto.isRegisteredProtocol(suggestion)) {
         const processedUrl = await this.proto.processUrl(suggestion);
         if (
           typeof processedUrl === "string" &&
@@ -782,7 +791,7 @@ class Search implements SearchInterface {
 
   private async handleDirectNavigation(input: string): Promise<void> {
     try {
-      if (input.startsWith("ddx://")) {
+      if (this.proto.isRegisteredProtocol(input)) {
         const processedUrl = await this.proto.processUrl(input);
         if (
           typeof processedUrl === "string" &&

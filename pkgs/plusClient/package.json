@@ -1,0 +1,38 @@
+{
+  "name": "@nightnetwork/plus-client",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Night+ authentication client with Enigma WebSocket protocol interceptor",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "node esbuild.bundle.mjs && tsc",
+    "dev": "node esbuild.bundle.mjs --watch"
+  },
+  "dependencies": {
+    "localforage": "^1.10.0"
+  },
+  "devDependencies": {
+    "@nightnetwork/enigma": "^1.0.0",
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@nightnetwork/enigma": "*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./module": {
+      "types": "./dist/enigma-module.d.ts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ]
+}

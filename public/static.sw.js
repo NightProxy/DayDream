@@ -1,6 +1,6 @@
 importScripts("/baremux/index.js");
 
-const PROXIED_ENDPOINTS = ["/api/results/", "/api/plus/", "/api/store/"];
+const PROXIED_ENDPOINTS = ["/api/results/", "/api/plus/", "/api/store/", "/auth/"];
 
 const PRODUCTION_BASE = "https://daydreamx.pro";
 
@@ -61,7 +61,7 @@ async function proxyRequest(request) {
     return new Response(
       JSON.stringify({
         error: "Proxy error",
-        message: error.message,
+        message: "Failed to proxy request to backend",
       }),
       {
         status: 502,
@@ -85,17 +85,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (shouldProxyRequest(event.request.url)) {
-    console.log("[Static API Proxy SW] Proxying:", event.request.url);
-    event.respondWith(proxyRequest(event.request));
+  if (!shouldProxyRequest(event.request.url)) {
+    return;
   }
-});
 
-self.addEventListener("fetch", (event) => {
-  if (
-    event.request.method === "OPTIONS" &&
-    shouldProxyRequest(event.request.url)
-  ) {
+  if (event.request.method === "OPTIONS") {
     event.respondWith(
       new Response(null, {
         status: 204,
@@ -107,5 +101,9 @@ self.addEventListener("fetch", (event) => {
         },
       }),
     );
+    return;
   }
+
+  console.log("[Static API Proxy SW] Proxying:", event.request.url);
+  event.respondWith(proxyRequest(event.request));
 });

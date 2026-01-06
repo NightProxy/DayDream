@@ -1,15 +1,11 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 
-function plusAPI(app: FastifyInstance) {
-  // Proxy all requests to the external auth service
-  app.all(
-    "/api/plus/*",
-    async (request: FastifyRequest, reply: FastifyReply) => {
+const jwtHandler = async (request: FastifyRequest, reply: FastifyReply) => {
       const targetUrl = `https://jwtauth-srv-api.night-x.com${request.url.replace("/api/plus", "")}`;
 
       const headers: Record<string, string> = {
-        Host: "auth.night-x.com",
-        "User-Agent": request.headers["user-agent"] || "FastifyProxy/1.0",
+        Host: "auth.night-x.com", // dont chnage this, we fucked up the jwt server to only allow this url, so yea
+        "User-Agent": request.headers["user-agent"] || "DDXProxy/2.0",
       };
 
       // Forward relevant headers
@@ -39,13 +35,13 @@ function plusAPI(app: FastifyInstance) {
 
         reply
           .code(response.status)
-          .headers(Object.fromEntries(response.headers.entries()))
+          .header("content-type", response.headers.get("content-type") || "application/json")
           .send(data);
       } catch (error) {
+        console.error("Plus API proxy error:", error);
         reply.code(500).send({ error: "Proxy request failed" });
       }
-    },
-  );
-}
+    }
 
-export { plusAPI };
+export { jwtHandler };
+export default jwtHandler;

@@ -1,8 +1,8 @@
 import * as BareMux from "@mercuryworkshop/bare-mux";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
-import { HostingAPI } from "@apis/static/hosting";
-import { ServerListAPI } from "@apis/static/serverlist";
+import { HostingAPI } from "@apis/platform/hosting";
+import { NetworkAPI } from "@apis/platform/network";
 
 interface ProxyInterface {
   connection: BareMux.BareMuxConnection;
@@ -12,7 +12,7 @@ interface ProxyInterface {
   logging: Logger;
   settings: SettingsAPI;
   hosting: HostingAPI;
-  serverList: ServerListAPI;
+  network: NetworkAPI;
   isStaticBuild: boolean;
   setTransports(): Promise<void>;
   search(input: string): string;
@@ -30,8 +30,6 @@ interface ProxyInterface {
   ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(url: string): Promise<string | null>;
-  findWorkingWispServer(): Promise<string>;
-  setupStaticBuild(): Promise<void>;
 }
 class Proxy implements ProxyInterface {
   connection!: BareMux.BareMuxConnection;
@@ -41,44 +39,28 @@ class Proxy implements ProxyInterface {
   settings!: SettingsAPI;
   logging!: Logger;
   hosting!: HostingAPI;
-  serverList!: ServerListAPI;
+  network!: NetworkAPI;
   isStaticBuild: boolean = false;
 
   constructor() {
-    this.connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+    this.connection = new BareMux.BareMuxConnection("/bmworker/worker.js");
 
     this.settings = new SettingsAPI();
     this.hosting = new HostingAPI();
-    this.serverList = new ServerListAPI();
+    this.network = new NetworkAPI();
+    this.logging = new Logger();
+    this.isStaticBuild = false;
 
     (async () => {
-      // Detect if running on static build
-      this.isStaticBuild = !(await this.hosting.detectServer());
-
-      this.searchVar =
-        (await this.settings.getItem("search")) ||
-        "https://www.duckduckgo.com/?q=%s";
-      this.transportVar =
-        (await this.settings.getItem("transports")) || "libcurl";
-
-      // Setup wisp URL based on build type
-      if (this.isStaticBuild) {
-        await this.setupStaticBuild();
-      } else {
-        this.wispUrl =
-          (await this.settings.getItem("wisp")) ||
-          (location.protocol === "https:" ? "wss" : "ws") +
-            "://" +
-            location.host +
-            "/wisp/";
-      }
-
-      this.logging = new Logger();
+      this.searchVar = await this.settings.getItem("search") || "https://www.duckduckgo.com/?q=%s";
+      this.transportVar = await this.settings.getItem("transports") || "libcurl";
+      this.wispUrl = await this.settings.getItem("wisp") || ((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/");
     })();
   }
 
   async setTransports() {
-    const transports = this.transportVar;
+    console.log("[Proxy] setTransports() called");
+    const transports = this.transportVar || "libcurl";
     const transportMap: Record<any, string> = {
       epoxy: "/epoxy/index.mjs",
       libcurl: "/libcurl/index.mjs",
@@ -86,8 +68,12 @@ class Proxy implements ProxyInterface {
 
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
 
+    const wispUrl = this.wispUrl || ((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/");
+
     const transportOptions: Record<string, any> = {
-      wisp: this.wispUrl,
+      base: transportFile,
+      wisp: wispUrl,
+      modules: [],
     };
 
     const remoteProxyServer = await this.getRemoteProxyServer();
@@ -105,13 +91,18 @@ class Proxy implements ProxyInterface {
     const isRefluxEnabled = await this.getRefluxStatus();
 
     if (isRefluxEnabled) {
-      await this.connection.setTransport("/reflux/index.mjs", [
-        { base: transportFile, ...transportOptions },
-      ]);
-    } else {
-      await this.connection.setTransport(transportFile, [transportOptions]);
+      transportOptions.modules.push("/reflux/module.mjs");
     }
 
+    await this.connection.setTransport("/enigma/index.mjs", [
+      { ...transportOptions },
+    ]);
+
+    /*await this.connection.setTransport(transportFile, [
+      { ...transportOptions },
+    ]);*/ // debug function
+
+    console.log("[Proxy] Transport set with options:", transportOptions);
     if (this.logging) {
       this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
     }
@@ -141,19 +132,23 @@ class Proxy implements ProxyInterface {
   }
 
   async registerSW(swConfig: Record<any, any>) {
+    console.log("[Proxy] registerSW() called with type:", swConfig.type, "file:", swConfig.file);
     switch (swConfig.type) {
       case "sw":
         if ("serviceWorker" in navigator) {
           const scpe: string =
             swConfig.config.prefix.match(/^\/[^/]+\//)?.[0] || "";
+          console.log("[Proxy] Registering service worker with scope:", scpe);
           await navigator.serviceWorker.register(swConfig.file, {
             scope: scpe,
           });
 
           navigator.serviceWorker.ready.then(async () => {
+            console.log("[Proxy] Service worker ready, setting up transports");
             await this.setTransports().then(async () => {
               const transport = await this.connection.getTransport();
               if (transport == null) {
+                console.log("[Proxy] Transport null, retrying setTransports");
                 this.setTransports();
               }
             });
@@ -263,6 +258,7 @@ class Proxy implements ProxyInterface {
   }
 
   async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
+    console.log("[Proxy] redirect() called with url:", url, "proxySetting:", proxySetting);
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -270,14 +266,20 @@ class Proxy implements ProxyInterface {
       swConfigSettings = swConfig[proxySetting];
     }
 
-    if (!swConfigSettings) return;
+    if (!swConfigSettings) {
+      console.log("[Proxy] No swConfigSettings found, returning");
+      return;
+    }
 
     await this.registerSW(swConfigSettings);
     await this.setTransports();
 
     const activeIframe: HTMLIFrameElement | null =
       document.querySelector("iframe.active");
-    if (!activeIframe) return;
+    if (!activeIframe) {
+      console.log("[Proxy] No active iframe found");
+      return;
+    }
 
     switch (swConfigSettings.type) {
       case "sw": {
@@ -293,6 +295,7 @@ class Proxy implements ProxyInterface {
             swConfigSettings.config.prefix +
             window.__uv$config.encodeUrl(this.search(url));
         }
+        console.log("[Proxy] Redirecting iframe to:", encodedUrl);
         activeIframe.src = encodedUrl;
         break;
       }
@@ -304,6 +307,7 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
+    console.log("[Proxy] convertURL() called with url:", url, "proxySetting:", proxySetting);
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -311,22 +315,18 @@ class Proxy implements ProxyInterface {
       swConfigSettings = swConfig[proxySetting];
     }
 
-    if (!swConfigSettings) return this.search(url);
+    if (!swConfigSettings) {
+      console.log("[Proxy] No swConfigSettings, returning search url");
+      return this.search(url);
+    }
 
     await this.registerSW(swConfigSettings);
     await this.setTransports();
 
-    let encodedUrl: string;
-    if (proxySetting === "dy") {
-      encodedUrl =
-        swConfigSettings.config.prefix +
-        "route?url=" +
-        window.__uv$config.encodeUrl(this.search(url));
-    } else {
-      encodedUrl =
-        swConfigSettings.config.prefix +
-        window.__uv$config.encodeUrl(this.search(url));
-    }
+    let encodedUrl: string =
+      swConfigSettings.config.prefix +
+      window.__uv$config.encodeUrl(this.search(url));
+    console.log("[Proxy] Converted URL to:", encodedUrl);
     return encodedUrl;
   }
 
@@ -421,36 +421,15 @@ class Proxy implements ProxyInterface {
   async ping(
     server: string,
   ): Promise<{ online: boolean; ping: number | string }> {
-    return new Promise((resolve) => {
-      const websocket = new WebSocket(server);
-      const startTime = Date.now();
-      websocket.addEventListener("open", () => {
-        const pingTime = Date.now() - startTime;
-        websocket.close();
-        resolve({ online: true, ping: pingTime });
-      });
-      websocket.addEventListener("message", () => {
-        const pingTime = Date.now() - startTime;
-        websocket.close();
-        resolve({ online: true, ping: pingTime });
-      });
-      websocket.addEventListener("error", () => {
-        websocket.close();
-        resolve({ online: false, ping: "N/A" });
-      });
-      setTimeout(() => {
-        websocket.close();
-        resolve({ online: false, ping: "N/A" });
-      }, 5000);
-    });
+    return this.network.wsPing(server);
   }
 
   async setRemoteProxyServer(server: string) {
-    await this.settings.setItem("prx-server", server);
+    await this.network.setRemoteProxyServer(server);
   }
 
   async getRemoteProxyServer(): Promise<string> {
-    return await this.settings.getItem("prx-server");
+    return await this.network.getRemoteProxyServer();
   }
 
   async disableReflux() {
@@ -466,101 +445,31 @@ class Proxy implements ProxyInterface {
     return status !== "false";
   }
 
-  async findWorkingWispServer(): Promise<string> {
+  async getAuthUrl(): Promise<string> {
     try {
-      const customWisp = await this.settings.getItem("wisp");
-      if (customWisp && customWisp !== "") {
-        const result = await this.ping(customWisp);
-        if (result.online) {
-          return customWisp;
-        }
+      const productionAuthUrl = await this.settings.getItem("production_auth_url");
+      if (productionAuthUrl && typeof productionAuthUrl === "string") {
+        return productionAuthUrl;
       }
-
-      const servers = await this.serverList.fetchServerList();
-
-      if (!servers || servers.length === 0) {
-        throw new Error("No wisp servers available");
-      }
-
-      const maxParallel = 5;
-      const workingServers: Array<{ url: string; ping: number }> = [];
-
-      for (let i = 0; i < servers.length; i += maxParallel) {
-        const batch = servers.slice(i, i + maxParallel);
-        const results = await Promise.all(
-          batch.map(async (server) => {
-            const result = await this.ping(server.url);
-            if (result.online && typeof result.ping === "number") {
-              return { url: server.url, ping: result.ping };
-            }
-            return null;
-          }),
-        );
-
-        results.forEach((result) => {
-          if (result) workingServers.push(result);
-        });
-
-        if (workingServers.length > 0) break;
-      }
-
-      if (workingServers.length === 0) {
-        throw new Error("No working wisp servers found");
-      }
-
-      workingServers.sort((a, b) => a.ping - b.ping);
-      const fastestServer = workingServers[0].url;
-
-      await this.settings.setItem("static-wisp-server", fastestServer);
-
-      if (this.logging) {
-        this.logging.createLog(
-          `Selected wisp server: ${fastestServer} (${workingServers[0].ping}ms)`,
-        );
-      }
-
-      return fastestServer;
+      return "https://demoplussrv.night-x.com/auth";
     } catch (error) {
-      console.error("Error finding working wisp server:", error);
-      return "wss://wisp.mercurywork.shop/wisp/";
+      console.error("[Proxy] Error determining auth URL:", error);
+      return "https://demoplussrv.night-x.com/auth";
     }
   }
 
-  async setupStaticBuild(): Promise<void> {
+  async checkAuthentication(): Promise<boolean> {
     try {
-      const cachedWisp = await this.settings.getItem("static-wisp-server");
-      if (cachedWisp && cachedWisp !== "") {
-        const result = await this.ping(cachedWisp);
-        if (result.online) {
-          this.wispUrl = cachedWisp;
-          if (this.logging) {
-            this.logging.createLog(`Using cached wisp server: ${cachedWisp}`);
-          }
-        } else {
-          this.wispUrl = await this.findWorkingWispServer();
-        }
-      } else {
-        this.wispUrl = await this.findWorkingWispServer();
-      }
-
-      if ("serviceWorker" in navigator) {
-        try {
-          await navigator.serviceWorker.register("/static.sw.js", {
-            scope: "/api/",
-          });
-
-          if (this.logging) {
-            this.logging.createLog(
-              "Static build API proxy service worker registered",
-            );
-          }
-        } catch (swError) {
-          console.warn("Failed to register API proxy service worker:", swError);
-        }
-      }
+      const basePath = "/plus";
+      const fileName = "index.mjs";
+      const module = await import(`${basePath}/${fileName}`);
+      const PlusClient = module.default;
+      const client = new PlusClient();
+      const sessionToken = await client.getSessionToken();
+      return sessionToken !== null;
     } catch (error) {
-      console.error("Error setting up static build:", error);
-      this.wispUrl = "wss://wisp.mercurywork.shop/wisp/";
+      console.error("[Proxy] Error checking authentication:", error);
+      return false;
     }
   }
 }

@@ -63,6 +63,7 @@ export class HistoryManager {
   private listeners: Set<() => void> = new Set();
   private currentSessionId: string;
   private visitStartTimes: Map<string, Date> = new Map();
+  private storageLoaded: boolean = false;
 
   constructor(config: HistoryManagerConfig = {}) {
     this.storageKey = config.storageKey || "browsing-history";
@@ -74,7 +75,7 @@ export class HistoryManager {
     this.autoSync = config.autoSync ?? true;
     this.maxEntries = config.maxEntries || 10000;
     this.retentionDays = config.retentionDays || 90;
-    this.currentSessionId = this.getOrCreateCurrentSession();
+    this.currentSessionId = sessionStorage.getItem("historySessionId") || "";
   }
 
   public addListener(callback: () => void): () => void {
@@ -86,21 +87,34 @@ export class HistoryManager {
     this.listeners.forEach((callback) => callback());
   }
 
-  private getOrCreateCurrentSession(): string {
-    let sessionId = sessionStorage.getItem("historySessionId");
-    if (!sessionId) {
-      sessionId = uuidv4();
-      sessionStorage.setItem("historySessionId", sessionId);
-
-      const session: HistorySession = {
-        id: sessionId,
-        startTime: new Date(),
-        tabCount: 0,
-        totalVisits: 0,
-      };
-      this.sessions.push(session);
-      this.syncSessionsIfEnabled();
+  private ensureSessionInitialized(): void {
+    if (!this.currentSessionId && this.storageLoaded) {
+      this.currentSessionId = this.getOrCreateCurrentSession();
     }
+  }
+
+  private getOrCreateCurrentSession(): string {
+    const storedSessionId = sessionStorage.getItem("historySessionId");
+    
+    if (storedSessionId) {
+      const existingSession = this.sessions.find(s => s.id === storedSessionId);
+      if (existingSession) {
+        return storedSessionId;
+      }
+    }
+    
+    const sessionId = uuidv4();
+    sessionStorage.setItem("historySessionId", sessionId);
+
+    const session: HistorySession = {
+      id: sessionId,
+      startTime: new Date(),
+      tabCount: 0,
+      totalVisits: 0,
+    };
+    this.sessions.push(session);
+    this.syncSessionsIfEnabled();
+    
     return sessionId;
   }
 
@@ -117,16 +131,6 @@ export class HistoryManager {
             ...entry,
             visitedAt: new Date(entry.visitedAt),
           })) || [];
-
-        this.sessions =
-          data.sessions?.map((session) => ({
-            ...session,
-            startTime: new Date(session.startTime),
-            endTime: session.endTime ? new Date(session.endTime) : undefined,
-          })) || [];
-
-        await this.cleanupOldEntries();
-        this.notifyListeners();
       }
 
       const sessionsData = await this.store.getItem<HistorySession[]>(
@@ -139,8 +143,26 @@ export class HistoryManager {
           endTime: session.endTime ? new Date(session.endTime) : undefined,
         }));
       }
+
+      await this.cleanupOldEntries();
+      this.notifyListeners();
+
+      this.storageLoaded = true;
+      
+      if (!this.currentSessionId) {
+        this.currentSessionId = this.getOrCreateCurrentSession();
+      } else {
+        const existingSession = this.sessions.find(s => s.id === this.currentSessionId);
+        if (!existingSession) {
+          this.currentSessionId = this.getOrCreateCurrentSession();
+        }
+      }
     } catch (error) {
       console.error("Failed to load history from storage:", error);
+      this.storageLoaded = true;
+      if (!this.currentSessionId) {
+        this.currentSessionId = this.getOrCreateCurrentSession();
+      }
     }
   }
 
@@ -172,6 +194,8 @@ export class HistoryManager {
   }
 
   public async addEntry(data: CreateHistoryEntryData): Promise<HistoryEntry> {
+    this.ensureSessionInitialized();
+    
     const now = new Date();
     const url = this.normalizeUrl(data.url);
 
@@ -226,7 +250,7 @@ export class HistoryManager {
     return entry;
   }
 
-  public recordTabClose(tabId: string): void {
+  public async recordTabClose(tabId: string): Promise<void> {
     const startTime = this.visitStartTimes.get(tabId);
     if (startTime) {
       const duration = Date.now() - startTime.getTime();
@@ -239,6 +263,8 @@ export class HistoryManager {
 
       if (recentEntry) {
         recentEntry.lastVisitDuration = duration;
+        await this.syncIfEnabled();
+        this.notifyListeners();
       }
 
       this.visitStartTimes.delete(tabId);
@@ -347,7 +373,7 @@ export class HistoryManager {
         return this.entries.filter((entry) => entry.visitedAt >= month);
       case "all":
       default:
-        return this.entries;
+        return [...this.entries];
     }
   }
 
@@ -585,10 +611,12 @@ export class HistoryManager {
   }
 
   public getCurrentSessionId(): string {
+    this.ensureSessionInitialized();
     return this.currentSessionId;
   }
 
   public async endCurrentSession(): Promise<void> {
+    this.ensureSessionInitialized();
     const currentSession = this.sessions.find(
       (s) => s.id === this.currentSessionId,
     );
