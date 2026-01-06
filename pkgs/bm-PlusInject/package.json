@@ -1,0 +1,27 @@
+{
+	"name": "@nightnetwork/bm-plusworker",
+	"version": "2.1.8",
+	"description": "",
+	"type": "module",
+	"scripts": {
+		"build": "rollup -c",
+		"watch": "rollup -cw",
+		"prepack": "npm run build"
+	},
+	"author": "",
+	"files": [
+		"dist",
+		"lib"
+	],
+	"devDependencies": {
+		"@rollup/plugin-commonjs": "^28.0.1",
+		"@rollup/plugin-node-resolve": "^15.3.0",
+		"@rollup/plugin-replace": "^6.0.1",
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.24.0",
+		"rollup-plugin-typescript2": "^0.36.0"
+	},
+	"dependencies": {
+		"localforage": "^1.10.0"
+	}
+}

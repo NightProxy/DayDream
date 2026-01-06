@@ -21,7 +21,6 @@ export interface TabsInterface {
   render: any;
   ui: any;
   proto: any;
-  utils: any;
   items: any;
   logger: any;
   settings: any;
@@ -55,8 +54,8 @@ export interface TabsInterface {
 
   createTab: (url: string) => Promise<void>;
   closeTabById: (id: string) => Promise<void>;
-  closeCurrentTab: () => void;
-  closeAllTabs: () => void;
+  closeCurrentTab: () => Promise<void>;
+  closeAllTabs: () => Promise<void>;
   selectTab: (tabId: string) => Promise<void>;
   selectTabById: (id: string) => void;
   updateTabAttributes: () => void;
@@ -68,13 +67,17 @@ export interface TabsInterface {
   setFavicon: (tabElement: HTMLElement, iframe: HTMLIFrameElement) => void;
 
   pageClient: (iframe: HTMLIFrameElement) => void;
+  pageClientModule?: {
+    cleanupIframe: (iframeId: string) => void;
+    cleanupAll: () => void;
+  };
 
   startMetaWatcher: (
     tabId: string,
     iframe: HTMLIFrameElement,
     tabEl: HTMLElement,
   ) => void;
-  stopMetaWatcher: (tabId: string) => void;
+  stopMetaWatcher: (tabId: string) => Promise<void>;
 
   setupTabContextMenu: (tabElement: HTMLElement, tabId: string) => void;
   setupSortable: () => void;

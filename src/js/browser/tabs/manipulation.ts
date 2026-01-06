@@ -117,4 +117,44 @@ export class TabManipulation {
       }
     });
   }
+
+  moveTabToPosition(draggedTabId: string, targetTabId: string, e: DragEvent) {
+    const draggedIndex = this.tabs.tabs.findIndex((t: any) => t.id === draggedTabId);
+    let targetIndex = this.tabs.tabs.findIndex((t: any) => t.id === targetTabId);
+
+    const targetElement = document.querySelector(`[data-tab-id="${targetTabId}"]`) as HTMLElement;
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const isRightSide = e.clientX > rect.left + rect.width / 2;
+      if (isRightSide) targetIndex++;
+    }
+
+    const [removed] = this.tabs.tabs.splice(draggedIndex, 1);
+    if (draggedIndex < targetIndex) targetIndex--;
+    this.tabs.tabs.splice(targetIndex, 0, removed);
+  }
+
+  shouldUngroupBasedOnEdge(e: DragEvent, draggedTab: any, targetTab: any, targetElement: HTMLElement): boolean {
+    if (!draggedTab.groupId || !targetTab.groupId || draggedTab.groupId !== targetTab.groupId) {
+      return draggedTab.groupId && !targetTab.groupId;
+    }
+
+    const group = this.tabs.groups.find((g: any) => g.id === draggedTab.groupId);
+    if (!group) return false;
+
+    const groupTabs = this.tabs.tabs
+      .map((tab: any, index: number) => ({ ...tab, index }))
+      .filter((t: any) => t.groupId === group.id)
+      .sort((a: any, b: any) => a.index - b.index);
+
+    if (groupTabs.length <= 1) return false;
+
+    const rect = targetElement.getBoundingClientRect();
+    const edgeThreshold = Math.min(Math.max(rect.width * 0.3, 50), 100);
+    const isFirstTab = groupTabs[0]?.id === targetTab.id;
+    const isLastTab = groupTabs[groupTabs.length - 1]?.id === targetTab.id;
+
+    return (isFirstTab && e.clientX < rect.left + edgeThreshold) ||
+           (isLastTab && e.clientX > rect.right - edgeThreshold);
+  }
 }

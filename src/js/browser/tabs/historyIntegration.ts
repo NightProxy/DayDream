@@ -49,11 +49,11 @@ export class TabHistoryIntegration {
     await this.recordPageVisit(tabId, iframe, tabElement);
   };
 
-  private onTabClosed = (event: Event) => {
+  private onTabClosed = async (event: Event) => {
     const customEvent = event as CustomEvent;
     const { tabId } = customEvent.detail;
 
-    this.historyManager.recordTabClose(tabId);
+    await this.historyManager.recordTabClose(tabId);
   };
 
   private onTabNavigated = async (event: Event) => {
@@ -81,7 +81,7 @@ export class TabHistoryIntegration {
         const currentUrl = this.decodeProxiedUrl(url);
 
         if (
-          !currentUrl.startsWith("ddx://") &&
+          !window.protocols?.isRegisteredProtocol(currentUrl) &&
           !currentUrl.includes("/internal/")
         ) {
           const faviconUrl = await this.getFavicon(currentUrl);
@@ -103,7 +103,7 @@ export class TabHistoryIntegration {
         const currentUrl = this.decodeProxiedUrl(url);
 
         if (
-          !currentUrl.startsWith("ddx://") &&
+          !window.protocols?.isRegisteredProtocol(currentUrl) &&
           !currentUrl.includes("/internal/")
         ) {
           const faviconUrl = await this.getFavicon(currentUrl);
@@ -125,7 +125,7 @@ export class TabHistoryIntegration {
         const currentUrl = this.decodeProxiedUrl(url);
 
         if (
-          !currentUrl.startsWith("ddx://") &&
+          !window.protocols?.isRegisteredProtocol(currentUrl) &&
           !currentUrl.includes("/internal/")
         ) {
           const faviconUrl = await this.getFavicon(currentUrl);
@@ -174,7 +174,7 @@ export class TabHistoryIntegration {
 
       if (
         !currentUrl ||
-        currentUrl.startsWith("ddx://") ||
+        window.protocols?.isRegisteredProtocol(currentUrl) ||
         currentUrl.includes("/internal/") ||
         currentUrl === "about:blank" ||
         pageTitle === "New Tab"
@@ -203,7 +203,7 @@ export class TabHistoryIntegration {
 
   private decodeProxiedUrl(url: string): string {
     try {
-      if (url.startsWith("ddx://") || url.includes("/internal/")) {
+      if (window.protocols?.isRegisteredProtocol(url) || url.includes("/internal/")) {
         return url;
       }
 

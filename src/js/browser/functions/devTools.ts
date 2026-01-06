@@ -38,27 +38,28 @@ export class DevTools implements DevToolsInterface {
 
       this.erudaScriptInjecting = true;
 
-      const script = iframeDocument.createElement("script");
-      script.type = "text/javascript";
-      script.src = location.origin + "/core/inspect.js";
-      script.onload = () => {
-        this.erudaScriptLoaded = true;
-        this.erudaScriptInjecting = false;
-        resolve("Injected!");
-      };
-      script.onerror = (event: Event | string) => {
-        this.erudaScriptInjecting = false;
-        reject(new Error(`Failed to load Eruda script: ${event}`));
-      };
+      const script = window.nightmare.createElement("script", {
+        type: "text/javascript",
+        src: location.origin + "/core/inspect.js",
+        onload: () => {
+          this.erudaScriptLoaded = true;
+          this.erudaScriptInjecting = false;
+          resolve("Injected!");
+        },
+        onerror: (event: Event | string) => {
+          this.erudaScriptInjecting = false;
+          reject(new Error(`Failed to load Eruda script: ${event}`));
+        },
+      });
       iframeDocument.body.appendChild(script);
     });
   }
 
   injectShowScript(iframeDocument: Document): Promise<void> {
     return new Promise((resolve) => {
-      const script = iframeDocument.createElement("script");
-      script.type = "text/javascript";
-      script.textContent = `
+      const script = window.nightmare.createElement("script", {
+        type: "text/javascript",
+        textContent: `
 			eruda.init({
 				defaults: {
 					displaySize: 50,
@@ -68,7 +69,8 @@ export class DevTools implements DevToolsInterface {
 			});
 			eruda.show();
 			document.currentScript.remove();
-		`;
+		`
+      });
       iframeDocument.body.appendChild(script);
       resolve();
     });
@@ -76,13 +78,14 @@ export class DevTools implements DevToolsInterface {
 
   injectHideScript(iframeDocument: Document): Promise<void> {
     return new Promise((resolve) => {
-      const script = iframeDocument.createElement("script");
-      script.type = "text/javascript";
-      script.textContent = `
-			eruda.hide();
+      const script = window.nightmare.createElement("script", {
+        type: "text/javascript",
+        textContent: `
+      eruda.hide();
       eruda.destroy();
-			document.currentScript.remove();
-		`;
+      document.currentScript.remove();
+    `
+      });
       iframeDocument.body.appendChild(script);
       resolve();
     });
@@ -99,18 +102,32 @@ export class DevTools implements DevToolsInterface {
       return;
     }
 
-    const iframeDocument = iframe.contentWindow.document;
+    let iframeDocument: Document;
+    let currentHref: string;
+
+    try {
+      iframeDocument = iframe.contentWindow.document;
+      currentHref = iframe.contentWindow.location.href;
+    } catch (error) {
+      console.error("Cannot access iframe document or location:", error);
+      return;
+    }
 
     const forbiddenSrcs = ["about:blank", null, "a%60owt8bnalk", "a`owt8bnalk"];
-    if (forbiddenSrcs.includes(iframe.contentWindow.location.href)) {
+    if (forbiddenSrcs.includes(currentHref)) {
       console.warn("Iframe src is forbidden, skipping.");
       return;
     }
 
-    if (iframe.contentWindow.document.readyState == "loading") {
-      console.warn(
-        "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
-      );
+    try {
+      if (iframeDocument.readyState === "loading") {
+        console.warn(
+          "Iframe has not finished loading, skipping Eruda injection. Be patient, jesus fuck.",
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("Cannot check iframe readyState:", error);
       return;
     }
 
@@ -128,12 +145,16 @@ export class DevTools implements DevToolsInterface {
         console.error("Error injecting Eruda script:", error);
       });
 
-    iframe.contentWindow.addEventListener("unload", () => {
-      this.devToggle = false;
-      this.erudaScriptLoaded = false;
-      this.erudaScriptInjecting = false;
-      console.log("Iframe navigation detected, Eruda toggle reset.");
-    });
+    try {
+      iframe.contentWindow.addEventListener("unload", () => {
+        this.devToggle = false;
+        this.erudaScriptLoaded = false;
+        this.erudaScriptInjecting = false;
+        console.log("Iframe navigation detected, Eruda toggle reset.");
+      }, { once: true, passive: true });
+    } catch (error) {
+      console.warn("Could not attach unload listener to iframe:", error);
+    }
 
     this.logger.createLog("Toggled Inspect Element");
   }

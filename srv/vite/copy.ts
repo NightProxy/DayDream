@@ -5,6 +5,8 @@ import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
+//@ts-ignore
+import { enigmaPath } from "@nightnetwork/enigma/path";
 import path from "path";
 
 export const routePaths = {
@@ -14,12 +16,19 @@ export const routePaths = {
   baremux: "baremux",
   uv: "data",
   reflux: "reflux",
+  enigma: "enigma",
   auth: "",
+  bmworker: "bmworker",
+  plusClient: "plus",
 };
 
 const authPath = path.resolve(
   "node_modules/@nightnetwork/night-auth/dist/login",
 );
+
+const plusClientPath = path.resolve("pkgs/plusClient/dist");
+
+const bmworkerPath = path.resolve("pkgs/bm-PlusInject/dist");
 
 const copyMap = {
   epoxy: {
@@ -61,6 +70,11 @@ const copyMap = {
     files: ["*"],
     dest: routePaths.reflux,
   },
+  enigma: {
+    path: enigmaPath,
+    files: ["*"],
+    dest: routePaths.enigma,
+  },
   auth: {
     path: authPath,
     files: [
@@ -84,6 +98,16 @@ const copyMap = {
       "bg_alt_2.png",
     ],
     dest: routePaths.auth,
+  },
+  plusClient: {
+    path: plusClientPath,
+    files: ["*"],
+    dest: routePaths.plusClient,
+  },
+  bmworker: {
+    path: bmworkerPath,
+    files: ["*"],
+    dest: routePaths.bmworker,
   },
 };
 

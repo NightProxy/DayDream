@@ -53,6 +53,7 @@ async function clearAccessToken(): Promise<void> {
 async function makeAuthRequest(
   endpoint: string,
   options: RequestInit = {},
+  isRetry: boolean = false,
 ): Promise<Response> {
   const token = await getAccessToken();
 
@@ -73,20 +74,22 @@ async function makeAuthRequest(
   });
 
   if (response.status === 401) {
+    if (isRetry) {
+      throw new Error("Session expired. Please log in again.");
+    }
+
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       const newToken = await getAccessToken();
-      const retryHeaders = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${newToken}`,
-        ...options.headers,
-      };
+      if (!newToken) {
+        throw new Error("Session expired. Please log in again.");
+      }
 
-      return fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: retryHeaders,
-        credentials: "include",
-      });
+      const retryResponse = await makeAuthRequest(endpoint, options, true);
+      if (retryResponse.status === 401) {
+        throw new Error("Session expired. Please log in again.");
+      }
+      return retryResponse;
     } else {
       throw new Error("Session expired. Please log in again.");
     }
@@ -201,7 +204,6 @@ export async function isAuthenticated(): Promise<boolean> {
   return token !== null;
 }
 
-// LocalForage cache management functions
 export async function getCachedNightPlusData(): Promise<NightPlusCache | null> {
   try {
     return await nightPlusStore.getItem<NightPlusCache>("cache");
@@ -257,15 +259,12 @@ export async function dumpNightPlusData(): Promise<void> {
   }
 }
 
-// Get Night+ data with cache fallback
 export async function getNightPlusDataWithCache(): Promise<NightPlusCache | null> {
   try {
-    // Try to fetch fresh data
     await dumpNightPlusData();
     return await getCachedNightPlusData();
   } catch (error) {
     console.warn("Failed to fetch fresh Night+ data, using cache:", error);
-    // Fallback to cached data
     return await getCachedNightPlusData();
   }
 }

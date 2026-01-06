@@ -4,7 +4,6 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { ProfilesAPI } from "@apis/profiles";
 import { Protocols } from "@browser/protocols";
-import { Utils } from "@js/utils";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Windowing } from "@browser/windowing";
 import { EventSystem } from "@apis/events";
@@ -24,17 +23,17 @@ class Functions implements FuncInterface {
   settings: SettingsAPI;
   profiles: ProfilesAPI;
   proto: Protocols;
-  utils: Utils;
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
   events: EventSystem;
-
   devToggle: boolean;
   erudaScriptLoaded: boolean;
   erudaScriptInjecting: boolean;
   zoomLevel: number;
   zoomSteps: Array<number>;
   currentStep: number;
+  public readonly initPromise: Promise<void>;
+  private autoSaveIntervalId: number | null = null;
 
   private navigation: Navigation;
   private devTools: DevTools;
@@ -51,7 +50,6 @@ class Functions implements FuncInterface {
     this.settings = new SettingsAPI();
     this.profiles = new ProfilesAPI();
     this.proto = proto;
-    this.utils = new Utils();
     this.nightmarePlugins = new NightmarePlugins();
     this.windowing = new Windowing();
     this.events = new EventSystem();
@@ -67,7 +65,6 @@ class Functions implements FuncInterface {
 
     this.navigation = new Navigation(
       this.items,
-      this.zoomLevel,
       this.zoomSteps,
       this.currentStep,
     );
@@ -102,6 +99,8 @@ class Functions implements FuncInterface {
       this.events,
       this.devTools,
     );
+
+    this.initPromise = this.profiles.initPromise;
   }
 
   init(): void {
@@ -163,7 +162,7 @@ class Functions implements FuncInterface {
       }, 1000);
     };
 
-    window.addEventListener("beforeunload", async () => {
+    window.addEventListener("beforeunload", () => {
       const currentProfile = this.profiles.getCurrentProfile();
 
       if (currentProfile) {
@@ -172,7 +171,6 @@ class Functions implements FuncInterface {
             `🔄 Emergency save on beforeunload for profile: ${currentProfile}`,
           );
 
-          const asyncSavePromise = this.profiles.saveProfile(currentProfile);
           const emergencySuccess =
             this.profiles.emergencySaveProfile(currentProfile);
 
@@ -182,36 +180,37 @@ class Functions implements FuncInterface {
             );
           }
 
-          const timeoutPromise = new Promise((resolve) =>
-            setTimeout(resolve, 500),
-          );
-          await Promise.race([asyncSavePromise, timeoutPromise]);
-
-          this.logger.createLog(`Auto-saved profile: ${currentProfile}`);
+          this.profiles.saveProfile(currentProfile).catch((error) => {
+            console.warn("Background save failed during beforeunload:", error);
+          });
         } catch (error) {
-          console.warn("Failed to auto-save profile data:", error);
-
-          this.profiles.emergencySaveProfile(currentProfile);
+          console.warn("Failed to emergency save profile data:", error);
         }
       }
     });
 
-    window.addEventListener("pagehide", async () => {
+    window.addEventListener("pagehide", () => {
       const currentProfile = this.profiles.getCurrentProfile();
       if (currentProfile) {
         try {
           console.log(
             `🔄 Emergency save on pagehide for profile: ${currentProfile}`,
           );
-          await this.profiles.saveProfile(currentProfile);
-          console.log(
-            `✅ Emergency save on pagehide completed for profile: ${currentProfile}`,
-          );
-          this.logger.createLog(
-            `Auto-saved profile on pagehide: ${currentProfile}`,
-          );
+
+          const emergencySuccess =
+            this.profiles.emergencySaveProfile(currentProfile);
+
+          if (emergencySuccess) {
+            console.log(
+              `✅ Emergency save on pagehide completed for profile: ${currentProfile}`,
+            );
+          }
+
+          this.profiles.saveProfile(currentProfile).catch((error) => {
+            console.warn("Background save failed during pagehide:", error);
+          });
         } catch (error) {
-          console.warn("Failed to auto-save profile on pagehide:", error);
+          console.warn("Failed to emergency save profile on pagehide:", error);
         }
       }
     });
@@ -235,7 +234,11 @@ class Functions implements FuncInterface {
       }
     });
 
-    setInterval(async () => {
+    if (this.autoSaveIntervalId !== null) {
+      clearInterval(this.autoSaveIntervalId);
+    }
+
+    this.autoSaveIntervalId = window.setInterval(async () => {
       const currentProfile = this.profiles.getCurrentProfile();
       if (currentProfile) {
         try {
@@ -248,6 +251,13 @@ class Functions implements FuncInterface {
         }
       }
     }, 30000);
+  }
+
+  dispose(): void {
+    if (this.autoSaveIntervalId !== null) {
+      clearInterval(this.autoSaveIntervalId);
+      this.autoSaveIntervalId = null;
+    }
   }
 
   backward(): void {
@@ -366,41 +376,69 @@ class Functions implements FuncInterface {
 
   navbarfunctions(): void {
     const navbar = document.querySelector(".navbar");
-    const games = navbar!.querySelector("#gamesShortcut");
-    const chat = navbar!.querySelector("#chatShortcut") as HTMLButtonElement;
-    const history = navbar!.querySelector("#historyShortcut");
-    const settings = navbar!.querySelector("#settShortcut");
+    if (!navbar) {
+      console.warn("Navbar element not found");
+      return;
+    }
 
-    games!.addEventListener("click", async () => {
-      const url =
-        (await this.proto.processUrl("ddx://games/")) || "/internal/error/";
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      iframe!.setAttribute("src", url);
-    });
+    const games = navbar.querySelector("#gamesShortcut");
+    const chat = navbar.querySelector("#chatShortcut") as HTMLButtonElement | null;
+    const history = navbar.querySelector("#historyShortcut");
+    const settings = navbar.querySelector("#settShortcut");
 
-    chat!.addEventListener("click", async () => {
-      window.open("https://discord.night-x.com", "_blank");
-    });
+    if (games) {
+      games.addEventListener("click", async () => {
+        const url =
+          (await this.proto.processUrl("ddx://games/")) || "/internal/error/";
+        const iframe = this.items.frameContainer?.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement | null;
+        
+        if (iframe) {
+          iframe.setAttribute("src", url);
+        } else {
+          console.warn("No active iframe found for games shortcut");
+        }
+      });
+    }
 
-    history!.addEventListener("click", async () => {
-      const url =
-        (await this.proto.processUrl("ddx://history/")) || "/internal/error/";
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      iframe!.setAttribute("src", url);
-    });
+    if (chat) {
+      chat.addEventListener("click", async () => {
+        window.open("https://discord.night-x.com", "_blank");
+      });
+    }
 
-    settings!.addEventListener("click", async () => {
-      const url =
-        (await this.proto.processUrl("ddx://settings/")) || "/internal/error/";
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      iframe!.setAttribute("src", url);
-    });
+    if (history) {
+      history.addEventListener("click", async () => {
+        const url =
+          (await this.proto.processUrl("ddx://history/")) || "/internal/error/";
+        const iframe = this.items.frameContainer?.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement | null;
+        
+        if (iframe) {
+          iframe.setAttribute("src", url);
+        } else {
+          console.warn("No active iframe found for history shortcut");
+        }
+      });
+    }
+
+    if (settings) {
+      settings.addEventListener("click", async () => {
+        const url =
+          (await this.proto.processUrl("ddx://settings/")) || "/internal/error/";
+        const iframe = this.items.frameContainer?.querySelector(
+          "iframe.active",
+        ) as HTMLIFrameElement | null;
+        
+        if (iframe) {
+          iframe.setAttribute("src", url);
+        } else {
+          console.warn("No active iframe found for settings shortcut");
+        }
+      });
+    }
   }
 }
 

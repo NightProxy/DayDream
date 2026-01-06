@@ -1,10 +1,12 @@
 class EventSystem {
   eventListeners: any;
   channel: any;
+  senderId: string;
 
   constructor() {
     this.eventListeners = {};
     this.channel = new BroadcastChannel("global-events");
+    this.senderId = `event-sender-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     window.addEventListener("message", this.handleMessage.bind(this));
     this.channel.addEventListener("message", this.handleBroadcast.bind(this));
@@ -13,27 +15,43 @@ class EventSystem {
   emit(eventName: string, data: any) {
     this.dispatchEvent(eventName, data);
 
+    const message = { 
+      eventName, 
+      data,
+      __senderId: this.senderId
+    };
+
     const iframes = document.querySelectorAll("iframe");
     iframes.forEach((iframe) => {
-      iframe.contentWindow!.postMessage({ eventName, data }, "*");
+      iframe.contentWindow!.postMessage(message, "*");
     });
 
     if (window.parent && window !== window.parent) {
-      window.parent.postMessage({ eventName, data }, "*");
+      window.parent.postMessage(message, "*");
     }
 
-    this.channel.postMessage({ eventName, data });
+    this.channel.postMessage(message);
   }
 
   handleMessage(event: any) {
-    const { eventName, data } = event.data || {};
+    const { eventName, data, __senderId } = event.data || {};
+    
+    if (__senderId && __senderId === this.senderId) {
+      return;
+    }
+    
     if (eventName) {
       this.dispatchEvent(eventName, data);
     }
   }
 
   handleBroadcast(event: any) {
-    const { eventName, data } = event.data || {};
+    const { eventName, data, __senderId } = event.data || {};
+    
+    if (__senderId && __senderId === this.senderId) {
+      return;
+    }
+    
     if (eventName) {
       this.dispatchEvent(eventName, data);
     }

@@ -1,7 +1,12 @@
 import localforage from "localforage";
 
+interface LogEntry {
+  timestamp: string;
+  message: string;
+}
+
 class Logger {
-  store: any;
+  store: typeof localforage;
   sessionId: string;
 
   constructor() {
@@ -40,21 +45,38 @@ class Logger {
     }
   }
 
-  async getLog(id: string) {
-    return await this.store.getItem(id);
+  async getLog(id: string): Promise<LogEntry[] | null> {
+    return await this.store.getItem<LogEntry[]>(id);
   }
 
   async editLog(id: string, index: number, newMessage: string) {
     const log = await this.getLog(id);
-    if (log) {
-      log[index].message = newMessage;
-      await this.store.setItem(id, log);
+    
+    if (!log) {
+      throw new Error(`Log with id "${id}" not found`);
     }
+
+    if (!Array.isArray(log)) {
+      throw new Error(`Log with id "${id}" is not an array`);
+    }
+
+    if (!Number.isInteger(index)) {
+      throw new TypeError(`Index must be an integer, got: ${index} for log id "${id}"`);
+    }
+
+    if (index < 0 || index >= log.length) {
+      throw new RangeError(
+        `Index ${index} is out of bounds for log id "${id}" (length: ${log.length}, valid range: 0-${log.length - 1})`
+      );
+    }
+
+    log[index].message = newMessage;
+    await this.store.setItem(id, log);
   }
 
   async exportLogs() {
     const logs = await this.store.keys();
-    const exportData: Record<any, string> = {};
+    const exportData: Record<string, Awaited<ReturnType<typeof this.getLog>>> = {};
 
     for (const logId of logs) {
       exportData[logId] = await this.getLog(logId as string);

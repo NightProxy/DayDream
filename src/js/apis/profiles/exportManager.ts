@@ -43,9 +43,10 @@ export class ExportManager {
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = finalFilename;
+      const link = window.nightmare.createElement("a", {
+        href: url,
+        download: finalFilename,
+      });
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

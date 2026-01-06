@@ -32,7 +32,7 @@ export default defineConfig({
   server: {
     allowedHosts: allowedHosts,
     watch: {
-      ignored: ["**/concepting/**", "**/plus/**", "**/.github/**"],
+      ignored: ["**/concepting/**", "**/plus-backend/**", "**/.github/**", "**/hostlist.uo*"],
     },
     proxy: {
       "/api": {
@@ -44,6 +44,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
         rewrite: (path) => path.replace(/^\/wisp\//, ""),
+      },
+      "/auth": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
       },
     },
   },
@@ -124,16 +128,6 @@ export default defineConfig({
         },
         manualChunks(id) {
           if (id.includes("node_modules")) return "vendor-modules";
-          // Split proxy-related code into separate chunks for better obfuscation
-          if (
-            id.includes("scramjet") ||
-            id.includes("ultraviolet") ||
-            id.includes("rammerhead") ||
-            id.includes("wisp") ||
-            id.includes("bare")
-          ) {
-            return "proxy-core";
-          }
         },
       },
     },

@@ -9,14 +9,20 @@ export class Navigation implements NavigationInterface {
 
   constructor(
     items: Items,
-    zoomLevel: number,
     zoomSteps: Array<number>,
     currentStep: number,
   ) {
     this.items = items;
-    this.zoomLevel = zoomLevel;
-    this.zoomSteps = zoomSteps;
-    this.currentStep = currentStep;
+    
+    if (!Array.isArray(zoomSteps) || zoomSteps.length === 0 || !zoomSteps.every(n => typeof n === 'number' && !isNaN(n))) {
+      console.warn("Invalid zoomSteps provided, using default [1]");
+      this.zoomSteps = [1];
+    } else {
+      this.zoomSteps = zoomSteps;
+    }
+    
+    this.currentStep = Math.max(0, Math.min(currentStep, this.zoomSteps.length - 1));
+    this.zoomLevel = this.zoomSteps[this.currentStep] || 1;
   }
 
   backward(): void {
@@ -24,17 +30,21 @@ export class Navigation implements NavigationInterface {
       "iframe.active",
     ) as HTMLIFrameElement;
     if (iframe?.contentWindow?.history) {
-      iframe.contentWindow.history.back();
+      try {
+        iframe.contentWindow.history.back();
 
-      window.dispatchEvent(
-        new CustomEvent("tabNavigated", {
-          detail: {
-            tabId: iframe.getAttribute("data-tab-id") || "unknown",
-            action: "back",
-            fromNavigation: true,
-          },
-        }),
-      );
+        window.dispatchEvent(
+          new CustomEvent("tabNavigated", {
+            detail: {
+              tabId: iframe.getAttribute("data-tab-id") || "unknown",
+              action: "back",
+              fromNavigation: true,
+            },
+          }),
+        );
+      } catch (error) {
+        console.warn("Could not navigate back:", error);
+      }
     }
   }
 
@@ -43,17 +53,21 @@ export class Navigation implements NavigationInterface {
       "iframe.active",
     ) as HTMLIFrameElement;
     if (iframe?.contentWindow?.history) {
-      iframe.contentWindow.history.forward();
+      try {
+        iframe.contentWindow.history.forward();
 
-      window.dispatchEvent(
-        new CustomEvent("tabNavigated", {
-          detail: {
-            tabId: iframe.getAttribute("data-tab-id") || "unknown",
-            action: "forward",
-            fromNavigation: true,
-          },
-        }),
-      );
+        window.dispatchEvent(
+          new CustomEvent("tabNavigated", {
+            detail: {
+              tabId: iframe.getAttribute("data-tab-id") || "unknown",
+              action: "forward",
+              fromNavigation: true,
+            },
+          }),
+        );
+      } catch (error) {
+        console.warn("Could not navigate forward:", error);
+      }
     }
   }
 
@@ -62,50 +76,101 @@ export class Navigation implements NavigationInterface {
       "iframe.active",
     ) as HTMLIFrameElement;
     if (iframe?.contentWindow?.location) {
-      iframe.contentWindow.location.reload();
+      try {
+        iframe.contentWindow.location.reload();
 
-      window.dispatchEvent(
-        new CustomEvent("tabNavigated", {
-          detail: {
-            tabId: iframe.getAttribute("data-tab-id") || "unknown",
-            action: "refresh",
-            fromNavigation: true,
-          },
-        }),
-      );
+        window.dispatchEvent(
+          new CustomEvent("tabNavigated", {
+            detail: {
+              tabId: iframe.getAttribute("data-tab-id") || "unknown",
+              action: "refresh",
+              fromNavigation: true,
+            },
+          }),
+        );
+      } catch (error) {
+        console.warn("Could not refresh:", error);
+      }
     }
   }
 
   zoomIn(): void {
-    if (this.currentStep < this.zoomSteps.length - 1) {
-      this.currentStep++;
+    if (this.zoomSteps.length === 0) {
+      console.warn("Cannot zoom: zoomSteps is empty");
+      return;
     }
-    this.zoomLevel = this.zoomSteps[this.currentStep];
-    this.scaleIframeContent();
+
+    const targetStep = this.currentStep + 1;
+    if (targetStep < this.zoomSteps.length) {
+      this.currentStep = targetStep;
+      const newZoomLevel = this.zoomSteps[this.currentStep];
+      
+      if (typeof newZoomLevel === 'number' && !isNaN(newZoomLevel)) {
+        this.zoomLevel = newZoomLevel;
+        this.scaleIframeContent();
+      } else {
+        console.warn("Invalid zoom level at step", this.currentStep);
+      }
+    }
   }
 
   zoomOut(): void {
-    if (this.currentStep > 0) {
-      this.currentStep--;
+    if (this.zoomSteps.length === 0) {
+      console.warn("Cannot zoom: zoomSteps is empty");
+      return;
     }
-    this.zoomLevel = this.zoomSteps[this.currentStep];
-    this.scaleIframeContent();
+
+    const targetStep = this.currentStep - 1;
+    if (targetStep >= 0) {
+      this.currentStep = targetStep;
+      const newZoomLevel = this.zoomSteps[this.currentStep];
+      
+      if (typeof newZoomLevel === 'number' && !isNaN(newZoomLevel)) {
+        this.zoomLevel = newZoomLevel;
+        this.scaleIframeContent();
+      } else {
+        console.warn("Invalid zoom level at step", this.currentStep);
+      }
+    }
   }
 
   scaleIframeContent(): void {
-    let iframe: HTMLIFrameElement | null;
-    iframe = document.querySelector("iframe.active");
-    if (iframe) {
-      const iframeDoc =
-        iframe?.contentDocument || iframe?.contentWindow?.document;
-      iframeDoc!.body.style.transform = `scale(${this.zoomLevel})`;
-      iframeDoc!.body.style.transformOrigin = "top left";
-      iframeDoc!.body.style.overflow = "auto";
+    if (typeof this.zoomLevel !== 'number' || isNaN(this.zoomLevel)) {
+      console.warn("Cannot scale: invalid zoom level", this.zoomLevel);
+      return;
+    }
+
+    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement | null;
+    if (!iframe) {
+      return;
+    }
+
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      
+      if (!iframeDoc || !iframeDoc.body) {
+        return;
+      }
+
+      iframeDoc.body.style.transform = `scale(${this.zoomLevel})`;
+      iframeDoc.body.style.transformOrigin = "top left";
+      iframeDoc.body.style.overflow = "auto";
+    } catch (error) {
+      if (error instanceof DOMException) {
+        console.warn("Cannot scale iframe content: cross-origin access blocked");
+      } else {
+        console.warn("Cannot scale iframe content:", error);
+      }
     }
   }
 
   goFullscreen(): void {
-    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement;
+    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement | null;
+
+    if (!iframe) {
+      console.warn("No active iframe found for fullscreen");
+      return;
+    }
 
     if (iframe.requestFullscreen) {
       iframe.requestFullscreen();
