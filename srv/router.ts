@@ -1,15 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import path from "path";
-import axios from "axios";
-import { URL } from "url";
-import contentType from "content-type";
 import fastifyStatic from "@fastify/static";
+import { APIRouter } from "./api/index";
 
 const __dirname = process.cwd();
 
 const frontendPath = path.join(__dirname, "dist");
 
-export default async function routes(fastify: FastifyInstance) {
+async function router(fastify: FastifyInstance) {
   await fastify.register(fastifyStatic, {
     root: frontendPath,
     prefix: "/",
@@ -22,40 +20,7 @@ export default async function routes(fastify: FastifyInstance) {
     },
   });
 
-  // Server detection endpoint for static build detection
-  fastify.get(
-    "/api/detect",
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      return reply
-        .status(200)
-        .header("Content-Type", "application/json")
-        .header("Cache-Control", "no-cache, no-store, must-revalidate")
-        .send({ server: true });
-    },
-  );
-
-  fastify.get(
-    "/api/results/:query",
-    async (
-      request: FastifyRequest<{
-        Params: { query: string };
-      }>,
-      reply: FastifyReply,
-    ) => {
-      const { query } = request.params;
-
-      try {
-        const response = await fetch(
-          `http://api.duckduckgo.com/ac?q=${query}&format=json`,
-        );
-        const data = await response.json();
-        return reply.send(data);
-      } catch (error) {
-        console.error("Error fetching search results:", error);
-        return reply.status(500).send("Failed to fetch search results");
-      }
-    },
-  );
+  await APIRouter(fastify);
 
   fastify.setNotFoundHandler(
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -65,3 +30,6 @@ export default async function routes(fastify: FastifyInstance) {
     },
   );
 }
+
+export { router };
+export default router;

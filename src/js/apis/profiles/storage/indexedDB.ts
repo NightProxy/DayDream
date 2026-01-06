@@ -292,7 +292,12 @@ async function restoreDatabase(dbExport: DatabaseExport): Promise<void> {
     };
 
     deleteRequest.onblocked = () => {
-      console.warn(`Delete blocked for database ${dbExport.name}`);
+      clearTimeout(timeout);
+      reject(
+        new Error(
+          `Delete operation blocked for database ${dbExport.name}. Close all connections to this database and try again.`,
+        ),
+      );
     };
   });
 }

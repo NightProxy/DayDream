@@ -140,9 +140,11 @@ class Windowing implements WindowingInterface {
         <script>
           const iframe = document.getElementById("main");
           const doc = iframe.contentDocument || iframe.contentWindow.document;
-          doc.write(\`
-            <object data="${location.href}" type="text/html" style="width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;"></object>
-          \`);
+          const objectElement = doc.createElement("object");
+          objectElement.type = "text/html";
+          objectElement.style.cssText = "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;";
+          objectElement.data = ${JSON.stringify(location.href)};
+          doc.body.appendChild(objectElement);
         </script>
 </body>
 </html>
@@ -155,6 +157,7 @@ class Windowing implements WindowingInterface {
   async BlobWindow() {
     if (window === window.top) {
       const cloakSettings = await tabCloakManager.getSettings();
+      const targetUrl = location.href;
 
       const htmlContent = `
               <!DOCTYPE html>
@@ -175,7 +178,11 @@ class Windowing implements WindowingInterface {
                   </style>
               </head>
               <body>
-                  <iframe src="${location.href}" frameborder="0"></iframe>
+                  <iframe id="main" frameborder="0"></iframe>
+                  <script>
+                      const iframe = document.getElementById("main");
+                      iframe.src = ${JSON.stringify(targetUrl)};
+                  </script>
               </body>
               </html>
           `;
@@ -225,9 +232,11 @@ class Windowing implements WindowingInterface {
                 <script>
                     const iframe = document.getElementById("main");
                     const doc = iframe.contentDocument || iframe.contentWindow.document;
-                    doc.write(\`
-                        <object data="${originalUrl}" type="text/html" style="width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;"></object>
-                    \`);
+                    const objectElement = doc.createElement("object");
+                    objectElement.type = "text/html";
+                    objectElement.style.cssText = "width: 100%; height: 100%; border: none; position: fixed; inset: 0px; outline: none; scrolling: auto;";
+                    objectElement.data = ${JSON.stringify(originalUrl)};
+                    doc.body.appendChild(objectElement);
                 </script>
             </body>
             </html>

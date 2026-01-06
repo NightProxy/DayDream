@@ -120,8 +120,8 @@ class HistoryUI {
       if (historyLink && !target.closest("[data-action='delete']")) {
         e.preventDefault();
         const url = historyLink.getAttribute("data-history-url");
-        if (url) {
-          window.open(url, "_blank");
+        if (url && window.parent.tabs) {
+          window.parent.tabs.createTab(url);
         }
       }
     });

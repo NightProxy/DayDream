@@ -13,8 +13,12 @@ export class TabLayout {
       "tab",
       this.tabs.el,
     ).length;
-    const tabsContentWidth =
-      this.tabs.el.querySelector(".tabs-content")!.clientWidth;
+    const tabsContentElement = this.tabs.el.querySelector(".tabs-content");
+    if (!tabsContentElement) {
+      console.warn("TabLayout: .tabs-content element not found");
+      return [];
+    }
+    const tabsContentWidth = tabsContentElement.clientWidth;
     const tabsCumulativeOverlappedWidth = (numberOfTabs - 1) * 1;
     const targetWidth =
       (tabsContentWidth - 2 * 9 + tabsCumulativeOverlappedWidth) / numberOfTabs;
@@ -33,6 +37,9 @@ export class TabLayout {
       const extraWidth =
         flooredClampedTargetWidth < 240 && extraWidthRemaining > 0 ? 1 : 0;
       widths.push(flooredClampedTargetWidth + extraWidth);
+      if (extraWidth > 0) {
+        extraWidthRemaining -= 1;
+      }
     }
 
     return widths;
@@ -67,8 +74,12 @@ export class TabLayout {
       "tab",
       this.tabs.el,
     ).length;
-    const tabsContentHeight =
-      this.tabs.el.querySelector(".tabs-content")!.clientHeight;
+    const tabsContentElement = this.tabs.el.querySelector(".tabs-content");
+    if (!tabsContentElement) {
+      console.warn("TabLayout: .tabs-content element not found");
+      return [];
+    }
+    const tabsContentHeight = tabsContentElement.clientHeight;
     const tabsCumulativeOverlappedHeight = (numberOfTabs - 1) * 1;
     const targetHeight =
       (tabsContentHeight + tabsCumulativeOverlappedHeight) / numberOfTabs;
@@ -86,6 +97,9 @@ export class TabLayout {
       const extraHeight =
         flooredClampedTargetHeight < 36 && extraHeightRemaining > 0 ? 1 : 0;
       heights.push(flooredClampedTargetHeight + extraHeight);
+      if (extraHeight > 0) {
+        extraHeightRemaining -= 1;
+      }
     }
 
     return heights;
@@ -520,6 +534,98 @@ export class TabLayout {
         console.warn("Failed to initialize Lucide icons:", error);
       }
     }
+  }
+
+  showDropIndicator(tabId: string) {
+    this.hideDropIndicator();
+    const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`) as HTMLElement;
+    if (tabElement) {
+      const indicator = document.createElement("div");
+      indicator.className = "drop-indicator";
+      indicator.id = "drop-indicator";
+      tabElement.style.position = "relative";
+      tabElement.appendChild(indicator);
+    }
+  }
+
+  hideDropIndicator() {
+    const indicator = document.getElementById("drop-indicator");
+    if (indicator) indicator.remove();
+  }
+
+  createUngroupZones(draggedGroupId: string, isFirstInGroup: boolean) {
+    const tabBar = this.tabs.el.querySelector(".tabs-content");
+    if (!tabBar) return;
+
+    const group = this.tabs.groups.find((g: any) => g.id === draggedGroupId);
+    if (!group) return;
+
+    const endZone = document.createElement("div");
+    endZone.id = "end-ungroup-zone";
+    endZone.className = "ungroup-zone end-ungroup-zone";
+    endZone.innerHTML = "<span>Ungroup</span>";
+    
+    endZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      endZone.classList.add("drag-over");
+    });
+    
+    endZone.addEventListener("dragleave", () => {
+      endZone.classList.remove("drag-over");
+    });
+    
+    tabBar.appendChild(endZone);
+
+    if (isFirstInGroup) {
+      const startZone = document.createElement("div");
+      startZone.id = "start-ungroup-zone";
+      startZone.className = "ungroup-zone start-ungroup-zone";
+      startZone.innerHTML = "<span>Ungroup</span>";
+      
+      startZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        startZone.classList.add("drag-over");
+      });
+      
+      startZone.addEventListener("dragleave", () => {
+        startZone.classList.remove("drag-over");
+      });
+      
+      tabBar.insertBefore(startZone, tabBar.firstChild);
+    }
+  }
+
+  removeUngroupZones() {
+    ["end-ungroup-zone", "start-ungroup-zone"].forEach(id => {
+      const zone = document.getElementById(id);
+      if (zone) zone.remove();
+    });
+  }
+
+  showGroupIndicator(groupHeader: HTMLElement, e: DragEvent, isVertical = false) {
+    this.hideGroupIndicator(groupHeader);
+    const rect = groupHeader.getBoundingClientRect();
+    const isAfter = isVertical 
+      ? e.clientY > rect.top + rect.height / 2
+      : e.clientX > rect.left + rect.width / 2;
+
+    const indicator = document.createElement("div");
+    indicator.className = "group-indicator";
+    indicator.style.cssText = isVertical
+      ? `position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:1000;${isAfter ? "bottom:-1px;" : "top:-1px;"}`
+      : `position:absolute;width:2px;top:0;bottom:0;background:var(--accent);z-index:1002;${isAfter ? "right:-1px;" : "left:-1px;"}`;
+
+    groupHeader.style.position = "relative";
+    groupHeader.appendChild(indicator);
+  }
+
+  hideGroupIndicator(groupHeader: HTMLElement) {
+    const indicator = groupHeader.querySelector(".group-indicator");
+    if (indicator) indicator.remove();
   }
 }
 

@@ -4,7 +4,6 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { ProfilesAPI } from "@apis/profiles";
 import { Protocols } from "@browser/protocols";
-import { Utils } from "@js/utils";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Windowing } from "@browser/windowing";
 import { EventSystem } from "@apis/events";
@@ -17,7 +16,6 @@ export interface FuncInterface {
   settings: SettingsAPI;
   profiles: ProfilesAPI;
   proto: Protocols;
-  utils: Utils;
   nightmarePlugins: NightmarePlugins;
   windowing: Windowing;
   events: EventSystem;
@@ -27,6 +25,7 @@ export interface FuncInterface {
   zoomLevel: number;
   zoomSteps: Array<number>;
   currentStep: number;
+  dispose(): void;
 }
 
 export interface NavigationInterface {

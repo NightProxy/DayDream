@@ -69,8 +69,11 @@ export class BookmarkManager {
         }
       }
 
-      if (iframeSrc.includes("ddx://")) {
-        return iframeSrc.replace(/.*ddx:\/\//, "ddx://");
+      if (window.protocols?.isRegisteredProtocol(iframeSrc)) {
+        const match = iframeSrc.match(/^([a-zA-Z0-9+.-]+):\/\/(.+)/);
+        if (match) {
+          return `${match[1]}://${match[2]}`;
+        }
       }
 
       const url = new URL(iframeSrc);

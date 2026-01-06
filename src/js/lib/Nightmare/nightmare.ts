@@ -294,6 +294,8 @@ class ContextMenu {
     if (this.currentMenu && !this.currentMenu.contains(event.target as Node)) {
       this.currentMenu.remove();
       this.currentMenu = null;
+    } else if (this.currentMenu && this.currentMenu.contains(event.target as Node)) {
+      document.addEventListener("click", this.hideMenu, { once: true });
     }
   }
 }

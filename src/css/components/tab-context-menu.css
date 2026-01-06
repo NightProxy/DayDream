@@ -8,92 +8,89 @@
 @keyframes bc-menu-appear {
   from {
     opacity: 0;
-    @media (max-width: 768px) {
-      .click-menu-container > div {
-        min-width: 160px;
-      }
-    }
-
-    .tab-group-header[draggable="true"] {
-      cursor: grab;
-    }
-
-    .tab-group-header.dragging-group {
-      opacity: 0.6;
-      transform: scale(1.02);
-      cursor: grabbing;
-      z-index: 1000;
-    }
-
-    .tab-group-header.group-drag-over {
-      background: var(--accent-subtle);
-      transform: scale(1.02);
-    }
-
-    body.group-dragging .tab-group-header:not(.dragging-group) {
-      transition: all 0.2s ease;
-    }
-
-    body.group-dragging .tab-group-header:not(.dragging-group):hover {
-      background: var(--accent-subtle);
-      transform: scale(1.01);
-    }
-
-    .group-drop-indicator {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--accent);
-      border-radius: 2px;
-      z-index: 1001;
-      animation: pulse-indicator 1s ease-in-out infinite;
-    }
-
-    @keyframes pulse-indicator {
-      0%,
-      100% {
-        opacity: 0.8;
-      }
-      50% {
-        opacity: 1;
-      }
-    }
-
-    body.group-dragging {
-      user-select: none;
-    }
-
-    .group-drop-indicator {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--accent);
-      border-radius: 2px;
-      z-index: 1001;
-      animation: pulse-indicator 1s ease-in-out infinite;
-    }
-
-    @keyframes pulse-indicator {
-      0%,
-      100% {
-        opacity: 0.8;
-      }
-      50% {
-        opacity: 1;
-      }
-    }
-
-    body.group-dragging {
-      user-select: none;
-    }
     transform: scale(0.95) translateY(-5px);
   }
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+@media (max-width: 768px) {
+  .click-menu-container > div {
+    min-width: 160px;
+  }
+}
+
+.tab-group-header[draggable="true"] {
+  cursor: grab;
+}
+
+.tab-group-header.dragging-group {
+  opacity: 0.5;
+  transform: scale(1.03) rotate(1deg);
+  cursor: grabbing;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.tab-group-header.group-drag-over {
+  background: var(--accent-subtle);
+  transform: scale(1.03);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+body.group-dragging .tab-group-header:not(.dragging-group) {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.group-dragging .tab-group-header:not(.dragging-group):hover {
+  background: var(--accent-subtle);
+  transform: scale(1.02);
+}
+
+.group-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  border-radius: 2px;
+  z-index: 1001;
+  animation: indicator-flow 1.5s ease-in-out infinite;
+}
+
+@keyframes indicator-flow {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scaleX(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulse-indicator {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+body.group-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
+body.tab-dragging {
+  cursor: grabbing;
 }
 
 .click-menu-container > div {
@@ -288,16 +285,32 @@
 }
 
 .tab.drag-ghost {
-  opacity: 0.6;
-  transform: rotate(2deg);
+  opacity: 0.5;
+  transform: rotate(2deg) scale(0.98);
   z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tab.ungroup-indicator {
   border: 2px dashed var(--error);
-  background: rgba(248, 139, 168, 0.1);
+  background: rgba(248, 139, 168, 0.15);
   transform: scale(1.02);
   position: relative;
+  animation: ungroup-pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(248, 139, 168, 0.3);
+}
+
+@keyframes ungroup-pulse {
+  0%, 100% {
+    transform: scale(1.02);
+    border-color: var(--error);
+  }
+  50% {
+    transform: scale(1.04);
+    border-color: rgba(248, 139, 168, 0.8);
+  }
 }
 
 .tab.ungroup-indicator::before {
@@ -364,7 +377,36 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
 }
 
 .tab[data-group-id] {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tab.drag-over {
+  transform: scale(1.05);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.drop-indicator {
+  position: absolute;
+  left: -2px;
+  width: 3px;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-70) 100%);
+  border-radius: 2px;
+  z-index: 1001;
+  animation: indicator-pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+@keyframes indicator-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 8px var(--accent);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px var(--accent);
+  }
 }
 
 .end-ungroup-zone,
@@ -378,9 +420,21 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0.7;
   flex-shrink: 0;
+  animation: zone-breathe 2s ease-in-out infinite;
+}
+
+@keyframes zone-breathe {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
 }
 
 .end-ungroup-zone {
@@ -404,8 +458,20 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
 .end-ungroup-zone.drag-over,
 .start-ungroup-zone.drag-over {
   background: rgba(248, 139, 168, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.08);
   opacity: 1;
+  box-shadow: 0 0 15px rgba(248, 139, 168, 0.5);
+  border-color: var(--error);
+  animation: zone-active 0.8s ease-in-out infinite;
+}
+
+@keyframes zone-active {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(248, 139, 168, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(248, 139, 168, 0.7);
+  }
 }
 
 .tab[data-group-id] .tab-title {
@@ -470,8 +536,13 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
   width: 3px;
   top: 0;
   bottom: 0;
-  background: var(--accent);
+  background: linear-gradient(180deg, transparent, var(--accent), transparent);
   border-radius: 2px;
   z-index: 1002;
   animation: pulse-indicator 1s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.ungroup-zone {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

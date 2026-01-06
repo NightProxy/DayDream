@@ -11,6 +11,7 @@ class ProfilesAPI {
   private profileManager: ProfileManager;
   private stateManager: StateManager;
   private exportManager: ExportManager;
+  public readonly initPromise: Promise<void>;
 
   constructor(
     canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
@@ -25,7 +26,7 @@ class ProfilesAPI {
     this.stateManager = new StateManager();
     this.exportManager = new ExportManager(() => this.currentProfile);
 
-    this.initializeCurrentProfile();
+    this.initPromise = this.initializeCurrentProfile();
   }
 
   private async initializeCurrentProfile(): Promise<void> {
@@ -66,20 +67,34 @@ class ProfilesAPI {
   }
 
   async createProfileWithCurrentData(userID: string): Promise<boolean> {
-    const currentState = await this.stateManager.getCurrentBrowserState();
-    const result = await this.profileManager.createProfileWithData(
-      userID,
-      currentState,
-    );
+    try {
+      const currentState = await this.stateManager.getCurrentBrowserState();
+      const result = await this.profileManager.createProfileWithData(
+        userID,
+        currentState,
+      );
 
-    this.currentProfile = userID;
-    await this.saveCurrentProfileReference();
+      if (result) {
+        this.currentProfile = userID;
+        await this.saveCurrentProfileReference();
+      }
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error("Failed to create profile with current data:", error);
+      return false;
+    }
   }
 
   async deleteProfile(userID: string): Promise<boolean> {
-    return await this.profileManager.deleteProfile(userID, this.currentProfile);
+    const result = await this.profileManager.deleteProfile(userID, this.currentProfile);
+    
+    if (result && this.currentProfile === userID) {
+      this.currentProfile = null;
+      await this.saveCurrentProfileReference();
+    }
+    
+    return result;
   }
 
   async saveProfile(userID: string): Promise<boolean> {

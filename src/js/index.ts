@@ -15,7 +15,6 @@ import { DDXGlobal } from "@js/global/index";
 import { Render } from "@browser/render";
 import { Items } from "@browser/items";
 import { Protocols } from "@browser/protocols";
-import { Utils } from "@js/utils";
 import { Tabs } from "@browser/tabs";
 import { Functions } from "@browser/functions";
 import { Search } from "@browser/search";
@@ -40,6 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventsAPI = new EventSystem();
 
   const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
+  await profilesAPI.initPromise;
 
   const loggingAPI = new Logger();
 
@@ -85,16 +85,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     theming.applyTheme(theming.currentTheme);
   }, 100);
 
-  const proto = new Protocols(swConfig, proxySetting);
+  const proto = new Protocols(swConfig, proxySetting, proxy);
   const windowing = new Windowing();
   const globalFunctions = new DDXGlobal();
   const items = new Items();
-  const utils = new Utils();
-  const tabs = new Tabs(render, proto, swConfig, proxySetting);
+  const tabs = new Tabs(render, proto, swConfig, proxySetting, items, proxy);
+
+  window.tabs = tabs;
+  window.protocols = proto;
+  window.windowing = windowing;
+  window.items = items;
+  window.eventsAPI = eventsAPI;
+  window.settings = settingsAPI;
+  window.proxy = proxy;
 
   tabs.createTab("ddx://newtab/");
 
   const functions = new Functions(tabs, proto);
+  await functions.initPromise;
+  functions.init();
 
   if (
     proxySetting === "sj" &&
@@ -104,16 +113,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     await (swConfig[proxySetting as keyof typeof swConfig].func as Function)();
   }
 
-  proxy
-    .registerSW(swConfig[proxySetting as keyof typeof swConfig])
-    .then(async () => {
-      await proxy.setTransports().then(async () => {
-        const transport = await proxy.connection.getTransport();
-        if (transport == null) {
-          proxy.setTransports();
-        }
-      });
-    });
+  await proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]);
+  await proxy.setTransports();
+  const transport = await proxy.connection.getTransport();
+  if (transport == null) {
+    await proxy.setTransports();
+  }
   const uvSearchBar = items.addressBar;
 
   uvSearchBar!.addEventListener("keydown", async (e) => {
@@ -122,12 +127,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const searchValue = uvSearchBar!.value.trim();
 
-      if (searchValue.startsWith("ddx://")) {
+      if (proto.isRegisteredProtocol(searchValue)) {
         const url = (await proto.processUrl(searchValue)) || "/internal/error/";
         const iframe = items.frameContainer!.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
-        iframe!.setAttribute("src", url);
+        
+        if (iframe) {
+          iframe.setAttribute("src", url);
+        } else {
+          console.warn("No active iframe found for navigation");
+        }
       } else {
         if (proxySetting === "auto") {
           const result = (await proxy.automatic(
@@ -146,7 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           swConfigSettings &&
           typeof swConfigSettings.func === "function"
         ) {
-          await swConfigSettings.func();
+          await swConfigSettings.func() as Function;
         }
 
         await proxy.registerSW(swConfigSettings).then(async () => {
@@ -160,17 +170,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (swConfigSettings && swConfigSettings.type) {
           switch (swConfigSettings.type) {
             case "sw":
-              let encodedUrl;
-              if (proxySetting == "dy") {
-                encodedUrl =
-                  swConfigSettings.config.prefix +
-                  "route?url=" +
-                  window.__uv$config.encodeUrl(proxy.search(searchValue));
-              } else {
-                encodedUrl =
+              let encodedUrl =
                   swConfigSettings.config.prefix +
                   window.__uv$config.encodeUrl(proxy.search(searchValue));
-              }
               const activeIframe = document.querySelector(
                 "iframe.active",
               ) as HTMLIFrameElement;
@@ -187,8 +189,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  functions.init();
-
   const searchbar = new Search(proxy, swConfig, proxySetting, proto);
   if (items.addressBar) {
     await searchbar.init(items.addressBar);
@@ -196,18 +196,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   window.nightmare = nightmare;
   window.nightmarePlugins = nightmarePlugins;
-  window.settings = settingsAPI;
-  window.eventsAPI = eventsAPI;
-  window.protocols = proto;
-  window.proxy = proxy;
   window.logging = loggingAPI;
   window.profiles = profilesAPI;
   window.globals = globalFunctions;
   window.renderer = render;
-  window.items = items;
-  window.utils = utils;
-  window.tabs = tabs;
-  window.windowing = windowing;
   window.functions = functions;
   window.searchbar = searchbar;
   window.SWconfig = swConfig;

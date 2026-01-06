@@ -135,10 +135,6 @@ main {
   scrollbar-color: var(--main) transparent;
 }
 
-.scrollDiv {
-  display: none !important;
-}
-
 html {
   scroll-behavior: smooth;
 }
@@ -255,7 +251,7 @@ aside {
   background-color: var(--utility-background-color);
   border-radius: 4px;
   width: 100%;
-  z-index: 99999999999999999999999;
+  z-index: 999999;
   display: none;
   padding: 0;
   border-radius: 8px;
@@ -281,7 +277,7 @@ aside {
   border-top-left-radius: 8px;
 }
 .dropdown-options li {
-  border-radius: none;
+  border-radius: 0;
   transition: all 0.2s ease;
   list-style-type: none;
   width: 100%;

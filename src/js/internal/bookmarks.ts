@@ -39,7 +39,7 @@ class BookmarkManagerUI {
 
   constructor() {
     this.bookmarkManager = new BookmarkManager();
-    this.proxy = new Proxy();
+    this.proxy = window.parent.proxy;
 
     this.proxy.setBookmarkManager(this.bookmarkManager);
 
@@ -125,9 +125,11 @@ class BookmarkManagerUI {
     document
       .getElementById("cancelAddBookmark")
       ?.addEventListener("click", () => this.hideAddBookmarkModal());
-    document
-      .getElementById("addBookmarkForm")
-      ?.addEventListener("submit", (e) => this.handleAddBookmark(e));
+    
+    const addBookmarkForm = document.getElementById("addBookmarkForm");
+    if (addBookmarkForm) {
+      addBookmarkForm.addEventListener("submit", (e) => this.handleAddBookmark(e));
+    }
 
     document
       .getElementById("cancelAddFolder")
@@ -380,16 +382,17 @@ class BookmarkManagerUI {
       }
 
       if (url.startsWith("javascript:")) {
-        const js = url.slice("javascript:".length);
-        eval(js);
+        console.warn("javascript: URLs are not supported for security reasons");
         return;
       }
 
-      window.open(url, "_blank");
+      if (window.parent.tabs) {
+        window.parent.tabs.createTab(url);
+      }
     } catch (error) {
       console.error("Failed to navigate to bookmark:", error);
-      if (url) {
-        window.open(url, "_blank");
+      if (url && window.parent.tabs) {
+        window.parent.tabs.createTab(url);
       }
     }
   }
@@ -412,7 +415,12 @@ class BookmarkManagerUI {
   private highlightSearch(text: string): string {
     if (!this.searchQuery) return text;
 
-    const regex = new RegExp(`(${this.searchQuery})`, "gi");
+    const maxQueryLength = 100;
+    const sanitizedQuery = this.searchQuery
+      .slice(0, maxQueryLength)
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const regex = new RegExp(`(${sanitizedQuery})`, "gi");
     return text.replace(regex, '<span class="search-highlight">$1</span>');
   }
 
@@ -541,14 +549,19 @@ class BookmarkManagerUI {
     this.showAddBookmarkModal();
 
     const form = document.getElementById("addBookmarkForm");
-    form?.addEventListener(
-      "submit",
-      async (e) => {
-        e.preventDefault();
-        await this.handleUpdateBookmark(bookmarkId);
-      },
-      { once: true },
-    );
+    if (form) {
+      const newForm = form.cloneNode(true) as HTMLElement;
+      form.parentNode?.replaceChild(newForm, form);
+
+      newForm.addEventListener(
+        "submit",
+        async (e) => {
+          e.preventDefault();
+          await this.handleUpdateBookmark(bookmarkId);
+        },
+        { once: true },
+      );
+    }
   }
 
   public async deleteBookmark(bookmarkId: string) {
@@ -581,6 +594,14 @@ class BookmarkManagerUI {
     this.addBookmarkModal.classList.add("hidden");
     this.addBookmarkModal.classList.remove("flex");
     (document.getElementById("addBookmarkForm") as HTMLFormElement).reset();
+
+    const form = document.getElementById("addBookmarkForm");
+    if (form) {
+      const newForm = form.cloneNode(true) as HTMLElement;
+      form.parentNode?.replaceChild(newForm, form);
+
+      newForm.addEventListener("submit", (e) => this.handleAddBookmark(e));
+    }
   }
 
   private showAddFolderModal() {
@@ -720,21 +741,21 @@ class BookmarkManagerUI {
       const text = await file.text();
       const data = JSON.parse(text);
 
+      if (data.folders) {
+        for (const folder of data.folders) {
+          await this.bookmarkManager.createFolder({
+            title: folder.title,
+            parentId: folder.parentId,
+          });
+        }
+      }
+
       if (data.bookmarks) {
         for (const bookmark of data.bookmarks) {
           await this.bookmarkManager.createBookmark({
             title: bookmark.title,
             url: bookmark.url,
             parentId: bookmark.parentId,
-          });
-        }
-      }
-
-      if (data.folders) {
-        for (const folder of data.folders) {
-          await this.bookmarkManager.createFolder({
-            title: folder.title,
-            parentId: folder.parentId,
           });
         }
       }

@@ -10,7 +10,9 @@ class Items {
   backButton: HTMLButtonElement | null;
   reloadButton: HTMLButtonElement | null;
   forwardButton: HTMLButtonElement | null;
-  addressBar: HTMLInputElement | null;
+  get addressBar(): HTMLInputElement | null {
+    return document.querySelector('[component="address-bar"]') as HTMLInputElement;
+  }
   bookmarkButton: HTMLButtonElement | null;
   extensionsButton: HTMLButtonElement | null;
   profilesButton: HTMLButtonElement | null;
@@ -45,10 +47,6 @@ class Items {
       "forward",
       this.utilityBar,
     ) as HTMLButtonElement;
-    this.addressBar = this.ui.queryComponent(
-      "address-bar",
-      this.utilityBar,
-    ) as HTMLInputElement;
     this.bookmarkButton = this.ui.queryComponent(
       "bookmark",
       this.utilityBar,

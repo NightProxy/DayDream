@@ -56,9 +56,8 @@ export class MenuManager implements MenuInterface {
           closeMenu();
       });
 
-      document.addEventListener("ddx:page.clicked", (e) => {
-        if (!menuPopup.contains(e.target as Node) && e.target !== menuBtn)
-          closeMenu();
+      document.addEventListener("ddx:page.clicked", () => {
+        closeMenu();
       });
     }
   }

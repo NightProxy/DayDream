@@ -9,11 +9,11 @@ self.__scramjet$config = {
   },
   siteFlags: {
 		"https://discord.com/.*": {
-			naiiveRewriter: true,
+			naiiveRewriter: false,
 		},
 	},
   flags: {
-    captureErrors: true,
+    captureErrors: false,
     cleanErrors: true,
     naiiveRewriter: false,
     rewriterLogs: false,
