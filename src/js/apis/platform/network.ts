@@ -10,7 +10,7 @@ class NetworkAPI {
   }
 
   async getServerType(): Promise<string> {
-    return await this.settings.getItem("serverType") || "wisp";
+    return (await this.settings.getItem("serverType")) || "wisp";
   }
 
   async setServerType(serverType: string): Promise<void> {
@@ -35,12 +35,16 @@ class NetworkAPI {
 
   genBaseServerURL(): string {
     const domainList = Hostlist;
-    const cloudflareDomains = domainList.map((domain: string) => `${domain}.cdn.cloudflare.net/`);
-    const randomSubdomain = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map(b => b.toString(36))
-      .join('')
+    const cloudflareDomains = domainList.map(
+      (domain: string) => `${domain}.cdn.cloudflare.net/`,
+    );
+    const randomSubdomain = Array.from(
+      crypto.getRandomValues(new Uint8Array(16)),
+    )
+      .map((b) => b.toString(36))
+      .join("")
       .substring(0, 32);
-    
+
     return `${randomSubdomain}.${cloudflareDomains[Math.floor(Math.random() * cloudflareDomains.length)]}`;
   }
 

@@ -538,7 +538,9 @@ export class TabLayout {
 
   showDropIndicator(tabId: string) {
     this.hideDropIndicator();
-    const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`) as HTMLElement;
+    const tabElement = document.querySelector(
+      `[data-tab-id="${tabId}"]`,
+    ) as HTMLElement;
     if (tabElement) {
       const indicator = document.createElement("div");
       indicator.className = "drop-indicator";
@@ -564,18 +566,18 @@ export class TabLayout {
     endZone.id = "end-ungroup-zone";
     endZone.className = "ungroup-zone end-ungroup-zone";
     endZone.innerHTML = "<span>Ungroup</span>";
-    
+
     endZone.addEventListener("dragover", (e) => {
       e.preventDefault();
       e.stopPropagation();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
       endZone.classList.add("drag-over");
     });
-    
+
     endZone.addEventListener("dragleave", () => {
       endZone.classList.remove("drag-over");
     });
-    
+
     tabBar.appendChild(endZone);
 
     if (isFirstInGroup) {
@@ -583,33 +585,37 @@ export class TabLayout {
       startZone.id = "start-ungroup-zone";
       startZone.className = "ungroup-zone start-ungroup-zone";
       startZone.innerHTML = "<span>Ungroup</span>";
-      
+
       startZone.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
         startZone.classList.add("drag-over");
       });
-      
+
       startZone.addEventListener("dragleave", () => {
         startZone.classList.remove("drag-over");
       });
-      
+
       tabBar.insertBefore(startZone, tabBar.firstChild);
     }
   }
 
   removeUngroupZones() {
-    ["end-ungroup-zone", "start-ungroup-zone"].forEach(id => {
+    ["end-ungroup-zone", "start-ungroup-zone"].forEach((id) => {
       const zone = document.getElementById(id);
       if (zone) zone.remove();
     });
   }
 
-  showGroupIndicator(groupHeader: HTMLElement, e: DragEvent, isVertical = false) {
+  showGroupIndicator(
+    groupHeader: HTMLElement,
+    e: DragEvent,
+    isVertical = false,
+  ) {
     this.hideGroupIndicator(groupHeader);
     const rect = groupHeader.getBoundingClientRect();
-    const isAfter = isVertical 
+    const isAfter = isVertical
       ? e.clientY > rect.top + rect.height / 2
       : e.clientX > rect.left + rect.width / 2;
 

@@ -5,7 +5,15 @@ let initialized = false;
 
 const normalize = (s: string) => s?.trim().toLowerCase();
 
-const triggerPanic = () => {
+const triggerPanic = async () => {
+  const settingsAPI = new SettingsAPI();
+  const disableTabClose =
+    (await settingsAPI.getItem("disableTabClose")) || "false";
+
+  if (disableTabClose === "true") {
+    await settingsAPI.setItem("disableTabClose", "false");
+  }
+
   const url = "https://google.com";
   if (window.top && window.top !== window.self) {
     try {

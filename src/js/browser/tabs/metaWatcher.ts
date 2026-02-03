@@ -127,14 +127,19 @@ export class TabMetaWatcher {
     tabId: string,
   ): Promise<string> => {
     console.log("[updateAddressBar] Called with:", { locHref, tabId });
-    console.log("[updateAddressBar] addressBar element:", this.tabs.items.addressBar);
+    console.log(
+      "[updateAddressBar] addressBar element:",
+      this.tabs.items.addressBar,
+    );
     console.log("[updateAddressBar] activeElement:", document.activeElement);
 
     if (
       this.tabs.items.addressBar &&
       document.activeElement === this.tabs.items.addressBar
     ) {
-      console.log("[updateAddressBar] Skipping - user is typing in address bar");
+      console.log(
+        "[updateAddressBar] Skipping - user is typing in address bar",
+      );
       return locHref;
     }
 
@@ -147,8 +152,10 @@ export class TabMetaWatcher {
     }
 
     const tabRef = this.tabs.tabs.find((t) => t.id === tabId);
-    
-    const internalCheck = await this.tabs.proto.getInternalURL(liveURL.pathname);
+
+    const internalCheck = await this.tabs.proto.getInternalURL(
+      liveURL.pathname,
+    );
     if (
       typeof internalCheck === "string" &&
       window.protocols?.isRegisteredProtocol(internalCheck)
@@ -164,7 +171,7 @@ export class TabMetaWatcher {
       }
       return nextVal;
     }
-    
+
     const prefix =
       window.SWconfig[window.ProxySettings as keyof typeof window.SWconfig]
         .config.prefix;
@@ -203,14 +210,27 @@ export class TabMetaWatcher {
       console.log("[updateAddressBar] Using decoded URL:", nextVal);
     }
 
-    console.log("[updateAddressBar] lastAddressShown:", tabRef?.lastAddressShown);
+    console.log(
+      "[updateAddressBar] lastAddressShown:",
+      tabRef?.lastAddressShown,
+    );
     console.log("[updateAddressBar] nextVal:", nextVal);
 
     if (this.tabs.items.addressBar && nextVal) {
       console.log("[updateAddressBar] Setting address bar to:", nextVal);
-      console.log("[updateAddressBar] Address bar element before update:", this.tabs.items.addressBar, "value:", this.tabs.items.addressBar.value);
+      console.log(
+        "[updateAddressBar] Address bar element before update:",
+        this.tabs.items.addressBar,
+        "value:",
+        this.tabs.items.addressBar.value,
+      );
       this.tabs.items.addressBar.value = nextVal;
-      console.log("[updateAddressBar] Address bar element after update:", this.tabs.items.addressBar, "value:", this.tabs.items.addressBar.value);
+      console.log(
+        "[updateAddressBar] Address bar element after update:",
+        this.tabs.items.addressBar,
+        "value:",
+        this.tabs.items.addressBar.value,
+      );
       if (tabRef) tabRef.lastAddressShown = nextVal;
     }
 

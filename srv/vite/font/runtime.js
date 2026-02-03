@@ -27,6 +27,10 @@ function fontObfuscationRuntime() {
       ".lucide",
       ".lucide-icon",
       "svg[data-lucide]",
+      "select",
+      "option",
+      "select *",
+      "option *",
     ],
     forceObfuscateSelectors: [
       ".obfuscated",
@@ -36,7 +40,7 @@ function fontObfuscationRuntime() {
       ".menu-text",
       ".ui-text",
     ],
-    inputElements: ["input", "textarea", "select", "option"],
+    inputElements: ["input", "textarea"],
   };
 
   async function initMappings() {

@@ -4,9 +4,31 @@ import "basecoat-css/all";
 import "./shared/themeInit";
 import "../global/panic";
 import { createIcons, icons } from "lucide";
+import { KeybindManager } from "@browser/functions/keybinds";
+
+const keybindManager = new KeybindManager();
 
 document.addEventListener("DOMContentLoaded", async () => {
   createIcons({ icons });
+
+  const goBackKeybind = keybindManager.getKeybind("goBack");
+  const goHomeKeybind = keybindManager.getKeybind("newTab");
+
+  const goBackKeybindEl = document.querySelector("#action-back .text-xs");
+  const goHomeKeybindEl = document.querySelector("#action-home .text-xs");
+  const clearCacheKeybindEl = document.querySelector("#action-clear .text-xs");
+
+  if (goBackKeybindEl && goBackKeybind) {
+    goBackKeybindEl.textContent = keybindManager.formatKeybind(goBackKeybind);
+  }
+
+  if (goHomeKeybindEl && goHomeKeybind) {
+    goHomeKeybindEl.textContent = keybindManager.formatKeybind(goHomeKeybind);
+  }
+
+  if (clearCacheKeybindEl) {
+    clearCacheKeybindEl.textContent = "Alt + K";
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const errorMessage = urlParams.get("error") || "Unknown error occurred";
@@ -177,4 +199,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   checkStatus();
+
+  document.addEventListener("keydown", (e) => {
+    if (goBackKeybind && keybindManager.matchesKeybind(e, goBackKeybind)) {
+      e.preventDefault();
+      backBtn?.click();
+    } else if (
+      goHomeKeybind &&
+      keybindManager.matchesKeybind(e, goHomeKeybind)
+    ) {
+      e.preventDefault();
+      homeBtn?.click();
+    } else if (e.altKey && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      clearBtn?.click();
+    }
+  });
 });

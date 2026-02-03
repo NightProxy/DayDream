@@ -11,7 +11,6 @@ import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { ContentInsertionPlugin } from "./srv/vite/contentInsertion";
 import { allowedHosts } from "./srv/vite/hosts";
-import { htmlObfuscationPlugin } from "./srv/vite/html-obfuscation";
 
 export default defineConfig({
   plugins: [
@@ -26,13 +25,29 @@ export default defineConfig({
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
     vitePluginBundleObfuscator(obfuscationConfig as any),
-    htmlObfuscationPlugin(),
+    {
+      name: "remove-debugger-statements",
+      enforce: "post",
+      generateBundle(_, bundle) {
+        for (const file in bundle) {
+          const chunk = bundle[file];
+          if (chunk.type === "chunk" && chunk.code) {
+            chunk.code = chunk.code.replace(/\bdebugger\s*;?/g, "");
+          }
+        }
+      },
+    },
   ],
   appType: "mpa",
   server: {
     allowedHosts: allowedHosts,
     watch: {
-      ignored: ["**/concepting/**", "**/plus-backend/**", "**/.github/**", "**/hostlist.uo*"],
+      ignored: [
+        "**/concepting/**",
+        "**/plus-backend/**",
+        "**/.github/**",
+        "**/hostlist.uo*",
+      ],
     },
     proxy: {
       "/api": {

@@ -7,21 +7,24 @@ export class Navigation implements NavigationInterface {
   private zoomSteps: Array<number>;
   private currentStep: number;
 
-  constructor(
-    items: Items,
-    zoomSteps: Array<number>,
-    currentStep: number,
-  ) {
+  constructor(items: Items, zoomSteps: Array<number>, currentStep: number) {
     this.items = items;
-    
-    if (!Array.isArray(zoomSteps) || zoomSteps.length === 0 || !zoomSteps.every(n => typeof n === 'number' && !isNaN(n))) {
+
+    if (
+      !Array.isArray(zoomSteps) ||
+      zoomSteps.length === 0 ||
+      !zoomSteps.every((n) => typeof n === "number" && !isNaN(n))
+    ) {
       console.warn("Invalid zoomSteps provided, using default [1]");
       this.zoomSteps = [1];
     } else {
       this.zoomSteps = zoomSteps;
     }
-    
-    this.currentStep = Math.max(0, Math.min(currentStep, this.zoomSteps.length - 1));
+
+    this.currentStep = Math.max(
+      0,
+      Math.min(currentStep, this.zoomSteps.length - 1),
+    );
     this.zoomLevel = this.zoomSteps[this.currentStep] || 1;
   }
 
@@ -104,8 +107,8 @@ export class Navigation implements NavigationInterface {
     if (targetStep < this.zoomSteps.length) {
       this.currentStep = targetStep;
       const newZoomLevel = this.zoomSteps[this.currentStep];
-      
-      if (typeof newZoomLevel === 'number' && !isNaN(newZoomLevel)) {
+
+      if (typeof newZoomLevel === "number" && !isNaN(newZoomLevel)) {
         this.zoomLevel = newZoomLevel;
         this.scaleIframeContent();
       } else {
@@ -124,8 +127,8 @@ export class Navigation implements NavigationInterface {
     if (targetStep >= 0) {
       this.currentStep = targetStep;
       const newZoomLevel = this.zoomSteps[this.currentStep];
-      
-      if (typeof newZoomLevel === 'number' && !isNaN(newZoomLevel)) {
+
+      if (typeof newZoomLevel === "number" && !isNaN(newZoomLevel)) {
         this.zoomLevel = newZoomLevel;
         this.scaleIframeContent();
       } else {
@@ -135,19 +138,22 @@ export class Navigation implements NavigationInterface {
   }
 
   scaleIframeContent(): void {
-    if (typeof this.zoomLevel !== 'number' || isNaN(this.zoomLevel)) {
+    if (typeof this.zoomLevel !== "number" || isNaN(this.zoomLevel)) {
       console.warn("Cannot scale: invalid zoom level", this.zoomLevel);
       return;
     }
 
-    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement | null;
+    const iframe = document.querySelector(
+      "iframe.active",
+    ) as HTMLIFrameElement | null;
     if (!iframe) {
       return;
     }
 
     try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      
+      const iframeDoc =
+        iframe.contentDocument || iframe.contentWindow?.document;
+
       if (!iframeDoc || !iframeDoc.body) {
         return;
       }
@@ -157,7 +163,9 @@ export class Navigation implements NavigationInterface {
       iframeDoc.body.style.overflow = "auto";
     } catch (error) {
       if (error instanceof DOMException) {
-        console.warn("Cannot scale iframe content: cross-origin access blocked");
+        console.warn(
+          "Cannot scale iframe content: cross-origin access blocked",
+        );
       } else {
         console.warn("Cannot scale iframe content:", error);
       }
@@ -165,7 +173,9 @@ export class Navigation implements NavigationInterface {
   }
 
   goFullscreen(): void {
-    const iframe = document.querySelector("iframe.active") as HTMLIFrameElement | null;
+    const iframe = document.querySelector(
+      "iframe.active",
+    ) as HTMLIFrameElement | null;
 
     if (!iframe) {
       console.warn("No active iframe found for fullscreen");

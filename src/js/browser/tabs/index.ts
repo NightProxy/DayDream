@@ -10,6 +10,7 @@ import { BookmarkManager as BM } from "@apis/bookmarks";
 import { TabDragHandler } from "./drag";
 import { TabGroupManager } from "./group";
 import { TabPinManager } from "./pin";
+import { ChiiDevTools } from "@browser/functions";
 
 import type { TabsInterface, TabGroup, TabData } from "./types";
 import { BookmarkManager } from "./bookmarks";
@@ -43,6 +44,7 @@ class Tabs implements TabsInterface {
   dragHandler: TabDragHandler;
   groupManager: TabGroupManager;
   pinManager: TabPinManager;
+  keyboard: any;
 
   private bookmarkModule: BookmarkManager;
   private layoutModule: TabLayout;
@@ -102,65 +104,69 @@ class Tabs implements TabsInterface {
   }
 
   private initKeyboardShortcuts() {
-    document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "G") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0) {
-          this.groupManager.createGroupWithTab(activeTabs[0].id);
-        }
-      }
+    const keyboard = this.keyboard;
+    if (!keyboard?.keybindManager) return;
 
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "U") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0 && activeTabs[0].groupId) {
-          this.groupManager.removeTabFromGroup(activeTabs[0].id);
-        }
+    keyboard.keybindManager.registerAction("create_tab_group", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.groupManager.createGroupWithTab(activeTabs[0].id);
       }
+    });
 
-      if ((e.ctrlKey || e.metaKey) && e.key === "p") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0) {
-          this.pinManager.togglePinTab(activeTabs[0].id);
-        }
+    keyboard.keybindManager.registerAction("ungroup_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0 && activeTabs[0].groupId) {
+        this.groupManager.removeTabFromGroup(activeTabs[0].id);
       }
+    });
 
-      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0) {
-          this.duplicateTab(activeTabs[0].id);
-        }
+    keyboard.keybindManager.registerAction("pin_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.pinManager.togglePinTab(activeTabs[0].id);
       }
+    });
 
-      if (e.key === "F5") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0) {
-          this.refreshTab(activeTabs[0].id);
-        }
+    keyboard.keybindManager.registerAction("duplicate_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.duplicateTab(activeTabs[0].id);
       }
+    });
 
-      if ((e.ctrlKey || e.metaKey) && e.key === "w") {
-        e.preventDefault();
-        const activeTabs = this.tabs.filter((tab) =>
-          tab.tab.classList.contains("active"),
-        );
-        if (activeTabs.length > 0) {
-          this.closeTabById(activeTabs[0].id);
-        }
+    keyboard.keybindManager.registerAction("reload_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.reloadTab(activeTabs[0].id);
+      }
+    });
+
+    keyboard.keybindManager.registerAction("refresh_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.refreshTab(activeTabs[0].id);
+      }
+    });
+
+    keyboard.keybindManager.registerAction("close_tab", () => {
+      const activeTabs = this.tabs.filter((tab) =>
+        tab.tab.classList.contains("active"),
+      );
+      if (activeTabs.length > 0) {
+        this.closeTabById(activeTabs[0].id);
       }
     });
   }
@@ -209,6 +215,10 @@ class Tabs implements TabsInterface {
     return this.layoutModule.tabPositionsY;
   }
 
+  get bookmarkUI() {
+    return this.bookmarkModule;
+  }
+
   popGlow = (el: HTMLElement) => {
     this.layoutModule.popGlow(el);
   };
@@ -246,6 +256,10 @@ class Tabs implements TabsInterface {
   };
 
   refreshTab = (tabId: string) => {
+    return this.manipulationModule.refreshTab(tabId);
+  };
+
+  reloadTab = (tabId: string) => {
     return this.manipulationModule.refreshTab(tabId);
   };
 
@@ -333,6 +347,19 @@ class Tabs implements TabsInterface {
     return this.historyIntegration.getHistoryManager();
   };
 
+  toggleChiiDevTools = () => {
+    const activeTab = this.tabs.find((tab) =>
+      tab.tab.classList.contains("active"),
+    );
+    if (!activeTab) {
+      console.warn("[Tabs] No active tab found for ChiiDevTools toggle");
+      return;
+    }
+
+    const chiiDevTools = new ChiiDevTools(activeTab, this.logger);
+    chiiDevTools.toggleInspect();
+  };
+
   layoutTabs = () => {
     this.layoutModule.renderGroupHeaders();
   };
@@ -356,6 +383,104 @@ class Tabs implements TabsInterface {
     this.groupManager.initializeGroupVisuals();
     this.layoutTabs();
   };
+
+  async saveSession() {
+    const tabsCache = this.tabs.map((tab, index) => {
+      let cleanUrl = tab.url || "";
+
+      if (cleanUrl.includes(this.swConfig.sj?.config?.prefix)) {
+        try {
+          cleanUrl = decodeURIComponent(
+            cleanUrl.replace(this.swConfig.sj.config.prefix, ""),
+          );
+        } catch (e) {
+          console.warn("Failed to decode scramjet URL:", cleanUrl);
+        }
+      } else if (cleanUrl.includes(this.swConfig.uv?.config?.prefix)) {
+        try {
+          cleanUrl = this.swConfig.uv.config.decodeUrl(
+            cleanUrl.replace(this.swConfig.uv.config.prefix, ""),
+          );
+        } catch (e) {
+          console.warn("Failed to decode UV URL:", cleanUrl);
+        }
+      }
+
+      return {
+        id: tab.id,
+        url: cleanUrl,
+        title: tab.iframe?.contentDocument?.title || "New Tab",
+        favicon: "",
+        pinned: tab.isPinned || false,
+        groupId: tab.groupId,
+        order: index,
+      };
+    });
+
+    const groupsCache = this.groups.map((group, index) => ({
+      id: group.id,
+      name: group.name,
+      color: group.color,
+      collapsed: group.isCollapsed,
+      order: index,
+    }));
+
+    const activeTab = this.tabs.find((tab) =>
+      tab.tab.classList.contains("active"),
+    );
+
+    await window.cache.saveSession({
+      tabs: tabsCache,
+      groups: groupsCache,
+      activeTabId: activeTab?.id,
+    });
+  }
+
+  async restoreSession() {
+    const cached = await window.cache.getCache();
+
+    if (!cached.tabs || cached.tabs.length === 0) {
+      return false;
+    }
+
+    for (const group of cached.groups || []) {
+      this.groups.push({
+        id: group.id,
+        name: group.name,
+        color: group.color,
+        isCollapsed: group.collapsed,
+        tabIds: [],
+      });
+    }
+
+    for (const tabCache of cached.tabs) {
+      await this.createTab(tabCache.url);
+
+      const tabData = this.tabs[this.tabs.length - 1];
+      if (tabData) {
+        if (tabCache.pinned) {
+          this.pinManager.togglePinTab(tabData.id);
+        }
+        if (tabCache.groupId) {
+          tabData.groupId = tabCache.groupId;
+          const group = this.groups.find((g) => g.id === tabCache.groupId);
+          if (group && !group.tabIds.includes(tabData.id)) {
+            group.tabIds.push(tabData.id);
+          }
+        }
+      }
+    }
+
+    if (cached.activeTabId) {
+      const activeTab = this.tabs.find((t) => t.id === cached.activeTabId);
+      if (activeTab) {
+        activeTab.tab.click();
+      }
+    }
+
+    this.setupSortable();
+    return true;
+  }
 }
 
 export { Tabs };

@@ -58,7 +58,7 @@ export interface FaviconCacheEntry {
 }
 
 export interface FaviconCache {
-  [host: string]: FaviconCacheEntry;
+  [host: string]: FaviconCacheEntry | undefined;
 }
 
 export function isFolder(item: BookmarkItem): item is BookmarkFolder {
@@ -126,7 +126,7 @@ export class BookmarkManager {
         const now = new Date();
         this.faviconCache = {};
         Object.entries(faviconCacheData).forEach(([host, entry]) => {
-          if (new Date(entry.expiresAt) > now) {
+          if (entry && new Date(entry.expiresAt) > now) {
             this.faviconCache[host] = {
               ...entry,
               fetchedAt: new Date(entry.fetchedAt),
@@ -453,7 +453,7 @@ export class BookmarkManager {
     if (!entry) return null;
 
     if (new Date() > entry.expiresAt) {
-      delete this.faviconCache[host];
+      this.faviconCache[host] = undefined;
       return null;
     }
 
@@ -504,7 +504,9 @@ export class BookmarkManager {
   }
 
   public getFaviconCacheStats(): { totalEntries: number; totalSize: number } {
-    const entries = Object.values(this.faviconCache);
+    const entries = Object.values(this.faviconCache).filter(
+      (entry): entry is FaviconCacheEntry => entry !== undefined,
+    );
     const totalSize = entries.reduce(
       (size, entry) => size + entry.faviconDataUrl.length,
       0,

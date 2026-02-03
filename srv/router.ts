@@ -17,6 +17,12 @@ async function router(fastify: FastifyInstance) {
       if (path.includes("/res/g/")) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       }
+      if (path.endsWith(".ttf") || path.endsWith(".woff2")) {
+        res.setHeader("Cache-Control", "no-store"); // dont cache fonts because of font obfuscation and updates not working together
+      }
+      if (path.endsWith(".json")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // cache json files for 1 year
+      }
     },
   });
 

@@ -43,7 +43,10 @@ class SideMenu implements SideMenuInterface {
   private closeTimeout: number | null = null;
   private handlePageClicked: (() => void) | null = null;
   private handleWindowClick: (() => void) | null = null;
-  private elementClickHandlers: WeakMap<HTMLElement, (event: MouseEvent) => void> = new WeakMap();
+  private elementClickHandlers: WeakMap<
+    HTMLElement,
+    (event: MouseEvent) => void
+  > = new WeakMap();
   constructor(ui: Nightmare) {
     this.ui = ui;
     this.container = null;
@@ -184,7 +187,10 @@ class SidePanel implements SidePanelInterface {
     this.isOpen = false;
   }
 
-  attachTo(element: HTMLButtonElement, content: Function | HTMLElement | HTMLElement[]) {
+  attachTo(
+    element: HTMLButtonElement,
+    content: Function | HTMLElement | HTMLElement[],
+  ) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 
@@ -217,7 +223,10 @@ class SidePanel implements SidePanelInterface {
     }
   }
 
-  openMenu(element: HTMLButtonElement, content: Function | HTMLElement | HTMLElement[]) {
+  openMenu(
+    element: HTMLButtonElement,
+    content: Function | HTMLElement | HTMLElement[],
+  ) {
     if (this.isOpen || !element) return;
 
     this.container = this.ui.createElement("div", { class: "sidepanel" });
@@ -247,7 +256,10 @@ interface RightClickMenuInterface {
   ui: Nightmare;
   container: HTMLElement | null;
   isOpen: boolean;
-  attachTo: (element: HTMLElement, content: Function | HTMLElement | HTMLElement[]) => void;
+  attachTo: (
+    element: HTMLElement,
+    content: Function | HTMLElement | HTMLElement[],
+  ) => void;
   openMenu: (
     element: HTMLElement,
     event: MouseEvent,
@@ -267,7 +279,10 @@ class RightClickMenu implements RightClickMenuInterface {
     this.isOpen = false;
   }
 
-  attachTo(element: HTMLElement, content: Function | HTMLElement | HTMLElement[]) {
+  attachTo(
+    element: HTMLElement,
+    content: Function | HTMLElement | HTMLElement[],
+  ) {
     if (!element)
       throw new Error("Please provide a valid element to attach the menu.");
 

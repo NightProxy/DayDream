@@ -95,14 +95,16 @@ export class HistoryManager {
 
   private getOrCreateCurrentSession(): string {
     const storedSessionId = sessionStorage.getItem("historySessionId");
-    
+
     if (storedSessionId) {
-      const existingSession = this.sessions.find(s => s.id === storedSessionId);
+      const existingSession = this.sessions.find(
+        (s) => s.id === storedSessionId,
+      );
       if (existingSession) {
         return storedSessionId;
       }
     }
-    
+
     const sessionId = uuidv4();
     sessionStorage.setItem("historySessionId", sessionId);
 
@@ -114,7 +116,7 @@ export class HistoryManager {
     };
     this.sessions.push(session);
     this.syncSessionsIfEnabled();
-    
+
     return sessionId;
   }
 
@@ -148,11 +150,13 @@ export class HistoryManager {
       this.notifyListeners();
 
       this.storageLoaded = true;
-      
+
       if (!this.currentSessionId) {
         this.currentSessionId = this.getOrCreateCurrentSession();
       } else {
-        const existingSession = this.sessions.find(s => s.id === this.currentSessionId);
+        const existingSession = this.sessions.find(
+          (s) => s.id === this.currentSessionId,
+        );
         if (!existingSession) {
           this.currentSessionId = this.getOrCreateCurrentSession();
         }
@@ -195,7 +199,7 @@ export class HistoryManager {
 
   public async addEntry(data: CreateHistoryEntryData): Promise<HistoryEntry> {
     this.ensureSessionInitialized();
-    
+
     const now = new Date();
     const url = this.normalizeUrl(data.url);
 

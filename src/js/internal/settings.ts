@@ -9,10 +9,18 @@ import { EventSystem } from "@apis/events";
 import iro from "@jaames/iro";
 import { themeManager } from "@js/utils/themeManager";
 import "../global/panic";
+import {
+  KeybindManager,
+  KEYBIND_CATEGORIES,
+} from "@browser/functions/keybinds";
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
 import { createIcons, icons } from "lucide";
-import { checkNightPlusStatus, getPremiumWispServers } from "@apis/nightplus";
+import {
+  checkNightPlusStatus,
+  getPremiumWispServers,
+  isAuthenticated,
+} from "@apis/nightplus";
 
 document.addEventListener("DOMContentLoaded", () => {
   const aside = document.querySelector<HTMLElement>('#aside[aside="settings"]');
@@ -109,33 +117,6 @@ const initSwitch = async (
   });
 };
 
-const initTextInput = async (
-  inputId: string,
-  settingsKey: string,
-  defaultValue: string = "",
-) => {
-  const inputElement = document.getElementById(inputId) as HTMLInputElement;
-
-  if (!inputElement) {
-    console.error(`Input element with id "${inputId}" not found.`);
-    return;
-  }
-
-  const savedValue = (await settingsAPI.getItem(settingsKey)) || defaultValue;
-  inputElement.value = savedValue;
-
-  inputElement.addEventListener("change", async () => {
-    await settingsAPI.setItem(settingsKey, inputElement.value);
-  });
-
-  inputElement.addEventListener("keypress", async (event) => {
-    if (event.key === "Enter") {
-      await settingsAPI.setItem(settingsKey, inputElement.value);
-      location.reload();
-    }
-  });
-};
-
 const initButton = (buttonId: string, action: () => void) => {
   const buttonElement = document.getElementById(buttonId) as HTMLButtonElement;
 
@@ -192,13 +173,12 @@ async function initializeWispSelect() {
     location.host +
     "/wisp/";
 
-  const hasNightPlus = await isNightPlusActive();
+  const authenticated = await isAuthenticated();
+  const hasNightPlus = authenticated ? await isNightPlusActive() : false;
 
   wispSelect.innerHTML = '<option value="auto">Automatic (Default)</option>';
 
-  const freeServers = [
-    { name: "Default Server", url: defaultWispUrl },
-  ];
+  const freeServers = [{ name: "Default Server", url: defaultWispUrl }];
 
   freeServers.forEach((server) => {
     const option = document.createElement("option");
@@ -207,28 +187,30 @@ async function initializeWispSelect() {
     wispSelect.appendChild(option);
   });
 
-  const vpnOptgroup = document.createElement("optgroup");
-  vpnOptgroup.label = "🔒 VPN Servers (Night+)";
+  if (authenticated) {
+    const vpnOptgroup = document.createElement("optgroup");
+    vpnOptgroup.label = "🔒 VPN Servers (Night+)";
 
-  const vpnServers = [
-    { name: "Germany", path: "germany" },
-    { name: "Japan", path: "japan" },
-    { name: "Mexico", path: "mexico" },
-    { name: "Switzerland", path: "switzerland" },
-    { name: "United Kingdom", path: "uk" },
-    { name: "US East", path: "useast" },
-    { name: "Canada East", path: "caeast" },
-    { name: "US West", path: "uswest" }
-  ];
+    const vpnServers = [
+      { name: "Germany (Mullvad)", path: "germany" },
+      { name: "Japan (Mullvad)", path: "japan" },
+      { name: "Mexico (Mullvad)", path: "mexico" },
+      { name: "Switzerland (Mullvad)", path: "switzerland" },
+      { name: "United Kingdom (Mullvad)", path: "uk" },
+      { name: "US East", path: "useast" },
+      { name: "Canada East", path: "caeast" },
+      { name: "US West", path: "uswest" },
+    ];
 
-  vpnServers.forEach((server) => {
-    const option = document.createElement("option");
-    option.value = `wss://demoplussrv.night-x.com/api/servers/${server.path}/`;
-    option.textContent = server.name;
-    vpnOptgroup.appendChild(option);
-  });
+    vpnServers.forEach((server) => {
+      const option = document.createElement("option");
+      option.value = `wss://demoplussrv.night-x.com/api/servers/${server.path}/`;
+      option.textContent = server.name;
+      vpnOptgroup.appendChild(option);
+    });
 
-  wispSelect.appendChild(vpnOptgroup);
+    wispSelect.appendChild(vpnOptgroup);
+  }
 
   if (hasNightPlus) {
     try {
@@ -486,7 +468,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  colorPicker.on("input:change", (color: any) => {
+  colorPicker.on("input:end", (color: any) => {
     eventsAPI.emit("theme:color-change", { color: color.rgbaString });
     console.log("Custom color changed to:", color.rgbaString);
   });
@@ -962,6 +944,121 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  async function initializeNewtabSettings() {
+    const newtabSelect = document.getElementById(
+      "newtabSelect",
+    ) as HTMLSelectElement;
+    const newtabCustomInput = document.getElementById(
+      "newtabCustomInput",
+    ) as HTMLElement;
+    const newtabCustomUrl = document.getElementById(
+      "newtabCustomUrl",
+    ) as HTMLInputElement;
+
+    if (!newtabSelect) return;
+
+    const savedPage = (await settingsAPI.getItem("newtabPage")) || "default";
+    const savedUrl = (await settingsAPI.getItem("newtabCustomUrl")) || "";
+
+    newtabSelect.value = savedPage;
+    if (newtabCustomUrl) newtabCustomUrl.value = savedUrl;
+
+    if (savedPage === "custom") {
+      newtabCustomInput?.classList.remove("hidden");
+    }
+
+    newtabSelect.addEventListener("change", async () => {
+      await settingsAPI.setItem("newtabPage", newtabSelect.value);
+
+      if (newtabSelect.value === "custom") {
+        newtabCustomInput?.classList.remove("hidden");
+      } else {
+        newtabCustomInput?.classList.add("hidden");
+      }
+    });
+
+    newtabCustomUrl?.addEventListener("change", async () => {
+      await settingsAPI.setItem("newtabCustomUrl", newtabCustomUrl.value);
+    });
+  }
+
+  async function initializeHomeSettings() {
+    const homeSelect = document.getElementById(
+      "homeSelect",
+    ) as HTMLSelectElement;
+    const homeCustomInput = document.getElementById(
+      "homeCustomInput",
+    ) as HTMLElement;
+    const homeCustomUrl = document.getElementById(
+      "homeCustomUrl",
+    ) as HTMLInputElement;
+
+    if (!homeSelect) return;
+
+    const savedUrl = (await settingsAPI.getItem("homeUrl")) || "default";
+    const savedCustomUrl = (await settingsAPI.getItem("homeCustomUrl")) || "";
+
+    homeSelect.value = savedUrl;
+    if (homeCustomUrl) homeCustomUrl.value = savedCustomUrl;
+
+    if (savedUrl === "custom") {
+      homeCustomInput?.classList.remove("hidden");
+    }
+
+    homeSelect.addEventListener("change", async () => {
+      await settingsAPI.setItem("homeUrl", homeSelect.value);
+
+      if (homeSelect.value === "custom") {
+        homeCustomInput?.classList.remove("hidden");
+      } else {
+        homeCustomInput?.classList.add("hidden");
+      }
+    });
+
+    homeCustomUrl?.addEventListener("change", async () => {
+      await settingsAPI.setItem("homeCustomUrl", homeCustomUrl.value);
+    });
+  }
+
+  async function initializeStartupSettings() {
+    const startupSelect = document.getElementById(
+      "startupSelect",
+    ) as HTMLSelectElement;
+    const startupCustomInput = document.getElementById(
+      "startupCustomInput",
+    ) as HTMLElement;
+    const startupCustomUrl = document.getElementById(
+      "startupCustomUrl",
+    ) as HTMLInputElement;
+
+    if (!startupSelect) return;
+
+    const savedBehavior =
+      (await settingsAPI.getItem("startupBehavior")) || "newtab";
+    const savedUrl = (await settingsAPI.getItem("startupCustomUrl")) || "";
+
+    startupSelect.value = savedBehavior;
+    if (startupCustomUrl) startupCustomUrl.value = savedUrl;
+
+    if (savedBehavior === "custom") {
+      startupCustomInput?.classList.remove("hidden");
+    }
+
+    startupSelect.addEventListener("change", async () => {
+      await settingsAPI.setItem("startupBehavior", startupSelect.value);
+
+      if (startupSelect.value === "custom") {
+        startupCustomInput?.classList.remove("hidden");
+      } else {
+        startupCustomInput?.classList.add("hidden");
+      }
+    });
+
+    startupCustomUrl?.addEventListener("change", async () => {
+      await settingsAPI.setItem("startupCustomUrl", startupCustomUrl.value);
+    });
+  }
+
   await initializeSelect("proxySelect", "proxy", "sj");
   await initializeSelect("transportSelect", "transports", "libcurl");
   await initializeSelect(
@@ -969,6 +1066,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     "search",
     "https://duckduckgo.com/?q=%s",
   );
+  await initializeSelect("devtools-select", "devtools", "eruda");
+
+  await initializeNewtabSettings();
+  await initializeHomeSettings();
+  await initializeStartupSettings();
+  await initSwitch("searchSuggestionsToggle", "searchSuggestions", null, true);
+  await initSwitch("newtabShortcutsToggle", "newtabShowShortcuts", null, true);
 
   await initializeWispSelect();
 
@@ -994,27 +1098,134 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  await initTextInput("proxyServerSetting", "proxyServer", "");
-
-  initButton("saveProxyServerSetting", async () => {
-    const proxyServerInput = document.getElementById(
-      "proxyServerSetting",
+  async function initializeProxyServerSelect() {
+    const proxyServerSelect = document.getElementById(
+      "proxyServerSelect",
+    ) as HTMLSelectElement;
+    const useCustomBtn = document.getElementById(
+      "useCustomProxyServer",
+    ) as HTMLButtonElement;
+    const customInput = document.getElementById(
+      "proxyServerCustomInput",
+    ) as HTMLElement;
+    const customUrlInput = document.getElementById(
+      "proxyServerCustomUrl",
     ) as HTMLInputElement;
-    const value = proxyServerInput.value.trim();
-    await settingsAPI.setItem("proxyServer", value);
-    console.log("Remote proxy server saved:", value);
-    location.reload();
-  });
+    const saveCustomBtn = document.getElementById(
+      "saveProxyServerCustom",
+    ) as HTMLButtonElement;
+    const cancelCustomBtn = document.getElementById(
+      "cancelProxyServerCustom",
+    ) as HTMLButtonElement;
 
-  initButton("resetProxyServerSetting", async () => {
-    await settingsAPI.setItem("proxyServer", "");
-    const proxyServerInput = document.getElementById(
-      "proxyServerSetting",
-    ) as HTMLInputElement;
-    proxyServerInput.value = "";
-    console.log("Remote proxy server disabled");
-    location.reload();
-  });
+    if (!proxyServerSelect) return;
+
+    const authenticated = await isAuthenticated();
+
+    if (authenticated) {
+      try {
+        const response = await window.parent.proxy.fetch(
+          "https://api.mullvad.net/public/relays/wireguard/v1/",
+        );
+        const data = JSON.parse(response);
+
+        if (data.countries && Array.isArray(data.countries)) {
+          const mullvadOptgroup = document.createElement("optgroup");
+          mullvadOptgroup.label = "Mullvad Servers (Requires Night+ VPN)";
+
+          data.countries.forEach((country: any) => {
+            if (country.cities && Array.isArray(country.cities)) {
+              country.cities.forEach((city: any) => {
+                if (city.relays && Array.isArray(city.relays)) {
+                  city.relays.forEach((relay: any) => {
+                    const hostname = relay.hostname;
+                    const parts = hostname.split("-");
+                    if (parts.length >= 4) {
+                      const nodeNumber = parts[parts.length - 1];
+                      const baseHostname = parts.slice(0, -1).join("-");
+                      const socksHostname = `${baseHostname}-socks5-${nodeNumber}`;
+                      const socksUrl = `socks5h://${socksHostname}.relays.mullvad.net:1080`;
+
+                      const option = document.createElement("option");
+                      option.value = socksUrl;
+                      option.textContent = `${country.name} - ${city.name} (${hostname})`;
+                      mullvadOptgroup.appendChild(option);
+                    }
+                  });
+                }
+              });
+            }
+          });
+
+          proxyServerSelect.appendChild(mullvadOptgroup);
+        }
+      } catch (error) {
+        console.error("Failed to fetch Mullvad relays:", error);
+      }
+    }
+
+    const savedProxyServer = (await settingsAPI.getItem("proxyServer")) || "";
+
+    if (
+      savedProxyServer &&
+      !Array.from(proxyServerSelect.options).some(
+        (opt) => opt.value === savedProxyServer,
+      )
+    ) {
+      proxyServerSelect.value = "custom";
+      if (customUrlInput) customUrlInput.value = savedProxyServer;
+    } else {
+      proxyServerSelect.value = savedProxyServer;
+    }
+
+    proxyServerSelect.addEventListener("change", async () => {
+      if (proxyServerSelect.value === "custom") {
+        customInput?.classList.remove("hidden");
+        useCustomBtn.style.display = "none";
+      } else {
+        customInput?.classList.add("hidden");
+        useCustomBtn.style.display = "block";
+        await settingsAPI.setItem("proxyServer", proxyServerSelect.value);
+        if (proxyServerSelect.value !== "") {
+          location.reload();
+        }
+      }
+    });
+
+    useCustomBtn?.addEventListener("click", () => {
+      proxyServerSelect.value = "custom";
+      customInput?.classList.remove("hidden");
+      useCustomBtn.style.display = "none";
+    });
+
+    saveCustomBtn?.addEventListener("click", async () => {
+      const customValue = customUrlInput?.value.trim() || "";
+      await settingsAPI.setItem("proxyServer", customValue);
+      customInput?.classList.add("hidden");
+      useCustomBtn.style.display = "block";
+
+      const existingCustomOption = Array.from(proxyServerSelect.options).find(
+        (opt) => opt.value === "custom",
+      );
+      if (!existingCustomOption) {
+        const customOption = document.createElement("option");
+        customOption.value = "custom";
+        customOption.textContent = `Custom: ${customValue}`;
+        proxyServerSelect.appendChild(customOption);
+      }
+
+      proxyServerSelect.value = "custom";
+      location.reload();
+    });
+
+    cancelCustomBtn?.addEventListener("click", () => {
+      customInput?.classList.add("hidden");
+      useCustomBtn.style.display = "block";
+      proxyServerSelect.value = savedProxyServer;
+    });
+  }
+
+  await initializeProxyServerSelect();
 
   initButton("bgUpload", () => {
     const uploadBGInput = document.getElementById(
@@ -1052,6 +1263,8 @@ const panicKeybindInput = document.getElementById(
 ) as HTMLInputElement;
 const panicKey = panicKeybindInput?.getAttribute("data-key") || "panicKeybind";
 
+const keybindManager = new KeybindManager(settingsAPI);
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (panicKeybindInput) {
     const savedKeybind = (await settingsAPI.getItem(panicKey)) || "`";
@@ -1061,4 +1274,201 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("Panic keybind changed to:", panicKeybindInput.value);
     });
   }
+
+  await settingsAPI.removeItem("keybinds");
+  await keybindManager.loadKeybinds();
+});
+
+function initializeKeybindsUI() {
+  const container = document.getElementById("keybinds-container");
+  if (!container) return;
+
+  KEYBIND_CATEGORIES.forEach((category) => {
+    const categoryKeybinds = keybindManager.getKeybindsByCategory(
+      category.name,
+    );
+
+    if (Object.keys(categoryKeybinds).length === 0) return;
+
+    const categorySection = document.createElement("div");
+    categorySection.className = "space-y-3";
+    categorySection.innerHTML = `
+      <h3 class="text-sm font-semibold text-[var(--text)] flex items-center gap-2">
+        <i data-lucide="${category.icon || "folder"}" class="h-4 w-4"></i>
+        ${category.label}
+      </h3>
+      <div class="space-y-2" data-category="${category.name}"></div>
+    `;
+
+    const keybindsList = categorySection.querySelector(
+      `[data-category="${category.name}"]`,
+    );
+
+    Object.entries(categoryKeybinds).forEach(([id, config]) => {
+      const keybindRow = document.createElement("div");
+      keybindRow.className =
+        "bg-[var(--bg-1)] rounded-lg p-4 ring-1 ring-inset ring-[var(--white-08)] flex items-center justify-between gap-4";
+      keybindRow.innerHTML = `
+        <div class="flex-1">
+          <div class="text-sm text-[var(--text)]">${config.description}</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            data-keybind-id="${id}"
+            class="keybind-display px-3 py-1.5 text-xs rounded-md bg-[var(--bg-2)] border border-[var(--white-10)] text-[var(--text)] hover:bg-[var(--white-05)] transition-colors font-mono"
+          >
+            ${keybindManager.formatKeybind(config)}
+          </button>
+          <button
+            data-reset-keybind="${id}"
+            class="p-1.5 text-xs rounded-md text-[var(--proto)] hover:text-[var(--text)] hover:bg-[var(--white-05)] transition-colors"
+            title="Reset to default"
+          >
+            <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+          </button>
+        </div>
+      `;
+
+      keybindsList?.appendChild(keybindRow);
+    });
+
+    container.appendChild(categorySection);
+  });
+
+  createIcons({ icons });
+
+  container.querySelectorAll(".keybind-display").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      const keybindId = target.dataset.keybindId;
+      if (keybindId) startKeybindCapture(keybindId, target);
+    });
+  });
+
+  container.querySelectorAll("[data-reset-keybind]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      const keybindId = target.dataset.resetKeybind;
+      if (keybindId) {
+        keybindManager.resetKeybind(keybindId);
+        refreshKeybindsUI();
+        window.opener?.postMessage({ type: "keybinds-updated" }, "*");
+      }
+    });
+  });
+
+  document
+    .getElementById("reset-all-keybinds")
+    ?.addEventListener("click", async () => {
+      if (confirm("Are you sure you want to reset all keybinds to defaults?")) {
+        keybindManager.resetAllKeybinds();
+        refreshKeybindsUI();
+        window.opener?.postMessage({ type: "keybinds-updated" }, "*");
+      }
+    });
+}
+
+function startKeybindCapture(keybindId: string, button: HTMLButtonElement) {
+  button.textContent = "Press key...";
+  button.classList.add("ring-2", "ring-[var(--main)]");
+
+  const keyboardManager = (window as any).functions?.keyboardManager;
+  if (keyboardManager) {
+    keyboardManager.captureMode = true;
+  }
+
+  const originalKeybind = keybindManager.getAllKeybinds()[keybindId];
+
+  const preventAll = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    preventAll(e);
+
+    if (e.key === "Escape") {
+      cleanup();
+      return;
+    }
+
+    const modifierKeys = [
+      "Control",
+      "Alt",
+      "Shift",
+      "Meta",
+      "AltGraph",
+      "CapsLock",
+      "Fn",
+      "FnLock",
+      "Hyper",
+      "NumLock",
+      "ScrollLock",
+      "Super",
+      "Symbol",
+      "SymbolLock",
+    ];
+    if (modifierKeys.includes(e.key)) {
+      return;
+    }
+
+    const newConfig = {
+      ...originalKeybind,
+      key: e.key,
+      ctrl: e.ctrlKey || e.metaKey,
+      alt: e.altKey,
+      shift: e.shiftKey,
+    };
+
+    const conflicts = keybindManager.getConflicts(newConfig, keybindId);
+
+    if (conflicts.length > 0) {
+      const conflictKeybind = keybindManager.getAllKeybinds()[conflicts[0]];
+      if (
+        !confirm(
+          `This keybind conflicts with "${conflictKeybind.description}". Override?`,
+        )
+      ) {
+        cleanup();
+        return;
+      }
+    }
+
+    keybindManager.setKeybind(keybindId, newConfig);
+    cleanup();
+    refreshKeybindsUI();
+
+    window.opener?.postMessage({ type: "keybinds-updated" }, "*");
+  };
+
+  const cleanup = () => {
+    const keyboardManager = (window as any).functions?.keyboardManager;
+    if (keyboardManager) {
+      keyboardManager.captureMode = false;
+    }
+    window.removeEventListener("keydown", handleKeyDown, true);
+    window.removeEventListener("keyup", preventAll, true);
+    window.removeEventListener("keypress", preventAll, true);
+    document.removeEventListener("contextmenu", preventAll, true);
+    button.classList.remove("ring-2", "ring-[var(--main)]");
+    button.textContent = keybindManager.formatKeybind(originalKeybind);
+  };
+
+  window.addEventListener("keydown", handleKeyDown, true);
+  window.addEventListener("keyup", preventAll, true);
+  window.addEventListener("keypress", preventAll, true);
+  document.addEventListener("contextmenu", preventAll, true);
+}
+
+function refreshKeybindsUI() {
+  const container = document.getElementById("keybinds-container");
+  if (!container) return;
+  container.innerHTML = "";
+  initializeKeybindsUI();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await keybindManager.loadKeybinds();
+  initializeKeybindsUI();
 });

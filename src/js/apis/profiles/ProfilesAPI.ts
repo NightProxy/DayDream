@@ -1,4 +1,3 @@
-import { SettingsAPI } from "../settings";
 import { ProfileManager } from "./profileManager";
 import { StateManager } from "./stateManager";
 import { ExportManager } from "./exportManager";
@@ -7,7 +6,6 @@ import { getAllIDBData, setIDBDataLegacy } from "./storage/indexedDB";
 
 class ProfilesAPI {
   private currentProfile: string | null;
-  private settings: SettingsAPI;
   private profileManager: ProfileManager;
   private stateManager: StateManager;
   private exportManager: ExportManager;
@@ -18,7 +16,6 @@ class ProfilesAPI {
     maxProfiles: number = 3,
   ) {
     this.currentProfile = null;
-    this.settings = new SettingsAPI();
     this.profileManager = new ProfileManager(
       canExceedProfileLimit,
       maxProfiles,
@@ -31,9 +28,13 @@ class ProfilesAPI {
 
   private async initializeCurrentProfile(): Promise<void> {
     try {
-      const savedProfile = await this.settings.getItem(
-        "__ddx_current_profile__",
+      const profileStore = this.profileManager.getStore();
+      const savedProfile = await profileStore.getItem("__current_profile__");
+      console.log(
+        "[ProfilesAPI] Initializing from Profiles DB, saved profile:",
+        savedProfile,
       );
+
       if (savedProfile && (await this.profileExists(savedProfile as string))) {
         this.currentProfile = savedProfile as string;
 
@@ -49,13 +50,16 @@ class ProfilesAPI {
 
   private async saveCurrentProfileReference(): Promise<void> {
     try {
+      const profileStore = this.profileManager.getStore();
       if (this.currentProfile) {
-        await this.settings.setItem(
-          "__ddx_current_profile__",
+        console.log(
+          "[ProfilesAPI] Saving current profile to Profiles DB:",
           this.currentProfile,
         );
+        await profileStore.setItem("__current_profile__", this.currentProfile);
       } else {
-        await this.settings.removeItem("__ddx_current_profile__");
+        console.log("[ProfilesAPI] Removing current profile from Profiles DB");
+        await profileStore.removeItem("__current_profile__");
       }
     } catch (error) {
       console.error("Failed to save current profile reference:", error);
@@ -87,25 +91,43 @@ class ProfilesAPI {
   }
 
   async deleteProfile(userID: string): Promise<boolean> {
-    const result = await this.profileManager.deleteProfile(userID, this.currentProfile);
-    
+    const result = await this.profileManager.deleteProfile(
+      userID,
+      this.currentProfile,
+    );
+
     if (result && this.currentProfile === userID) {
       this.currentProfile = null;
       await this.saveCurrentProfileReference();
     }
-    
+
     return result;
   }
 
   async saveProfile(userID: string): Promise<boolean> {
+    console.log("[ProfilesAPI] Saving profile:", userID);
     const currentState = await this.stateManager.getCurrentBrowserState();
-    return await this.profileManager.saveProfile(userID, currentState);
+    console.log("[ProfilesAPI] Captured state:", {
+      cookiesCount: Object.keys(currentState.cookies || {}).length,
+      localStorageCount: Object.keys(currentState.localStorage || {}).length,
+      indexedDBCount: (currentState.indexedDB || []).length,
+      timestamp: currentState.timestamp,
+    });
+    const result = await this.profileManager.saveProfile(userID, currentState);
+    console.log("[ProfilesAPI] Save result:", result);
+    return result;
   }
 
   async switchProfile(
     userID: string,
     skipCurrentSave: boolean = false,
   ): Promise<boolean> {
+    console.log("[ProfilesAPI] switchProfile called:", {
+      userID,
+      skipCurrentSave,
+      currentProfile: this.currentProfile,
+    });
+
     if (!userID || typeof userID !== "string") {
       throw new Error("Invalid userID: must be a non-empty string");
     }
@@ -116,13 +138,26 @@ class ProfilesAPI {
     }
 
     if (this.currentProfile && !skipCurrentSave) {
+      console.log(
+        "[ProfilesAPI] Saving current profile before switch:",
+        this.currentProfile,
+      );
       await this.saveProfile(this.currentProfile);
+    } else if (skipCurrentSave) {
+      console.log(
+        "[ProfilesAPI] Skipping save of current profile (skipCurrentSave=true)",
+      );
     }
 
+    console.log("[ProfilesAPI] Applying target profile state:", userID);
     await this.stateManager.applyBrowserState(targetProfile);
 
     this.currentProfile = userID;
     await this.saveCurrentProfileReference();
+    console.log(
+      "[ProfilesAPI] Switch complete, new current profile:",
+      this.currentProfile,
+    );
 
     return true;
   }

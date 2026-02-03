@@ -203,7 +203,10 @@ export class TabHistoryIntegration {
 
   private decodeProxiedUrl(url: string): string {
     try {
-      if (window.protocols?.isRegisteredProtocol(url) || url.includes("/internal/")) {
+      if (
+        window.protocols?.isRegisteredProtocol(url) ||
+        url.includes("/internal/")
+      ) {
         return url;
       }
 

@@ -33,9 +33,7 @@ export function createSection(
     ],
   );
 
-  const searchResults = section.querySelector(
-    ".search-results",
-  ) as HTMLElement;
+  const searchResults = section.querySelector(".search-results") as HTMLElement;
   return { section, searchResults };
 }
 

@@ -148,4 +148,155 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
   }
+
+  const qfNew = document.querySelector<HTMLElement>('[data-qf="new"]');
+  if (qfNew) {
+    let active = false;
+    qfNew.addEventListener("click", () => {
+      active = !active;
+      qfNew.classList.toggle("bg-[var(--white-05)]", active);
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      document
+        .querySelectorAll<HTMLDetailsElement>("#updates-list details")
+        .forEach((d) => {
+          const dateStr = d.dataset.date;
+          if (!dateStr) return;
+          const updateDate = new Date(dateStr).getTime();
+          if (active && updateDate < sevenDaysAgo) {
+            d.setAttribute("data-hidden", "true");
+          } else if (!active) {
+            d.removeAttribute("data-hidden");
+          }
+        });
+    });
+  }
+
+  const searchInput = document.getElementById(
+    "updates-search",
+  ) as HTMLInputElement;
+  const clearBtn = document.getElementById("updates-clear");
+  const filterBtn = document.getElementById("updates-filter");
+  const tagsContainer = document.getElementById("updates-tags");
+  const emptySection = document.getElementById("updates-empty");
+
+  let currentSearchQuery = "";
+  let activeTag = "all";
+
+  const filterUpdates = () => {
+    const allUpdates = document.querySelectorAll<HTMLDetailsElement>(
+      "#updates-list details",
+    );
+    let visibleCount = 0;
+
+    allUpdates.forEach((update) => {
+      const title =
+        update.querySelector("[data-title]")?.textContent?.toLowerCase() || "";
+      const excerpt =
+        update.querySelector("[data-excerpt]")?.textContent?.toLowerCase() ||
+        "";
+      const tags = update.dataset.tags || "";
+
+      const matchesSearch =
+        currentSearchQuery === "" ||
+        title.includes(currentSearchQuery) ||
+        excerpt.includes(currentSearchQuery);
+
+      const matchesTag = activeTag === "all" || tags.includes(activeTag);
+
+      const shouldShow =
+        matchesSearch && matchesTag && !update.hasAttribute("data-hidden");
+
+      if (shouldShow) {
+        update.style.display = "";
+        visibleCount++;
+      } else {
+        update.style.display = "none";
+      }
+    });
+
+    if (emptySection) {
+      emptySection.hidden = visibleCount > 0;
+    }
+  };
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      currentSearchQuery = (e.target as HTMLInputElement).value
+        .toLowerCase()
+        .trim();
+      filterUpdates();
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (searchInput) {
+        searchInput.value = "";
+        currentSearchQuery = "";
+      }
+      filterUpdates();
+    });
+  }
+
+  if (filterBtn && tagsContainer) {
+    filterBtn.addEventListener("click", () => {
+      const isExpanded = filterBtn.getAttribute("aria-expanded") === "true";
+      filterBtn.setAttribute("aria-expanded", (!isExpanded).toString());
+      tagsContainer.style.display = isExpanded ? "none" : "flex";
+    });
+  }
+
+  if (tagsContainer) {
+    const tagButtons =
+      tagsContainer.querySelectorAll<HTMLButtonElement>("button[data-tag]");
+    tagButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tagButtons.forEach((b) => {
+          b.classList.remove("bg-[var(--white-05)]");
+          b.classList.add("ring-[var(--white-08)]");
+        });
+
+        btn.classList.add("bg-[var(--white-05)]");
+        btn.classList.remove("ring-[var(--white-08)]");
+
+        activeTag = btn.dataset.tag || "all";
+        filterUpdates();
+      });
+    });
+  }
+
+  const resetCacheBtn = document.getElementById("reset-cache-btn");
+  if (resetCacheBtn) {
+    resetCacheBtn.addEventListener("click", async () => {
+      const confirmed = confirm(
+        "This will clear all cached data including profiles, settings, and history. The page will reload. Continue?",
+      );
+      if (!confirmed) return;
+
+      try {
+        await Promise.all([
+          indexedDB.deleteDatabase("localforage"),
+          indexedDB.deleteDatabase("NightPlus"),
+          indexedDB.deleteDatabase("BrowserSettings"),
+          indexedDB.deleteDatabase("Profiles"),
+        ]);
+
+        localStorage.clear();
+        sessionStorage.clear();
+
+        if ("caches" in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map((name) => caches.delete(name)));
+        }
+
+        alert("Cache cleared successfully! The page will now reload.");
+        window.location.reload();
+      } catch (error) {
+        console.error("Failed to clear cache:", error);
+        alert(
+          "Failed to clear some cached data. Try using your browser's clear cache feature.",
+        );
+      }
+    });
+  }
 });
