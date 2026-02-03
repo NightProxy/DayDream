@@ -1,0 +1,42 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DayDream X</title>
+    <script src="/data/bundle.js" defer></script>
+    <script src="/data/config.js" defer></script>
+    <script src="/assets/config.js" defer></script>
+    <script src="/assets/all.js" defer></script>
+    <link rel="icon" type="image/x-icon" href="/res/logo.png" />
+    <meta
+      name="description"
+      content="Your Favorite Browser Fusion of Opera, Arc, & Vivaldi"
+    />
+    <meta
+      name="keywords"
+      content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
+    />
+    <meta property="og:image" content="/res/logo.png" />
+
+    <script>
+      // Analytics
+      document.head.append(
+        Object.assign(document.createElement("script"), {
+          async: true,
+          src: "https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z",
+        }),
+        Object.assign(document.createElement("script"), {
+          textContent:
+            "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-BMERY7ZH6Z');",
+        }),
+      );
+    </script>
+  </head>
+
+  <body class="bg-[var(--background-color)] text-[var(--text-color)]">
+    <div id="browser-container"></div>
+    <script type="module" src="/src/js/index.ts" defer></script>
+  </body>
+</html>

@@ -1,0 +1,484 @@
+@import "./vars.css";
+@import "./global.css";
+
+:root {
+  --internal-bg: var(--background-color, var(--bg-2));
+  --internal-bg-secondary: var(--input-background-color, var(--bg-1));
+  --internal-text: var(--text-color, var(--text));
+  --internal-text-muted: var(--hover-text-color, var(--proto));
+  --internal-border: var(--border-color, var(--white-08));
+  --internal-accent: var(--main-color, var(--main));
+  --internal-accent-hover: var(--hover-background-color, var(--main-20a));
+  --background-opacity: 1;
+  --sidebar-opacity: 0.85;
+  --menu-opacity: 0.9;
+
+  --tw-bg-opacity: 1;
+  --tw-text-opacity: 1;
+  --tw-border-opacity: 1;
+}
+
+.has-background-image {
+  --background-opacity: 0.7;
+  --sidebar-opacity: 0.75;
+  --menu-opacity: 0.85;
+}
+
+.has-background-image :root {
+  --internal-bg: color-mix(
+    in srgb,
+    var(--background-color, var(--bg-2)) 70%,
+    transparent
+  );
+  --internal-bg-secondary: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) 75%,
+    transparent
+  );
+}
+
+html {
+  background-color: var(--internal-bg);
+  color: var(--internal-text);
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+body {
+  background-color: var(--internal-bg);
+  color: var(--internal-text);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.has-background-image body {
+  background-color: transparent;
+}
+
+.has-background-image body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background-color: var(--background-color, var(--bg-2));
+  opacity: var(--background-opacity);
+}
+
+.theme-bg-primary {
+  background-color: var(--internal-bg) !important;
+}
+
+.theme-bg-secondary {
+  background-color: var(--internal-bg-secondary) !important;
+}
+
+.theme-text-primary {
+  color: var(--internal-text) !important;
+}
+
+.theme-text-muted {
+  color: var(--internal-text-muted) !important;
+}
+
+.theme-text-accent {
+  color: var(--internal-accent) !important;
+}
+
+.theme-bg-accent {
+  background-color: var(--internal-accent) !important;
+}
+
+.extension-context-menu,
+.extension-sidebar-menu {
+  animation: context-menu-appear 0.15s ease-out;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes context-menu-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.extension-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.extension-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.extension-toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--white-20);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.extension-toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.extension-toggle input:checked + .extension-toggle-slider {
+  background: var(--main);
+}
+
+.extension-toggle input:checked + .extension-toggle-slider::after {
+  transform: translateX(16px);
+}
+
+.extension-toggle input:focus + .extension-toggle-slider {
+  outline: 2px solid var(--main);
+  outline-offset: 2px;
+}
+
+[data-card] {
+  transition: all 0.2s ease;
+}
+
+[data-card]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.extension-status-enabled {
+  background: #10b981;
+}
+
+.extension-status-disabled {
+  background: #6b7280;
+}
+
+.theme-border {
+  border-color: var(--internal-border) !important;
+}
+
+[class*="bg-[var(--bg-1)]"] {
+  background-color: var(--internal-bg-secondary) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+[class*="bg-[var(--bg-2)]"] {
+  background-color: var(--internal-bg) !important;
+}
+
+.has-background-image [class*="bg-[var(--bg-1)]"] {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--sidebar-opacity),
+    transparent
+  ) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.has-background-image [class*="bg-[var(--bg-2)]"] {
+  background-color: color-mix(
+    in srgb,
+    var(--background-color, var(--bg-2)) var(--background-opacity),
+    transparent
+  ) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[class*="text-[var(--text)]"] {
+  color: var(--internal-text) !important;
+}
+
+[class*="text-[var(--proto)]"] {
+  color: var(--internal-text-muted) !important;
+}
+
+[class*="text-[var(--main)]"] {
+  color: var(--internal-accent) !important;
+}
+
+[class*="bg-[var(--main)]"] {
+  background-color: var(--internal-accent) !important;
+}
+
+[class*="border-[var(--white-08)]"] {
+  border-color: var(--internal-border) !important;
+}
+
+[class*="ring-[var(--white-08)]"] {
+  --tw-ring-color: var(--internal-border) !important;
+}
+
+[class*="ring-[var(--main-35a)]"] {
+  --tw-ring-color: var(--main-35a) !important;
+}
+
+.theme-transition {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+* {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.no-theme-transition,
+.no-theme-transition * {
+  transition: none !important;
+}
+
+.modal,
+.overlay,
+[role="dialog"] {
+  background-color: var(--internal-bg-secondary);
+  color: var(--internal-text);
+  border-color: var(--internal-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.context-menu,
+.dropdown-menu,
+[role="menu"] {
+  background-color: var(--internal-bg-secondary);
+  color: var(--internal-text);
+  border-color: var(--internal-border);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.has-background-image .modal,
+.has-background-image .overlay,
+.has-background-image [role="dialog"] {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.has-background-image .context-menu,
+.has-background-image .dropdown-menu,
+.has-background-image [role="menu"] {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid
+    color-mix(in srgb, var(--border-color, var(--white-08)) 50%, transparent);
+}
+
+input,
+select,
+textarea,
+button {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+::-webkit-scrollbar {
+  width: var(--scrollbar-size, 6px);
+  height: var(--scrollbar-size, 6px);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, var(--internal-accent));
+  border-radius: var(--scrollbar-radius, 6px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, var(--internal-accent));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active, var(--internal-accent));
+}
+
+.theme-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.internal-page {
+  min-height: 100vh;
+  background-color: var(--internal-bg);
+  color: var(--internal-text);
+}
+
+.internal-header {
+  background-color: var(--internal-bg-secondary);
+  border-bottom: 1px solid var(--internal-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.has-background-image .internal-header {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) 80%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.internal-sidebar {
+  background-color: var(--internal-bg-secondary);
+  border-right: 1px solid var(--internal-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.has-background-image .internal-sidebar {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--sidebar-opacity),
+    transparent
+  );
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.internal-content {
+  background-color: var(--internal-bg);
+}
+
+@media (max-width: 768px) {
+  .mobile-aside,
+  .mobile-nav {
+    background-color: var(--internal-bg-secondary);
+    color: var(--internal-text);
+    border-color: var(--internal-border);
+  }
+}
+
+@media print {
+  * {
+    background-color: white !important;
+    color: black !important;
+    border-color: #ccc !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+}
+
+.has-background-image aside,
+.has-background-image nav,
+.has-background-image .sidebar {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--sidebar-opacity),
+    transparent
+  ) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.has-background-image .card,
+.has-background-image .panel {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) var(--menu-opacity),
+    transparent
+  ) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.has-background-image header,
+.has-background-image .header {
+  background-color: color-mix(
+    in srgb,
+    var(--input-background-color, var(--bg-1)) 80%,
+    transparent
+  ) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.has-background-image body {
+  background-attachment: fixed;
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --internal-border: var(--text-color, var(--text));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--internal-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: var(--internal-accent);
+  color: var(--internal-bg);
+}
+
+::-moz-selection {
+  background-color: var(--internal-accent);
+  color: var(--internal-bg);
+}

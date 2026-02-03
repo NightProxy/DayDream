@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>New Tab</title>
+    <link rel="icon" type="image/x-icon" href="/res/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.cdnfonts.com/css/onest" rel="stylesheet" />
+    <link rel="stylesheet" href="/nightloginflow.css" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+    <script src="/night-login-frame.umd.js"></script>
+    <script src="/night-login.umd.js"></script>
+
+    <script type="module" src="/src/js/internal/newtab.ts"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] select-none antialiased">
+    <div class="min-h-dvh w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center relative z-10">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <div class="stack h-10 w-10">
+                <div
+                  class="masked-shape"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+
+              <span class="text-3xl tracking-widest text-[var(--text)] -mr-1"
+                >DayDream</span
+              ><em
+                class="text-3xl font-bold tracking-widest text-[var(--main)] -ml-1"
+                >X</em
+              >
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Share"
+                data-side="right"
+                data-align="center"
+                aria-label="Share"
+              >
+                <i data-lucide="share-2" class="h-4 w-4 text-white"></i>
+              </button>
+            </div>
+            <div id="trigger"></div>
+          </div>
+        </div>
+
+        <div class="mt-8 relative">
+          <input
+            class="w-full rounded-xl bg-[var(--bg-2)] pl-4 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+            placeholder="Search for anything..."
+            aria-label="Search"
+            id="searchInput"
+          />
+        </div>
+
+        <section
+          id="shortcuts-section"
+          class="mt-8 grid grid-cols-6 gap-4 max-w-4xl mx-auto"
+        ></section>
+      </main>
+
+      <div
+        id="editShortcutModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center"
+      >
+        <div
+          class="bg-[var(--bg-1)] rounded-xl border border-[var(--white-08)] p-6 w-full max-w-md mx-4"
+        >
+          <h3 class="text-lg font-semibold text-[var(--text)] mb-4">
+            Edit Shortcut
+          </h3>
+          <form id="editShortcutForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-[var(--text)] mb-2"
+                >Title</label
+              >
+              <input
+                type="text"
+                id="shortcutTitle"
+                required
+                class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--text)] mb-2"
+                >URL</label
+              >
+              <input
+                type="url"
+                id="shortcutUrl"
+                required
+                class="w-full px-3 py-2 bg-[var(--bg-2)] border border-[var(--white-10)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] focus:border-transparent"
+              />
+            </div>
+            <div class="flex justify-end gap-3">
+              <button
+                type="button"
+                id="cancelEditShortcut"
+                class="px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="absolute bottom-16 left-0 right-0 flex justify-center">
+        <button
+          id="nightPlusSignIn"
+          class="pointer-events-auto px-6 py-2 bg-[var(--main)] text-white rounded-lg hover:bg-[var(--main)]/90 transition-colors text-sm font-medium"
+        >
+          Sign into Night+
+        </button>
+      </div>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Server Latency:
+          <span id="latency" class="text-[var(--text)]/80">...</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a
+            href="https://gitlab.com/nightnetwork/daydreamx"
+            rel="noreferrer"
+            class="hover:text-[var(--text)]"
+            >GitLab</a
+          >
+          <span>\</span>
+          <a
+            href="https://discord.night-x.com"
+            rel="noreferrer"
+            class="hover:text-[var(--text)]"
+            >Discord</a
+          >
+          <span>\</span>
+          <a href="/internal/privacy/" class="hover:text-[var(--text)]"
+            >Privacy</a
+          >
+          <span>\</span>
+          <a href="/internal/terms/" class="hover:text-[var(--text)]">Terms</a>
+        </nav>
+      </footer>
+    </div>
+
+    <script>
+      document.documentElement.classList.add("pre-anim");
+      window.addEventListener("load", () => {
+        document
+          .querySelectorAll("body *:not(.always-visible)")
+          .forEach((el) => {
+            el.style.transition = "opacity .1s ease .1s";
+            el.style.opacity = "1";
+            el.style.pointerEvents = "";
+          });
+        document.documentElement.classList.remove("pre-anim");
+      });
+    </script>
+  </body>
+</html>
