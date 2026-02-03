@@ -14,6 +14,9 @@ export class TabPageClient {
     this.setupClickListener(iframe);
     this.setupErrorPageRedirect(iframe);
     this.setupNavigationTracking(iframe);
+    this.setupChiiInjection(iframe);
+    this.setupKeyboardHandler(iframe);
+    // this.polyfillAlertAPI(iframe);
   };
 
   cleanupIframe = (iframeId: string): void => {
@@ -121,7 +124,9 @@ export class TabPageClient {
       detail: {
         tabId: iframe.id.replace("iframe-", "tab-"),
         iframe,
-        tabElement: document.getElementById(iframe.id.replace("iframe-", "tab-")),
+        tabElement: document.getElementById(
+          iframe.id.replace("iframe-", "tab-"),
+        ),
       },
     });
     document.dispatchEvent(iframeLoadedEvent);
@@ -144,6 +149,96 @@ export class TabPageClient {
 
     if (errorTrace?.value) {
       this.redirectToErrorPage(iframe, errorTrace.value);
+    }
+  }
+
+  private setupChiiInjection(iframe: HTMLIFrameElement): void {
+    if (!iframe.contentWindow) return;
+
+    const tabId = iframe.id.replace("iframe-", "tab-");
+    const tabData = this.tabs.tabs.find((tab) => tab.id === tabId);
+
+    if (!tabData?.chiiPanel?.isActive) return;
+
+    this.injectChiiTarget(iframe);
+  }
+
+  private setupKeyboardHandler(iframe: HTMLIFrameElement): void {
+    if (!iframe.contentWindow) return;
+
+    try {
+      iframe.contentWindow.document.addEventListener(
+        "keydown",
+        async (event) => {
+          const keyboardManager = (window as any).functions?.keyboardManager;
+          if (
+            keyboardManager &&
+            typeof keyboardManager.handleKeyDown === "function"
+          ) {
+            await keyboardManager.handleKeyDown(event);
+          }
+        },
+        true,
+      );
+      console.log("[PageClient] Keyboard handler attached to iframe");
+    } catch (error) {
+      console.warn("[PageClient] Could not attach keyboard handler:", error);
+    }
+  }
+
+  private async injectChiiTarget(iframe: HTMLIFrameElement): Promise<void> {
+    try {
+      const iframeWin = iframe.contentWindow;
+      const iframeDoc = iframe.contentWindow?.document;
+      if (!iframeWin || !iframeDoc) return;
+
+      const tabId = iframe.id.replace("iframe-", "tab-");
+      const tabData = this.tabs.tabs.find((tab) => tab.id === tabId);
+
+      if (!tabData?.chiiPanel?.devtoolsIframe) {
+        console.error("[PageClient] No devtools iframe found for tab", tabId);
+        return;
+      }
+
+      if (!window.proxy) {
+        console.error("[PageClient] proxy not available");
+        return;
+      }
+
+      (iframeWin as any).ChiiDevtoolsIframe = tabData.chiiPanel.devtoolsIframe;
+      console.log(
+        "[PageClient] Set ChiiDevtoolsIframe on proxied window for tab",
+        tabId,
+      );
+
+      const targetSrc = "https://unpkg.com/chii@1.15.5/public/target.js";
+      const code = `
+        const existingScript = document.querySelector('script[src*="chii/target.js"]');
+        if (existingScript) {
+          console.log('[PageClient] Removing old Chii target.js');
+          existingScript.remove();
+        }
+
+        const script = document.createElement('script');
+        script.src = '${targetSrc}';
+        script.setAttribute('embedded', 'true');
+        script.setAttribute('cdn', 'https://unpkg.com/chii@1.15.5/public/');
+        script.onload = () => {
+          console.log('[PageClient] Chii target.js loaded in proxied page');
+        };
+        script.onerror = () => {
+          console.error('[PageClient] Failed to load Chii target.js');
+        };
+        document.head.appendChild(script);
+      `;
+
+      await window.proxy.eval(window.SWconfig, iframe, code);
+      console.log(
+        "[PageClient] Injected Chii target via liveInject for tab",
+        tabId,
+      );
+    } catch (error) {
+      console.error("[PageClient] Error setting up Chii injection:", error);
     }
   }
 
@@ -179,4 +274,15 @@ export class TabPageClient {
     iframe.addEventListener("load", errorPageHandler);
     this.tabs.proto.navigate("error");
   }
+
+  /*private polyfillAlertAPI(iframe: HTMLIFrameElement): void {
+    if (!iframe.contentWindow) return;
+    const win = iframe.contentWindow;
+
+    const originalAlert = win.alert;
+
+    win.alert = (message?: string): void => {
+      window.parent.nightmare?.alert?.display(message || "Alert");
+    }
+  }*/
 }

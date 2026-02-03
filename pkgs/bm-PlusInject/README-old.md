@@ -1,4 +1,5 @@
 # bare-mux
+
 <a href="https://www.npmjs.com/package/@mercuryworkshop/bare-mux"><img src="https://img.shields.io/npm/v/@mercuryworkshop/bare-mux.svg?maxAge=3600" alt="npm version" /></a>
 
 A system for managing http transports in a project such as [Ultraviolet](https://github.com/Titaniumnetwork-dev/Ultraviolet) and [Scramjet](https://github.com/MercuryWorkshop/Scramjet).
@@ -10,6 +11,7 @@ Implements the [TompHTTP Bare](https://github.com/tomphttp/specifications/) clie
 Specifically, this is what allows proxies such as [Nebula](https://github.com/NebulaServices/Nebula) to switch HTTP transports seamlessly.
 
 A transport is a module that implements the `BareTransport` interface.
+
 ```js
 export interface BareTransport {
   init: () => Promise<void>;
@@ -55,17 +57,25 @@ npm install @mercuryworkshop/bare-mux@1
 ```
 
 ## Usage
+
 Examples of transports include [EpoxyTransport](https://github.com/MercuryWorkshop/EpoxyTransport), [CurlTransport](https://github.com/MercuryWorkshop/CurlTransport), and [Bare-Client](https://github.com/MercuryWorkshop/Bare-as-module3).
 
 Here is an example of using bare-mux:
+
 ```js
 /// As an end-user
 import { BareMuxConnection } from "@mercuryworkshop/bare-mux";
 const conn = new BareMuxConnection("/bare-mux/worker.js");
 // Set Bare-Client transport
-await conn.setTransport("/path/to/transport/index.mjs", ["arg1", { wisp: "wss://wisp.mercurywork.shop" }, "arg3"]);
+await conn.setTransport("/path/to/transport/index.mjs", [
+  "arg1",
+  { wisp: "wss://wisp.mercurywork.shop" },
+  "arg3",
+]);
 // Epoxy Client as an example
-await conn.setTransport("/epoxy/index.mjs", [{ wisp: "wss://wisp.mercurywork.shop/" }]);
+await conn.setTransport("/epoxy/index.mjs", [
+  { wisp: "wss://wisp.mercurywork.shop/" },
+]);
 ```
 
 ```js

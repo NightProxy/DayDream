@@ -600,9 +600,23 @@ async function renderInstalledExtensions() {
   );
   existingCards.forEach((card) => card.remove());
 
+  const hiddenExtensions = JSON.parse(
+    localStorage.getItem("hiddenExtensions") || "[]",
+  );
+  const showHidden =
+    installedSection.getAttribute("data-show-hidden") === "true";
+
   const installedExtensions = extensionsManager.getInstalledExtensions();
   installedExtensions.forEach((extension) => {
     const extensionCard = createInstalledExtensionCard(extension);
+
+    if (hiddenExtensions.includes(extension.id)) {
+      extensionCard.setAttribute("data-hidden", "true");
+      if (!showHidden) {
+        (extensionCard as HTMLElement).style.display = "none";
+      }
+    }
+
     installedSection.appendChild(extensionCard);
   });
 
@@ -760,6 +774,15 @@ function createInstalledExtensionCard(extension: ExtensionState): HTMLElement {
   removeBtn.textContent = "Remove";
   removeBtn.setAttribute("data-remove-extension", extension.id);
 
+  removeBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to uninstall ${extension.name}?`)) {
+      await extensionsManager.removeExtension(extension.id);
+      await renderInstalledExtensions();
+      await renderMarketplace();
+    }
+  });
+
   buttonsContainer.appendChild(removeBtn);
 
   actions.appendChild(toggleContainer);
@@ -807,17 +830,71 @@ function setupExtensionInteractions() {
 
   const filterButtons = document.querySelectorAll("[data-ext-filter]");
   filterButtons.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       const filter = (e.target as HTMLElement).getAttribute("data-ext-filter");
+
+      if (filter === "show-hidden") {
+        const installedSection = document.querySelector(
+          "#installed .grid, #installed-extensions",
+        );
+        const isShowingHidden =
+          installedSection?.getAttribute("data-show-hidden") === "true";
+
+        if (installedSection) {
+          installedSection.setAttribute(
+            "data-show-hidden",
+            (!isShowingHidden).toString(),
+          );
+        }
+
+        const hiddenCards = document.querySelectorAll(
+          "[data-extension-id][data-hidden='true']",
+        );
+        hiddenCards.forEach((card) => {
+          const htmlCard = card as HTMLElement;
+          if (!isShowingHidden) {
+            htmlCard.style.display = "";
+            const unhideBtn = card.querySelector("[data-action='unhide']");
+            if (!unhideBtn) {
+              const hideBtn = card.querySelector("[data-action='hide']");
+              if (hideBtn) {
+                const unhideButton = document.createElement("button");
+                unhideButton.setAttribute("data-action", "unhide");
+                unhideButton.className = hideBtn.className;
+                unhideButton.innerHTML =
+                  '<i data-lucide="eye" class="h-5 w-5"></i>';
+                unhideButton.title = "Unhide";
+                hideBtn.parentElement?.insertBefore(
+                  unhideButton,
+                  hideBtn.nextSibling,
+                );
+                createIcons({ icons });
+              }
+            }
+          } else {
+            htmlCard.style.display = "none";
+            const unhideBtn = card.querySelector("[data-action='unhide']");
+            unhideBtn?.remove();
+          }
+        });
+
+        btn.textContent = !isShowingHidden ? "Hide Hidden" : "Show Hidden";
+        return;
+      }
+
       applyExtensionFilter(filter);
 
-      filterButtons.forEach((b) =>
-        b.classList.remove("bg-[var(--main)]", "text-[var(--bg-2)]"),
-      );
-      filterButtons.forEach((b) => b.classList.add("bg-[var(--white-05)]"));
+      filterButtons.forEach((b) => {
+        if (b.getAttribute("data-ext-filter") !== "show-hidden") {
+          b.classList.remove("bg-[var(--main)]", "text-[var(--bg-2)]");
+          b.classList.add("bg-[var(--white-05)]");
+        }
+      });
 
-      btn.classList.remove("bg-[var(--white-05)]");
-      btn.classList.add("bg-[var(--main)]", "text-[var(--bg-2)]");
+      if (filter !== "show-hidden") {
+        btn.classList.remove("bg-[var(--white-05)]");
+        btn.classList.add("bg-[var(--main)]", "text-[var(--bg-2)]");
+      }
     });
   });
 
@@ -837,6 +914,14 @@ function setupExtensionInteractions() {
           break;
         case "hide":
           hideExtension(card);
+          break;
+        case "unhide":
+          if (extensionName) {
+            const extensionId = card?.getAttribute("data-extension-id");
+            if (extensionId) {
+              unhideExtension(extensionId);
+            }
+          }
           break;
         case "expand":
           toggleExpandedState(card);
@@ -933,8 +1018,38 @@ function toggleStarredState(button: Element, card: Element | null) {
 
 function hideExtension(card: Element | null) {
   if (card) {
-    card.setAttribute("hidden", "true");
+    const extensionId = card.getAttribute("data-extension-id");
+    if (extensionId) {
+      const hiddenExtensions = JSON.parse(
+        localStorage.getItem("hiddenExtensions") || "[]",
+      );
+      if (!hiddenExtensions.includes(extensionId)) {
+        hiddenExtensions.push(extensionId);
+        localStorage.setItem(
+          "hiddenExtensions",
+          JSON.stringify(hiddenExtensions),
+        );
+      }
+    }
+    card.setAttribute("data-hidden", "true");
     (card as HTMLElement).style.display = "none";
+  }
+}
+
+function unhideExtension(extensionId: string) {
+  const hiddenExtensions = JSON.parse(
+    localStorage.getItem("hiddenExtensions") || "[]",
+  );
+  const index = hiddenExtensions.indexOf(extensionId);
+  if (index > -1) {
+    hiddenExtensions.splice(index, 1);
+    localStorage.setItem("hiddenExtensions", JSON.stringify(hiddenExtensions));
+  }
+
+  const card = document.querySelector(`[data-extension-id="${extensionId}"]`);
+  if (card) {
+    card.removeAttribute("data-hidden");
+    (card as HTMLElement).style.display = "";
   }
 }
 
@@ -1364,6 +1479,12 @@ function setupMarketplaceInteractions(container: HTMLElement): void {
           break;
         case "hide":
           hideExtension(card);
+          break;
+        case "unhide":
+          const extensionId = card?.getAttribute("data-extension-id");
+          if (extensionId) {
+            unhideExtension(extensionId);
+          }
           break;
         case "expand":
           toggleExpandedState(card);

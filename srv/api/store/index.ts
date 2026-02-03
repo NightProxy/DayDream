@@ -9,7 +9,7 @@ const MARKETPLACE_PSK = process.env.MARKETPLACE_PSK || config.marketplace?.psk;
 if (!MARKETPLACE_PSK) {
   console.error(
     "\n❌ FATAL ERROR: Marketplace PSK is not configured.\n" +
-    "Set MARKETPLACE_PSK environment variable or configure it in config.js\n"
+      "Set MARKETPLACE_PSK environment variable or configure it in config.js\n",
   );
   process.exit(1);
 }
@@ -17,12 +17,12 @@ if (!MARKETPLACE_PSK) {
 if (MARKETPLACE_PSK === "changeme") {
   console.error(
     "\n❌ FATAL SECURITY ERROR: Marketplace PSK is set to the insecure default 'changeme'.\n" +
-    "This is a critical security vulnerability and the application cannot start.\n\n" +
-    "To fix this:\n" +
-    "1. Generate a secure PSK: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"\n" +
-    "2. Set it in config.js (copy from config.example.js if needed)\n" +
-    "3. Or set MARKETPLACE_PSK environment variable\n\n" +
-    "Example: export MARKETPLACE_PSK=$(node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\")\n"
+      "This is a critical security vulnerability and the application cannot start.\n\n" +
+      "To fix this:\n" +
+      "1. Generate a secure PSK: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"\n" +
+      "2. Set it in config.js (copy from config.example.js if needed)\n" +
+      "3. Or set MARKETPLACE_PSK environment variable\n\n" +
+      "Example: export MARKETPLACE_PSK=$(node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\")\n",
   );
   process.exit(1);
 }

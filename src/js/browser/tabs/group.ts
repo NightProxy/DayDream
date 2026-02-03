@@ -63,7 +63,7 @@ export class TabGroupManager {
     group.tabIds.forEach((tabId: string) => {
       const tab = this.tabs.tabs.find((t: any) => t.id === tabId);
       if (tab) {
-        delete tab.groupId;
+        tab.groupId = undefined;
         const tabElement = document.getElementById(tabId);
         if (tabElement) {
           tabElement.removeAttribute("data-group-id");
@@ -212,7 +212,7 @@ export class TabGroupManager {
       }
     }
 
-    delete tab.groupId;
+    tab.groupId = undefined;
 
     const tabElement = document.getElementById(tabId);
     if (tabElement) {

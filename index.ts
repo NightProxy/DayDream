@@ -1,9 +1,8 @@
 import http, { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { fileURLToPath } from "url";
 import fastifyCompress from "@fastify/compress";
 import fastifyHelmet from "@fastify/helmet";
-import fastifyStatic from "@fastify/static";
+// @ts-ignore
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import chalk from "chalk";
 import Fastify from "fastify";
@@ -52,7 +51,6 @@ await server.register(fastifyHelmet, {
   contentSecurityPolicy: false,
 });
 
-
 server.register(routes);
 
 const PORT: number = Number(process.env.PORT) || config.server?.port || 8080;
@@ -69,7 +67,6 @@ try {
     3: "#665e72",
     4: "#1c1724",
   };
-  const gitColor = chalk.hex("#00ff95");
   const host = chalk.hex("#4a4c7f").bold;
 
   const startupText = `
@@ -103,28 +100,36 @@ try {
   if (HOST === "0.0.0.0") {
     console.log(
       "\n" +
-      chalk.yellow.bold("⚠️  WARNING: Server is listening on 0.0.0.0 (all network interfaces)") +
-      "\n" +
-      chalk.yellow("   This means the server is accessible from other machines on your network.") +
-      "\n" +
-      chalk.yellow("   For production deployments, ensure you have:") +
-      "\n" +
-      chalk.yellow("   • A reverse proxy (nginx, Caddy, etc.) configured") +
-      "\n" +
-      chalk.yellow("   • HTTPS enabled with valid certificates") +
-      "\n" +
-      chalk.yellow("   • Firewall rules to restrict access") +
-      "\n" +
-      chalk.yellow("   For local development, consider using host: '127.0.0.1' in config.js") +
-      "\n"
+        chalk.yellow.bold(
+          "⚠️  WARNING: Server is listening on 0.0.0.0 (all network interfaces)",
+        ) +
+        "\n" +
+        chalk.yellow(
+          "   This means the server is accessible from other machines on your network.",
+        ) +
+        "\n" +
+        chalk.yellow("   For production deployments, ensure you have:") +
+        "\n" +
+        chalk.yellow("   • A reverse proxy (nginx, Caddy, etc.) configured") +
+        "\n" +
+        chalk.yellow("   • HTTPS enabled with valid certificates") +
+        "\n" +
+        chalk.yellow("   • Firewall rules to restrict access") +
+        "\n" +
+        chalk.yellow(
+          "   For local development, consider using host: '127.0.0.1' in config.js",
+        ) +
+        "\n",
     );
   } else if (HOST === "127.0.0.1" || HOST === "localhost") {
     console.log(
       "\n" +
-      chalk.green("✅ Server is running in local mode (127.0.0.1)") +
-      "\n" +
-      chalk.green("   Only accessible from this machine - safe for development.") +
-      "\n"
+        chalk.green("✅ Server is running in local mode (127.0.0.1)") +
+        "\n" +
+        chalk.green(
+          "   Only accessible from this machine - safe for development.",
+        ) +
+        "\n",
     );
   }
 } catch (error) {

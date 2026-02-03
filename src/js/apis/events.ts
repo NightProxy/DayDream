@@ -2,6 +2,7 @@ class EventSystem {
   eventListeners: any;
   channel: any;
   senderId: string;
+  gtag: any;
 
   constructor() {
     this.eventListeners = {};
@@ -10,15 +11,29 @@ class EventSystem {
 
     window.addEventListener("message", this.handleMessage.bind(this));
     this.channel.addEventListener("message", this.handleBroadcast.bind(this));
+
+    this.gtag = (() => {
+      if (typeof window === "undefined") return () => {};
+
+      if (
+        window !== window.parent &&
+        window.parent &&
+        (window.parent as any).gtag
+      ) {
+        return (window.parent as any).gtag;
+      }
+
+      return (window as any).gtag || (() => {});
+    })();
   }
 
   emit(eventName: string, data: any) {
     this.dispatchEvent(eventName, data);
 
-    const message = { 
-      eventName, 
+    const message = {
+      eventName,
       data,
-      __senderId: this.senderId
+      __senderId: this.senderId,
     };
 
     const iframes = document.querySelectorAll("iframe");
@@ -31,15 +46,23 @@ class EventSystem {
     }
 
     this.channel.postMessage(message);
+
+    if (this.gtag && typeof this.gtag === "function") {
+      this.gtag("event", eventName, {
+        event_category: "app_events",
+        event_label: eventName,
+        value: typeof data === "object" ? JSON.stringify(data) : data,
+      });
+    }
   }
 
   handleMessage(event: any) {
     const { eventName, data, __senderId } = event.data || {};
-    
+
     if (__senderId && __senderId === this.senderId) {
       return;
     }
-    
+
     if (eventName) {
       this.dispatchEvent(eventName, data);
     }
@@ -47,11 +70,11 @@ class EventSystem {
 
   handleBroadcast(event: any) {
     const { eventName, data, __senderId } = event.data || {};
-    
+
     if (__senderId && __senderId === this.senderId) {
       return;
     }
-    
+
     if (eventName) {
       this.dispatchEvent(eventName, data);
     }

@@ -37,7 +37,51 @@ class Protocols implements ProtoInterface {
     this.routes = new Map();
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
+
+    this.register("ddx", "newtab", "/internal/newtab", false);
+    this.register("ddx", "home", "/internal/newtab", false);
     this.register("ddx", "*", "/internal", false);
+
+    this.initCustomProtocols();
+  }
+
+  private async initCustomProtocols(): Promise<void> {
+    const newtabPage = await this.settings.getItem("newtabPage");
+    const newtabCustomUrl = await this.settings.getItem("newtabCustomUrl");
+    const homeUrl = await this.settings.getItem("homeUrl");
+    const homeCustomUrl = await this.settings.getItem("homeCustomUrl");
+
+    if (newtabPage === "custom" && newtabCustomUrl) {
+      this.register("ddx", "newtab", newtabCustomUrl, true);
+    } else if (newtabPage === "blank") {
+      this.register("ddx", "newtab", "about:blank", false);
+    } else {
+      this.register("ddx", "newtab", "/internal/newtab", false);
+    }
+
+    if (homeUrl === "custom" && homeCustomUrl) {
+      this.register("ddx", "home", homeCustomUrl, true);
+    } else {
+      this.register("ddx", "home", "/internal/newtab", false);
+    }
+  }
+
+  async updateNewtabProtocol(page: string, customUrl?: string): Promise<void> {
+    if (page === "custom" && customUrl) {
+      this.register("ddx", "newtab", customUrl, true);
+    } else if (page === "blank") {
+      this.register("ddx", "newtab", "about:blank", false);
+    } else {
+      this.register("ddx", "newtab", "/internal/newtab", false);
+    }
+  }
+
+  async updateHomeProtocol(url: string, customUrl?: string): Promise<void> {
+    if (url === "custom" && customUrl) {
+      this.register("ddx", "home", customUrl, true);
+    } else {
+      this.register("ddx", "home", "/internal/newtab", false);
+    }
   }
 
   register(proto: string, path: string, url: string, proxy: boolean): void {
@@ -48,7 +92,9 @@ class Protocols implements ProtoInterface {
     const protoMap = this.routes.get(cleanProto)!;
     const isOverride = protoMap.has(path);
     protoMap.set(path, { url, proxy });
-    console.log(`[Protocols] ${isOverride ? 'Overriding' : 'Registering'} ${cleanProto}://${path} -> ${url} (proxy: ${proxy})`);
+    console.log(
+      `[Protocols] ${isOverride ? "Overriding" : "Registering"} ${cleanProto}://${path} -> ${url} (proxy: ${proxy})`,
+    );
   }
 
   async processUrl(url: string): Promise<string | void> {
@@ -64,14 +110,21 @@ class Protocols implements ProtoInterface {
     }
 
     const match = url.match(/^([a-zA-Z0-9+.-]+):\/\/(.+)/);
-    
+
     if (match) {
       const proto = match[1].toLowerCase();
       const pathRaw = match[2];
       const path = pathRaw.replace(/\/+$/, "");
       const protoRoutes = this.routes.get(proto);
 
-      console.log("[Protocols] Matched protocol:", proto, "raw path:", pathRaw, "normalized:", path);
+      console.log(
+        "[Protocols] Matched protocol:",
+        proto,
+        "raw path:",
+        pathRaw,
+        "normalized:",
+        path,
+      );
 
       if (protoRoutes) {
         let resolved: RouteEntry | undefined;
@@ -82,7 +135,12 @@ class Protocols implements ProtoInterface {
           const wildcard = protoRoutes.get("*");
           if (wildcard) {
             const fullUrl = this.joinURL(wildcard.url, path);
-            console.log("[Protocols] Using wildcard route, fullUrl:", fullUrl, "proxy:", wildcard.proxy);
+            console.log(
+              "[Protocols] Using wildcard route, fullUrl:",
+              fullUrl,
+              "proxy:",
+              wildcard.proxy,
+            );
             return wildcard.proxy
               ? await this.proxy.convertURL(
                   this.swConfig,
@@ -94,7 +152,12 @@ class Protocols implements ProtoInterface {
         }
 
         if (resolved) {
-          console.log("[Protocols] Resolved route, url:", resolved.url, "proxy:", resolved.proxy);
+          console.log(
+            "[Protocols] Resolved route, url:",
+            resolved.url,
+            "proxy:",
+            resolved.proxy,
+          );
           return resolved.proxy
             ? await this.proxy.convertURL(
                 this.swConfig,
@@ -160,16 +223,16 @@ class Protocols implements ProtoInterface {
     try {
       const processedUrl = (await this.processUrl(url)) || "/internal/error/";
       console.log("[Protocols] Processed URL:", processedUrl);
-      
+
       if (!this.items.frameContainer) {
         this.logging.createLog("iframeContainer is not available.");
         return;
       }
-      
+
       const iframe = this.items.frameContainer!.querySelector(
         "iframe.active",
       ) as HTMLIFrameElement | null;
-      
+
       if (iframe) {
         console.log("[Protocols] Setting iframe src to:", processedUrl);
         iframe.setAttribute("src", processedUrl);

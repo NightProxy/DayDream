@@ -11,7 +11,9 @@ class Items {
   reloadButton: HTMLButtonElement | null;
   forwardButton: HTMLButtonElement | null;
   get addressBar(): HTMLInputElement | null {
-    return document.querySelector('[component="address-bar"]') as HTMLInputElement;
+    return document.querySelector(
+      '[component="address-bar"]',
+    ) as HTMLInputElement;
   }
   bookmarkButton: HTMLButtonElement | null;
   extensionsButton: HTMLButtonElement | null;

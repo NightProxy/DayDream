@@ -51,27 +51,48 @@ class Search implements SearchInterface {
   private lastQuery: string = "";
   private readonly DOMAIN_REGEX =
     /^(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/;
-  private internalPagesList: Array<{ name: string; url: string; keywords: string[] }> = [];
+  private internalPagesList: Array<{
+    name: string;
+    url: string;
+    keywords: string[];
+  }> = [];
 
   private async loadInternalPages(): Promise<void> {
     if (this.internalPagesList.length > 0) return;
 
-    const INTERNAL_PAGES_MAP: Record<string, { name: string; keywords: string[] }> = {
-      bookmarks: { name: "Bookmarks", keywords: ["bookmarks", "favorites", "saved"] },
+    const INTERNAL_PAGES_MAP: Record<
+      string,
+      { name: string; keywords: string[] }
+    > = {
+      bookmarks: {
+        name: "Bookmarks",
+        keywords: ["bookmarks", "favorites", "saved"],
+      },
       error: { name: "Error", keywords: ["error", "404", "not found"] },
-      extensions: { name: "Extensions", keywords: ["extensions", "addons", "plugins"] },
+      extensions: {
+        name: "Extensions",
+        keywords: ["extensions", "addons", "plugins"],
+      },
       games: { name: "Games", keywords: ["games", "play", "entertainment"] },
       history: { name: "History", keywords: ["history", "visited", "past"] },
       newtab: { name: "New Tab", keywords: ["newtab", "home", "start"] },
       privacy: { name: "Privacy", keywords: ["privacy", "policy", "terms"] },
-      settings: { name: "Settings", keywords: ["settings", "config", "preferences"] },
+      settings: {
+        name: "Settings",
+        keywords: ["settings", "config", "preferences"],
+      },
       terms: { name: "Terms", keywords: ["terms", "service", "legal"] },
-      updates: { name: "Updates", keywords: ["updates", "changelog", "news", "whats new"] },
+      updates: {
+        name: "Updates",
+        keywords: ["updates", "changelog", "news", "whats new"],
+      },
     };
 
     for (const [path, meta] of Object.entries(INTERNAL_PAGES_MAP)) {
       try {
-        const response = await fetch(`/internal/${path}/index.html`, { method: "HEAD" });
+        const response = await fetch(`/internal/${path}/index.html`, {
+          method: "HEAD",
+        });
         if (response.ok) {
           this.internalPagesList.push({
             name: meta.name,
@@ -419,10 +440,11 @@ class Search implements SearchInterface {
       return true;
     }
 
-    return (
-      this.DOMAIN_REGEX.test(input) ||
-      (input.includes(".") && !input.includes(" "))
-    );
+    if (input.includes(".") && input.includes(" ")) {
+      return false;
+    }
+
+    return this.DOMAIN_REGEX.test(input) || input.includes(".");
   }
 
   private async fetchSearchSuggestions(query: string): Promise<string[]> {

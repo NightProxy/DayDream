@@ -15,6 +15,17 @@ export interface TabData {
   isPinned: boolean;
   lastInternalRoute: string | undefined;
   lastAddressShown: string | undefined;
+  chiiPanel:
+    | {
+        isActive: boolean;
+        devtoolsIframe: HTMLIFrameElement | null;
+        container: HTMLDivElement | null;
+        resizeHandle: HTMLDivElement | null;
+        height: number;
+        messageRelaySetup?: boolean;
+        messageHandler?: (event: MessageEvent) => void;
+      }
+    | undefined;
 }
 
 export interface TabsInterface {
@@ -50,6 +61,8 @@ export interface TabsInterface {
   tabContentHeights: number[];
   tabContentPositionsY: number[];
   tabPositionsY: number[];
+
+  bookmarkUI: any;
   popGlow: (el: HTMLElement) => void;
 
   createTab: (url: string) => Promise<void>;
@@ -97,4 +110,7 @@ export interface TabsInterface {
 
   togglePinTab: (tabId: string) => void;
   isPinned: (tabId: string) => boolean;
+
+  saveSession: () => Promise<void>;
+  restoreSession: () => Promise<boolean>;
 }

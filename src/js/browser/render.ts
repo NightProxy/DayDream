@@ -31,11 +31,6 @@ class Render implements renderInterface {
   async init() {
     this.container.innerHTML = "";
 
-    const bgElement = this.ui.createElement("div", { class: "bg-img" }, [
-      this.ui.createElement("img", { src: "/res/DDX.bg.png" }, []),
-    ]);
-    document.body.appendChild(bgElement);
-
     const UI = this.ui.createElement("div", { class: "flex h-full" }, [
       this.ui.createElement("div", { id: "root" }),
       this.ui.createElement(
@@ -443,7 +438,7 @@ class Render implements renderInterface {
                         "aria-label": "Home",
                         component: "home",
                         onclick: () => {
-                          window.protocols.navigate("newtab");
+                          window.protocols.navigate("home");
                         },
                       },
                       [
@@ -729,8 +724,16 @@ class Render implements renderInterface {
                                 {
                                   class:
                                     "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
-                                  onclick: () => {
-                                    window.functions.inspectElement();
+                                  onclick: async () => {
+                                    const settings = new SettingsAPI();
+                                    const devtoolsPreference =
+                                      (await settings.getItem("devtools")) ||
+                                      "eruda";
+                                    if (devtoolsPreference === "eruda") {
+                                      window.functions.inspectElement();
+                                    } else {
+                                      window.functions.toggleChiiInspect();
+                                    }
                                   },
                                 },
                                 [

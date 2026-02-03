@@ -48,25 +48,42 @@ export function populateSearchResults(
   }
 }
 
-const INTERNAL_PAGES_MAP: Record<string, { name: string; keywords: string[] }> = {
-  bookmarks: { name: "Bookmarks", keywords: ["bookmarks", "favorites", "saved"] },
-  error: { name: "Error", keywords: ["error", "404", "not found"] },
-  extensions: { name: "Extensions", keywords: ["extensions", "addons", "plugins"] },
-  games: { name: "Games", keywords: ["games", "play", "entertainment"] },
-  history: { name: "History", keywords: ["history", "visited", "past"] },
-  newtab: { name: "New Tab", keywords: ["newtab", "home", "start"] },
-  privacy: { name: "Privacy", keywords: ["privacy", "policy", "terms"] },
-  settings: { name: "Settings", keywords: ["settings", "config", "preferences"] },
-  terms: { name: "Terms", keywords: ["terms", "service", "legal"] },
-  updates: { name: "Updates", keywords: ["updates", "changelog", "news", "whats new"] },
-};
+const INTERNAL_PAGES_MAP: Record<string, { name: string; keywords: string[] }> =
+  {
+    bookmarks: {
+      name: "Bookmarks",
+      keywords: ["bookmarks", "favorites", "saved"],
+    },
+    error: { name: "Error", keywords: ["error", "404", "not found"] },
+    extensions: {
+      name: "Extensions",
+      keywords: ["extensions", "addons", "plugins"],
+    },
+    games: { name: "Games", keywords: ["games", "play", "entertainment"] },
+    history: { name: "History", keywords: ["history", "visited", "past"] },
+    newtab: { name: "New Tab", keywords: ["newtab", "home", "start"] },
+    privacy: { name: "Privacy", keywords: ["privacy", "policy", "terms"] },
+    settings: {
+      name: "Settings",
+      keywords: ["settings", "config", "preferences"],
+    },
+    terms: { name: "Terms", keywords: ["terms", "service", "legal"] },
+    updates: {
+      name: "Updates",
+      keywords: ["updates", "changelog", "news", "whats new"],
+    },
+  };
 
-export async function getAvailableInternalPages(): Promise<Array<{ name: string; url: string; keywords: string[] }>> {
+export async function getAvailableInternalPages(): Promise<
+  Array<{ name: string; url: string; keywords: string[] }>
+> {
   const pages = [];
-  
+
   for (const [path, meta] of Object.entries(INTERNAL_PAGES_MAP)) {
     try {
-      const response = await fetch(`/internal/${path}/index.html`, { method: "HEAD" });
+      const response = await fetch(`/internal/${path}/index.html`, {
+        method: "HEAD",
+      });
       if (response.ok) {
         pages.push({
           name: meta.name,
@@ -78,7 +95,7 @@ export async function getAvailableInternalPages(): Promise<Array<{ name: string;
       continue;
     }
   }
-  
+
   return pages;
 }
 

@@ -10,10 +10,11 @@ export function isValidUrl(input: string): boolean {
     return true;
   }
 
-  return (
-    DOMAIN_REGEX.test(input) ||
-    (input.includes(".") && !input.includes(" "))
-  );
+  if (input.includes(".") && input.includes(" ")) {
+    return false;
+  }
+
+  return DOMAIN_REGEX.test(input) || input.includes(".");
 }
 
 export function generatePredictedSettingsUrls(query: string): string[] {

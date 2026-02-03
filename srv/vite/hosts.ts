@@ -1,5 +1,1 @@
-export const allowedHosts = [
-  ".trycloudflare.com",
-  ".ts.net",
-  ".devtunnels.ms"
-];
+export const allowedHosts = [".trycloudflare.com", ".ts.net", ".devtunnels.ms"];

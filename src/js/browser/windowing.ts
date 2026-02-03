@@ -78,6 +78,11 @@ class Windowing implements WindowingInterface {
           event.preventDefault();
           event.returnValue = "";
         });
+
+        window.addEventListener("beforeunload", (event) => {
+          event.preventDefault();
+          event.returnValue = "";
+        });
       }
 
       aboutBlankTab!.document.head.appendChild(link);

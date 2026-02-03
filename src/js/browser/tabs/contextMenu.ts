@@ -546,7 +546,8 @@ export class TabContextMenu {
               }
             }
 
-            this.tabs.bookmarkManager.addBookmark(tab.url, title);
+            // Use bookmarkUI to properly decode the URL before bookmarking
+            this.tabs.bookmarkUI.addBookmarkFromProxiedUrl(tab.url, title);
             this.tabs.nightmarePlugins.rightclickmenu.closeMenu();
           },
         },

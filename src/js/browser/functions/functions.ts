@@ -103,7 +103,7 @@ class Functions implements FuncInterface {
     this.initPromise = this.profiles.initPromise;
   }
 
-  init(): void {
+  async init(): Promise<void> {
     this.items.backButton!.addEventListener("click", () => {
       this.navigation.backward();
     });
@@ -127,7 +127,7 @@ class Functions implements FuncInterface {
       this.profileManager.profilesMenu(this.items.profilesButton);
     }
 
-    this.keyboardManager.init();
+    await this.keyboardManager.init();
 
     this.setupAutoSave();
   }
@@ -306,6 +306,10 @@ class Functions implements FuncInterface {
     );
   }
 
+  toggleChiiInspect(): void {
+    this.tabs.toggleChiiDevTools();
+  }
+
   injectErudaScript(iframeDocument: Document): Promise<string> {
     return this.devTools.injectErudaScript(iframeDocument);
   }
@@ -382,7 +386,9 @@ class Functions implements FuncInterface {
     }
 
     const games = navbar.querySelector("#gamesShortcut");
-    const chat = navbar.querySelector("#chatShortcut") as HTMLButtonElement | null;
+    const chat = navbar.querySelector(
+      "#chatShortcut",
+    ) as HTMLButtonElement | null;
     const history = navbar.querySelector("#historyShortcut");
     const settings = navbar.querySelector("#settShortcut");
 
@@ -393,7 +399,7 @@ class Functions implements FuncInterface {
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
-        
+
         if (iframe) {
           iframe.setAttribute("src", url);
         } else {
@@ -415,7 +421,7 @@ class Functions implements FuncInterface {
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
-        
+
         if (iframe) {
           iframe.setAttribute("src", url);
         } else {
@@ -427,11 +433,12 @@ class Functions implements FuncInterface {
     if (settings) {
       settings.addEventListener("click", async () => {
         const url =
-          (await this.proto.processUrl("ddx://settings/")) || "/internal/error/";
+          (await this.proto.processUrl("ddx://settings/")) ||
+          "/internal/error/";
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
-        
+
         if (iframe) {
           iframe.setAttribute("src", url);
         } else {

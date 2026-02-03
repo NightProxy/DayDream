@@ -1,6 +1,11 @@
 importScripts("/baremux/index.js");
 
-const PROXIED_ENDPOINTS = ["/api/results/", "/api/plus/", "/api/store/", "/auth/"];
+const PROXIED_ENDPOINTS = [
+  "/api/results/",
+  "/api/plus/",
+  "/api/store/",
+  "/auth/",
+];
 
 const PRODUCTION_BASE = "https://daydreamx.pro";
 

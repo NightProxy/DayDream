@@ -43,22 +43,39 @@ class NewTabShortcuts {
   constructor() {
     this.bookmarkManager = new BookmarkManager();
     this.proxy = window.parent.proxy;
+    const proxy = this.proxy;
     this.ui = new Nightmare();
+    (async (proxy) => {
+      const proxySettings = window.parent.ProxySettings || "sj";
+      const swConfig =
+        window.parent.SWconfig?.[
+          proxySettings as keyof typeof window.parent.SWconfig
+        ];
+      if (swConfig) {
+        await proxy.registerSW(swConfig);
+      }
+      await proxy.setTransports();
+      const transport = await proxy.connection.getTransport();
+      if (transport == null) {
+        await proxy.setTransports();
+      }
+    })(proxy);
 
-    this.proxy.setBookmarkManager(this.bookmarkManager);
-
-    this.init();
+    setTimeout(() => {
+      this.proxy.setBookmarkManager(this.bookmarkManager);
+      this.init();
+    }, 20);
   }
 
   private async init() {
     await this.bookmarkManager.loadFromStorage();
     await this.loadShortcuts();
-    this.renderNewtab();
+    await this.renderNewtab();
     this.setupEventListeners();
     createIcons({ icons });
   }
 
-  private renderNewtab() {
+  private async renderNewtab() {
     document.body.innerHTML = "";
 
     const mainContainer = this.ui.createElement("div", {
@@ -82,8 +99,13 @@ class NewTabShortcuts {
     const searchBar = this.renderSearchBar();
     main.appendChild(searchBar);
 
-    const shortcutsSection = this.renderShortcuts();
-    main.appendChild(shortcutsSection);
+    const showShortcuts = await window.parent.settings?.getItem(
+      "newtabShowShortcuts",
+    );
+    if (showShortcuts !== "false") {
+      const shortcutsSection = this.renderShortcuts();
+      main.appendChild(shortcutsSection);
+    }
 
     contentWrapper.appendChild(main);
 
@@ -571,12 +593,44 @@ class NewTabShortcuts {
             return null;
           }),
         ).then((results) => results.filter(Boolean) as Shortcut[]);
+
+        const hasFallbackIcons = this.shortcuts.some(
+          (shortcut) => shortcut.favicon === this.getFallbackFavicon(),
+        );
+
+        if (hasFallbackIcons) {
+          setTimeout(async () => {
+            await this.reloadFavicons();
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error("Failed to load shortcuts:", error);
       if (this.shortcuts.length === 0) {
         await this.createDefaultShortcuts();
       }
+    }
+  }
+
+  private async reloadFavicons() {
+    let updated = false;
+
+    for (const shortcut of this.shortcuts) {
+      if (shortcut.favicon === this.getFallbackFavicon()) {
+        try {
+          const newFavicon = await this.getFavicon(shortcut.url);
+          if (newFavicon !== this.getFallbackFavicon()) {
+            shortcut.favicon = newFavicon;
+            updated = true;
+          }
+        } catch (error) {
+          console.warn("Failed to reload favicon for", shortcut.url, error);
+        }
+      }
+    }
+
+    if (updated) {
+      this.refreshShortcuts();
     }
   }
 
@@ -700,8 +754,15 @@ class NewTabShortcuts {
 
   private handleShortcutNavigation(url: string): void {
     try {
-      const ALLOWED_SCHEMES = ['http:', 'https:', 'mailto:', 'tel:', 'ftp:', 'ddx:'];
-      
+      const ALLOWED_SCHEMES = [
+        "http:",
+        "https:",
+        "mailto:",
+        "tel:",
+        "ftp:",
+        "ddx:",
+      ];
+
       let parsedUrl: URL;
       try {
         parsedUrl = new URL(url, window.location.origin);
@@ -710,10 +771,10 @@ class NewTabShortcuts {
         return;
       }
 
-      if (parsedUrl.protocol === 'javascript:') {
+      if (parsedUrl.protocol === "javascript:") {
         console.warn(
           "Blocked javascript: URL for security reasons. " +
-          "Executing arbitrary JavaScript from shortcuts is not allowed to prevent XSS attacks."
+            "Executing arbitrary JavaScript from shortcuts is not allowed to prevent XSS attacks.",
         );
         return;
       }
@@ -721,7 +782,7 @@ class NewTabShortcuts {
       if (!ALLOWED_SCHEMES.includes(parsedUrl.protocol)) {
         console.warn(
           `Blocked URL with unsupported scheme: ${parsedUrl.protocol}. ` +
-          `Allowed schemes: ${ALLOWED_SCHEMES.join(', ')}`
+            `Allowed schemes: ${ALLOWED_SCHEMES.join(", ")}`,
         );
         return;
       }
@@ -857,7 +918,9 @@ class NewTabShortcuts {
 
         timeoutId = setTimeout(() => {
           cleanup();
-          reject(new Error(`Night+ libraries failed to load within ${maxWaitMs}ms`));
+          reject(
+            new Error(`Night+ libraries failed to load within ${maxWaitMs}ms`),
+          );
         }, maxWaitMs);
 
         checkLibs();
@@ -875,7 +938,7 @@ class NewTabShortcuts {
     const { setAccessToken, dumpNightPlusData } = await import(
       "@apis/nightplus"
     );
-    
+
     let plusClient: any;
     try {
       const basePath = "/plus";
@@ -904,7 +967,7 @@ class NewTabShortcuts {
 
           const authUrl = await window.parent.proxy.getAuthUrl();
           console.log("Using auth URL:", authUrl);
-          
+
           await plusClient.authenticate(token, authUrl);
           console.log("Session token obtained and stored");
 
@@ -1037,7 +1100,14 @@ class NewTabShortcuts {
     }
   }
 
-  private refreshShortcuts() {
+  private async refreshShortcuts() {
+    const showShortcuts = await window.parent.settings?.getItem(
+      "newtabShowShortcuts",
+    );
+    if (showShortcuts === "false") {
+      return;
+    }
+
     const section = this.ui.queryComponent("shortcuts-section");
     if (!section) return;
 

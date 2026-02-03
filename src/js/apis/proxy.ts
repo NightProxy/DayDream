@@ -52,9 +52,17 @@ class Proxy implements ProxyInterface {
     this.isStaticBuild = false;
 
     (async () => {
-      this.searchVar = await this.settings.getItem("search") || "https://www.duckduckgo.com/?q=%s";
-      this.transportVar = await this.settings.getItem("transports") || "libcurl";
-      this.wispUrl = await this.settings.getItem("wisp") || ((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/");
+      this.searchVar =
+        (await this.settings.getItem("search")) ||
+        "https://www.duckduckgo.com/?q=%s";
+      this.transportVar =
+        (await this.settings.getItem("transports")) || "libcurl";
+      this.wispUrl =
+        (await this.settings.getItem("wisp")) ||
+        (location.protocol === "https:" ? "wss" : "ws") +
+          "://" +
+          location.host +
+          "/wisp/";
     })();
   }
 
@@ -68,7 +76,12 @@ class Proxy implements ProxyInterface {
 
     const transportFile = transportMap[transports] || "/libcurl/index.mjs";
 
-    const wispUrl = this.wispUrl || ((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/");
+    const wispUrl =
+      this.wispUrl ||
+      (location.protocol === "https:" ? "wss" : "ws") +
+        "://" +
+        location.host +
+        "/wisp/";
 
     const transportOptions: Record<string, any> = {
       base: transportFile,
@@ -85,7 +98,7 @@ class Proxy implements ProxyInterface {
       remoteProxyServer !== "false" &&
       transportFile === "/libcurl/index.mjs"
     ) {
-      transportOptions.remoteProxy = remoteProxyServer;
+      transportOptions.proxy = remoteProxyServer;
     }
 
     const isRefluxEnabled = await this.getRefluxStatus();
@@ -116,6 +129,11 @@ class Proxy implements ProxyInterface {
   search(input: string) {
     input = input.trim();
     const searchTemplate = this.searchVar || "https://www.duckduckgo.com/?q=%s";
+
+    if (input.includes(".") && input.includes(" ")) {
+      return searchTemplate.replace("%s", encodeURIComponent(input));
+    }
+
     try {
       return new URL(input).toString();
     } catch (err) {
@@ -132,7 +150,12 @@ class Proxy implements ProxyInterface {
   }
 
   async registerSW(swConfig: Record<any, any>) {
-    console.log("[Proxy] registerSW() called with type:", swConfig.type, "file:", swConfig.file);
+    console.log(
+      "[Proxy] registerSW() called with type:",
+      swConfig.type,
+      "file:",
+      swConfig.file,
+    );
     switch (swConfig.type) {
       case "sw":
         if ("serviceWorker" in navigator) {
@@ -258,7 +281,12 @@ class Proxy implements ProxyInterface {
   }
 
   async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
-    console.log("[Proxy] redirect() called with url:", url, "proxySetting:", proxySetting);
+    console.log(
+      "[Proxy] redirect() called with url:",
+      url,
+      "proxySetting:",
+      proxySetting,
+    );
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -307,7 +335,12 @@ class Proxy implements ProxyInterface {
     proxySetting: string,
     url: string,
   ) {
-    console.log("[Proxy] convertURL() called with url:", url, "proxySetting:", proxySetting);
+    console.log(
+      "[Proxy] convertURL() called with url:",
+      url,
+      "proxySetting:",
+      proxySetting,
+    );
     let swConfigSettings: Record<any, any> | null = null;
     if (proxySetting === "auto") {
       swConfigSettings = await this.automatic(this.search(url), swConfig);
@@ -342,6 +375,114 @@ class Proxy implements ProxyInterface {
     }
 
     return await response.text();
+  }
+
+  async eval(
+    swConfig: Record<any, any>,
+    frame: HTMLIFrameElement,
+    code: string,
+  ) {
+    console.log("[Proxy.eval] Starting eval", {
+      hasSrc: !!frame.src,
+      src: frame.src,
+      codeLength: code.length,
+      codePreview: code.substring(0, 100),
+    });
+
+    if (!frame.src) {
+      console.warn("[Proxy.eval] Cannot eval: frame has no src");
+      return;
+    }
+
+    let activeProxy: string | null = null;
+
+    for (const [proxyName, proxyConfig] of Object.entries(swConfig)) {
+      if (
+        proxyConfig.config?.prefix &&
+        frame.src.includes(proxyConfig.config.prefix)
+      ) {
+        activeProxy = proxyName;
+        console.log(
+          "[Proxy.eval] Detected proxy:",
+          proxyName,
+          "with prefix:",
+          proxyConfig.config.prefix,
+        );
+        break;
+      }
+    }
+
+    if (!activeProxy) {
+      console.warn(
+        "[Proxy.eval] Cannot eval: frame src does not match any proxy prefix",
+        {
+          frameSrc: frame.src,
+          availablePrefixes: Object.entries(swConfig).map(([name, config]) => ({
+            name,
+            prefix: (config as any).config?.prefix,
+          })),
+        },
+      );
+      return;
+    }
+
+    try {
+      if (activeProxy === "uv") {
+        console.log("[Proxy.eval] Using UV eval");
+        const uvEval = (frame.contentWindow as any)?.__uv$eval;
+        if (!uvEval) {
+          console.error(
+            "[Proxy.eval] UV eval function not found on contentWindow",
+          );
+          return;
+        }
+        uvEval(code);
+        console.log("[Proxy.eval] UV eval succeeded");
+      } else if (activeProxy === "sj") {
+        console.log("[Proxy.eval] Using Scramjet eval");
+        const contentWindow = frame.contentWindow;
+        if (!contentWindow) {
+          console.error("[Proxy.eval] contentWindow is null");
+          return;
+        }
+        const scramjetWrap = (contentWindow as any).$scramjet$wrap;
+        if (!scramjetWrap) {
+          console.error(
+            "[Proxy.eval] Scramjet $scramjet$wrap not found on contentWindow",
+          );
+          return;
+        }
+        contentWindow.$scramjet$wrap(
+          (contentWindow as any).eval.call(contentWindow, code),
+        );
+        console.log("[Proxy.eval] Scramjet eval succeeded");
+      } else if (new URL(frame.src).pathname.includes("/internal/")) {
+        console.log("[Proxy.eval] Using direct eval for internal page");
+        const directEval = (frame.contentWindow as any)?.eval;
+        if (!directEval) {
+          console.error(
+            "[Proxy.eval] Direct eval function not found on contentWindow",
+          );
+          return;
+        }
+        directEval(code);
+        console.log("[Proxy.eval] Direct eval succeeded");
+      } else {
+        console.warn(
+          "[Proxy.eval] Cannot eval: unsupported proxy type for eval",
+          {
+            activeProxy,
+            frameSrc: frame.src,
+          },
+        );
+      }
+    } catch (error) {
+      console.error("[Proxy.eval] Eval failed with error:", error, {
+        activeProxy,
+        frameSrc: frame.src,
+        code: code.substring(0, 200),
+      });
+    }
   }
 
   private faviconCache = new Map<string, string>();
@@ -447,11 +588,18 @@ class Proxy implements ProxyInterface {
 
   async getAuthUrl(): Promise<string> {
     try {
-      const productionAuthUrl = await this.settings.getItem("production_auth_url");
+      const productionAuthUrl = await this.settings.getItem(
+        "production_auth_url",
+      );
       if (productionAuthUrl && typeof productionAuthUrl === "string") {
         return productionAuthUrl;
       }
-      return "https://demoplussrv.night-x.com/auth";
+      //return "https://demoplussrv.night-x.com/auth" CORS is a bitch
+      return (
+        (location.protocol === "https:" ? "https://" : "http://") +
+        location.host +
+        "/auth"
+      );
     } catch (error) {
       console.error("[Proxy] Error determining auth URL:", error);
       return "https://demoplussrv.night-x.com/auth";

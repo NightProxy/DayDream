@@ -2,9 +2,12 @@ declare global {
   interface Window {
     __uv$config: UVConfig;
     __scramjet$config: SJConfig;
+    __uv$eval: Function;
+    $scramjet$wrap: Function;
     nightmare: Nightmare;
     nightmarePlugins: NightmarePlugins;
     settings: SettingsAPI;
+    cache: CacheAPI;
     eventsAPI: EventSystem;
     extensions: ExtensionsAPI;
     proxy: Proxy;
@@ -22,6 +25,9 @@ declare global {
     SWconfig: any;
     SWSettings: any;
     ProxySettings: string;
+    ChiiDevtoolsIframe?: HTMLIFrameElement;
+    liveInject?: any;
+    codeInject?: any;
   }
 
   interface UVConfig {

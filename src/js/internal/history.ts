@@ -183,6 +183,8 @@ class HistoryUI {
           this.searchQuery,
         );
         entries = searchResults.map((result) => result.entry);
+
+        entries.sort((a, b) => b.visitedAt.getTime() - a.visitedAt.getTime());
       } else {
         entries = this.historyManager.getEntries();
       }
@@ -204,15 +206,33 @@ class HistoryUI {
         }
       });
 
-      for (const [dayKey, dayEntries] of groupedEntries.entries()) {
-        await this.renderDayGroup(dayKey, dayEntries);
-      }
+      if (this.searchQuery) {
+        const todayContainer =
+          this.historyWindow.querySelector('[data-day="today"]');
+        const list = todayContainer?.querySelector("[data-list]");
+        if (list) {
+          for (const entry of entries) {
+            const historyItem = await this.createHistoryItem(entry);
+            list.appendChild(historyItem);
+          }
+        }
 
-      dayContainers.forEach((container) => {
-        const list = container.querySelector("[data-list]");
-        const isEmpty = !list || list.children.length === 0;
-        (container as HTMLElement).style.display = isEmpty ? "none" : "";
-      });
+        dayContainers.forEach((container) => {
+          const day = container.getAttribute("data-day");
+          (container as HTMLElement).style.display =
+            day === "today" ? "" : "none";
+        });
+      } else {
+        for (const [dayKey, dayEntries] of groupedEntries.entries()) {
+          await this.renderDayGroup(dayKey, dayEntries);
+        }
+
+        dayContainers.forEach((container) => {
+          const list = container.querySelector("[data-list]");
+          const isEmpty = !list || list.children.length === 0;
+          (container as HTMLElement).style.display = isEmpty ? "none" : "";
+        });
+      }
     } finally {
       this.isLoading = false;
       createIcons({ icons });
