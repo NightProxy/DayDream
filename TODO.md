@@ -1,49 +1,49 @@
-# V1:
-
-> ## APIs:
-> 
-> - History
-> - Bookmarks
-> - iFrameClient
-> - Proxy (stability)
-> - Tie Events API into everyting
-> 
-> ## Internal Pages:
-> 
-> - Settings
-> - New Tab
-> - Bookmarks
-> - History
+> ## Base:
 >
-> ## UI/UX:
+> - [x] convert to TS
+> - [ ] Minification & obfuscation in the build step
 >
-> - Themes System
-> - Nightmare Rendering and Elements
-
-
-# V2:
+> ## Obfuscation & Protection:
+>
+> - [ ] Code obfuscation with Dead Code
+> - [ ] Font Obfuscation
+> - [ ] Path obfuscation
+> - [ ] Keyword Removal
+> - [ ] Obscura Encoding
+> - [ ] IP range blocklists for each blocker
+>
+> ## Backends:
+>
+> - [ ] SJ patches
+> - [ ] Envade if finished
+>
 > ## APIs:
 >
-> - Extensions (finish)
-> - Profiles (finish)
+> - [ ] Bookmarks
+> - [ ] History
+> - [ ] Profiles
+> - [ ] Tabs (refactor)
 >
 > ## Internal Pages:
 >
-> - Extensions
-> - Profiles
-> - Setup
-> 
+> - [ ] Bookmarks
+> - [ ] History
+> - [ ] Profiles
+> - [ ] Settings
+>
 > ## UI/UX:
-> 
-> - increase rendering speed
-> 
-> ## Tabs Upgrade:
-> 
-> - Tab Pinning
-> - Tab Grouping
-> - Tab caching
 >
-> ## Search Suggestions:
+> - [ ] Redesign
+> - [ ] convert to TailwindCSS
 >
-> - Calculator
-> - AI prompt (maybe)
+> ## Tabs:
+>
+> - [x] Tab Pinning
+> - [x] Tab Grouping
+> - [x] Tab Dragging (redo)
+>
+> ## Search:
+>
+> - [ ] Refactor
+> - [ ] Calculator
+> - [ ] AI prompt (maybe)

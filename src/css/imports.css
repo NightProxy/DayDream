@@ -1,0 +1,13 @@
+@import url("/src/css/vars.css");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
+@import url("/src/css/components/theme-preset.css");
+@import url("/src/css/components/tab-context-menu.css");
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/ttf/PlusJakartaSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
