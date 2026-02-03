@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extensions</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+
+    <script type="module" src="/src/js/internal/extensions.ts"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full">
+      <button
+        id="aside-toggle"
+        class="fixed top-4 left-4 z-50 2xl:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text)]/80 bg-[var(--bg-2)] ring-1 ring-[var(--white-10)] hover:bg-[var(--white-05)]"
+        aria-label="Toggle menu"
+      >
+        <i data-lucide="menu" class="h-6 w-6"></i>
+      </button>
+      <aside
+        id="aside"
+        aside="extensions"
+        class="fixed top-0 left-0 h-screen w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 overflow-y-auto z-40 transition-transform duration-300 -translate-x-full 2xl:translate-x-0"
+      >
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-[var(--main)] mb-1">
+              Extensions
+            </h1>
+            <p class="text-sm text-[var(--proto)]">Browse & manage add-ons</p>
+          </div>
+          <button
+            id="aside-close"
+            class="2xl:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            aria-label="Close menu"
+          >
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <div class="relative">
+            <i
+              data-lucide="search"
+              class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--proto)]"
+            ></i>
+            <input
+              type="text"
+              placeholder="Search extensions..."
+              class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] pl-10 pr-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+            />
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <a
+            href="#installed"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+          >
+            <i data-lucide="box" class="h-4 w-4"></i>
+            <span>Installed</span>
+          </a>
+          <a
+            href="#featured"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+          >
+            <i data-lucide="star" class="h-4 w-4"></i>
+            <span>Featured</span>
+          </a>
+          <a
+            href="#explore"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+          >
+            <i data-lucide="grid" class="h-4 w-4"></i>
+            <span>Explore Extensions</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="flex-1 h-screen overflow-y-auto">
+        <div class="p-8 max-w-5xl space-y-12 mx-auto">
+          <section id="installed" class="space-y-6">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Installed Extensions
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Manage your currently installed add-ons
+              </p>
+            </div>
+            <div
+              class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              id="installed-extensions"
+            ></div>
+          </section>
+
+          <section id="featured" class="space-y-6">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Featured
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Popular extensions hand-picked by our team for our users
+              </p>
+            </div>
+            <div
+              class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              id="featured-extensions"
+            ></div>
+          </section>
+
+          <section id="explore" class="space-y-6">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Explore Extensions
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Hover for details. Click to expand. Star, pin, or hide any
+                extension.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="relative flex-1">
+                <i
+                  data-lucide="search"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--proto)]"
+                ></i>
+                <input
+                  data-ext-search
+                  type="text"
+                  placeholder="Search extensions or tags..."
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] pl-10 pr-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                />
+              </div>
+              <button
+                data-ext-filter="starred"
+                class="px-3 py-2 rounded-lg bg-[var(--white-05)] text-sm hover:bg-[var(--white-10)]"
+              >
+                Starred
+              </button>
+              <button
+                data-ext-filter="all"
+                class="px-3 py-2 rounded-lg bg-[var(--main)] text-[var(--bg-2)] text-sm"
+              >
+                All
+              </button>
+              <button
+                data-ext-filter="show-hidden"
+                class="px-3 py-2 rounded-lg bg-[var(--white-05)] text-sm hover:bg-[var(--white-10)]"
+              >
+                Show Hidden
+              </button>
+            </div>
+
+            <div
+              id="extensionsGrid"
+              class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            ></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="/data/bundle.js"></script>
+    <script src="/data/config.js"></script>
+    <script src="/assets/config.js"></script>
+    <script src="/assets/all.js"></script>
+  </body>
+</html>

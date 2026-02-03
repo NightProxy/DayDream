@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Games</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+
+    <script type="module" src="/src/js/internal/games.ts"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased gutter">
+    <div class="min-h-screen w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <div class="stack h-10 w-10">
+                <div
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+              <span class="text-3xl tracking-widest">Games</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky top-0 z-50 bg-[var(--bg-2)] pb-3">
+          <div
+            class="mt-8 flex items-center rounded-xl ring-1 ring-inset ring-[var(--main-35a)] bg-[var(--bg-2)] shadow-[0_0_1px_var(--shadow-outer)] focus-within:ring-2 focus-within:ring-[var(--main)]"
+          >
+            <i
+              data-lucide="search"
+              class="h-4 w-4 text-[var(--proto)] ml-3"
+            ></i>
+
+            <input
+              id="games-search"
+              class="flex-grow bg-transparent px-3 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 focus:outline-none"
+              placeholder="Search games..."
+              aria-label="Search games"
+            />
+
+            <button
+              id="games-clear"
+              class="mr-2 inline-flex h-8 px-3 items-center justify-center rounded-lg text-xs text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2" id="game-categories">
+            <button
+              data-cat="all"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)] bg-[var(--white-05)]"
+            >
+              All
+            </button>
+            <button
+              data-cat="popular"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Popular
+            </button>
+            <button
+              data-cat="multiplayer"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Multiplayer
+            </button>
+            <button
+              data-cat="casual"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Casual
+            </button>
+            <button
+              data-cat="competitive"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Competitive
+            </button>
+            <button
+              data-cat="creative"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Creative
+            </button>
+            <button
+              data-cat="emulator"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Emulator
+            </button>
+            <button
+              data-cat="fighting"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Fighting
+            </button>
+            <button
+              data-cat="horror"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Horror
+            </button>
+            <button
+              data-cat="funny"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Funny
+            </button>
+            <button
+              data-cat="misc"
+              class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+            >
+              Misc
+            </button>
+          </div>
+        </div>
+
+        <section
+          class="mt-6 grid gap-6 sm:grid-cols-3 lg:grid-cols-4"
+          id="games-grid"
+        ></section>
+      </main>
+    </div>
+  </body>
+</html>

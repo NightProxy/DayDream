@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Error</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+    <script src="/baremux/index.js"></script>
+    <script src="/data/bundle.js"></script>
+    <script src="/data/config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+
+    <script type="module" src="/src/js/internal/error.ts"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full relative overflow-hidden">
+      <main class="mx-auto max-w-5xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div
+            class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+          >
+            <div class="stack h-10 w-10">
+              <div
+                style="
+                  width: 100%;
+                  height: 100%;
+                  background: var(--main);
+                  -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                  -webkit-mask-repeat: no-repeat;
+                  -webkit-mask-position: center;
+                  -webkit-mask-size: cover;
+                  -webkit-mask-mode: luminance;
+                  mask-image: url(&quot;/res/logo/mask.png&quot;);
+                  mask-repeat: no-repeat;
+                  mask-position: center;
+                  mask-size: cover;
+                  mask-mode: luminance;
+                "
+              >
+                <img
+                  class="overlay"
+                  src="/res/logo/overlay.png"
+                  alt="overlay gradient"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    mix-blend-mode: multiply;
+                    pointer-events: none;
+                  "
+                />
+              </div>
+            </div>
+            <span class="text-3xl tracking-widest">Something went wrong</span>
+          </div>
+        </div>
+
+        <section class="mt-10 grid gap-6 md:grid-cols-[1fr_320px]">
+          <div class="space-y-6">
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] overflow-hidden"
+            >
+              <div
+                class="flex items-center justify-between px-5 py-4 border-b border-[var(--white-08)]"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-xs ring-1 ring-inset ring-[var(--white-08)] bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                    Unexpected error
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    id="action-retry"
+                    class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                    Retry
+                  </button>
+                  <button
+                    id="action-report"
+                    class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm bg-[var(--main)] text-[var(--bg-2)] hover:bg-[var(--main)]/90"
+                  >
+                    <i data-lucide="message-square" class="h-4 w-4"></i>
+                    Report issue
+                  </button>
+                </div>
+              </div>
+              <div class="p-5 space-y-4">
+                <p class="text-[var(--proto)]">
+                  We hit a snag while loading this page. You can retry, go back,
+                  or explore other sections below.
+                </p>
+                <div
+                  class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] bg-[var(--bg-1)]/60 p-3"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <label
+                      for="error-textarea"
+                      class="text-xs text-[var(--proto)]"
+                      >Error Details</label
+                    >
+                    <button
+                      id="copy-error-textarea"
+                      class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                    >
+                      <i data-lucide="copy" class="h-3 w-3"></i>
+                      Copy
+                    </button>
+                  </div>
+                  <textarea
+                    id="error-textarea"
+                    readonly
+                    class="w-full h-32 resize-y bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-08)] rounded-lg p-3 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="Error details will appear here..."
+                  ></textarea>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <a
+                    href="/internal/newtab/"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="compass" class="h-4 w-4"></i>
+                    New Tab
+                  </a>
+                  <a
+                    href="/internal/settings/"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="settings" class="h-4 w-4"></i>
+                    Settings
+                  </a>
+                  <a
+                    href="/internal/games/"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="gamepad-2" class="h-4 w-4"></i>
+                    Games
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <details
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <summary
+                class="list-none cursor-pointer px-5 py-4 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2">
+                  <i data-lucide="info" class="h-4 w-4"></i>
+                  <span class="text-sm font-semibold">Technical details</span>
+                </div>
+                <i data-lucide="chevron-down" class="h-4 w-4"></i>
+              </summary>
+              <div class="px-5 pb-5 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div
+                    class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] p-3"
+                  >
+                    <div class="text-xs text-[var(--proto)]">Error Code</div>
+                    <div id="err-code" class="text-sm font-semibold">—</div>
+                  </div>
+                  <div
+                    class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] p-3"
+                  >
+                    <div class="text-xs text-[var(--proto)]">Request ID</div>
+                    <div id="err-req" class="text-sm font-semibold">—</div>
+                  </div>
+                  <div
+                    class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] p-3"
+                  >
+                    <div class="text-xs text-[var(--proto)]">Timestamp</div>
+                    <div id="err-time" class="text-sm font-semibold">—</div>
+                  </div>
+                </div>
+                <div
+                  class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] bg-[var(--bg-1)]/60 p-3 overflow-x-auto"
+                >
+                  <pre
+                    id="err-stack"
+                    class="text-xs leading-relaxed whitespace-pre-wrap break-words"
+                  >
+No stack available</pre
+                  >
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    id="copy-details"
+                    class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="copy" class="h-4 w-4"></i>
+                    Copy details
+                  </button>
+                  <button
+                    id="save-log"
+                    class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                  >
+                    <i data-lucide="download" class="h-4 w-4"></i>
+                    Save log
+                  </button>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <aside class="space-y-4">
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Quick actions</h4>
+              <div class="flex flex-col gap-2">
+                <button
+                  id="action-back"
+                  class="inline-flex items-center justify-between rounded-lg px-3 py-2 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                >
+                  <span class="flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                    Go back
+                  </span>
+                  <span class="text-[var(--proto)] text-xs">⌘[</span>
+                </button>
+                <button
+                  id="action-home"
+                  class="inline-flex items-center justify-between rounded-lg px-3 py-2 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                >
+                  <span class="flex items-center gap-2">
+                    <i data-lucide="home" class="h-4 w-4"></i>
+                    Home
+                  </span>
+                  <span class="text-[var(--proto)] text-xs">H</span>
+                </button>
+                <button
+                  id="action-clear"
+                  class="inline-flex items-center justify-between rounded-lg px-3 py-2 text-sm ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                >
+                  <span class="flex items-center gap-2">
+                    <i data-lucide="eraser" class="h-4 w-4"></i>
+                    Clear cache
+                  </span>
+                  <span class="text-[var(--proto)] text-xs">⌘⌥K</span>
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Status</h4>
+              <div
+                class="flex items-center justify-between rounded-lg px-3 py-2 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex h-2 w-2 rounded-full bg-[var(--main)] animate-pulse"
+                  ></span>
+                  <span class="text-sm">Client online</span>
+                </div>
+                <button
+                  id="status-refresh"
+                  class="inline-flex items-center gap-1 text-xs rounded-md px-2 py-1 ring-1 ring-inset ring-[var(--white-08)] hover:bg-[var(--white-05)]"
+                >
+                  <i data-lucide="refresh-ccw" class="h-3 w-3"></i>
+                  Refresh
+                </button>
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <div
+                  class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] p-3"
+                >
+                  <div class="text-[var(--proto)] text-xs">Latency</div>
+                  <div id="status-latency" class="text-sm font-semibold">—</div>
+                </div>
+                <div
+                  class="rounded-lg ring-1 ring-inset ring-[var(--white-08)] p-3"
+                >
+                  <div class="text-[var(--proto)] text-xs">Backend</div>
+                  <div id="status-backend" class="text-sm font-semibold">—</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <footer
+          class="mt-10 text-xs text-[var(--proto)] flex items-center justify-between"
+        >
+          <span
+            >Need help?
+            <a
+              href="https://gitlab.com/nightnetwork/daydreamx"
+              class="text-[var(--text)] hover:text-[var(--main)]"
+              >Submit an issue
+            </a></span
+          >
+          <nav class="flex items-center gap-4">
+            <a href="/internal/newtab/" class="hover:text-[var(--text)]"
+              >New Tab</a
+            >
+            <span>\</span>
+            <a href="/internal/settings/" class="hover:text-[var(--text)]"
+              >Settings</a
+            >
+          </nav>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

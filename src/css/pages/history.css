@@ -1,0 +1,236 @@
+.separator {
+  border-radius: 999px !important;
+  background: var(--border-color) !important;
+  height: 3px !important;
+  margin-left: 30px !important;
+  width: 100% !important;
+}
+.historyContainer {
+  margin-left: 150px;
+  height: 100vh;
+  width: 100vw;
+}
+
+.background {
+  height: 100vh;
+  width: 100vw;
+  z-index: -1;
+  background-color: rgba(58, 58, 58, 0.45);
+  margin-top: -22px;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
+}
+
+.history_submit {
+  background: transparent;
+}
+
+.search {
+  font-size: 14px;
+  padding: 5px 10px;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  transition: 0.2s ease;
+  border: var(--border-color) 1px solid;
+  border-radius: 9999px;
+  font-family: "Plus Jakarta Sans";
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: var(--border-color) 1px solid;
+  padding: 5px;
+  width: fit-content;
+}
+
+.search:hover {
+  background: var(--input-hover-background-color) !important;
+  color: var(--hover-text-color) !important;
+}
+
+.search:focus-within {
+  background: var(--input-background-color) !important;
+  color: var(--active-text-color) !important;
+  border-color: var(--active-border-color) !important;
+}
+
+.search input {
+  font-size: 14px;
+  padding: 5px;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  flex: 1;
+}
+.history-window {
+  height: 100vh;
+  background-color: var(--dark-translucent-bg);
+  margin-top: 20px;
+  border: var(--border-color) 1px solid;
+  border-radius: 10px;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+.day_title {
+  font-weight: 100;
+  margin-left: 30px;
+  margin-top: 30px;
+  font-size: 16px;
+}
+.history-entry {
+  margin-left: 30px;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  align-items: center;
+  font-weight: 600;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+.history_favicon {
+  width: 32px;
+  height: 32px;
+  transition: all 0.2s ease;
+}
+.history-entry:hover {
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  transition: all 0.2s ease;
+}
+.history_hostname {
+  color: var(--muted);
+  font-weight: 200;
+  transition: all 0.2s ease;
+}
+.history-entry:hover .history_favicon {
+  transform: scale(1.1);
+}
+
+.history-entry:hover .history_hostname {
+  color: var(--active-text-color);
+  transition: color 0.2s ease;
+}
+.deleteHistory {
+  justify-self: right;
+  transition: all 0.2s ease;
+}
+
+.history-item {
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  transform: translateY(-1px);
+}
+
+.history-item .delete-button {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.history-item:hover .delete-button,
+.history-item:focus-within .delete-button {
+  opacity: 1;
+}
+
+mark {
+  background-color: var(--main-35a);
+  color: var(--text);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.favicon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.favicon-container img {
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+.visit-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  background-color: var(--main-35a);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.visit-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--white-10);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background-color: var(--white-20);
+  border-color: var(--main-35a);
+}
+
+.history-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--white-10);
+  border-top: 2px solid var(--main);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .history-item {
+    padding: 0.75rem !important;
+  }
+
+  .history-item .delete-button {
+    opacity: 1 !important;
+  }
+
+  .action-button {
+    padding: 0.5rem !important;
+  }
+
+  .action-button span {
+    display: none !important;
+  }
+}

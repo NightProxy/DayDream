@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>History</title>
+    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="preload" href="/src/css/pages/history.css" as="style" />
+    <link rel="stylesheet" href="/src/css/pages/history.css" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+
+    <script type="module" src="/src/js/internal/history.ts"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-dvh w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <div class="stack h-10 w-10">
+                <div
+                  class="masked-shape"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+              <span class="text-3xl tracking-widest text-[var(--text)] -mr-1"
+                >History</span
+              >
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Clear all"
+                data-side="right"
+                data-align="center"
+                aria-label="Clear all history"
+                id="clear-all-history"
+              >
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 relative">
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <div class="flex-1 relative">
+              <div
+                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
+              >
+                <i data-lucide="search" class="h-4 w-4 text-[var(--proto)]"></i>
+              </div>
+              <input
+                id="history-search"
+                class="w-full rounded-xl bg-[var(--bg-2)] pl-12 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+                placeholder="Search your history..."
+                aria-label="Search history"
+                autocomplete="off"
+              />
+              <button
+                id="history-search-clear"
+                class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                aria-label="Clear search"
+              >
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                id="export-history"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Export History"
+              >
+                <i data-lucide="download" class="h-4 w-4"></i>
+              </button>
+              <button
+                id="import-history"
+                class="px-3 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg hover:bg-[var(--white-20)] transition-colors text-sm"
+                title="Import History"
+              >
+                <i data-lucide="upload" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <section class="mt-6" id="history-empty" hidden>
+          <div
+            class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-8 text-center"
+          >
+            <div
+              class="mx-auto mb-3 grid place-items-center h-10 w-10 rounded-full bg-[var(--white-05)]"
+            >
+              <i
+                data-lucide="folder-search"
+                class="h-5 w-5 text-[var(--proto)]"
+              ></i>
+            </div>
+            <h2 class="text-lg font-semibold">No results</h2>
+            <p class="text-sm text-[var(--proto)]">
+              Try a different keyword or clear the filter.
+            </p>
+          </div>
+        </section>
+
+        <section
+          class="mt-6 space-y-8"
+          data-nightmare="history-window"
+          id="history-window"
+          aria-live="polite"
+        >
+          <div class="space-y-3" data-day="today">
+            <div class="flex items-center justify-between">
+              <h3
+                class="text-sm font-semibold tracking-wide text-[var(--proto)] uppercase"
+              >
+                Today
+              </h3>
+              <button
+                class="text-xs text-[var(--proto)] hover:text-[var(--text)]"
+                data-tooltip="Remove all from Today"
+                data-side="right"
+                data-align="center"
+                data-scope="day-clear"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="grid gap-3" role="list" data-list></div>
+          </div>
+
+          <div class="space-y-3" data-day="yesterday">
+            <div class="flex items-center justify-between">
+              <h3
+                class="text-sm font-semibold tracking-wide text-[var(--proto)] uppercase"
+              >
+                Yesterday
+              </h3>
+              <button
+                class="text-xs text-[var(--proto)] hover:text-[var(--text)]"
+                data-tooltip="Remove all from Yesterday"
+                data-side="right"
+                data-align="center"
+                data-scope="day-clear"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="grid gap-3" role="list" data-list></div>
+          </div>
+
+          <div class="space-y-3" data-day="older">
+            <div class="flex items-center justify-between">
+              <h3
+                class="text-sm font-semibold tracking-wide text-[var(--proto)] uppercase"
+              >
+                Older
+              </h3>
+              <button
+                class="text-xs text-[var(--proto)] hover:text-[var(--text)]"
+                data-tooltip="Remove all from Older"
+                data-side="right"
+                data-align="center"
+                data-scope="day-clear"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="grid gap-3" role="list" data-list></div>
+          </div>
+        </section>
+      </main>
+
+      <template id="history-item-template">
+        <a
+          class="group relative rounded-2xl bg-[var(--bg-2)] p-3 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition flex items-center gap-3"
+          role="listitem"
+          data-history-id=""
+          data-history-url=""
+        >
+          <div
+            class="flex-shrink-0 h-5 w-5 rounded-sm overflow-hidden bg-[var(--white-05)] flex items-center justify-center"
+          >
+            <img
+              class="h-5 w-5 rounded-sm history_favicon"
+              alt="favicon"
+              style="display: none"
+            />
+            <i data-lucide="globe" class="h-4 w-4 text-[var(--proto)]"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm text-[var(--text)] history_title"></p>
+            <div class="flex items-center gap-2 text-xs text-[var(--proto)]">
+              <span class="truncate history_hostname"></span>
+              <span>•</span>
+              <time class="history_time"></time>
+            </div>
+          </div>
+          <button
+            class="flex-shrink-0 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)] opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Delete"
+            data-action="delete"
+          >
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </a>
+      </template>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Entries:
+          <span id="history-count" class="text-[var(--text)]/80">0</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a href="/internal/newtab/" class="hover:text-[var(--text)]"
+            >New Tab</a
+          >
+          <span>\</span>
+          <a href="/internal/settings/" class="hover:text-[var(--text)]"
+            >Settings</a
+          >
+        </nav>
+      </footer>
+    </div>
+
+    <script>
+      document.documentElement.classList.add("pre-anim");
+      window.addEventListener("load", () => {
+        document
+          .querySelectorAll("body *:not(.always-visible)")
+          .forEach((el) => {
+            el.style.transition = "opacity .1s ease .1s";
+            el.style.opacity = "1";
+            el.style.pointerEvents = "";
+          });
+        document.documentElement.classList.remove("pre-anim");
+      });
+    </script>
+  </body>
+</html>

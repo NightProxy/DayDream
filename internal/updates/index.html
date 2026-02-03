@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Updates</title>
+    <link rel="icon" type="image/png" href="/res/logo.png" />
+    <meta property="og:image" content="/res/logo.png" />
+    <link rel="stylesheet" href="/src/css/internal.css" />
+
+    <script type="module" src="/src/js/internal/updates.ts"></script>
+  </head>
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-screen w-full relative overflow-hidden">
+      <main class="mx-auto max-w-6xl px-4 pt-28 pb-24">
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <div class="stack h-10 w-10">
+                <div
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    background: var(--main);
+                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    -webkit-mask-size: cover;
+                    -webkit-mask-mode: luminance;
+                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-repeat: no-repeat;
+                    mask-position: center;
+                    mask-size: cover;
+                    mask-mode: luminance;
+                  "
+                >
+                  <img
+                    class="overlay"
+                    src="/res/logo/overlay.png"
+                    alt="overlay gradient"
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      mix-blend-mode: multiply;
+                      pointer-events: none;
+                    "
+                  />
+                </div>
+              </div>
+              <span class="text-3xl tracking-widest -mr-1">Updates</span>
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Subscribe"
+                data-side="right"
+                data-align="center"
+                aria-label="Subscribe"
+              >
+                <i data-lucide="bell" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_260px]">
+          <div class="space-y-6">
+            <div class="relative">
+              <i
+                data-lucide="search"
+                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--proto)]"
+              ></i>
+              <input
+                id="updates-search"
+                class="w-full rounded-xl bg-[var(--bg-2)] pl-10 pr-28 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+                placeholder="Search announcements..."
+                aria-label="Search updates"
+              />
+              <div
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2"
+              >
+                <button
+                  id="updates-clear"
+                  class="inline-flex h-8 px-3 items-center justify-center rounded-lg text-xs text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                >
+                  Clear
+                </button>
+                <button
+                  id="updates-filter"
+                  class="inline-flex h-8 px-3 items-center justify-center rounded-lg text-xs text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  aria-expanded="false"
+                >
+                  Filters
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2" id="updates-tags">
+              <button
+                data-tag="all"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)] bg-[var(--white-05)]"
+              >
+                All
+              </button>
+              <button
+                data-tag="release"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Release
+              </button>
+              <button
+                data-tag="maintenance"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Maintenance
+              </button>
+              <button
+                data-tag="devlog"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Devlog
+              </button>
+              <button
+                data-tag="annc"
+                class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                Announcement
+              </button>
+            </div>
+
+            <div class="relative">
+              <div
+                class="absolute left-4 top-0 bottom-0 w-px bg-[var(--white-08)]"
+              ></div>
+              <div id="updates-list" class="space-y-4">
+                <section id="updates-raw" class="cursor-pointer" hidden>
+                  <div
+                    data-tags="release annc"
+                    data-title="DaydreamX v2.1.0 - Stability & Feature Updates"
+                    data-type="Update"
+                    data-version="v2.1.0"
+                    data-date="Feb 2, 2026"
+                    data-dot="success"
+                  >
+                    <p class="hidden">
+                      DaydreamX v2.1.0 brings important bug fixes and new
+                      features to improve your browsing experience.
+                    </p>
+                    <p>What's New:</p>
+                    <ul class="list-disc list-inside">
+                      <li>
+                        Bug Fixes: Addressed numerous issues from user testing
+                        including bookmark URL handling, history page icons, tab
+                        management, and more.
+                      </li>
+                      <li>
+                        Partial Chii Implementation: Initial integration of Chii
+                        devtools for advanced debugging capabilities.
+                      </li>
+                      <li>
+                        700 Mullvad Locations: Added support for 700 Mullvad VPN
+                        server locations for enhanced privacy and performance.
+                      </li>
+                      <li>
+                        Improved Extension System: Fixed hide/unhide
+                        functionality for better extension management.
+                      </li>
+                      <li>
+                        Enhanced Search Logic: Improved URL detection with
+                        period and space handling.
+                      </li>
+                    </ul>
+                    <p>
+                      Thank you to all our beta testers for their valuable
+                      feedback!
+                    </p>
+                  </div>
+                  <div
+                    data-tags="release annc"
+                    data-title="DaydreamX v2 release. Best UI, faster speeds and lots of features"
+                    data-type="Release"
+                    data-version="v2.0.0"
+                    data-date="Jan 21, 2026"
+                    data-dot="main"
+                  >
+                    <p class="hidden">
+                      We are excited to announce the release of DaydreamX v2, a
+                      major update that brings a host of new features,
+                      performance improvements, and a sleek new user interface.
+                      This version is designed to enhance your experience and
+                      provide more customization options.
+                    </p>
+                    <p>Key Features:</p>
+                    <ul class="list-disc list-inside">
+                      <li>
+                        Revamped User Interface: A modern and intuitive design
+                        that makes navigation easier and more enjoyable.
+                      </li>
+                      <li>
+                        Performance Enhancements: Faster load times and smoother
+                        transitions for a seamless experience.
+                      </li>
+                      <li>
+                        New Customization Options: More themes, layouts, and
+                        settings.
+                      </li>
+                      <li>
+                        Improved Security: Enhanced proxy features and backend.
+                      </li>
+                      <li>
+                        Bug Fixes: Addressed and fixed various issues and
+                        improved overall stability.
+                      </li>
+                    </ul>
+                    <p>
+                      Thanks for supporting DaydreamX, - Amplify, Crllect, and
+                      Dust
+                    </p>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <section id="updates-empty" hidden>
+              <div
+                class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-8 text-center"
+              >
+                <div
+                  class="mx-auto mb-3 grid place-items-center h-10 w-10 rounded-full bg-[var(--white-05)]"
+                >
+                  <i
+                    data-lucide="inbox"
+                    class="h-5 w-5 text-[var(--proto)]"
+                  ></i>
+                </div>
+                <h2 class="text-lg font-semibold">No announcements found</h2>
+                <p class="text-sm text-[var(--proto)]">
+                  Try clearing filters or adjusting your search.
+                </p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="space-y-4">
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Quick Filters</h4>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  data-qf="starred"
+                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+                >
+                  Starred
+                </button>
+                <button
+                  data-qf="new"
+                  class="px-3 py-1 rounded-lg text-xs ring-1 ring-inset ring-[var(--white-08)]"
+                >
+                  Last 7 days
+                </button>
+              </div>
+            </div>
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Changelog</h4>
+              <ul class="text-xs text-[var(--proto)] space-y-1">
+                <li>v2.1.0 - Feb 2, 2026</li>
+                <li>v2.0.0 - Jan 21, 2026</li>
+              </ul>
+            </div>
+            <div
+              class="rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] p-4"
+            >
+              <h4 class="text-sm font-semibold mb-2">Having Issues?</h4>
+              <p class="text-xs text-[var(--proto)] mb-2">
+                If features aren't working properly, try clearing your cache:
+              </p>
+              <button
+                id="reset-cache-btn"
+                class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--main)] text-[var(--bg-1)] hover:opacity-90 transition-opacity"
+              >
+                Reset Cache
+              </button>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <template id="updates-item-template">
+        <details
+          class="group relative rounded-2xl bg-[var(--bg-2)] ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] transition data-[hidden=true]:hidden"
+        >
+          <summary class="list-none cursor-pointer">
+            <div class="pl-10 pr-3 py-4 flex items-start gap-4">
+              <div
+                class="absolute left-3 top-5 h-3 w-3 rounded-full shadow-[0_0_0_3px_var(--bg-2)]"
+                data-dot
+              ></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2" data-badges></div>
+                <h3 class="mt-1 text-sm font-semibold" data-title></h3>
+                <p
+                  class="mt-1 text-sm text-[var(--proto)] line-clamp-2 group-open:line-clamp-none"
+                  data-excerpt
+                ></p>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  class="grid place-items-center rounded-full h-8 w-8 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  data-action="star"
+                >
+                  <i data-lucide="star" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+          </summary>
+          <div class="px-10 pb-4 space-y-4" data-body></div>
+        </details>
+      </template>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Announcements:
+          <span id="updates-count" class="text-[var(--text)]/80">0</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a href="/internal/newtab/" class="hover:text-[var(--text)]"
+            >New Tab</a
+          >
+          <span>\</span>
+          <a href="/internal/settings/" class="hover:text-[var(--text)]"
+            >Settings</a
+          >
+        </nav>
+      </footer>
+    </div>
+  </body>
+</html>
