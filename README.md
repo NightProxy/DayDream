@@ -1,7 +1,7 @@
-# DayDream X
+# DayDream Browser
 <div align="center">
     <img src="https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/DDXBanner.png" style="width: 1200px"/>
-    <h2>Explore the Web with DayDream X</h2>
+    <h2>Explore the Web with DayDream</h2>
 </div>
 
 ![inpreview](https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/daydreamx.png)
@@ -11,13 +11,19 @@
 
 ## Features
 
-- Cloaking
-- Tabs
-- History
-- Theming
-- Bookmarks
-- Proxies
-- Games
+- Sleek UI/UX
+- Web Proxy/ UBG features (Panic key, cloak, etc)
+- Advanced Tabs inplementation
+- Dual Proxy support with Scramjet as primary
+- Advanced bookamrsk system
+- Detailed History
+- Extensions
+- Heavy Obfuscation (fonts and text are hidden)
+- Night+ Support (Advanced VPN with MullvadVPN support, and more!!!)
+- Advanced Theming (supports custom themes and custom background)
+- Advanced Search suggestions (Find websites, pages and features in the browser, games, etc)
+- Developer Tools
+- Advanced profiles and data system
 
 ## Deployment
 
@@ -26,30 +32,13 @@
 
 ### Installation & Setup
 
-DayDream X supports multiple package managers (has lockfiles for npm, pnpm, and bun) with Bun being recommended. To enable Bun using Corepack:
-
-
-```bash
-# Enable Corepack if not already enabled
-corepack enable
-
-# Set Bun as the preferred package manager
-corepack prepare bun@1.2.0 --activate
-```
-
-If you do not wish to use Corepack due to its experimental status, you may install Bun manually, or use pnpm or npm as your package manager.
-
-### Hosting Instructions
-
-#### Development Setup
-
-For local development, the default configuration is already secure:
-
 ```bash
 git clone https://gitlab.com/nightnetwork/daydreamx.git
 cd DayDreamX
-bun install
-bun start
+pnpm install
+pnpm build
+cp config.example.js config.js
+pnpm start
 ```
 
 The app will run on `http://127.0.0.1:8080` (localhost only, not accessible from other machines).
@@ -132,6 +121,8 @@ Alternative package managers:
 ```bash
 # For npm
 npm install
+npm build
+cp config.example.js config.js
 npm start
 
 # For pnpm

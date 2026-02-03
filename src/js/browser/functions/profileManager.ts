@@ -117,7 +117,9 @@ export class ProfileManager implements ProfileManagerInterface {
                       ) as HTMLIFrameElement | null;
 
                       if (!iframe) {
-                        console.warn("No active iframe found for profile settings navigation");
+                        console.warn(
+                          "No active iframe found for profile settings navigation",
+                        );
                         return;
                       }
 
@@ -142,113 +144,113 @@ export class ProfileManager implements ProfileManagerInterface {
 
         ...(currentProfile
           ? [
-            this.ui.createElement(
-              "div",
-              {
-                class: "p-4 border-b",
-                style: "border-bottom: 1px solid var(--white-10);",
-              },
-              [
-                this.ui.createElement(
-                  "div",
-                  {
-                    class: "flex items-center justify-between",
-                  },
-                  [
-                    this.ui.createElement(
-                      "div",
-                      {
-                        class: "flex items-center gap-3",
-                      },
-                      [
-                        this.ui.createElement(
-                          "div",
-                          {
-                            class:
-                              "w-10 h-10 rounded-full flex items-center justify-center",
-                            style:
-                              "background: var(--main); color: var(--bg-1); font-weight: 600;",
-                          },
-                          [currentProfile.charAt(0).toUpperCase()],
-                        ),
-
-                        this.ui.createElement("div", {}, [
+              this.ui.createElement(
+                "div",
+                {
+                  class: "p-4 border-b",
+                  style: "border-bottom: 1px solid var(--white-10);",
+                },
+                [
+                  this.ui.createElement(
+                    "div",
+                    {
+                      class: "flex items-center justify-between",
+                    },
+                    [
+                      this.ui.createElement(
+                        "div",
+                        {
+                          class: "flex items-center gap-3",
+                        },
+                        [
                           this.ui.createElement(
                             "div",
                             {
+                              class:
+                                "w-10 h-10 rounded-full flex items-center justify-center",
                               style:
-                                "color: var(--text); font-size: 14px; font-weight: 500;",
+                                "background: var(--main); color: var(--bg-1); font-weight: 600;",
                             },
-                            [currentProfile],
+                            [currentProfile.charAt(0).toUpperCase()],
                           ),
+
+                          this.ui.createElement("div", {}, [
+                            this.ui.createElement(
+                              "div",
+                              {
+                                style:
+                                  "color: var(--text); font-size: 14px; font-weight: 500;",
+                              },
+                              [currentProfile],
+                            ),
+                            this.ui.createElement(
+                              "div",
+                              {
+                                style:
+                                  "color: var(--text); opacity: 0.7; font-size: 12px;",
+                              },
+                              ["Current Profile"],
+                            ),
+                          ]),
+                        ],
+                      ),
+
+                      this.ui.createElement(
+                        "div",
+                        {
+                          class: "flex items-center gap-1",
+                        },
+                        [
                           this.ui.createElement(
-                            "div",
+                            "button",
                             {
+                              class:
+                                "flex items-center justify-center w-6 h-6 rounded",
                               style:
-                                "color: var(--text); opacity: 0.7; font-size: 12px;",
+                                "color: var(--text); border: none; background: var(--white-05);",
+                              title: "Export Profile",
+                              onclick: () => this.exportCurrentProfile(),
                             },
-                            ["Current Profile"],
+                            [
+                              this.ui.createElement(
+                                "i",
+                                {
+                                  "data-lucide": "download",
+                                  style: "width: 12px; height: 12px;",
+                                },
+                                [],
+                              ),
+                            ],
                           ),
-                        ]),
-                      ],
-                    ),
 
-                    this.ui.createElement(
-                      "div",
-                      {
-                        class: "flex items-center gap-1",
-                      },
-                      [
-                        this.ui.createElement(
-                          "button",
-                          {
-                            class:
-                              "flex items-center justify-center w-6 h-6 rounded",
-                            style:
-                              "color: var(--text); border: none; background: var(--white-05);",
-                            title: "Export Profile",
-                            onclick: () => this.exportCurrentProfile(),
-                          },
-                          [
-                            this.ui.createElement(
-                              "i",
-                              {
-                                "data-lucide": "download",
-                                style: "width: 12px; height: 12px;",
-                              },
-                              [],
-                            ),
-                          ],
-                        ),
-
-                        this.ui.createElement(
-                          "button",
-                          {
-                            class:
-                              "flex items-center justify-center w-6 h-6 rounded",
-                            style:
-                              "color: var(--text); border: none; background: var(--white-05);",
-                            title: "Save Profile",
-                            onclick: () => this.saveCurrentProfile(),
-                          },
-                          [
-                            this.ui.createElement(
-                              "i",
-                              {
-                                "data-lucide": "save",
-                                style: "width: 12px; height: 12px;",
-                              },
-                              [],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ]
+                          this.ui.createElement(
+                            "button",
+                            {
+                              class:
+                                "flex items-center justify-center w-6 h-6 rounded",
+                              style:
+                                "color: var(--text); border: none; background: var(--white-05);",
+                              title: "Save Profile",
+                              onclick: () => this.saveCurrentProfile(),
+                            },
+                            [
+                              this.ui.createElement(
+                                "i",
+                                {
+                                  "data-lucide": "save",
+                                  style: "width: 12px; height: 12px;",
+                                },
+                                [],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ]
           : []),
 
         this.createProfilesList(profilesList, currentProfile),
@@ -278,115 +280,115 @@ export class ProfileManager implements ProfileManagerInterface {
       [
         profilesList.length > 0
           ? this.ui.createElement(
-            "div",
-            {
-              class: "p-2",
-            },
-            [
-              this.ui.createElement(
-                "div",
-                {
-                  style:
-                    "color: var(--text); opacity: 0.7; font-size: 12px; font-weight: 500; margin-bottom: 8px; padding: 0 8px;",
-                },
-                ["Available Profiles"],
-              ),
-
-              ...profilesList.map((profileId) =>
+              "div",
+              {
+                class: "p-2",
+              },
+              [
                 this.ui.createElement(
                   "div",
                   {
-                    class: `profile-row flex items-center justify-between p-2 rounded-md`,
                     style:
-                      currentProfile === profileId
-                        ? "background: var(--main-20a); border: 1px solid var(--main-35a); cursor: default;"
-                        : "border: 1px solid transparent; cursor: pointer;",
-                    onmouseenter:
-                      currentProfile !== profileId
-                        ? (e: Event) => {
-                          (e.target as HTMLElement).style.background =
-                            "var(--white-05)";
-                        }
-                        : undefined,
-                    onmouseleave:
-                      currentProfile !== profileId
-                        ? (e: Event) => {
-                          (e.target as HTMLElement).style.background =
-                            "transparent";
-                        }
-                        : undefined,
+                      "color: var(--text); opacity: 0.7; font-size: 12px; font-weight: 500; margin-bottom: 8px; padding: 0 8px;",
                   },
-                  [
-                    this.ui.createElement(
-                      "div",
-                      {
-                        class:
-                          "flex items-center gap-3 flex-1 cursor-pointer",
-                        style:
-                          currentProfile === profileId
-                            ? "cursor: default;"
-                            : "cursor: pointer;",
-                        onclick:
-                          currentProfile !== profileId
-                            ? (e: Event) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              this.switchToProfile(profileId);
-                            }
-                            : undefined,
-                      },
-                      [
-                        this.ui.createElement(
-                          "div",
-                          {
-                            class:
-                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium",
-                            style:
-                              currentProfile === profileId
-                                ? "background: var(--main); color: var(--bg-1);"
-                                : "background: var(--white-10); color: var(--text);",
-                          },
-                          [profileId.charAt(0).toUpperCase()],
-                        ),
-
-                        this.ui.createElement(
-                          "div",
-                          {
-                            class: "flex-1",
-                          },
-                          [
-                            this.ui.createElement(
-                              "div",
-                              {
-                                style:
-                                  "color: var(--text); font-size: 14px; font-weight: 500;",
-                              },
-                              [profileId],
-                            ),
-
-                            ...(currentProfile === profileId
-                              ? [
-                                this.ui.createElement(
-                                  "div",
-                                  {
-                                    style:
-                                      "color: var(--main); font-size: 12px;",
-                                  },
-                                  ["● Active"],
-                                ),
-                              ]
-                              : []),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    this.createProfileActions(profileId, currentProfile),
-                  ],
+                  ["Available Profiles"],
                 ),
-              ),
-            ],
-          )
+
+                ...profilesList.map((profileId) =>
+                  this.ui.createElement(
+                    "div",
+                    {
+                      class: `profile-row flex items-center justify-between p-2 rounded-md`,
+                      style:
+                        currentProfile === profileId
+                          ? "background: var(--main-20a); border: 1px solid var(--main-35a); cursor: default;"
+                          : "border: 1px solid transparent; cursor: pointer;",
+                      onmouseenter:
+                        currentProfile !== profileId
+                          ? (e: Event) => {
+                              (e.target as HTMLElement).style.background =
+                                "var(--white-05)";
+                            }
+                          : undefined,
+                      onmouseleave:
+                        currentProfile !== profileId
+                          ? (e: Event) => {
+                              (e.target as HTMLElement).style.background =
+                                "transparent";
+                            }
+                          : undefined,
+                    },
+                    [
+                      this.ui.createElement(
+                        "div",
+                        {
+                          class:
+                            "flex items-center gap-3 flex-1 cursor-pointer",
+                          style:
+                            currentProfile === profileId
+                              ? "cursor: default;"
+                              : "cursor: pointer;",
+                          onclick:
+                            currentProfile !== profileId
+                              ? (e: Event) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  this.switchToProfile(profileId);
+                                }
+                              : undefined,
+                        },
+                        [
+                          this.ui.createElement(
+                            "div",
+                            {
+                              class:
+                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium",
+                              style:
+                                currentProfile === profileId
+                                  ? "background: var(--main); color: var(--bg-1);"
+                                  : "background: var(--white-10); color: var(--text);",
+                            },
+                            [profileId.charAt(0).toUpperCase()],
+                          ),
+
+                          this.ui.createElement(
+                            "div",
+                            {
+                              class: "flex-1",
+                            },
+                            [
+                              this.ui.createElement(
+                                "div",
+                                {
+                                  style:
+                                    "color: var(--text); font-size: 14px; font-weight: 500;",
+                                },
+                                [profileId],
+                              ),
+
+                              ...(currentProfile === profileId
+                                ? [
+                                    this.ui.createElement(
+                                      "div",
+                                      {
+                                        style:
+                                          "color: var(--main); font-size: 12px;",
+                                      },
+                                      ["● Active"],
+                                    ),
+                                  ]
+                                : []),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      this.createProfileActions(profileId, currentProfile),
+                    ],
+                  ),
+                ),
+              ],
+            )
           : this.createEmptyProfilesState(),
       ],
     );
@@ -404,30 +406,30 @@ export class ProfileManager implements ProfileManagerInterface {
       [
         ...(currentProfile !== profileId
           ? [
-            this.ui.createElement(
-              "button",
-              {
-                class: "flex items-center justify-center w-5 h-5 rounded",
-                style:
-                  "color: var(--success); border: none; background: transparent;",
-                title: "Switch to Profile",
-                onclick: (e: Event) => {
-                  e.stopPropagation();
-                  this.switchToProfile(profileId);
-                },
-              },
-              [
-                this.ui.createElement(
-                  "i",
-                  {
-                    "data-lucide": "arrow-right",
-                    style: "width: 10px; height: 10px;",
+              this.ui.createElement(
+                "button",
+                {
+                  class: "flex items-center justify-center w-5 h-5 rounded",
+                  style:
+                    "color: var(--success); border: none; background: transparent;",
+                  title: "Switch to Profile",
+                  onclick: (e: Event) => {
+                    e.stopPropagation();
+                    this.switchToProfile(profileId);
                   },
-                  [],
-                ),
-              ],
-            ),
-          ]
+                },
+                [
+                  this.ui.createElement(
+                    "i",
+                    {
+                      "data-lucide": "arrow-right",
+                      style: "width: 10px; height: 10px;",
+                    },
+                    [],
+                  ),
+                ],
+              ),
+            ]
           : []),
 
         this.ui.createElement(
@@ -455,30 +457,30 @@ export class ProfileManager implements ProfileManagerInterface {
 
         ...(currentProfile !== profileId
           ? [
-            this.ui.createElement(
-              "button",
-              {
-                class: "flex items-center justify-center w-5 h-5 rounded",
-                style:
-                  "color: var(--error); border: none; background: transparent;",
-                title: "Delete Profile",
-                onclick: (e: Event) => {
-                  e.stopPropagation();
-                  this.deleteProfile(profileId);
-                },
-              },
-              [
-                this.ui.createElement(
-                  "i",
-                  {
-                    "data-lucide": "trash-2",
-                    style: "width: 10px; height: 10px;",
+              this.ui.createElement(
+                "button",
+                {
+                  class: "flex items-center justify-center w-5 h-5 rounded",
+                  style:
+                    "color: var(--error); border: none; background: transparent;",
+                  title: "Delete Profile",
+                  onclick: (e: Event) => {
+                    e.stopPropagation();
+                    this.deleteProfile(profileId);
                   },
-                  [],
-                ),
-              ],
-            ),
-          ]
+                },
+                [
+                  this.ui.createElement(
+                    "i",
+                    {
+                      "data-lucide": "trash-2",
+                      style: "width: 10px; height: 10px;",
+                    },
+                    [],
+                  ),
+                ],
+              ),
+            ]
           : []),
       ],
     );
@@ -530,47 +532,52 @@ export class ProfileManager implements ProfileManagerInterface {
         style: "border-top: 1px solid var(--white-10);",
       },
       [
-        ...(hasNightPlus ? [] : [
-        this.ui.createElement(
-          "div",
-          {
-            class: "mb-3 p-3 rounded-lg",
-            style: `
+        ...(hasNightPlus
+          ? []
+          : [
+              this.ui.createElement(
+                "div",
+                {
+                  class: "mb-3 p-3 rounded-lg",
+                  style: `
               background: var(--main-20a);
               border: 1px solid var(--main-35a);
               font-size: 12px;
             `,
-          },
-          [
-            this.ui.createElement(
-              "div",
-              {
-                class: "flex items-center gap-2",
-              },
-              [
-                this.ui.createElement(
-                  "i",
-                  {
-                    "data-lucide":
-                      profileCount >= maxProfiles ? "alert-circle" : "info",
-                    style: `width: 14px; height: 14px; color: var(${profileCount >= maxProfiles ? "--error, #ef4444" : "--main"}); flex-shrink: 0;`,
-                  },
-                  [],
-                ),
-                (() => {
-                  const div = this.ui.createElement("div", {
-                    style: "color: var(--text); line-height: 1.4;",
-                  });
-                  div.innerHTML =
-                    profileCount >= maxProfiles
-                      ? `<strong style="color: var(--error, #ef4444);">Profile Limit Reached (${profileCount}/${maxProfiles})</strong><br/><span style="opacity: 0.9;">Upgrade to <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Night+</a> for unlimited profiles.</span>`
-                      : `<strong style="color: var(--main);">Profiles: ${profileCount}/${maxProfiles}</strong><br/><span style="opacity: 0.9;">${maxProfiles - profileCount} remaining. <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Upgrade to Night+</a> for unlimited.</span>`;
-                  return div;
-                })(),
-              ],
-            ),
-          ],
-        )]),
+                },
+                [
+                  this.ui.createElement(
+                    "div",
+                    {
+                      class: "flex items-center gap-2",
+                    },
+                    [
+                      this.ui.createElement(
+                        "i",
+                        {
+                          "data-lucide":
+                            profileCount >= maxProfiles
+                              ? "alert-circle"
+                              : "info",
+                          style: `width: 14px; height: 14px; color: var(${profileCount >= maxProfiles ? "--error, #ef4444" : "--main"}); flex-shrink: 0;`,
+                        },
+                        [],
+                      ),
+                      (() => {
+                        const div = this.ui.createElement("div", {
+                          style: "color: var(--text); line-height: 1.4;",
+                        });
+                        div.innerHTML =
+                          profileCount >= maxProfiles
+                            ? `<strong style="color: var(--error, #ef4444);">Profile Limit Reached (${profileCount}/${maxProfiles})</strong><br/><span style="opacity: 0.9;">Upgrade to <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Night+</a> for unlimited profiles.</span>`
+                            : `<strong style="color: var(--main);">Profiles: ${profileCount}/${maxProfiles}</strong><br/><span style="opacity: 0.9;">${maxProfiles - profileCount} remaining. <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Upgrade to Night+</a> for unlimited.</span>`;
+                        return div;
+                      })(),
+                    ],
+                  ),
+                ],
+              ),
+            ]),
 
         this.ui.createElement(
           "div",
@@ -630,138 +637,136 @@ export class ProfileManager implements ProfileManagerInterface {
   }
 
   async showCreateProfileDialog(): Promise<void> {
+    console.log("[ProfileManager] showCreateProfileDialog called");
     const profilesList = await this.profiles.listProfiles();
     const currentCount = profilesList.length;
     const hasNightPlus = await checkNightPlusStatus();
     const maxProfiles = hasNightPlus ? Infinity : 3;
 
-    const createBtn = this.ui.createElement("button", {
-      type: "submit", class: "bc-btn-primary", style: `background: var(--main); border: none; color: var(--bg-1); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;`, disabled: currentCount >= maxProfiles, onmouseenter: (e: Event) => {
-        if ((e.currentTarget as HTMLButtonElement).disabled) return;
-        (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)";
-      }, onmouseleave: (e: Event) => {
-        if ((e.currentTarget as HTMLButtonElement).disabled) return;
-        (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-      }
-    }, [currentCount >= maxProfiles ? "Profile Limit Reached" : "Create Profile"]);
+    const dialog = document.createElement("div");
+    dialog.className = "bc-dialog-overlay";
+    dialog.style.cssText = `position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 99999999; opacity: 0; transition: opacity 0.2s ease;`;
+
+    const dialogContent = document.createElement("div");
+    dialogContent.className = "bc-dialog-content";
+    dialogContent.style.cssText = `background: var(--bg-2); border: 1px solid var(--white-10); border-radius: 12px; padding: 24px; min-width: 400px; max-width: 90vw; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); transform: scale(0.95); transition: transform 0.2s ease;`;
+
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "flex items-center justify-between mb-6";
+
+    const title = document.createElement("h2");
+    title.style.cssText =
+      "color: var(--text); font-size: 20px; font-weight: 600; margin: 0;";
+    title.textContent = "Create New Profile";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className =
+      "flex items-center justify-center w-8 h-8 rounded-full hover:bg-opacity-80";
+    closeBtn.style.cssText =
+      "color: var(--text); background: var(--white-05); border: none; transition: all 0.15s ease;";
+    closeBtn.title = "Close";
+    closeBtn.innerHTML =
+      '<i data-lucide="x" style="width: 16px; height: 16px;"></i>';
+
+    const formElement = document.createElement("form");
+    formElement.style.cssText =
+      "display: flex; flex-direction: column; gap: 16px;";
+
+    const inputContainer = document.createElement("div");
+    inputContainer.style.cssText =
+      "display: flex; flex-direction: column; gap: 8px;";
+
+    const label = document.createElement("label");
+    label.style.cssText =
+      "color: var(--text); font-size: 14px; font-weight: 500;";
+    label.textContent = "Profile Name";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Enter profile name...";
+    input.className = "bc-input";
+    input.style.cssText = `background: var(--bg-1); border: 1px solid var(--white-10); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; transition: all 0.15s ease;`;
+
+    const hint = document.createElement("div");
+    hint.style.cssText = "color: var(--text); opacity: 0.7; font-size: 12px;";
+    hint.textContent =
+      "Choose a unique name for your profile. This will help you identify it later.";
+
+    inputContainer.appendChild(label);
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(hint);
+    formElement.appendChild(inputContainer);
+
+    if (!hasNightPlus) {
+      const notice = document.createElement("div");
+      notice.className = "flex items-start gap-2";
+      notice.style.cssText = `padding: 12px; border-radius: 8px; font-size: 12px; ${
+        currentCount >= maxProfiles
+          ? "background: var(--error-20a, rgba(239, 68, 68, 0.1)); border: 1px solid var(--error-35a, rgba(239, 68, 68, 0.2));"
+          : "background: var(--main-20a); border: 1px solid var(--main-35a);"
+      }`;
+
+      const icon = document.createElement("i");
+      icon.setAttribute(
+        "data-lucide",
+        currentCount >= maxProfiles ? "alert-circle" : "info",
+      );
+      icon.style.cssText = `width: 16px; height: 16px; color: ${currentCount >= maxProfiles ? "var(--error, #ef4444)" : "var(--main)"}; margin-top: 2px; flex-shrink: 0;`;
+
+      const textDiv = document.createElement("div");
+      textDiv.style.cssText = "color: var(--text);";
+
+      const strong = document.createElement("strong");
+      strong.style.cssText = `color: ${currentCount >= maxProfiles ? "var(--error, #ef4444)" : "var(--main)"};`;
+      strong.textContent =
+        currentCount >= maxProfiles
+          ? "Profile Limit Reached"
+          : `Profile Count: ${currentCount} / ${maxProfiles}`;
+
+      const p = document.createElement("p");
+      p.style.cssText = "margin: 4px 0 0 0; opacity: 0.9;";
+      p.textContent =
+        currentCount >= maxProfiles
+          ? `You've reached the maximum of ${maxProfiles} profiles on the free tier. `
+          : `${maxProfiles - currentCount} profile${maxProfiles - currentCount !== 1 ? "s" : ""} remaining on free tier. `;
+
+      const upgradeLink = document.createElement("a");
+      upgradeLink.href = "/internal/terms/";
+      upgradeLink.target = "_blank";
+      upgradeLink.style.cssText =
+        "color: var(--main); text-decoration: underline; margin-left: 4px;";
+      upgradeLink.textContent = "Upgrade to Night+";
+      p.appendChild(upgradeLink);
+
+      textDiv.appendChild(strong);
+      textDiv.appendChild(p);
+      notice.appendChild(icon);
+      notice.appendChild(textDiv);
+      formElement.appendChild(notice);
+    }
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.className = "flex items-center justify-end gap-3 mt-4";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "bc-btn-secondary";
+    cancelBtn.style.cssText = `background: transparent; border: 1px solid var(--white-10); color: var(--text); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;`;
+    cancelBtn.textContent = "Cancel";
+
+    const createBtn = document.createElement("button");
+    createBtn.type = "button";
+    createBtn.id = "profile-create-btn";
+    createBtn.className = "bc-btn-primary";
+    createBtn.style.cssText = `background: var(--main); border: none; color: var(--bg-1); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;`;
+    createBtn.textContent =
+      currentCount >= maxProfiles ? "Profile Limit Reached" : "Create Profile";
+    createBtn.disabled = currentCount >= maxProfiles;
 
     if (currentCount >= maxProfiles) {
       createBtn.style.opacity = "0.5";
       createBtn.style.cursor = "not-allowed";
     }
-
-    const dialog = this.ui.createElement("div", { class: "bc-dialog-overlay", style: `position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 99999999; opacity: 0; transition: opacity 0.2s ease;`, onclick: (e: Event) => {
-      if (e.target === dialog) {
-        closeDialog();
-      }
-    } }, [
-    this.ui.createElement("div", { class: "bc-dialog-content", style: `background: var(--bg-2); border: 1px solid var(--white-10); border-radius: 12px; padding: 24px; min-width: 400px; max-width: 90vw; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); transform: scale(0.95); transition: transform 0.2s ease;` }, [
-      this.ui.createElement("div", { class: "flex items-center justify-between mb-6" }, [
-        this.ui.createElement("h2", { style: "color: var(--text); font-size: 20px; font-weight: 600; margin: 0;" }, ["Create New Profile"]),
-        this.ui.createElement("button", { class: "flex items-center justify-center w-8 h-8 rounded-full hover:bg-opacity-80", style: "color: var(--text); background: var(--white-05); border: none; transition: all 0.15s ease;", title: "Close", onclick: () => closeDialog() }, [
-          this.ui.createElement("i", { "data-lucide": "x", style: "width: 16px; height: 16px;" }, []),
-        ])
-      ]),
-      (() => {
-        const form = this.ui.createElement("form", {
-          style: "display: flex; flex-direction: column; gap: 16px;", onsubmit: async (e: Event) => {
-            e.preventDefault();
-            const input = form.querySelector('input[type="text"]') as HTMLInputElement;
-          const profileName = input.value.trim();
-
-          if (!profileName) {
-            input.style.borderColor = "var(--error)";
-            input.focus();
-            return;
-          }
-
-          try {
-            createBtn.textContent = "Creating...";
-            (createBtn as HTMLButtonElement).disabled = true;
-            createBtn.style.opacity = "0.7";
-
-            await this.createProfileWithPresetData(profileName);
-            this.logger.createLog(`Created profile: ${profileName}`);
-
-            closeDialog();
-
-            this.modalUtilities.showAlert(
-              "Profile created successfully!",
-              "success",
-            );
-
-            document.location.reload();
-          } catch (error) {
-            console.error("Failed to create profile:", error);
-            this.modalUtilities.showAlert(
-              `Failed to create profile: ${error}`,
-              "error",
-            );
-            createBtn.textContent = "Create Profile";
-            (createBtn as HTMLButtonElement).disabled = false;
-            createBtn.style.opacity = "1";
-          }
-        }
-      }, [
-        this.ui.createElement("div", { style: "display: flex; flex-direction: column; gap: 8px;" }, [
-          this.ui.createElement("label", { style: "color: var(--text); font-size: 14px; font-weight: 500;" }, ["Profile Name"]),
-          this.ui.createElement("input", {
-            type: "text", placeholder: "Enter profile name...", class: "bc-input", style: `background: var(--bg-1); border: 1px solid var(--white-10); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; transition: all 0.15s ease;`, onfocus: (e: Event) => {
-              (e.currentTarget as HTMLInputElement).style.borderColor = "var(--main)";
-              (e.currentTarget as HTMLInputElement).style.boxShadow = "0 0 0 3px var(--main-20a)";
-            }, onblur: (e: Event) => {
-              (e.currentTarget as HTMLInputElement).style.borderColor = "var(--white-10)";
-              (e.currentTarget as HTMLInputElement).style.boxShadow = "none";
-            }
-          }, []),
-          this.ui.createElement("div", { style: "color: var(--text); opacity: 0.7; font-size: 12px;" }, ["Choose a unique name for your profile. This will help you identify it later."])
-        ]),
-        ...(hasNightPlus ? [] : [this.ui.createElement("div", {
-          class: "flex items-start gap-2",
-          style: `
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      ${currentCount >= maxProfiles
-              ? "background: var(--error-20a, rgba(239, 68, 68, 0.1)); border: 1px solid var(--error-35a, rgba(239, 68, 68, 0.2));"
-              : "background: var(--main-20a); border: 1px solid var(--main-35a);"
-            }
-    ` }, [
-          this.ui.createElement("i", {
-            "data-lucide": currentCount >= maxProfiles ? "alert-circle" : "info",
-            style: `width: 16px; height: 16px; color: ${currentCount >= maxProfiles ? "var(--error, #ef4444)" : "var(--main)"}; margin-top: 2px; flex-shrink: 0;`
-          }, []),
-          this.ui.createElement("div", { style: "color: var(--text);" }, [
-            this.ui.createElement("strong", {
-              style: `color: ${currentCount >= maxProfiles ? "var(--error, #ef4444)" : "var(--main)"};`
-            }, [currentCount >= maxProfiles ? "Profile Limit Reached" : `Profile Count: ${currentCount} / ${maxProfiles}`]),
-            this.ui.createElement("p", { style: "margin: 4px 0 0 0; opacity: 0.9;" }, [
-              currentCount >= maxProfiles
-                ? `You've reached the maximum of ${maxProfiles} profiles on the free tier. `
-                : `${maxProfiles - currentCount} profile${maxProfiles - currentCount !== 1 ? "s" : ""} remaining on free tier. `,
-              this.ui.createElement("a", {
-                href: "/internal/terms/",
-                target: "_blank",
-                style: "color: var(--main); text-decoration: underline; margin-left: 4px;"
-              }, ["Upgrade to Night+"])
-            ])
-          ])
-        ])]),
-        this.ui.createElement("div", { class: "flex items-center justify-end gap-3 mt-4" }, [
-          this.ui.createElement("button", {
-            type: "button", class: "bc-btn-secondary", style: `background: transparent; border: 1px solid var(--white-10); color: var(--text); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;`, onclick: () => closeDialog(), onmouseenter: (e: Event) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "var(--white-05)";
-            }, onmouseleave: (e: Event) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-            }
-          }, ["Cancel"]),
-          createBtn
-        ])
-      ]);
-        return form;
-      })()
-    ])
-    ]);
 
     const handleKeydown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -781,11 +786,134 @@ export class ProfileManager implements ProfileManagerInterface {
       createIcons({ icons });
     };
 
-    document.addEventListener("keydown", handleKeydown);
+    input.addEventListener("focus", (e) => {
+      (e.currentTarget as HTMLInputElement).style.borderColor = "var(--main)";
+      (e.currentTarget as HTMLInputElement).style.boxShadow =
+        "0 0 0 3px var(--main-20a)";
+    });
+
+    input.addEventListener("blur", (e) => {
+      (e.currentTarget as HTMLInputElement).style.borderColor =
+        "var(--white-10)";
+      (e.currentTarget as HTMLInputElement).style.boxShadow = "none";
+    });
+
+    cancelBtn.addEventListener("mouseenter", () => {
+      cancelBtn.style.background = "var(--white-05)";
+    });
+
+    cancelBtn.addEventListener("mouseleave", () => {
+      cancelBtn.style.background = "transparent";
+    });
+
+    cancelBtn.addEventListener("click", closeDialog);
+
+    createBtn.addEventListener("mouseenter", () => {
+      if (!createBtn.disabled) {
+        createBtn.style.transform = "scale(1.02)";
+      }
+    });
+
+    createBtn.addEventListener("mouseleave", () => {
+      if (!createBtn.disabled) {
+        createBtn.style.transform = "scale(1)";
+      }
+    });
+
+    createBtn.addEventListener("click", async (e) => {
+      console.log("[ProfileManager] Create button clicked - START");
+      e.preventDefault();
+      const button = e.currentTarget as HTMLButtonElement;
+      console.log("[ProfileManager] Button disabled:", button.disabled);
+
+      if (button.disabled) {
+        console.log("[ProfileManager] Button is disabled, returning");
+        return;
+      }
+
+      const profileName = input.value.trim();
+      console.log("[ProfileManager] Profile name:", profileName);
+
+      if (!profileName) {
+        console.log("[ProfileManager] No profile name provided");
+        input.style.borderColor = "var(--error)";
+        input.focus();
+        return;
+      }
+
+      try {
+        console.log("[ProfileManager] Starting profile creation...");
+        button.textContent = "Creating...";
+        button.disabled = true;
+        button.style.opacity = "0.7";
+        button.style.cursor = "not-allowed";
+        console.log("[ProfileManager] Button state updated");
+
+        await this.createProfileWithPresetData(profileName);
+        console.log("[ProfileManager] Profile created successfully");
+        this.logger.createLog(`Created profile: ${profileName}`);
+
+        closeDialog();
+
+        this.modalUtilities.showAlert(
+          "Profile created successfully!",
+          "success",
+        );
+
+        setTimeout(() => {
+          document.location.reload();
+        }, 1500);
+      } catch (error) {
+        console.error("[ProfileManager] Failed to create profile:", error);
+        this.modalUtilities.showAlert(
+          `Failed to create profile: ${error}`,
+          "error",
+        );
+        button.textContent = "Create Profile";
+        button.disabled = false;
+        button.style.opacity = "1";
+        button.style.cursor = "pointer";
+      }
+    });
+
+    closeBtn.addEventListener("click", closeDialog);
+
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        closeDialog();
+      }
+    });
+
+    formElement.addEventListener("submit", (e) => {
+      e.preventDefault();
+    });
+
+    buttonContainer.appendChild(cancelBtn);
+    buttonContainer.appendChild(createBtn);
+    formElement.appendChild(buttonContainer);
+
+    headerDiv.appendChild(title);
+    headerDiv.appendChild(closeBtn);
+
+    dialogContent.appendChild(headerDiv);
+    dialogContent.appendChild(formElement);
+
+    dialog.appendChild(dialogContent);
 
     document.body.appendChild(dialog);
-    const dialogContent = dialog.querySelector('.bc-dialog-content') as HTMLElement;
-    const form = dialogContent.querySelector('form') as HTMLFormElement;
+    document.addEventListener("keydown", handleKeydown);
+
+    console.log("[ProfileManager] Dialog appended to body");
+    console.log("[ProfileManager] createBtn element:", createBtn);
+    console.log(
+      "[ProfileManager] createBtn onclick:",
+      (createBtn as any).onclick,
+    );
+
+    (window as any).__DEBUG_PROFILE_BTN = createBtn;
+    console.log(
+      "[ProfileManager] Button accessible via window.__DEBUG_PROFILE_BTN",
+    );
 
     if ((window as any).lucide && (window as any).lucide.createIcons) {
       (window as any).lucide.createIcons();
@@ -794,7 +922,10 @@ export class ProfileManager implements ProfileManagerInterface {
     setTimeout(() => {
       dialog.style.opacity = "1";
       dialogContent.style.transform = "scale(1)";
-      (form.querySelector('input[type="text"]') as HTMLInputElement)?.focus();
+      input.focus();
+      console.log(
+        "[ProfileManager] Dialog fully visible, button should be clickable",
+      );
     }, 10);
     createIcons({ icons });
   }
@@ -870,14 +1001,34 @@ export class ProfileManager implements ProfileManagerInterface {
   async switchToProfile(profileId: string): Promise<void> {
     try {
       const currentProfile = this.profiles.getCurrentProfile();
+      console.log(
+        "[ProfileManager] Switching from profile:",
+        currentProfile,
+        "to:",
+        profileId,
+      );
+
       if (currentProfile) {
+        console.log(
+          "[ProfileManager] Saving current profile data before switch...",
+        );
         await this.flushPendingChanges();
+        console.log("[ProfileManager] Flushed pending changes");
+
         await this.profiles.saveProfile(currentProfile);
+        console.log("[ProfileManager] Saved profile data for:", currentProfile);
+
         this.profiles.emergencySaveProfile(currentProfile);
+        console.log("[ProfileManager] Emergency save completed");
+
         await this.profiles.flushStorageOperations();
+        console.log("[ProfileManager] Flushed storage operations");
       }
 
+      console.log("[ProfileManager] Switching to profile:", profileId);
       await this.profiles.switchProfile(profileId, true);
+      console.log("[ProfileManager] Profile switch completed");
+
       this.logger.createLog(`Switched to profile: ${profileId}`);
       await this.profiles.flushStorageOperations();
 
@@ -909,7 +1060,10 @@ export class ProfileManager implements ProfileManagerInterface {
           this.profiles.emergencySaveProfile(currentProfile);
           await this.profiles.flushStorageOperations();
         } catch (saveError) {
-          console.error("Failed to save current profile before export:", saveError);
+          console.error(
+            "Failed to save current profile before export:",
+            saveError,
+          );
           this.modalUtilities.showAlert(
             `Failed to save current profile: ${saveError}`,
             "error",

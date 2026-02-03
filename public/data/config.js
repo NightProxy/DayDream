@@ -1,20 +1,5 @@
 self.__uv$config = {
   prefix: "/data/int/",
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   encodeUrl: function encode(str) {
     if (!str) return str;

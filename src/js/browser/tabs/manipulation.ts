@@ -11,23 +11,11 @@ export class TabManipulation {
     const tabInfo = this.tabs.tabs.find((t) => t.id === tabId);
     if (!tabInfo) return null;
 
-    let url = tabInfo.url;
-    if (!url && tabInfo.iframe.src) {
-      try {
-        let iframeUrl = new URL(tabInfo.iframe.src).pathname;
-        iframeUrl = iframeUrl.replace(
-          window.SWconfig[window.ProxySettings as keyof typeof window.SWconfig],
-          "",
-        );
-        url = window.__uv$config.decodeUrl(iframeUrl);
-      } catch (e) {
-        url = tabInfo.iframe.src;
-      }
-    }
+    const url = tabInfo.iframe.src || tabInfo.url;
 
-    if (url) {
+    if (url && url !== "about:blank") {
       this.tabs.createTab(url);
-      return `tab-${this.tabs.tabCount}`;
+      return `tab-${this.tabs.tabCount + 1}`;
     }
     return null;
   };
@@ -119,10 +107,16 @@ export class TabManipulation {
   }
 
   moveTabToPosition(draggedTabId: string, targetTabId: string, e: DragEvent) {
-    const draggedIndex = this.tabs.tabs.findIndex((t: any) => t.id === draggedTabId);
-    let targetIndex = this.tabs.tabs.findIndex((t: any) => t.id === targetTabId);
+    const draggedIndex = this.tabs.tabs.findIndex(
+      (t: any) => t.id === draggedTabId,
+    );
+    let targetIndex = this.tabs.tabs.findIndex(
+      (t: any) => t.id === targetTabId,
+    );
 
-    const targetElement = document.querySelector(`[data-tab-id="${targetTabId}"]`) as HTMLElement;
+    const targetElement = document.querySelector(
+      `[data-tab-id="${targetTabId}"]`,
+    ) as HTMLElement;
     if (targetElement) {
       const rect = targetElement.getBoundingClientRect();
       const isRightSide = e.clientX > rect.left + rect.width / 2;
@@ -134,12 +128,23 @@ export class TabManipulation {
     this.tabs.tabs.splice(targetIndex, 0, removed);
   }
 
-  shouldUngroupBasedOnEdge(e: DragEvent, draggedTab: any, targetTab: any, targetElement: HTMLElement): boolean {
-    if (!draggedTab.groupId || !targetTab.groupId || draggedTab.groupId !== targetTab.groupId) {
+  shouldUngroupBasedOnEdge(
+    e: DragEvent,
+    draggedTab: any,
+    targetTab: any,
+    targetElement: HTMLElement,
+  ): boolean {
+    if (
+      !draggedTab.groupId ||
+      !targetTab.groupId ||
+      draggedTab.groupId !== targetTab.groupId
+    ) {
       return draggedTab.groupId && !targetTab.groupId;
     }
 
-    const group = this.tabs.groups.find((g: any) => g.id === draggedTab.groupId);
+    const group = this.tabs.groups.find(
+      (g: any) => g.id === draggedTab.groupId,
+    );
     if (!group) return false;
 
     const groupTabs = this.tabs.tabs
@@ -154,7 +159,9 @@ export class TabManipulation {
     const isFirstTab = groupTabs[0]?.id === targetTab.id;
     const isLastTab = groupTabs[groupTabs.length - 1]?.id === targetTab.id;
 
-    return (isFirstTab && e.clientX < rect.left + edgeThreshold) ||
-           (isLastTab && e.clientX > rect.right - edgeThreshold);
+    return (
+      (isFirstTab && e.clientX < rect.left + edgeThreshold) ||
+      (isLastTab && e.clientX > rect.right - edgeThreshold)
+    );
   }
 }

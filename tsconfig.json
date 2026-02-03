@@ -31,5 +31,12 @@
     "esModuleInterop": true
   },
   "include": ["src", "public/core/client.js", "global.d.ts", "pages"],
-  "exclude": ["node_modules", "dist", "src/js/lib/**", "src/js/apis/platform/hosting.hostlist.uo.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/js/lib/**",
+    "src/js/apis/platform/hosting.hostlist.ts",
+    "src/js/apis/platform/hosting.hostlist.uo.ts",
+    "pkgs/**"
+  ]
 }

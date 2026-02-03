@@ -51,7 +51,7 @@ class Logger {
 
   async editLog(id: string, index: number, newMessage: string) {
     const log = await this.getLog(id);
-    
+
     if (!log) {
       throw new Error(`Log with id "${id}" not found`);
     }
@@ -61,12 +61,14 @@ class Logger {
     }
 
     if (!Number.isInteger(index)) {
-      throw new TypeError(`Index must be an integer, got: ${index} for log id "${id}"`);
+      throw new TypeError(
+        `Index must be an integer, got: ${index} for log id "${id}"`,
+      );
     }
 
     if (index < 0 || index >= log.length) {
       throw new RangeError(
-        `Index ${index} is out of bounds for log id "${id}" (length: ${log.length}, valid range: 0-${log.length - 1})`
+        `Index ${index} is out of bounds for log id "${id}" (length: ${log.length}, valid range: 0-${log.length - 1})`,
       );
     }
 
@@ -76,7 +78,10 @@ class Logger {
 
   async exportLogs() {
     const logs = await this.store.keys();
-    const exportData: Record<string, Awaited<ReturnType<typeof this.getLog>>> = {};
+    const exportData: Record<
+      string,
+      Awaited<ReturnType<typeof this.getLog>>
+    > = {};
 
     for (const logId of logs) {
       exportData[logId] = await this.getLog(logId as string);

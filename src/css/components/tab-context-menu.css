@@ -63,7 +63,8 @@ body.group-dragging .tab-group-header:not(.dragging-group):hover {
 }
 
 @keyframes indicator-flow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: scaleX(0.95);
   }
@@ -74,7 +75,8 @@ body.group-dragging .tab-group-header:not(.dragging-group):hover {
 }
 
 @keyframes pulse-indicator {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: scale(1);
   }
@@ -303,7 +305,8 @@ body.tab-dragging {
 }
 
 @keyframes ungroup-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1.02);
     border-color: var(--error);
   }
@@ -399,7 +402,8 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
 }
 
 @keyframes indicator-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.8;
     box-shadow: 0 0 8px var(--accent);
   }
@@ -427,7 +431,8 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
 }
 
 @keyframes zone-breathe {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: scale(1);
   }
@@ -466,7 +471,8 @@ body.tab-dragging .tab[data-group-id].ungroup-indicator:last-child::before {
 }
 
 @keyframes zone-active {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(248, 139, 168, 0.5);
   }
   50% {

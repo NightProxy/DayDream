@@ -40,8 +40,8 @@ class Keys implements keysInterface {
     );
   }
 
-  init(): void {
-    this.keyboardManager.init();
+  async init(): Promise<void> {
+    await this.keyboardManager.init();
 
     this.keyboardManager.updateShortcutsFromSettings();
   }

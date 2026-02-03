@@ -23,7 +23,15 @@ export class TabCloakManager {
       const tabCloakId = (await this.settings.getItem("tabCloak")) || "off";
 
       if (tabCloakId === "off") {
-        console.log("Tab cloak is disabled");
+        console.log("Tab cloak is disabled, restoring defaults");
+        doc.title = "DayDream X";
+        let link = doc.querySelector("link[rel~='icon']") as HTMLLinkElement;
+        if (!link) {
+          link = doc.createElement("link");
+          link.rel = "icon";
+          doc.head.appendChild(link);
+        }
+        link.href = "/res/logo.png";
         return;
       }
 

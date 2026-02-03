@@ -20,15 +20,19 @@ export const routePaths = {
   auth: "",
   bmworker: "bmworker",
   plusClient: "plus",
+  eruda: "core/i/eruda",
+  chii: "core/i/chii",
+  liveInject: "core/inject",
 };
 
 const authPath = path.resolve(
   "node_modules/@nightnetwork/night-auth/dist/login",
 );
-
 const plusClientPath = path.resolve("pkgs/plusClient/dist");
-
 const bmworkerPath = path.resolve("pkgs/bm-PlusInject/dist");
+const erudaPath = path.resolve("node_modules/eruda");
+const chiiPath = path.resolve("node_modules/chii/public");
+const liveInjectPath = path.resolve("pkgs/codeInject/dist");
 
 const copyMap = {
   epoxy: {
@@ -108,6 +112,21 @@ const copyMap = {
     path: bmworkerPath,
     files: ["*"],
     dest: routePaths.bmworker,
+  },
+  eruda: {
+    path: erudaPath,
+    files: ["eruda.js"],
+    dest: routePaths.eruda,
+  },
+  chii: {
+    path: chiiPath,
+    files: ["*"],
+    dest: routePaths.chii,
+  },
+  liveInject: {
+    path: liveInjectPath,
+    files: ["*"],
+    dest: routePaths.liveInject,
   },
 };
 

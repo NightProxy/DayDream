@@ -25,6 +25,7 @@ export interface FuncInterface {
   zoomLevel: number;
   zoomSteps: Array<number>;
   currentStep: number;
+  init(): Promise<void>;
   dispose(): void;
 }
 
@@ -76,5 +77,5 @@ export interface ModalInterface {
 }
 
 export interface KeyboardInterface {
-  init(): void;
+  init(): Promise<void>;
 }

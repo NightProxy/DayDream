@@ -6,6 +6,7 @@ import "basecoat-css/all";
 import { Nightmare } from "@libs/Nightmare/nightmare";
 import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { SettingsAPI } from "@apis/settings";
+import { cache } from "@apis/cache";
 import { EventSystem } from "@apis/events";
 import { ProfilesAPI } from "@apis/profiles";
 import { Logger } from "@apis/logging";
@@ -21,6 +22,8 @@ import { Search } from "@browser/search";
 import { universalTheme } from "@js/global/universalTheme";
 import { checkNightPlusStatus } from "@apis/nightplus";
 import { initClipboardDeobfuscator } from "@js/utils/clipboardDeobfuscator";
+//@ts-ignore VScode being dumb???
+import { RefluxAPI } from "@nightnetwork/reflux/api";
 
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
@@ -37,6 +40,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const settingsAPI = new SettingsAPI();
   const eventsAPI = new EventSystem();
+  const refluxAPI = new RefluxAPI();
+  await cache.init();
 
   const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
   await profilesAPI.initPromise;
@@ -97,13 +102,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.items = items;
   window.eventsAPI = eventsAPI;
   window.settings = settingsAPI;
+  window.cache = cache;
   window.proxy = proxy;
+  //@ts-ignore
+  window.reflux = refluxAPI;
+  window.nightmare = nightmare;
+  window.nightmarePlugins = nightmarePlugins;
+  window.logging = loggingAPI;
 
-  tabs.createTab("ddx://newtab/");
+  const startupBehavior =
+    (await settingsAPI.getItem("startupBehavior")) || "newtab";
+  const startupCustomUrl =
+    (await settingsAPI.getItem("startupCustomUrl")) || "";
+
+  let restored = false;
+  if (startupBehavior === "restore") {
+    restored = await tabs.restoreSession();
+  }
+
+  if (!restored) {
+    if (startupBehavior === "custom" && startupCustomUrl) {
+      tabs.createTab(startupCustomUrl);
+    } else {
+      tabs.createTab("ddx://newtab/");
+    }
+  }
+
+  window.addEventListener("beforeunload", () => {
+    tabs.saveSession();
+  });
 
   const functions = new Functions(tabs, proto);
   await functions.initPromise;
-  functions.init();
+  await functions.init();
 
   if (
     proxySetting === "sj" &&
@@ -132,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const iframe = items.frameContainer!.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
-        
+
         if (iframe) {
           iframe.setAttribute("src", url);
         } else {
@@ -156,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           swConfigSettings &&
           typeof swConfigSettings.func === "function"
         ) {
-          await swConfigSettings.func() as Function;
+          (await swConfigSettings.func()) as Function;
         }
 
         await proxy.registerSW(swConfigSettings).then(async () => {
@@ -171,8 +202,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           switch (swConfigSettings.type) {
             case "sw":
               let encodedUrl =
-                  swConfigSettings.config.prefix +
-                  window.__uv$config.encodeUrl(proxy.search(searchValue));
+                swConfigSettings.config.prefix +
+                window.__uv$config.encodeUrl(proxy.search(searchValue));
               const activeIframe = document.querySelector(
                 "iframe.active",
               ) as HTMLIFrameElement;
@@ -189,9 +220,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  const searchbar = new Search(proxy, swConfig, proxySetting, proto);
-  if (items.addressBar) {
-    await searchbar.init(items.addressBar);
+  const searchSuggestionsEnabled =
+    (await settingsAPI.getItem("searchSuggestions")) !== "false";
+  if (searchSuggestionsEnabled) {
+    const searchbar = new Search(proxy, swConfig, proxySetting, proto);
+    if (items.addressBar) {
+      await searchbar.init(items.addressBar);
+    }
+    window.searchbar = searchbar;
   }
 
   window.nightmare = nightmare;
@@ -201,7 +237,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.globals = globalFunctions;
   window.renderer = render;
   window.functions = functions;
-  window.searchbar = searchbar;
   window.SWconfig = swConfig;
   window.ProxySettings = proxySetting;
 });

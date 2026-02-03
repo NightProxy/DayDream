@@ -5,11 +5,7 @@ import { SettingsAPI } from "@apis/settings";
 import { Proxy } from "@apis/proxy";
 import type { Section, GameData, SearchInterface } from "./types";
 import { isValidUrl } from "./utils";
-import {
-  createSection,
-  createSuggestionItem,
-  createGameItem,
-} from "./ui";
+import { createSection, createSuggestionItem, createGameItem } from "./ui";
 import {
   fetchSearchSuggestions,
   fetchAppData,
@@ -43,7 +39,11 @@ class Search implements SearchInterface {
   currentMaxResults: number;
   searchbar: HTMLInputElement | null = null;
   private lastQuery: string = "";
-  private internalPages: Array<{ name: string; url: string; keywords: string[] }> = [];
+  private internalPages: Array<{
+    name: string;
+    url: string;
+    keywords: string[];
+  }> = [];
 
   constructor(
     proxy: Proxy,
@@ -69,6 +69,16 @@ class Search implements SearchInterface {
 
   async init(searchbar: HTMLInputElement) {
     this.searchbar = searchbar;
+
+    const searchSuggestionsEnabled =
+      await this.settings.getItem("searchSuggestions");
+    if (searchSuggestionsEnabled === "false") {
+      const existingSuggestionList = document.getElementById("suggestion-list");
+      if (existingSuggestionList) {
+        existingSuggestionList.remove();
+      }
+      return;
+    }
 
     this.internalPages = await getAvailableInternalPages();
 
@@ -124,6 +134,9 @@ class Search implements SearchInterface {
         searchbar.blur();
         return;
       }
+
+      if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey)
+        return;
 
       const suggestionItems = this.getCurrentSuggestionItems();
       const numSuggestions = suggestionItems.length;
@@ -225,7 +238,12 @@ class Search implements SearchInterface {
 
     searchbar.addEventListener("focus", () => {
       if (searchbar.value.trim().length > 0) {
-        suggestionList.style.display = "block";
+        const hasAnyResults = Object.values(this.sections).some(
+          ({ section }) => section.style.display === "block",
+        );
+        if (hasAnyResults) {
+          suggestionList.style.display = "block";
+        }
       }
     });
 
@@ -321,6 +339,12 @@ class Search implements SearchInterface {
   private async performSearch(query: string): Promise<void> {
     if (!query || query === this.lastQuery) return;
 
+    const searchSuggestionsEnabled =
+      await this.settings.getItem("searchSuggestions");
+    if (searchSuggestionsEnabled === "false") {
+      return;
+    }
+
     this.lastQuery = query;
     this.clearSuggestions();
 
@@ -338,6 +362,15 @@ class Search implements SearchInterface {
       this.populateSearchResultsSection(suggestions);
       this.populateInternalPagesSection(query);
       await this.populateGamesSection(query);
+
+      const suggestionList = document.getElementById("suggestion-list");
+      const hasAnyResults = Object.values(this.sections).some(
+        ({ section }) => section.style.display === "block",
+      );
+
+      if (suggestionList) {
+        suggestionList.style.display = hasAnyResults ? "block" : "none";
+      }
 
       if ((window as any).lucide && (window as any).lucide.createIcons) {
         (window as any).lucide.createIcons();

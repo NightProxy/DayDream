@@ -1,7 +1,4 @@
-import { SettingsAPI } from "./settings";
 import localforage from "localforage";
-
-const settingsAPI = new SettingsAPI();
 
 const API_BASE_URL = "/api/plus";
 
@@ -34,20 +31,32 @@ interface NightPlusCache {
 }
 
 const nightPlusStore = localforage.createInstance({
-  name: "nightplus",
-  storeName: "nightplus_data",
+  name: "NightPlus",
+  storeName: "session",
 });
 
 async function getAccessToken(): Promise<string | null> {
-  return (await settingsAPI.getItem("auth_access_token")) as string | null;
+  return await nightPlusStore.getItem<string>("access_token");
+}
+
+async function getSessionToken(): Promise<string | null> {
+  return await nightPlusStore.getItem<string>("token");
 }
 
 async function setAccessToken(token: string): Promise<void> {
-  await settingsAPI.setItem("auth_access_token", token);
+  await nightPlusStore.setItem("access_token", token);
+}
+
+async function setSessionToken(token: string): Promise<void> {
+  await nightPlusStore.setItem("token", token);
 }
 
 async function clearAccessToken(): Promise<void> {
-  await settingsAPI.removeItem("auth_access_token");
+  await nightPlusStore.removeItem("access_token");
+}
+
+async function clearSessionToken(): Promise<void> {
+  await nightPlusStore.removeItem("token");
 }
 
 async function makeAuthRequest(
@@ -120,21 +129,14 @@ async function refreshAccessToken(): Promise<boolean> {
 
 export async function checkNightPlusStatus(): Promise<boolean> {
   try {
-    const token = await getAccessToken();
-    if (!token) {
+    const accessToken = await getAccessToken();
+    const sessionToken = await getSessionToken();
+
+    if (!accessToken && !sessionToken) {
       return false;
     }
 
-    const response = await makeAuthRequest("/night-plus/status", {
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data: NightPlusStatus = await response.json();
-    return data.active;
+    return true;
   } catch (error) {
     console.error("Failed to check Night+ status:", error);
     return false;
@@ -200,8 +202,9 @@ export async function getPremiumProxyServers(): Promise<ProxyServer[]> {
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const token = await getAccessToken();
-  return token !== null;
+  const accessToken = await getAccessToken();
+  const sessionToken = await getSessionToken();
+  return accessToken !== null || sessionToken !== null;
 }
 
 export async function getCachedNightPlusData(): Promise<NightPlusCache | null> {
@@ -269,4 +272,12 @@ export async function getNightPlusDataWithCache(): Promise<NightPlusCache | null
   }
 }
 
-export { getAccessToken, setAccessToken, clearAccessToken, nightPlusStore };
+export {
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+  getSessionToken,
+  setSessionToken,
+  clearSessionToken,
+  nightPlusStore,
+};

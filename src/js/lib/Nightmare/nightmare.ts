@@ -11,6 +11,7 @@ interface MenuItem {
 interface NightmareUI {
   contextMenu: ContextMenu | null;
   menu: Menu | null;
+  alert: AlertToast | null;
   createElement(
     tag: string,
     attributes?: Record<string, any>,
@@ -28,6 +29,7 @@ interface NightmareUI {
 class Nightmare implements NightmareUI {
   contextMenu: ContextMenu | null = null;
   menu: Menu | null = null;
+  alert: AlertToast | null = null;
 
   constructor() {
     this.initializeComponents();
@@ -36,6 +38,7 @@ class Nightmare implements NightmareUI {
   initializeComponents() {
     this.contextMenu = new ContextMenu(this);
     this.menu = new Menu(this);
+    this.alert = new AlertToast(this);
   }
 
   createElement(
@@ -294,9 +297,48 @@ class ContextMenu {
     if (this.currentMenu && !this.currentMenu.contains(event.target as Node)) {
       this.currentMenu.remove();
       this.currentMenu = null;
-    } else if (this.currentMenu && this.currentMenu.contains(event.target as Node)) {
+    } else if (
+      this.currentMenu &&
+      this.currentMenu.contains(event.target as Node)
+    ) {
       document.addEventListener("click", this.hideMenu, { once: true });
     }
+  }
+}
+
+class AlertToast {
+  ui: NightmareUI;
+
+  constructor(ui: NightmareUI) {
+    this.ui = ui;
+  }
+
+  display(message: string): void {
+    const toastElement = this.ui.createElement("div", { class: "alert" }, [
+      this.ui.createElement(
+        "svg",
+        {
+          xmlns: "http://www.w3.org/2000/svg",
+          width: "24",
+          height: "24",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          "stroke-width": "2",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        },
+        [
+          this.ui.createElement("circle", { cx: "12", cy: "12", r: "10" }),
+          this.ui.createElement("path", { d: "m9 12 2 2 4-4" }),
+        ],
+      ),
+      this.ui.createElement("h2", {}, [message]),
+    ]);
+
+    // TODO: Add fade-out timer, close button, and styling, move Class to do multiple alert styles such as info, warn, debug, and normal verbose logging
+
+    document.body.appendChild(toastElement);
   }
 }
 

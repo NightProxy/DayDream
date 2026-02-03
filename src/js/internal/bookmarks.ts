@@ -125,10 +125,12 @@ class BookmarkManagerUI {
     document
       .getElementById("cancelAddBookmark")
       ?.addEventListener("click", () => this.hideAddBookmarkModal());
-    
+
     const addBookmarkForm = document.getElementById("addBookmarkForm");
     if (addBookmarkForm) {
-      addBookmarkForm.addEventListener("submit", (e) => this.handleAddBookmark(e));
+      addBookmarkForm.addEventListener("submit", (e) =>
+        this.handleAddBookmark(e),
+      );
     }
 
     document
@@ -418,7 +420,7 @@ class BookmarkManagerUI {
     const maxQueryLength = 100;
     const sanitizedQuery = this.searchQuery
       .slice(0, maxQueryLength)
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     const regex = new RegExp(`(${sanitizedQuery})`, "gi");
     return text.replace(regex, '<span class="search-highlight">$1</span>');
@@ -549,6 +551,8 @@ class BookmarkManagerUI {
     this.showAddBookmarkModal();
 
     const form = document.getElementById("addBookmarkForm");
+    const cancelBtn = document.getElementById("cancelAddBookmark");
+
     if (form) {
       const newForm = form.cloneNode(true) as HTMLElement;
       form.parentNode?.replaceChild(newForm, form);
@@ -561,6 +565,12 @@ class BookmarkManagerUI {
         },
         { once: true },
       );
+    }
+
+    if (cancelBtn) {
+      const newCancelBtn = cancelBtn.cloneNode(true) as HTMLElement;
+      cancelBtn.parentNode?.replaceChild(newCancelBtn, cancelBtn);
+      newCancelBtn.addEventListener("click", () => this.hideAddBookmarkModal());
     }
   }
 
