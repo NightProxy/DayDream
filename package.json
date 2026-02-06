@@ -1,6 +1,6 @@
 {
   "name": "daydreamx",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite dev --host & tsx index.ts",
