@@ -259,12 +259,15 @@ async function initializeWispSelect() {
   wispSelect.appendChild(customOption);
 
   const savedWisp = (await settingsAPI.getItem("wisp")) || "auto";
-  const savedCustomWisp = await settingsAPI.getItem("wisp-custom");
 
-  if (savedCustomWisp) {
+  const isCustomWisp =
+    savedWisp !== "auto" &&
+    !Array.from(wispSelect.options).some((opt) => opt.value === savedWisp);
+
+  if (isCustomWisp) {
     wispSelect.value = "custom";
     if (customSetting) {
-      customSetting.value = savedCustomWisp;
+      customSetting.value = savedWisp;
     }
   } else {
     wispSelect.value = savedWisp;
@@ -288,10 +291,8 @@ async function initializeWispSelect() {
 
       if (wispSelect.value === "auto") {
         await settingsAPI.removeItem("wisp");
-        await settingsAPI.removeItem("wisp-custom");
       } else {
         await settingsAPI.setItem("wisp", wispSelect.value);
-        await settingsAPI.removeItem("wisp-custom");
       }
       location.reload();
     }
@@ -310,8 +311,7 @@ async function initializeWispSelect() {
   if (saveCustomBtn) {
     saveCustomBtn.addEventListener("click", async () => {
       if (customSetting && customSetting.value.trim()) {
-        await settingsAPI.setItem("wisp-custom", customSetting.value.trim());
-        await settingsAPI.removeItem("wisp");
+        await settingsAPI.setItem("wisp", customSetting.value.trim());
         console.log("Custom WISP server saved:", customSetting.value.trim());
         location.reload();
       }
@@ -320,7 +320,10 @@ async function initializeWispSelect() {
 
   if (cancelCustomBtn) {
     cancelCustomBtn.addEventListener("click", () => {
-      wispSelect.value = savedWisp === "custom" ? "auto" : savedWisp;
+      const isCustomWisp =
+        savedWisp !== "auto" &&
+        !Array.from(wispSelect.options).some((opt) => opt.value === savedWisp);
+      wispSelect.value = isCustomWisp ? "auto" : savedWisp;
       if (customInput) {
         customInput.classList.add("hidden");
       }
