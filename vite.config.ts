@@ -9,7 +9,6 @@ import { copyRoutes } from "./srv/vite/copy";
 import tailwindcss from "@tailwindcss/vite";
 import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
-import { ContentInsertionPlugin } from "./srv/vite/contentInsertion";
 import { allowedHosts } from "./srv/vite/hosts";
 
 export default defineConfig({
@@ -21,7 +20,6 @@ export default defineConfig({
     }),
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
-    ContentInsertionPlugin(),
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
     vitePluginBundleObfuscator(obfuscationConfig as any),

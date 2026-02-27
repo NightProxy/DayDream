@@ -7,6 +7,7 @@ import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
 import { enigmaPath } from "@nightnetwork/enigma/path";
+import {baremuxPath as bmworkerPath} from "@nightnetwork/bm-plusworker/path"
 import path from "path";
 
 export const routePaths = {
@@ -22,18 +23,14 @@ export const routePaths = {
   plusClient: "plus",
   eruda: "core/i/eruda",
   chii: "core/i/chii",
-  liveInject: "core/inject",
 };
 
 const authPath = path.resolve(
   "node_modules/@nightnetwork/night-auth/dist/login",
 );
-const plusClientPath = path.resolve("pkgs/plusClient/dist");
-const bmworkerPath = path.resolve("pkgs/bm-PlusInject/dist");
+const plusClientPath = path.resolve("node_modules/@nightnetwork/plus-client/dist");
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
-const liveInjectPath = path.resolve("pkgs/codeInject/dist");
-
 const copyMap = {
   epoxy: {
     path: epoxyPath,
@@ -122,12 +119,7 @@ const copyMap = {
     path: chiiPath,
     files: ["*"],
     dest: routePaths.chii,
-  },
-  liveInject: {
-    path: liveInjectPath,
-    files: ["*"],
-    dest: routePaths.liveInject,
-  },
+  }
 };
 
 function generateStaticCopyTargets(map: typeof copyMap) {
