@@ -101,6 +101,14 @@
             <i data-lucide="info" class="h-4 w-4"></i>
             <span>About & Statistics</span>
           </a>
+          <a
+            href="#FAQ"
+            class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+            data-id="faq"
+          >
+            <i data-lucide="help-circle" class="h-4 w-4"></i>
+            <span>FAQ</span>
+          </a>
         </nav>
       </aside>
 
@@ -120,46 +128,39 @@
               <div
                 class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
               >
-                <h3 class="text-sm font-medium text-[var(--text)] mb-3">
-                  URL Cloak
-                </h3>
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="text-sm font-medium text-[var(--text)]">
+                    URL Cloak
+                  </h3>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-[var(--proto)]">Auto</span>
+                    <label class="relative inline-flex cursor-pointer">
+                      <input
+                        id="autoCloakSwitch"
+                        component="switch"
+                        type="checkbox"
+                        data-setting="autoCloak"
+                        class="sr-only peer"
+                      />
+                      <div
+                        class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"
+                      ></div>
+                    </label>
+                  </div>
+                </div>
+                <p class="text-xs text-[var(--proto)] mb-3">
+                  Disguise the page URL. Enable auto to cloak on every page
+                  load.
+                </p>
                 <select
                   id="URL-cloakSelect"
                   component="dropdown"
                   data-setting="URL_Cloak"
                   class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
                 >
-                  <option value="off">Off</option>
                   <option value="a:b">About:Blank</option>
                   <option value="blob">Blob</option>
                 </select>
-              </div>
-
-              <div
-                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
-              >
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h3 class="text-sm font-medium text-[var(--text)]">
-                      Auto Cloak
-                    </h3>
-                    <p class="text-xs text-[var(--proto)] mt-1">
-                      Automatically cloak when browsing
-                    </p>
-                  </div>
-                  <label class="relative inline-flex cursor-pointer">
-                    <input
-                      id="autoCloakSwitch"
-                      component="switch"
-                      type="checkbox"
-                      data-setting="autoCloak"
-                      class="sr-only peer"
-                    />
-                    <div
-                      class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]"
-                    ></div>
-                  </label>
-                </div>
               </div>
 
               <div
@@ -251,7 +252,7 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <h3 class="text-sm font-medium text-[var(--text)]">
-                      Disable Tab Close
+                      Anti-Tab Close
                     </h3>
                     <p class="text-xs text-[var(--proto)] mt-1">
                       Prevent tabs from closing accidentally with beforeunload
@@ -336,25 +337,48 @@
                     </h4>
 
                     <div class="space-y-4">
-                      <div id="accentColorPalette">
-                        <h5 class="text-xs font-medium text-[var(--text)] mb-2">
-                          Accent Colors
-                        </h5>
-                        <div
-                          id="accentColorGrid"
-                          class="grid grid-cols-6 gap-2"
-                        ></div>
+                      <div id="colorTargetTabs" class="color-target-tabs">
+                        <button
+                          class="color-target-tab active"
+                          data-target="accent"
+                        >
+                          Accent
+                        </button>
+                        <button
+                          class="color-target-tab"
+                          data-target="background"
+                        >
+                          Background
+                        </button>
+                        <button class="color-target-tab" data-target="panel">
+                          Panel
+                        </button>
+                        <button class="color-target-tab" data-target="text">
+                          Text
+                        </button>
+                        <button class="color-target-tab" data-target="border">
+                          Border
+                        </button>
                       </div>
-                      <div class="wrap">
-                        <div class="half">
-                          <div class="colorPicker"></div>
-                        </div>
-                        <div class="half">
-                          <input id="hexInput" />
-                          <br />
-                          <input id="rgbString" />
-                          <br />
-                          <input id="hslString" />
+                      <div class="customize-colors-row">
+                        <div class="colorPicker"></div>
+                        <div class="customize-colors-right">
+                          <div id="accentColorPalette">
+                            <h5
+                              class="text-xs font-medium text-[var(--text)] mb-2"
+                            >
+                              Accents
+                            </h5>
+                            <div
+                              id="accentColorGrid"
+                              class="accent-color-grid"
+                            ></div>
+                          </div>
+                          <div class="color-inputs">
+                            <input id="hexInput" />
+                            <input id="rgbString" />
+                            <input id="hslString" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -565,10 +589,13 @@
                   class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
                 >
                   <option value="https://google.com/search?q=%s">Google</option>
-                  <option value="https://bing.com/search?q=%s">Bing</option>
+                  <option value="https://search.brave.com/search?q=%s">
+                    Brave
+                  </option>
                   <option value="https://duckduckgo.com/?q=%s">
                     DuckDuckGo
                   </option>
+                  <option value="https://bing.com/search?q=%s">Bing</option>
                   <option value="https://search.yahoo.com/search?p=%s">
                     Yahoo
                   </option>
@@ -764,6 +791,31 @@
             </div>
           </section>
 
+          <section id="Keybinds" class="space-y-6">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                    Keyboard Shortcuts
+                  </h2>
+                  <p class="text-sm text-[var(--proto)]">
+                    Customize keyboard shortcuts for various actions
+                  </p>
+                </div>
+                <button
+                  id="reset-all-keybinds"
+                  class="px-4 py-2 text-sm rounded-lg bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors"
+                >
+                  Reset All
+                </button>
+              </div>
+            </div>
+
+            <div id="keybinds-container" class="space-y-4">
+              <!-- Keybind categories will be dynamically inserted here -->
+            </div>
+          </section>
+
           <section id="Advanced" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
@@ -854,31 +906,6 @@
             </div>
           </section>
 
-          <section id="Keybinds" class="space-y-6">
-            <div class="border-b border-[var(--white-08)] pb-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
-                    Keyboard Shortcuts
-                  </h2>
-                  <p class="text-sm text-[var(--proto)]">
-                    Customize keyboard shortcuts for various actions
-                  </p>
-                </div>
-                <button
-                  id="reset-all-keybinds"
-                  class="px-4 py-2 text-sm rounded-lg bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors"
-                >
-                  Reset All
-                </button>
-              </div>
-            </div>
-
-            <div id="keybinds-container" class="space-y-4">
-              <!-- Keybind categories will be dynamically inserted here -->
-            </div>
-          </section>
-
           <section id="About" class="space-y-6">
             <div class="border-b border-[var(--white-08)] pb-4">
               <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
@@ -890,120 +917,199 @@
             </div>
 
             <div
-              class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              class="rounded-lg bg-[var(--bg-1)] p-6 ring-1 ring-inset ring-[var(--white-08)]"
             >
-              <div class="prose prose-sm max-w-none">
-                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                  DayDreamX is a Project that aims to bring a new browsing
-                  experience to users by providing a modern and customizable
-                  interface that is both fast and secure.
-                </p>
-                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                  Our browser is heavily inspired by Vivaldi and Arc, and we aim
-                  to provide a similar experience to our users without the
-                  downsides of spyware or lack of support.
-                </p>
-                <p class="text-sm text-[var(--text)] leading-relaxed mb-4">
-                  We aim to provide a similar browser remake similar to
-                  r58playz's AboutBrowser, Cohen's Velocity, and Other Projects.
-                  We keep our site running with ads, while giving you the choice
-                  to disable them.
-                </p>
-                <p class="text-sm text-[var(--proto)] mb-6">
-                  AI was used in the debugging and development process of
-                  DayDreamX.
-                </p>
-
-                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
-                  Techstack
-                </h3>
-                <ul class="text-sm text-[var(--text)] space-y-1 mb-6">
-                  <li>- Ultraviolet V3</li>
-                  <li>- Scramjet</li>
-                  <li>- BareMux V2</li>
-                  <li>- Libcurl.js</li>
-                  <li>- Epoxy</li>
-                  <li>- Eruda</li>
-                  <li>- JS-cookie</li>
-                  <li>- Localforage</li>
-                  <li>- NightmareJS (In Development)</li>
-                  <li>- Iro.js</li>
-                </ul>
-
-                <hr class="border-[var(--white-08)] my-6" />
-
-                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
-                  Developers
-                </h3>
-                <p class="text-xs text-[var(--proto)] mb-4">
-                  Click on a Dev's name to redirect to their portfolio.
-                </p>
-
-                <div class="space-y-4">
-                  <div>
-                    <h4 class="text-sm font-medium">
-                      <a
-                        href="https://amplifydev.tech"
-                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >
-                        Amplify (Owner)
-                      </a>
-                    </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                      <li>- Many bug fixes</li>
-                      <li>- Wrote most of backend</li>
-                      <li>- Wrote Extensions System and Other APIs</li>
-                      <li>- Manages And runs DayDreamX and its stability</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 class="text-sm font-medium">
-                      <a
-                        href="https://github.com/crllect"
-                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >
-                        Crllect (Owner)
-                      </a>
-                    </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                      <li>- Designed and wrote all UI</li>
-                      <li>- Wrote some of tab functionality</li>
-                      <li>- Did skeletons for all pages</li>
-                      <li>- Wrote some frontend and backend</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 class="text-sm font-medium">
-                      <a
-                        href="https://guns.lol/kdust7"
-                        class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >
-                        KDust7 (Owner)
-                      </a>
-                    </h4>
-                    <ul class="text-xs text-[var(--text)] mt-1 space-y-0.5">
-                      <li>- Helped with testing and debugging</li>
-                      <li>- Wrote Night+ backend</li>
-                      <li>- Manages link archive</li>
-                    </ul>
+              <div class="flex items-center gap-4">
+                <img
+                  alt="DayDream X"
+                  draggable="false"
+                  class="h-14 w-14 rounded-lg"
+                  src="/res/logo.png"
+                />
+                <div>
+                  <h3 class="text-lg font-bold text-[var(--text)]">
+                    DayDream X
+                  </h3>
+                  <p class="text-sm text-[var(--proto)]">
+                    A web-based browser experience
+                  </p>
+                </div>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div class="rounded-md bg-[var(--bg-2)] p-3">
+                  <div class="text-xs text-[var(--proto)]">Version</div>
+                  <div class="text-[var(--text)] font-medium mt-0.5">2.2.0</div>
+                </div>
+                <div class="rounded-md bg-[var(--bg-2)] p-3">
+                  <div class="text-xs text-[var(--proto)]">Stack</div>
+                  <div class="text-[var(--text)] font-medium mt-0.5">
+                    Nightmare + TailwindCSS + Typescript
                   </div>
                 </div>
-                <div class="mt-6 pt-6 border-t border-[var(--white-08)]">
-                  <h3 class="text-lg font-semibold text-[var(--main)] mb-2">
-                    Thank you for contributing to DayDreamX.
-                  </h3>
-                  <p class="text-sm text-[var(--text)]">
-                    If you would like to contribute, check out our
+                <!--<div class="rounded-md bg-[var(--bg-2)] p-3">
+                  <div class="text-xs text-[var(--proto)]">Proxy Stack</div>
+                  <div class="text-[var(--text)] font-medium mt-0.5">
+                    UV + Scramjet, Epoxy, Libcurl, Reflux + Engima, Baremux
+                  </div>
+                </div>-->
+                <div class="rounded-md bg-[var(--bg-2)] p-3">
+                  <div class="text-xs text-[var(--proto)]">Made by</div>
+                  <div class="text-[var(--text)] font-medium mt-0.5">
+                    <a href="https://night-x.com/" target="_blank"
+                      >Night Network</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="FAQ" class="space-y-6">
+            <div class="border-b border-[var(--white-08)] pb-4">
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Frequently Asked Questions
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Common questions and answers about DayDreamX
+              </p>
+            </div>
+
+            <div class="grid gap-6">
+              <!-- FAQ 1: Where can I find links? -->
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  Where can I find links?
+                </h3>
+                <p class="text-sm text-[var(--text)] leading-relaxed">
+                  You can find links in our
+                  <a
+                    href="https://discord.night-x.com"
+                    class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                    target="_blank"
+                    >Discord server</a
+                  >. Join the community and check the pinned messages or links
+                  channel for the latest available links. discord.gg/algebra
+                </p>
+              </div>
+
+              <!-- FAQ 2: Why do some sites not load/work? -->
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  Why do some sites not load or work?
+                </h3>
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                  There are several common reasons why a site might not work:
+                </p>
+                <ul
+                  class="text-sm text-[var(--text)] space-y-2 list-disc list-inside"
+                >
+                  <li>
+                    The site may have strict anti-proxy or bot detection
+                    measures
+                  </li>
+                  <li>
+                    The site uses WebSocket connections that may be blocked by
+                    your network
+                  </li>
+                  <li>
+                    Some sites require features that web proxies cannot fully
+                    replicate
+                  </li>
+                  <li>
+                    Your network or school may be blocking the proxy transport
+                    layer
+                  </li>
+                  <li>
+                    The hosted link may be having issues — try a different one
+                  </li>
+                </ul>
+              </div>
+
+              <!-- FAQ 3: How can I make links? (BYOD) -->
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  How can I make links? (BYOD)
+                </h3>
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                  You can create your own link using a free DNS service. Here's
+                  how:
+                </p>
+                <ol
+                  class="text-sm text-[var(--text)] space-y-2 list-decimal list-inside"
+                >
+                  <li>
+                    Go to
+                    <a
+                      href="https://freedns.afraid.org"
+                      class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      target="_blank"
+                      >FreeDNS</a
+                    >
+                    and create an account
+                  </li>
+                  <li>Navigate to "Subdomains" and click "Add a subdomain"</li>
+                  <li>
+                    Choose any subdomain name and pick a domain from the list
+                  </li>
+                  <li>
+                    Set the type to
+                    <strong class="text-[var(--text)]">A</strong>
+                    and enter the IP address:
+                    <code
+                      class="bg-[var(--white-05)] px-1.5 py-0.5 rounded text-[var(--main)]"
+                      >51.222.206.184</code
+                    >
+                  </li>
+                  <li>
+                    Save the record and wait a few minutes for DNS propagation
+                  </li>
+                  <li>Visit your new subdomain — it should load DayDreamX</li>
+                </ol>
+              </div>
+
+              <!-- FAQ 4: I found a bug, what now? -->
+              <div
+                class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)]"
+              >
+                <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                  I found a bug, what now?
+                </h3>
+                <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                  We appreciate bug reports! Here's how you can let us know:
+                </p>
+                <ul
+                  class="text-sm text-[var(--text)] space-y-2 list-disc list-inside"
+                >
+                  <li>
+                    Open an issue on our
                     <a
                       href="https://gitlab.com/nightnetwork/daydreamx"
                       class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
-                      >GitLab</a
+                      target="_blank"
+                      >GitLab repository</a
                     >
-                    for how to get started.
-                  </p>
-                </div>
+                    with steps to reproduce the bug
+                  </li>
+                  <li>
+                    Report it in the bug reports channel on our
+                    <a
+                      href="https://discord.night-x.com"
+                      class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
+                      target="_blank"
+                      >Discord server</a
+                    >
+                  </li>
+                  <li>
+                    Include details like what you were doing, what you expected,
+                    and what happened instead
+                  </li>
+                </ul>
               </div>
             </div>
           </section>

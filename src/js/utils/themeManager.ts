@@ -174,25 +174,29 @@ export class ThemeManager {
   }
 
   generateThemePreview(theme: ThemePreset): HTMLElement {
-    const container = document.createElement("div");
-    container.className = "theme-preset-button";
+    const button = document.createElement("button");
+    button.className = "theme-preset-button";
+    button.style.backgroundColor = theme["background-color"];
 
-    container.style.backgroundColor = theme["background-color"];
-    container.style.color = theme["text-color"];
-
-    container.innerHTML = `
-      <div class="theme-colors-preview">
-        <div class="theme-preset-color-dot" style="background-color: ${theme["main-color"]}"></div>
-        <div class="theme-preset-color-dot" style="background-color: ${theme["tab-bg-color"] || theme["utility-background-color"]}"></div>
-        <div class="theme-preset-color-dot" style="background-color: ${theme["border-color"]}"></div>
+    button.innerHTML = `
+      <div class="theme-preview-bars">
+        <div class="theme-preview-bar" style="background-color: ${theme["main-color"]}"></div>
+        <div class="theme-preview-bar" style="background-color: ${theme["hover-background-color"]}"></div>
+        <div class="theme-preview-bar" style="background-color: ${theme["input-background-color"]}"></div>
       </div>
-      <div class="theme-info">
-        <div class="theme-name" style="color: ${theme["text-color"]}">${theme.name}</div>
-        <div class="theme-description" style="color: ${theme["hover-text-color"] || theme["text-color"]}">${theme.description}</div>
+      <div class="theme-preview-mockui" style="background-color: ${theme["tab-bg-color"] || theme["utility-background-color"]}">
+        <div class="theme-preview-mockui-inner">
+          <div class="theme-preview-mockui-line" style="background-color: ${theme["tab-bg-color"] || theme["utility-background-color"]}"></div>
+          <div class="theme-preview-mockui-accent" style="background-color: ${theme["tab-active-bg-color"] || theme["border-color"]}"></div>
+        </div>
+      </div>
+      <div class="theme-preview-name" style="color: ${theme["text-color"]}">${theme.name}</div>
+      <div class="theme-preview-check">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg>
       </div>
     `;
 
-    return container;
+    return button;
   }
 
   generateAccentColorButton(color: string): HTMLElement {

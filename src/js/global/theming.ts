@@ -29,11 +29,17 @@ interface ThemeingInterface {
   themes: Record<string, ThemePreset>;
   currentTheme: string;
   customMainColor: string | null;
+  customThemeColors: Record<string, string>;
   selectedColorRole: string | null;
   init: () => Promise<void>;
   loadThemePresets: () => Promise<void>;
   applyTheme: (themeName: string) => Promise<void>;
   applyCustomMainColor: (color: string) => Promise<void>;
+  applyCustomProperty: (
+    property: string,
+    color: string,
+    aliases?: string[],
+  ) => void;
   applyColorRole: (roleName: string) => Promise<void>;
   setBackgroundImage: () => Promise<void>;
   applyColorTint: (
@@ -53,6 +59,7 @@ class Themeing implements ThemeingInterface {
   themes: Record<string, ThemePreset> = {};
   currentTheme: string = "catppuccin-mocha";
   customMainColor: string | null = null;
+  customThemeColors: Record<string, string> = {};
   selectedColorRole: string | null = null;
 
   constructor() {
@@ -88,17 +95,33 @@ class Themeing implements ThemeingInterface {
       this.selectedColorRole = null;
     }
 
+    try {
+      const stored = await this.settings.getItem("customThemeColors");
+      this.customThemeColors = stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.warn("Could not load customThemeColors setting:", error);
+      this.customThemeColors = {};
+    }
+
     await this.applyTheme(this.currentTheme);
 
     this.events.addEventListener("theme:preset-change", async (event: any) => {
       const { theme } = event.detail;
       if (theme !== this.currentTheme) {
         this.currentTheme = theme;
+
+        // Clear custom property overrides when switching themes
+        this.customThemeColors = {};
         try {
           await this.settings.setItem("currentTheme", this.currentTheme);
+          await this.settings.setItem(
+            "customThemeColors",
+            JSON.stringify(this.customThemeColors),
+          );
         } catch (error) {
-          console.warn("Could not save currentTheme setting:", error);
+          console.warn("Could not save theme settings:", error);
         }
+
         await this.applyTheme(this.currentTheme);
 
         this.events.emit("theme:global-update", {
@@ -180,6 +203,45 @@ class Themeing implements ThemeingInterface {
       },
     );
 
+    this.events.addEventListener(
+      "theme:property-change",
+      async (event: any) => {
+        const { property, color, aliases, target } = event.detail;
+        if (
+          !property ||
+          !color ||
+          !(
+            this.currentTheme === "custom" ||
+            this.themes[this.currentTheme]?.customizable
+          )
+        )
+          return;
+
+        this.applyCustomProperty(property, color, aliases);
+
+        // Persist
+        this.customThemeColors[property] = color;
+        try {
+          await this.settings.setItem(
+            "customThemeColors",
+            JSON.stringify(this.customThemeColors),
+          );
+        } catch (error) {
+          console.warn("Could not save customThemeColors:", error);
+        }
+
+        this.events.emit("theme:global-update", {
+          type: "property",
+          property,
+          color,
+          aliases,
+          target,
+          theme: this.currentTheme,
+          timestamp: Date.now(),
+        });
+      },
+    );
+
     this.events.addEventListener("theme:global-update", async (event: any) => {
       if (!event.detail) {
         console.warn(
@@ -189,7 +251,8 @@ class Themeing implements ThemeingInterface {
         return;
       }
 
-      const { type, theme, color, colorRole, timestamp } = event.detail;
+      const { type, theme, color, colorRole, property, aliases, timestamp } =
+        event.detail;
 
       if (timestamp && Date.now() - timestamp < 100) {
         return;
@@ -237,6 +300,26 @@ class Themeing implements ThemeingInterface {
                 console.warn("Could not save themeColor setting:", error);
               }
               await this.applyCustomMainColor(color);
+            }
+          }
+          break;
+
+        case "property":
+          if (
+            property &&
+            color &&
+            (this.currentTheme === "custom" ||
+              this.themes[this.currentTheme]?.customizable)
+          ) {
+            this.applyCustomProperty(property, color, aliases);
+            this.customThemeColors[property] = color;
+            try {
+              await this.settings.setItem(
+                "customThemeColors",
+                JSON.stringify(this.customThemeColors),
+              );
+            } catch (error) {
+              console.warn("Could not save customThemeColors:", error);
             }
           }
           break;
@@ -414,6 +497,22 @@ class Themeing implements ThemeingInterface {
       root.style.setProperty(`--${property}`, value);
     });
 
+    // Restore any custom property overrides for customizable themes
+    if (
+      (themeName === "custom" || theme.customizable) &&
+      Object.keys(this.customThemeColors).length > 0
+    ) {
+      const PROPERTY_ALIASES: Record<string, string[]> = {
+        "background-color": ["bg-2"],
+        "input-background-color": ["bg-1"],
+        "text-color": ["text"],
+        "main-color": ["main"],
+      };
+      for (const [property, color] of Object.entries(this.customThemeColors)) {
+        this.applyCustomProperty(property, color, PROPERTY_ALIASES[property]);
+      }
+    }
+
     if (theme["background-image"]) {
       try {
         await this.settings.setItem(
@@ -447,6 +546,29 @@ class Themeing implements ThemeingInterface {
       "--hover-background-color",
       this.fadeColor(color, 0.13),
     );
+  }
+
+  applyCustomProperty(
+    property: string,
+    color: string,
+    aliases?: string[],
+  ): void {
+    const root = document.documentElement;
+    root.style.setProperty(`--${property}`, color);
+
+    if (aliases) {
+      aliases.forEach((alias) => {
+        root.style.setProperty(`--${alias}`, color);
+      });
+    }
+
+    // Special handling for background-color: also set body bg
+    if (property === "background-color") {
+      document.body.style.backgroundColor = color;
+    }
+    if (property === "text-color") {
+      document.body.style.color = color;
+    }
   }
 
   generateColorVariations(baseColor: string): Record<string, string> {
