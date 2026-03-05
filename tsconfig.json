@@ -37,6 +37,7 @@
     "src/js/lib/**",
     "src/js/apis/platform/hosting.hostlist.ts",
     "src/js/apis/platform/hosting.hostlist.uo.ts",
-    "pkgs/**"
+    "pkgs/**",
+    "TSX/**"
   ]
 }
