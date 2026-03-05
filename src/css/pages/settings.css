@@ -593,28 +593,76 @@ aside[aside="settings"] > * > button:not(#aside-close):hover {
   color: var(--hover-text-color);
 }
 
-.wrap {
+/* Color customization layout */
+.color-target-tabs {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
 }
 
-.half {
-  width: 50%;
-}
-
-.half > input {
-  width: 90%;
-  font-size: 14px;
-  padding: 5px 10px;
-  outline: none;
-  border: none;
+.color-target-tab {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-color);
-  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0.7;
+}
+
+.color-target-tab:hover {
+  opacity: 1;
+  border-color: var(--hover-text-color);
+}
+
+.color-target-tab.active {
+  opacity: 1;
+  background: var(--main);
+  border-color: var(--main);
+  color: #fff;
+}
+
+.customize-colors-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.customize-colors-row > .colorPicker {
+  flex-shrink: 0;
+}
+
+.customize-colors-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.color-inputs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.color-inputs > input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  outline: none;
+  background: transparent;
+  color: var(--text-color);
+  border-radius: 0.5rem;
   transition: 0.2s ease;
   font-family: "Plus Jakarta Sans";
   border: var(--border-color) 1px solid;
-  margin: 2rem;
+}
+
+.color-inputs > input:focus {
+  border-color: var(--main);
 }

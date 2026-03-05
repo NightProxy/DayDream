@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     firstLink.classList.add("bg-[var(--white-05)]");
   }
 
-  await initializeSelect("URL-cloakSelect", "URL_Cloak", "off");
+  await initializeSelect("URL-cloakSelect", "URL_Cloak", "a:b");
 
   await initSwitch("autoCloakSwitch", "autoCloak", () => {
     eventsAPI.emit("cloaking:auto-toggle", null);
@@ -429,7 +429,92 @@ document.addEventListener("DOMContentLoaded", async () => {
     color: (await settingsAPI.getItem("themeColor")) || "rgba(141, 1, 255, 1)",
     borderWidth: 1,
     borderColor: "#fff",
+    layout: [
+      {
+        component: iro.ui.Box,
+      },
+      {
+        component: iro.ui.Slider,
+        options: {
+          id: "hue-slider",
+          sliderType: "hue",
+        },
+      },
+    ],
   });
+
+  // Color target mapping: tab key -> CSS property name(s)
+  const COLOR_TARGETS: Record<
+    string,
+    { property: string; aliases?: string[] }
+  > = {
+    accent: { property: "main-color", aliases: ["main"] },
+    background: { property: "background-color", aliases: ["bg-2"] },
+    panel: { property: "input-background-color", aliases: ["bg-1"] },
+    text: { property: "text-color", aliases: ["text"] },
+    border: { property: "border-color" },
+  };
+
+  let activeColorTarget = "accent";
+
+  // Color target tab switching
+  const colorTargetTabs = document.getElementById("colorTargetTabs");
+  const accentColorPalette = document.getElementById("accentColorPalette");
+
+  if (colorTargetTabs) {
+    colorTargetTabs.querySelectorAll(".color-target-tab").forEach((tab) => {
+      tab.addEventListener("click", async () => {
+        const target = (tab as HTMLElement).dataset.target;
+        if (!target || target === activeColorTarget) return;
+
+        activeColorTarget = target;
+
+        // Update tab active states
+        colorTargetTabs
+          .querySelectorAll(".color-target-tab")
+          .forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        // Show/hide accent palette (only relevant when Accent target is active)
+        if (accentColorPalette) {
+          accentColorPalette.style.display =
+            target === "accent" ? "block" : "none";
+        }
+
+        // Load the current value for this target into the picker
+        const currentColor = await getColorForTarget(target);
+        if (currentColor) {
+          try {
+            colorPicker.color.set(currentColor);
+          } catch (e) {
+            console.warn("Could not set picker to target color:", e);
+          }
+        }
+      });
+    });
+  }
+
+  async function getColorForTarget(target: string): Promise<string | null> {
+    // First check if user has a custom color saved for this target
+    const targetInfo = COLOR_TARGETS[target];
+    if (!targetInfo) return null;
+
+    try {
+      const stored = await settingsAPI.getItem("customThemeColors");
+      const customColors = stored ? JSON.parse(stored) : {};
+      if (customColors[targetInfo.property]) {
+        return customColors[targetInfo.property];
+      }
+    } catch {
+      // ignore parse errors
+    }
+
+    // Fall back to the current computed CSS variable
+    const value = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${targetInfo.property}`)
+      .trim();
+    return value || null;
+  }
 
   const hexInput = document.getElementById("hexInput") as HTMLInputElement;
   const rgbInput = document.getElementById("rgbString") as HTMLInputElement;
@@ -446,9 +531,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     rgbInput.value = colorPicker.color.rgbString;
     hslInput.value = colorPicker.color.hslString;
 
-    eventsAPI.emit("theme:color-change", {
-      color: colorPicker.color.rgbaString,
-    });
+    emitColorForTarget(colorPicker.color.rgbaString);
   });
 
   rgbInput.addEventListener("change", (_e: Event) => {
@@ -456,9 +539,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hexInput.value = colorPicker.color.hexString;
     hslInput.value = colorPicker.color.hslString;
 
-    eventsAPI.emit("theme:color-change", {
-      color: colorPicker.color.rgbaString,
-    });
+    emitColorForTarget(colorPicker.color.rgbaString);
   });
 
   hslInput.addEventListener("change", (_e: Event) => {
@@ -466,15 +547,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     hexInput.value = colorPicker.color.hexString;
     rgbInput.value = colorPicker.color.rgbString;
 
-    eventsAPI.emit("theme:color-change", {
-      color: colorPicker.color.rgbaString,
-    });
+    emitColorForTarget(colorPicker.color.rgbaString);
   });
 
   colorPicker.on("input:end", (color: any) => {
-    eventsAPI.emit("theme:color-change", { color: color.rgbaString });
-    console.log("Custom color changed to:", color.rgbaString);
+    emitColorForTarget(color.rgbaString);
+    console.log(
+      "Custom color changed to:",
+      color.rgbaString,
+      "target:",
+      activeColorTarget,
+    );
   });
+
+  function emitColorForTarget(color: string) {
+    if (activeColorTarget === "accent") {
+      eventsAPI.emit("theme:color-change", { color });
+    } else {
+      const targetInfo = COLOR_TARGETS[activeColorTarget];
+      if (targetInfo) {
+        eventsAPI.emit("theme:property-change", {
+          property: targetInfo.property,
+          aliases: targetInfo.aliases,
+          color,
+          target: activeColorTarget,
+        });
+      }
+    }
+  }
 
   await initializeThemeSystem();
 
@@ -680,7 +780,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           return;
         }
 
-        const { type, theme, color, colorRole } = event.detail;
+        const { type, theme, color, colorRole, target } = event.detail;
 
         console.log(
           "Settings page received global theme update:",
@@ -694,8 +794,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
           updateThemeButtonStates(theme);
           updateAccentColors(theme);
-          updateColorRoles(theme);
           updateCustomColorVisibility(theme);
+          resetColorTargetTabs();
         }
 
         if ((type === "color" || type === "accent") && color) {
@@ -708,6 +808,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (type === "colorRole" && colorRole) {
           updateColorRoleStates(colorRole);
+        }
+
+        if (type === "property" && color && target === activeColorTarget) {
+          try {
+            colorPicker.color.set(color);
+          } catch (e) {
+            console.warn("Could not update color picker:", e);
+          }
         }
       });
 
@@ -732,14 +840,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       function updateColorRoleStates(selectedRole: string) {
-        const colorRoleGrid = document.getElementById("colorRoleGrid");
-        if (colorRoleGrid) {
-          colorRoleGrid.querySelectorAll("button").forEach((btn) => {
-            (btn as HTMLElement).style.borderColor = "var(--white-10)";
-            if (btn.textContent === selectedRole) {
-              (btn as HTMLElement).style.borderColor = "var(--main)";
-            }
-          });
+        if (accentColorGrid) {
+          accentColorGrid
+            .querySelectorAll(".accent-color-button")
+            .forEach((btn) => {
+              btn.classList.remove("selected");
+              if (btn.getAttribute("data-role") === selectedRole) {
+                btn.classList.add("selected");
+              }
+            });
         }
       }
 
@@ -782,8 +891,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
               updateThemeButtonStates(themeKey);
               updateAccentColors(themeKey);
-              updateColorRoles(themeKey);
               updateCustomColorVisibility(themeKey);
+              resetColorTargetTabs();
 
               document.documentElement.classList.add("theme-preview-animation");
               setTimeout(() => {
@@ -805,14 +914,46 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         updateAccentColors(currentTheme);
-        updateColorRoles(currentTheme);
         updateCustomColorVisibility(currentTheme);
       }
 
       function updateAccentColors(themeKey: string) {
-        const accentColors = themeManager.getThemeAccentColors(themeKey);
+        const colorRoles = themeManager.getThemeColorRoles(themeKey);
 
-        if (accentColorGrid && accentColors.length > 0) {
+        if (accentColorGrid && Object.keys(colorRoles).length > 0) {
+          accentColorGrid.innerHTML = "";
+
+          Object.entries(colorRoles).forEach(([roleName, color]) => {
+            const button = document.createElement("button");
+            button.className = "accent-color-button";
+            button.style.backgroundColor = color;
+            button.setAttribute("data-color", color);
+            button.setAttribute("data-role", roleName);
+
+            const label = document.createElement("span");
+            label.className = "accent-color-label";
+            label.textContent = roleName;
+            label.style.color = getContrastTextColor(color);
+            button.appendChild(label);
+
+            button.addEventListener("click", () => {
+              accentColorGrid
+                .querySelectorAll(".accent-color-button")
+                .forEach((btn) => {
+                  btn.classList.remove("selected");
+                });
+              button.classList.add("selected");
+
+              eventsAPI.emit("theme:color-role-change", { roleName, color });
+
+              console.log("Accent changed to:", roleName, color);
+            });
+
+            accentColorGrid.appendChild(button);
+          });
+        } else if (accentColorGrid) {
+          // Fallback to accent-colors array if no color-roles defined
+          const accentColors = themeManager.getThemeAccentColors(themeKey);
           accentColorGrid.innerHTML = "";
 
           accentColors.forEach((color) => {
@@ -827,73 +968,10 @@ document.addEventListener("DOMContentLoaded", async () => {
               button.classList.add("selected");
 
               eventsAPI.emit("theme:accent-change", { color });
-
-              console.log("Accent color changed to:", color);
             });
 
             accentColorGrid.appendChild(button);
           });
-        }
-      }
-
-      function updateColorRoles(themeKey: string) {
-        const themes = themeManager.getAllThemes();
-        const theme = themes[themeKey];
-        let colorRoleGrid = document.getElementById("colorRoleGrid");
-
-        if (!colorRoleGrid) {
-          const colorRoleSection = document.createElement("div");
-          colorRoleSection.className = "space-y-3";
-          colorRoleSection.innerHTML = `
-            <h5 class="text-xs font-medium text-[var(--text)] mb-2">
-              Color Roles
-            </h5>
-            <div id="colorRoleGrid" class="grid grid-cols-3 gap-2">
-            </div>
-          `;
-
-          const accentSection = document.getElementById("accentColorPalette");
-          if (accentSection && accentSection.parentNode) {
-            accentSection.parentNode.insertBefore(
-              colorRoleSection,
-              accentSection.nextSibling,
-            );
-            colorRoleGrid = document.getElementById("colorRoleGrid");
-          }
-        }
-
-        if (colorRoleGrid && theme?.["color-roles"]) {
-          colorRoleGrid.innerHTML = "";
-
-          Object.entries(theme["color-roles"]).forEach(
-            ([roleName, color]: [string, any]) => {
-              const button = document.createElement("button");
-              button.className =
-                "px-3 py-2 rounded-md text-xs font-medium border-2 transition-all duration-200 hover:scale-105";
-              button.style.backgroundColor = color;
-              button.style.borderColor = "var(--white-10)";
-              button.style.color = getContrastTextColor(color);
-              button.textContent = roleName;
-
-              button.addEventListener("click", () => {
-                eventsAPI.emit("theme:color-role-change", { roleName, color });
-
-                colorRoleGrid.querySelectorAll("button").forEach((btn) => {
-                  (btn as HTMLElement).style.borderColor = "var(--white-10)";
-                });
-                button.style.borderColor = "var(--main)";
-
-                console.log(
-                  "Color role changed to:",
-                  roleName,
-                  "with color:",
-                  color,
-                );
-              });
-
-              colorRoleGrid.appendChild(button);
-            },
-          );
         }
       }
 
@@ -940,6 +1018,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           } else {
             customColorSection.style.display = "none";
           }
+        }
+      }
+
+      function resetColorTargetTabs() {
+        activeColorTarget = "accent";
+        if (colorTargetTabs) {
+          colorTargetTabs
+            .querySelectorAll(".color-target-tab")
+            .forEach((t) => t.classList.remove("active"));
+          const accentTab = colorTargetTabs.querySelector(
+            '[data-target="accent"]',
+          );
+          if (accentTab) accentTab.classList.add("active");
+        }
+        if (accentColorPalette) {
+          accentColorPalette.style.display = "block";
         }
       }
     } catch (error) {
