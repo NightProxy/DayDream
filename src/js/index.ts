@@ -28,6 +28,28 @@ import { RefluxAPI } from "@nightnetwork/reflux/api";
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
+// Register sw.js at root scope early — this ensures fetch interception for
+// API restored endpoints (/api/plus/, /api/results/, /api/store/, /auth/)
+// and internal page routing (/internal/*) on static deployments.
+// The proxy-engine-specific registration (scoped to /data/ or /assets/)
+// happens later in proxy.registerSW(), but root scope is needed so the SW
+// can intercept API requests from the main page at /.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/sw.js", { scope: "/" })
+    .then(() => console.log("[Main] Root-scope SW registered"))
+    .catch((err) =>
+      console.warn("[Main] Root-scope SW registration failed:", err),
+    );
+}
+
+// Listen for SW messages (kept for future use)
+navigator.serviceWorker?.addEventListener("message", (e) => {
+  console.log("[Main] SW message received:", e.data);
+  if (e.data?.type === "reload") location.reload();
+});
+navigator.serviceWorker?.startMessages();
+
 document.addEventListener("DOMContentLoaded", async () => {
   await universalTheme.init();
 
@@ -55,13 +77,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const swConfig = {
     uv: {
       type: "sw",
-      file: "/data/sw.js",
+      file: "/sw.js",
       config: window.__uv$config,
       func: null,
     },
     sj: {
       type: "sw",
-      file: "/assets/sw.js",
+      file: "/sw.js",
       config: window.__scramjet$config,
       func: async () => {
         const scramjet = new ScramjetController(window.__scramjet$config);
