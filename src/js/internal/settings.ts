@@ -167,6 +167,10 @@ async function initializeWispSelect() {
     return;
   }
 
+  const generateBtn = document.getElementById(
+    "generateWisp",
+  ) as HTMLButtonElement;
+
   const defaultWispUrl =
     (location.protocol === "https:" ? "wss" : "ws") +
     "://" +
@@ -258,13 +262,27 @@ async function initializeWispSelect() {
   customOption.textContent = "Custom WISP Server";
   wispSelect.appendChild(customOption);
 
+  // Add a "Generated Server" option if a nightwisp.me URL is saved
+  const generatedOption = document.createElement("option");
+  generatedOption.value = "";
+  generatedOption.textContent = "Generated Server";
+  generatedOption.classList.add("hidden");
+  wispSelect.appendChild(generatedOption);
+
   const savedWisp = (await settingsAPI.getItem("wisp")) || "auto";
 
+  const isGeneratedWisp =
+    typeof savedWisp === "string" && savedWisp.includes(".nightwisp.me.cdn.cloudflare.net/wisp/");
   const isCustomWisp =
     savedWisp !== "auto" &&
+    !isGeneratedWisp &&
     !Array.from(wispSelect.options).some((opt) => opt.value === savedWisp);
 
-  if (isCustomWisp) {
+  if (isGeneratedWisp) {
+    generatedOption.value = savedWisp;
+    generatedOption.classList.remove("hidden");
+    wispSelect.value = savedWisp;
+  } else if (isCustomWisp) {
     wispSelect.value = "custom";
     if (customSetting) {
       customSetting.value = savedWisp;
@@ -281,12 +299,18 @@ async function initializeWispSelect() {
       if (useCustomBtn) {
         useCustomBtn.classList.add("hidden");
       }
+      if (generateBtn) {
+        generateBtn.classList.add("hidden");
+      }
     } else {
       if (customInput) {
         customInput.classList.add("hidden");
       }
       if (useCustomBtn) {
         useCustomBtn.classList.remove("hidden");
+      }
+      if (generateBtn) {
+        generateBtn.classList.remove("hidden");
       }
 
       if (wispSelect.value === "auto") {
@@ -305,6 +329,9 @@ async function initializeWispSelect() {
         customInput.classList.remove("hidden");
       }
       useCustomBtn.classList.add("hidden");
+      if (generateBtn) {
+        generateBtn.classList.add("hidden");
+      }
     });
   }
 
@@ -329,6 +356,51 @@ async function initializeWispSelect() {
       }
       if (useCustomBtn) {
         useCustomBtn.classList.remove("hidden");
+      }
+      if (generateBtn) {
+        generateBtn.classList.remove("hidden");
+      }
+    });
+  }
+
+  if (generateBtn) {
+    generateBtn.addEventListener("click", async () => {
+      // Generate a new nightwisp.me WISP server
+      const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      const length = 16 + Math.floor(Math.random() * 17); // 16-32
+      let subdomain = "";
+      for (let i = 0; i < length; i++) {
+        subdomain += chars[Math.floor(Math.random() * chars.length)];
+      }
+      const newWisp = `wss://${subdomain}.nightwisp.me.cdn.cloudflare.net/wisp/`;
+
+      // Save to settings
+      await settingsAPI.setItem("wisp", newWisp);
+      console.log("Generated WISP server:", newWisp);
+
+      // Update the generated option and select it
+      generatedOption.value = newWisp;
+      generatedOption.classList.remove("hidden");
+      wispSelect.value = newWisp;
+
+      // Hide custom input if visible
+      if (customInput) {
+        customInput.classList.add("hidden");
+      }
+      if (useCustomBtn) {
+        useCustomBtn.classList.remove("hidden");
+      }
+
+      // Tell the parent to update transports with the new WISP
+      try {
+        const parentProxy = (window.parent as any).proxy;
+        if (parentProxy && typeof parentProxy.swapWispServer === "function") {
+          await parentProxy.swapWispServer(newWisp);
+        }
+      } catch (e) {
+        console.error("Failed to update parent proxy transports:", e);
+        // Still reload so the app picks up the new setting
+        location.reload();
       }
     });
   }
