@@ -14,6 +14,7 @@ interface ProxyInterface {
   hosting: HostingAPI;
   network: NetworkAPI;
   isStaticBuild: boolean;
+  initReady: Promise<void>;
   setTransports(): Promise<void>;
   search(input: string): string;
   registerSW(swConfig: any): Promise<void>;
@@ -30,6 +31,8 @@ interface ProxyInterface {
   ): Promise<void>;
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(url: string): Promise<string | null>;
+  generateWispServer(): string;
+  swapWispServer(url?: string): Promise<void>;
 }
 class Proxy implements ProxyInterface {
   connection!: BareMux.BareMuxConnection;
@@ -41,6 +44,7 @@ class Proxy implements ProxyInterface {
   hosting!: HostingAPI;
   network!: NetworkAPI;
   isStaticBuild: boolean = false;
+  initReady: Promise<void>;
 
   constructor() {
     this.connection = new BareMux.BareMuxConnection("/bmworker/worker.js");
@@ -51,23 +55,60 @@ class Proxy implements ProxyInterface {
     this.logging = new Logger();
     this.isStaticBuild = false;
 
-    (async () => {
+    this.initReady = (async () => {
       this.searchVar =
         (await this.settings.getItem("search")) ||
         "https://www.duckduckgo.com/?q=%s";
       this.transportVar =
         (await this.settings.getItem("transports")) || "libcurl";
-      this.wispUrl =
-        (await this.settings.getItem("wisp")) ||
-        (location.protocol === "https:" ? "wss" : "ws") +
+
+      // Read saved wisp, or auto-generate for static deployments
+      const savedWisp = await this.settings.getItem("wisp");
+      if (savedWisp) {
+        this.wispUrl = savedWisp;
+        console.log(`[Proxy] Using saved WISP: ${this.wispUrl}`);
+      } else if (!this.hosting.hasBackend()) {
+        // Static deployment with no local WISP — generate a nightwisp.me server
+        const generated = this.generateWispServer();
+        this.wispUrl = generated;
+        await this.settings.setItem("wisp", generated);
+        console.log(
+          `[Proxy] No WISP configured on static deploy, generated: ${generated}`,
+        );
+      } else {
+        // Server deployment — use local WISP
+        this.wispUrl =
+          (location.protocol === "https:" ? "wss" : "ws") +
           "://" +
           location.host +
           "/wisp/";
+        console.log(`[Proxy] Using local WISP: ${this.wispUrl}`);
+      }
     })();
   }
 
+  generateWispServer(): string {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const length = 16 + Math.floor(Math.random() * 17); // 16-32
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `wss://${result}.nightwisp.me.cdn.cloudflare.net/wisp/`;
+  }
+
+  async swapWispServer(url?: string): Promise<void> {
+    const newWisp = url || this.generateWispServer();
+    this.wispUrl = newWisp;
+    await this.settings.setItem("wisp", newWisp);
+    console.log(`[Proxy] WISP server swapped to: ${newWisp}`);
+    await this.setTransports();
+  }
+
   async setTransports() {
-    console.log("[Proxy] setTransports() called");
+    // Ensure settings (wispUrl, transportVar) are loaded before configuring
+    await this.initReady;
+    console.log("[Proxy] setTransports() called, wispUrl:", this.wispUrl);
     const transports = this.transportVar || "libcurl";
     const transportMap: Record<any, string> = {
       epoxy: "/epoxy/index.mjs",
@@ -118,6 +159,21 @@ class Proxy implements ProxyInterface {
     console.log("[Proxy] Transport set with options:", transportOptions);
     if (this.logging) {
       this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
+    }
+
+    // Notify the SW that transport is configured — so restoreRequest() can proceed.
+    this.notifySwTransportReady();
+  }
+
+  private async notifySwTransportReady() {
+    try {
+      const registration = await navigator.serviceWorker?.ready;
+      if (registration?.active) {
+        registration.active.postMessage({ type: "transportReady" });
+        console.log("[Proxy] Sent transportReady to SW");
+      }
+    } catch (err) {
+      console.warn("[Proxy] Failed to notify SW of transport ready:", err);
     }
   }
 
@@ -260,7 +316,7 @@ class Proxy implements ProxyInterface {
         func: swFunction,
       } = swConfig[selectedProxy] ?? {
         type: "sw",
-        file: "/data/sw.js",
+        file: "/sw.js",
         config: window.__uv$config,
         func: null,
       };
