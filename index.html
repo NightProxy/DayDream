@@ -5,20 +5,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DayDream X</title>
-    <script src="/data/bundle.js" defer></script>
-    <script src="/data/config.js" defer></script>
-    <script src="/assets/config.js" defer></script>
-    <script src="/assets/all.js" defer></script>
-    <link rel="icon" type="image/x-icon" href="/res/logo.png" />
-    <meta
-      name="description"
-      content="Your favorite Browser in a browser"
-    />
+    <script>
+      self.__ddxBase = (function () {
+        var p = location.pathname;
+        var i = p.indexOf("/internal/");
+        if (i !== -1) return p.substring(0, i + 1);
+        return new URL("./", location.href).pathname;
+      })();
+    </script>
+    <script src="./data/bundle.js" defer></script>
+    <script src="./data/config.js" defer></script>
+    <script src="./assets/config.js" defer></script>
+    <script src="./assets/all.js" defer></script>
+    <link rel="icon" type="image/x-icon" href="./res/logo.png" />
+    <meta name="description" content="Your favorite Browser in a browser" />
     <meta
       name="keywords"
       content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
     />
-    <meta property="og:image" content="/res/logo.png" />
+    <meta property="og:image" content="./res/logo.png" />
 
     <script>
       // Analytics

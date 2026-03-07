@@ -8,6 +8,7 @@ import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { ModalUtilities } from "./modalUtilities";
 import { createIcons, icons } from "lucide";
 import { checkNightPlusStatus } from "@apis/nightplus";
+import { resolvePath } from "@js/utils/basepath";
 
 export class ProfileManager implements ProfileManagerInterface {
   private profiles: ProfilesAPI;
@@ -111,7 +112,7 @@ export class ProfileManager implements ProfileManagerInterface {
                     onclick: async () => {
                       const url =
                         (await this.proto.processUrl("ddx://settings/")) ||
-                        "/internal/error/";
+                        resolvePath("internal/error/");
                       const iframe = this.items.frameContainer!.querySelector(
                         "iframe.active",
                       ) as HTMLIFrameElement | null;
@@ -569,8 +570,8 @@ export class ProfileManager implements ProfileManagerInterface {
                         });
                         div.innerHTML =
                           profileCount >= maxProfiles
-                            ? `<strong style="color: var(--error, #ef4444);">Profile Limit Reached (${profileCount}/${maxProfiles})</strong><br/><span style="opacity: 0.9;">Upgrade to <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Night+</a> for unlimited profiles.</span>`
-                            : `<strong style="color: var(--main);">Profiles: ${profileCount}/${maxProfiles}</strong><br/><span style="opacity: 0.9;">${maxProfiles - profileCount} remaining. <a href="/internal/terms/" target="_blank" style="color: var(--main); text-decoration: underline;">Upgrade to Night+</a> for unlimited.</span>`;
+                            ? `<strong style="color: var(--error, #ef4444);">Profile Limit Reached (${profileCount}/${maxProfiles})</strong><br/><span style="opacity: 0.9;">Upgrade to <a href="${resolvePath("internal/terms/")}" target="_blank" style="color: var(--main); text-decoration: underline;">Night+</a> for unlimited profiles.</span>`
+                            : `<strong style="color: var(--main);">Profiles: ${profileCount}/${maxProfiles}</strong><br/><span style="opacity: 0.9;">${maxProfiles - profileCount} remaining. <a href="${resolvePath("internal/terms/")}" target="_blank" style="color: var(--main); text-decoration: underline;">Upgrade to Night+</a> for unlimited.</span>`;
                         return div;
                       })(),
                     ],
@@ -731,7 +732,7 @@ export class ProfileManager implements ProfileManagerInterface {
           : `${maxProfiles - currentCount} profile${maxProfiles - currentCount !== 1 ? "s" : ""} remaining on free tier. `;
 
       const upgradeLink = document.createElement("a");
-      upgradeLink.href = "/internal/terms/";
+      upgradeLink.href = resolvePath("internal/terms/");
       upgradeLink.target = "_blank";
       upgradeLink.style.cssText =
         "color: var(--main); text-decoration: underline; margin-left: 4px;";

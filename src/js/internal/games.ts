@@ -8,6 +8,7 @@ import "./shared/themeInit";
 
 import { createIcons, icons } from "lucide";
 import { Nightmare } from "@libs/Nightmare/nightmare";
+import { resolvePath } from "@js/utils/basepath";
 
 interface Game {
   name: string;
@@ -22,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let games: Game[] = [];
 
   try {
-    const res = await fetch("/json/g.json");
+    const res = await fetch(resolvePath("json/g.json"));
     games = (await res.json()) as Game[];
   } catch (err) {
     console.error("Failed to fetch /json/g.json:", err);

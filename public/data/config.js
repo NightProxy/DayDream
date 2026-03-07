@@ -1,5 +1,7 @@
+var _b = self.__ddxBase || "/";
+
 self.__uv$config = {
-  prefix: "/data/int/",
+  prefix: _b + "data/int/",
 
   encodeUrl: function encode(str) {
     if (!str) return str;
@@ -26,9 +28,9 @@ self.__uv$config = {
         .join("") + (search.length ? "?" + search.join("?") : "")
     );
   },
-  handler: "/data/handler.js",
-  client: "/data/client.js",
-  bundle: "/data/bundle.js",
-  config: "/data/config.js",
-  sw: "/data/worker.js",
+  handler: _b + "data/handler.js",
+  client: _b + "data/client.js",
+  bundle: _b + "data/bundle.js",
+  config: _b + "data/config.js",
+  sw: _b + "data/worker.js",
 };

@@ -6,12 +6,37 @@ if (navigator.userAgent.includes("Firefox")) {
   });
 }
 
-importScripts("/baremux/index.js"); // BareMux
-importScripts("/core/localforage/localforage.min.js"); // localforage
-importScripts("/data/bundle.js", "/data/config.js", "/data/worker.js"); // UV
-importScripts("/assets/all.js"); // SCRAM!! jet
+// --- Runtime base path detection ---
+// sw.js lives at the deployment root (e.g. /myapp/sw.js).
+// Strip the filename to get the base directory.
+self.__ddxBase = self.location.pathname.replace(/[^/]*$/, "");
+
+const _base = self.__ddxBase;
+
+importScripts(_base + "baremux/index.js"); // BareMux
+importScripts(_base + "core/localforage/localforage.min.js"); // localforage
+importScripts(
+  _base + "data/bundle.js",
+  _base + "data/config.js",
+  _base + "data/worker.js",
+); // UV
+importScripts(_base + "assets/all.js"); // SCRAM!! jet
 
 const CACHE_NAME = "DaydreamSPAPages";
+
+/**
+ * Strip the deployment base prefix from an absolute pathname so route
+ * matching can use canonical paths like "/internal/...", "/api/..." etc.
+ *
+ * stripBase("/myapp/api/results/foo") => "/api/results/foo"
+ * stripBase("/api/results/foo")       => "/api/results/foo"  (base is "/")
+ */
+function stripBase(pathname) {
+  if (_base !== "/" && pathname.startsWith(_base)) {
+    return "/" + pathname.slice(_base.length);
+  }
+  return pathname;
+}
 
 // --- Settings API (mirrors src/js/apis/settings.ts, same localforage instance) ---
 
@@ -90,8 +115,18 @@ class DDXWorker {
 
   async handleRequest(event) {
     const url = new URL(event.request.url);
+    const relativePath = stripBase(url.pathname);
 
-    await this.sj.loadConfig();
+    // Try to load Scramjet config for proxy routing.
+    // Don't let failure block internal pages, API proxy, or static files.
+    // On early requests (before ScramjetController.init() populates IndexedDB),
+    // loadConfig() may reject or set this.sj.config to undefined — either way
+    // we skip proxy routing but keep everything else working.
+    try {
+      await this.sj.loadConfig();
+    } catch (e) {
+      console.warn("[DDXWorker] sj.loadConfig() failed:", e);
+    }
 
     // Ensure WISP is configured on the first request (no-op after first success)
     await this.ensureWisp();
@@ -99,15 +134,25 @@ class DDXWorker {
     if (this.isCfRequest(event.request.url))
       return new Response(null, { status: 204 }); // some CF support works if we just delete it lmfao
 
-    // Internal page routing — anything under /internal/ gets resolved and served
-    if (this.isInternalRoute(url.pathname)) {
-      return this.serveInternalPage(url.pathname);
+    // Internal page routing — anything under /internal/ gets resolved and served.
+    // Enforce trailing slash for directory-style internal routes so that the
+    // browser's base URL for relative path resolution is the directory itself
+    // (e.g. /dist/internal/newtab/) and not its parent (/dist/internal/).
+    // Without this, Vite's ../../ asset paths resolve one level too far up.
+    if (this.isInternalRoute(relativePath)) {
+      // If the path has no file extension and no trailing slash, redirect
+      if (!/\.\w+$/.test(relativePath) && !relativePath.endsWith("/")) {
+        const redirectUrl = new URL(event.request.url);
+        redirectUrl.pathname += "/";
+        return Response.redirect(redirectUrl.toString(), 301);
+      }
+      return this.serveInternalPage(relativePath);
     }
 
     // OPTIONS preflight for API routes
     if (
       event.request.method === "OPTIONS" &&
-      this.shouldRestoreRequest(event.request.url)
+      this.shouldRestoreRequest(relativePath)
     ) {
       return new Response(null, {
         status: 204,
@@ -121,16 +166,26 @@ class DDXWorker {
     }
 
     // Prod API proxy — restored endpoints go to production backend
-    if (this.shouldRestoreRequest(event.request.url)) {
+    if (this.shouldRestoreRequest(relativePath)) {
       return this.restoreRequest(event.request);
     }
 
-    // Proxy engines
-    if (this.sj.route(event)) {
-      return this.sj.fetch(event);
+    // Proxy engines — guarded so that config / routing failures never
+    // prevent normal static-file requests from reaching the network.
+    try {
+      if (this.sj.config && this.sj.route(event)) {
+        return this.sj.fetch(event);
+      }
+    } catch (e) {
+      console.warn("[DDXWorker] Scramjet route/fetch error:", e);
     }
-    if (this.uv.route(event)) {
-      return await this.uv.fetch(event);
+
+    try {
+      if (this.uv.route(event)) {
+        return await this.uv.fetch(event);
+      }
+    } catch (e) {
+      console.warn("[DDXWorker] UV route/fetch error:", e);
     }
 
     return fetch(event.request);
@@ -166,22 +221,27 @@ class DDXWorker {
     return this.bareClient;
   }
 
-  shouldRestoreRequest(url) {
-    const urlObj = new URL(url);
+  /**
+   * Check if a base-stripped pathname matches a restored endpoint.
+   * @param {string} relativePath - pathname with base already stripped (e.g. "/api/results/foo")
+   */
+  shouldRestoreRequest(relativePath) {
     return this.restoredEndpoints.some((endpoint) =>
-      urlObj.pathname.startsWith(endpoint),
+      relativePath.startsWith(endpoint),
     );
   }
 
   async restoreRequest(request) {
     const originalUrl = new URL(request.url);
+    // Strip base so production URL is always /api/... not /myapp/api/...
+    const relativePath = stripBase(originalUrl.pathname);
     const productionUrl = new URL(
-      originalUrl.pathname + originalUrl.search,
+      relativePath + originalUrl.search,
       this.productionUrl,
     );
 
     console.log(
-      `[DDXWorker] restoreRequest: ${request.method} ${originalUrl.pathname} -> ${productionUrl.toString()}`,
+      `[DDXWorker] restoreRequest: ${request.method} ${relativePath} -> ${productionUrl.toString()}`,
     );
 
     const headers = {};
@@ -234,7 +294,7 @@ class DDXWorker {
       );
 
       console.log(
-        `[DDXWorker] restoreRequest OK: ${response.status} ${originalUrl.pathname}`,
+        `[DDXWorker] restoreRequest OK: ${response.status} ${relativePath}`,
       );
 
       const responseHeaders = new Headers();
@@ -285,38 +345,74 @@ class DDXWorker {
   // Mirrors how Protocols works: ddx://* -> /internal/{path}
   // No hardcoded list — if it's under /internal/, we serve it.
 
-  isInternalRoute(pathname) {
-    return pathname.startsWith("/internal/");
+  /**
+   * @param {string} relativePath - pathname with base already stripped
+   */
+  isInternalRoute(relativePath) {
+    return relativePath.startsWith("/internal/");
   }
 
-  resolveInternalHtml(pathname) {
+  resolveInternalHtml(relativePath) {
     // Normalize: strip trailing slash, then assume index.html
-    const clean = pathname.replace(/\/+$/, "");
+    const clean = relativePath.replace(/\/+$/, "");
     // If it already ends with a file extension, leave it alone
     if (/\.\w+$/.test(clean)) return clean;
     return `${clean}/index.html`;
   }
 
-  async serveInternalPage(pathname) {
-    const htmlPath = this.resolveInternalHtml(pathname);
+  /**
+   * @param {string} relativePath - canonical path like "/internal/newtab/"
+   */
+  async serveInternalPage(relativePath) {
+    const htmlRelative = this.resolveInternalHtml(relativePath);
+    // Re-add base prefix for the actual network fetch / cache key
+    const fetchPath = _base + htmlRelative.replace(/^\//, "");
 
-    // Try cache first
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(htmlPath);
-    if (cached) return cached;
 
-    // Fetch from network, cache if successful
+    // Network-first strategy: always try to get the latest HTML from the
+    // network so that rebuilt assets (with new hashed filenames) are never
+    // stale.  Fall back to cache only when the network is unavailable.
     try {
-      const response = await fetch(htmlPath);
+      const response = await fetch(fetchPath);
       if (response.ok) {
-        cache.put(htmlPath, response.clone());
-        return response;
+        cache.put(fetchPath, response.clone());
+        // IMPORTANT: Wrap in a new Response so the browser uses the
+        // intercepted request URL (with trailing slash) as the document
+        // base for relative path resolution — NOT the fetch() response
+        // URL (which points to the .html file).  Without this, ../../
+        // in built asset paths resolves one level too far up.
+        const body = await response.arrayBuffer();
+        const hdrs = new Headers(response.headers);
+        hdrs.set("Content-Type", "text/html; charset=utf-8");
+        return new Response(body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: hdrs,
+        });
       }
-      // Let non-ok responses fall through as-is
+      // Non-ok but not a network error — return as-is (e.g. 404)
       return response;
     } catch (err) {
+      // Network failed — try the cache as a fallback
+      const cached = await cache.match(fetchPath);
+      if (cached) {
+        console.warn(
+          `[DDXWorker] Network failed for ${relativePath}, serving from cache`,
+        );
+        // Same wrapping for cached responses
+        const body = await cached.arrayBuffer();
+        const hdrs = new Headers(cached.headers);
+        hdrs.set("Content-Type", "text/html; charset=utf-8");
+        return new Response(body, {
+          status: cached.status,
+          statusText: cached.statusText,
+          headers: hdrs,
+        });
+      }
+
       console.error(
-        `[DDXWorker] Failed to serve internal page: ${pathname}`,
+        `[DDXWorker] Failed to serve internal page: ${relativePath}`,
         err,
       );
       return new Response("Page not found", {
@@ -340,17 +436,14 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   console.log("[DDXWorker] Activating...");
-  // Clean old caches, claim clients, and ensure WISP is configured
+  // Purge ALL caches (including our own internal-page cache) so that a new
+  // SW deployment never serves stale HTML referencing old hashed assets.
+  // With network-first strategy the cache is only a fallback anyway, so
+  // clearing it on activate is safe — pages will be re-cached on first visit.
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => {
-        return Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key)),
-        );
-      })
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
       .then(() => ddx.ensureWisp()),
   );
@@ -372,5 +465,12 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  event.respondWith(ddx.handleRequest(event));
+  event.respondWith(
+    ddx.handleRequest(event).catch((err) => {
+      // Safety net: if anything unexpected throws in handleRequest, let the
+      // browser handle the request normally instead of showing a network error.
+      console.error("[DDXWorker] handleRequest failed, passing through:", err);
+      return fetch(event.request);
+    }),
+  );
 });

@@ -1,12 +1,15 @@
 import type { Logger } from "@apis/logging";
 import type { GameData } from "./types";
+import { resolvePath } from "@js/utils/basepath";
 
 export async function fetchSearchSuggestions(
   query: string,
   maxResults: number,
 ): Promise<string[]> {
   try {
-    const response = await fetch(`/api/results/${encodeURIComponent(query)}`);
+    const response = await fetch(
+      `${resolvePath("api/results/")}${encodeURIComponent(query)}`,
+    );
     if (!response.ok) return [];
 
     const data = await response.json();
@@ -19,7 +22,7 @@ export async function fetchSearchSuggestions(
 
 export async function fetchAppData(logger: Logger): Promise<GameData[]> {
   try {
-    const response = await fetch("/json/g.json");
+    const response = await fetch(resolvePath("json/g.json"));
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -81,7 +84,7 @@ export async function getAvailableInternalPages(): Promise<
 
   for (const [path, meta] of Object.entries(INTERNAL_PAGES_MAP)) {
     try {
-      const response = await fetch(`/internal/${path}/index.html`, {
+      const response = await fetch(resolvePath(`internal/${path}/index.html`), {
         method: "HEAD",
       });
       if (response.ok) {

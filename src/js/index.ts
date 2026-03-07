@@ -22,23 +22,35 @@ import { Search } from "@browser/search";
 import { universalTheme } from "@js/global/universalTheme";
 import { checkNightPlusStatus } from "@apis/nightplus";
 import { initClipboardDeobfuscator } from "@js/utils/clipboardDeobfuscator";
+import { basePath, resolvePath } from "@js/utils/basepath";
 //@ts-ignore VScode being dumb???
 import { RefluxAPI } from "@nightnetwork/reflux/api";
 
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
-// Register sw.js at root scope early — this ensures fetch interception for
+// Init Scramjet controller BEFORE registering the root-scope SW.
+// The SW's ScramjetServiceWorker expects the client-side controller to
+// already be initialized when it starts handling fetch events.
+const scramjet = new ScramjetController(window.__scramjet$config);
+const scramjetReady = scramjet.init();
+
+// Register sw.js at root scope — this ensures fetch interception for
 // API restored endpoints (/api/plus/, /api/results/, /api/store/, /auth/)
 // and internal page routing (/internal/*) on static deployments.
 // The proxy-engine-specific registration (scoped to /data/ or /assets/)
 // happens later in proxy.registerSW(), but root scope is needed so the SW
 // can intercept API requests from the main page at /.
+// Must wait for scramjetReady so the controller is initialized first.
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/sw.js", { scope: "/" })
-    .then(() => console.log("[Main] Root-scope SW registered"))
-    .catch((err) =>
+  scramjetReady
+    .then(() =>
+      navigator.serviceWorker.register(resolvePath("sw.js"), {
+        scope: basePath,
+      }),
+    )
+    .then(() => console.log("[Main] Root-scope SW registered at", basePath))
+    .catch((err: any) =>
       console.warn("[Main] Root-scope SW registration failed:", err),
     );
 }
@@ -77,19 +89,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const swConfig = {
     uv: {
       type: "sw",
-      file: "/sw.js",
+      file: resolvePath("sw.js"),
       config: window.__uv$config,
       func: null,
     },
     sj: {
       type: "sw",
-      file: "/sw.js",
+      file: resolvePath("sw.js"),
       config: window.__scramjet$config,
       func: async () => {
-        const scramjet = new ScramjetController(window.__scramjet$config);
-        scramjet.init().then(async () => {
-          await proxy.setTransports();
-        });
+        await scramjetReady;
+        await proxy.setTransports();
         console.log("Scramjet Service Worker registered.");
       },
     },
@@ -137,6 +147,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startupCustomUrl =
     (await settingsAPI.getItem("startupCustomUrl")) || "";
 
+  // On static deployments the SW must be active before any internal page
+  // navigation — otherwise the request hits the CDN directly (403/404).
+  if ("serviceWorker" in navigator) {
+    await navigator.serviceWorker.ready;
+  }
+
   let restored = false;
   if (startupBehavior === "restore") {
     restored = await tabs.restoreSession();
@@ -181,7 +197,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       const searchValue = uvSearchBar!.value.trim();
 
       if (proto.isRegisteredProtocol(searchValue)) {
-        const url = (await proto.processUrl(searchValue)) || "/internal/error/";
+        const url =
+          (await proto.processUrl(searchValue)) ||
+          resolvePath("internal/error/");
         const iframe = items.frameContainer!.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
