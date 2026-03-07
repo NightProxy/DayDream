@@ -1,6 +1,5 @@
 // @ts-nocheck
 //@ts-ignore
-// obfuscated as a backup, merely domain lists but for server generation, this file calls many constants and reuses them over and over to create a list, if this file violates AGPL, please DM amplify.dev on discord
 (function (_0x31a46a, _0x262949) {
   const _0x593578 = {
       _0x588353: 0x179,

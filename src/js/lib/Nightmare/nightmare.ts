@@ -336,8 +336,6 @@ class AlertToast {
       this.ui.createElement("h2", {}, [message]),
     ]);
 
-    // TODO: Add fade-out timer, close button, and styling, move Class to do multiple alert styles such as info, warn, debug, and normal verbose logging
-
     document.body.appendChild(toastElement);
   }
 }

@@ -2,13 +2,6 @@ import type { Plugin, ResolvedConfig } from "vite";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
-/**
- * Vite plugin that generates an index.svg wrapper from the built index.html.
- *
- * The SVG embeds the page via <foreignObject> with the HTML body content,
- * CSS in a <style> block, and all JavaScript in a <script><![CDATA[...]]>
- * section that dynamically bootstraps the page.
- */
 export function svgWrapperPlugin(): Plugin {
   let config: ResolvedConfig;
 
@@ -35,33 +28,24 @@ export function svgWrapperPlugin(): Plugin {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface ScriptEntry {
   type: "inline" | "external";
-  content?: string; // inline script body
-  src?: string; // external script src
+  content?: string;
+  src?: string;
   isModule?: boolean;
   hasDefer?: boolean;
   hasCrossorigin?: boolean;
 }
 
 interface ParsedHtml {
-  inlineStyles: string[]; // contents of <style>...</style> tags
-  headTags: string[]; // non-script, non-style head elements as raw strings
-  bodyAttrs: string; // attributes on the <body> tag
-  bodyInner: string; // innerHTML of <body>
-  scripts: ScriptEntry[]; // all scripts in document order
+  inlineStyles: string[];
+  headTags: string[];
+  bodyAttrs: string;
+  bodyInner: string;
+  scripts: ScriptEntry[];
 }
 
-// ---------------------------------------------------------------------------
-// HTML Parser
-// ---------------------------------------------------------------------------
-
 function parseHtml(html: string): ParsedHtml {
-  // Strip doctype and <html> wrapper
   let src = html
     .replace(/<!doctype\s+html>/i, "")
     .replace(/<html[^>]*>/i, "")
@@ -72,7 +56,6 @@ function parseHtml(html: string): ParsedHtml {
   const headTags: string[] = [];
   const scripts: ScriptEntry[] = [];
 
-  // Split at <body to separate head from body
   const bodyMatch = src.match(/<body(\s[^>]*)?>/i);
   let headPart = src;
   let bodyAttrs = "";
@@ -85,7 +68,6 @@ function parseHtml(html: string): ParsedHtml {
     bodyInner = afterBody.replace(/<\/body\s*>/i, "").trim();
   }
 
-  // Extract inline <style> blocks
   headPart = headPart.replace(
     /<style(?:\s[^>]*)?>([^]*?)<\/style>/gi,
     (_, content) => {
@@ -94,7 +76,6 @@ function parseHtml(html: string): ParsedHtml {
     },
   );
 
-  // Extract all <script> tags (both inline and external)
   headPart = headPart.replace(
     /<script(\s[^>]*)?>([^]*?)<\/script>/gi,
     (full, attrs, content) => {
@@ -103,7 +84,6 @@ function parseHtml(html: string): ParsedHtml {
     },
   );
 
-  // Also extract scripts from body
   bodyInner = bodyInner.replace(
     /<script(\s[^>]*)?>([^]*?)<\/script>/gi,
     (full, attrs, content) => {
@@ -112,7 +92,6 @@ function parseHtml(html: string): ParsedHtml {
     },
   );
 
-  // Remaining head content → individual tags
   const tagRe = /<([\w-]+)(\s[^>]*)?\/?>/g;
   let match: RegExpExecArray | null;
   const seen = new Set<number>();
@@ -120,12 +99,10 @@ function parseHtml(html: string): ParsedHtml {
   while ((match = tagRe.exec(headPart)) !== null) {
     const tag = match[0];
     const tagName = match[1].toLowerCase();
-    // Skip already-extracted or irrelevant tags
     if (seen.has(match.index)) continue;
     seen.add(match.index);
 
     if (tagName === "title") {
-      // Grab the full <title>...</title>
       const titleClose = headPart.indexOf("</title>", match.index);
       if (titleClose !== -1) {
         headTags.push(headPart.slice(match.index, titleClose + 8));
@@ -159,10 +136,6 @@ function parseScriptTag(attrs: string, content: string): ScriptEntry {
   return { type: "inline", content: content.trim() };
 }
 
-// ---------------------------------------------------------------------------
-// HTML → XHTML conversion
-// ---------------------------------------------------------------------------
-
 const VOID_ELEMENTS = new Set([
   "area",
   "base",
@@ -181,16 +154,13 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 function toXhtml(html: string): string {
-  // Process each HTML tag individually to fix attributes and self-close voids
   return html.replace(
     /<([\w-]+)((?:\s[^>]*?)?)\s*(\/?)\s*>/gi,
     (full, tagName: string, attrsRaw: string, selfClose: string) => {
       const tag = tagName.toLowerCase();
 
-      // Fix attributes: quote unquoted values and expand boolean attrs
       const attrs = fixAttributes(attrsRaw || "");
 
-      // Self-close void elements
       if (VOID_ELEMENTS.has(tag)) {
         return `<${tagName}${attrs} />`;
       }
@@ -200,45 +170,33 @@ function toXhtml(html: string): string {
   );
 }
 
-/**
- * Process an attribute string: quote unquoted values, expand boolean attrs.
- * Input:  ` charset=UTF-8 name=viewport content="width=device-width,initial-scale=1"`
- * Output: ` charset="UTF-8" name="viewport" content="width=device-width,initial-scale=1"`
- */
 function fixAttributes(raw: string): string {
   if (!raw) return "";
 
-  // Tokenize: walk through the attribute string character by character
   const result: string[] = [];
   let i = 0;
 
   while (i < raw.length) {
-    // Skip whitespace
     if (/\s/.test(raw[i])) {
       result.push(raw[i]);
       i++;
       continue;
     }
 
-    // Read attribute name
     const nameStart = i;
     while (i < raw.length && /[\w:.-]/.test(raw[i])) i++;
     const name = raw.slice(nameStart, i);
 
     if (!name) {
-      // Skip unexpected characters
       result.push(raw[i] || "");
       i++;
       continue;
     }
 
-    // Check for =
     if (i < raw.length && raw[i] === "=") {
-      i++; // skip =
+      i++;
 
-      // Read value
       if (i < raw.length && raw[i] === '"') {
-        // Already double-quoted — pass through as-is
         const end = raw.indexOf('"', i + 1);
         if (end !== -1) {
           result.push(`${name}=${raw.slice(i, end + 1)}`);
@@ -248,7 +206,6 @@ function fixAttributes(raw: string): string {
           i = raw.length;
         }
       } else if (i < raw.length && raw[i] === "'") {
-        // Single-quoted → convert to double quotes
         const end = raw.indexOf("'", i + 1);
         if (end !== -1) {
           const val = raw.slice(i + 1, end);
@@ -259,14 +216,12 @@ function fixAttributes(raw: string): string {
           i = raw.length;
         }
       } else {
-        // Unquoted value — read until whitespace or >
         const valStart = i;
         while (i < raw.length && !/[\s>]/.test(raw[i])) i++;
         const val = raw.slice(valStart, i);
         result.push(`${name}="${val}"`);
       }
     } else {
-      // Boolean attribute (no value) — expand to name=""
       result.push(`${name}=""`);
     }
   }
@@ -274,21 +229,13 @@ function fixAttributes(raw: string): string {
   return result.join("");
 }
 
-// ---------------------------------------------------------------------------
-// CDATA script builder
-// ---------------------------------------------------------------------------
-
 function escapeCdata(code: string): string {
-  // ]]> inside CDATA breaks the section — split it
   return code.replace(/\]\]>/g, "]]]]><![CDATA[>");
 }
 
 function buildScriptSection(scripts: ScriptEntry[]): string {
   const parts: string[] = [];
 
-  // Bootstrap shim: SVG documents lack document.head / document.body and
-  // document.createElement() produces SVG-namespace elements.  Patch these
-  // so that inline scripts (analytics, font-init, etc.) work unchanged.
   parts.push(
     [
       "(function() {",
@@ -306,17 +253,12 @@ function buildScriptSection(scripts: ScriptEntry[]): string {
     ].join("\n"),
   );
 
-  // Inline scripts (they set up globals needed by external scripts)
   for (const s of scripts) {
     if (s.type === "inline" && s.content) {
       parts.push(s.content);
     }
   }
 
-  // Dynamic loader for external scripts.
-  // Non-module scripts MUST fully load before module scripts are injected,
-  // because the module entry point depends on globals they define
-  // (e.g. $scramjetLoadController from assets/all.js).
   const externals = scripts.filter((s) => s.type === "external" && s.src);
   if (externals.length > 0) {
     const nonModule = externals.filter((s) => !s.isModule);
@@ -383,18 +325,11 @@ function buildScriptSection(scripts: ScriptEntry[]): string {
   return escapeCdata(parts.join(";\n\n"));
 }
 
-// ---------------------------------------------------------------------------
-// SVG assembly
-// ---------------------------------------------------------------------------
-
 function convertHtmlToSvg(html: string): string {
   const parsed = parseHtml(html);
 
-  // Build style content from inline <style> tags
   const styleContent = parsed.inlineStyles.join("\n");
 
-  // Build foreignObject body content:
-  // Head elements (meta, link, title) + body innerHTML — all as XHTML
   const headXhtml = parsed.headTags.map((t) => toXhtml(t)).join("\n      ");
   const bodyXhtml = toXhtml(parsed.bodyInner);
   const bodyAttrsXhtml = parsed.bodyAttrs
@@ -404,7 +339,6 @@ function convertHtmlToSvg(html: string): string {
         .trimEnd()
     : "";
 
-  // Build script CDATA content
   const scriptContent = buildScriptSection(parsed.scripts);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position: fixed; top: 0; left: 0;">

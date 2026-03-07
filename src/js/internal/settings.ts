@@ -222,17 +222,6 @@ async function initializeWispSelect() {
       const premiumServers = await getPremiumWispServers();
 
       if (premiumServers.length > 0) {
-        /*const optgroup = document.createElement("optgroup");
-        optgroup.label = "⭐ Premium Servers (Night+)";
-
-        premiumServers.forEach((server) => {
-          const option = document.createElement("option");
-          option.value = server.url;
-          option.textContent = `${server.name} (${server.region})`;
-          optgroup.appendChild(option);
-        });
-
-        wispSelect.appendChild(optgroup);*/
       }
 
       if (nightPlusNotice) {
@@ -263,7 +252,6 @@ async function initializeWispSelect() {
   customOption.textContent = "Custom WISP Server";
   wispSelect.appendChild(customOption);
 
-  // Add a "Generated Server" option if a nightwisp.me URL is saved
   const generatedOption = document.createElement("option");
   generatedOption.value = "";
   generatedOption.textContent = "Generated Server";
@@ -367,25 +355,21 @@ async function initializeWispSelect() {
 
   if (generateBtn) {
     generateBtn.addEventListener("click", async () => {
-      // Generate a new nightwisp.me WISP server
       const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-      const length = 16 + Math.floor(Math.random() * 17); // 16-32
+      const length = 16 + Math.floor(Math.random() * 17);
       let subdomain = "";
       for (let i = 0; i < length; i++) {
         subdomain += chars[Math.floor(Math.random() * chars.length)];
       }
       const newWisp = `wss://${subdomain}.nightwisp.me.cdn.cloudflare.net/wisp/`;
 
-      // Save to settings
       await settingsAPI.setItem("wisp", newWisp);
       console.log("Generated WISP server:", newWisp);
 
-      // Update the generated option and select it
       generatedOption.value = newWisp;
       generatedOption.classList.remove("hidden");
       wispSelect.value = newWisp;
 
-      // Hide custom input if visible
       if (customInput) {
         customInput.classList.add("hidden");
       }
@@ -393,7 +377,6 @@ async function initializeWispSelect() {
         useCustomBtn.classList.remove("hidden");
       }
 
-      // Tell the parent to update transports with the new WISP
       try {
         const parentProxy = (window.parent as any).proxy;
         if (parentProxy && typeof parentProxy.swapWispServer === "function") {
@@ -401,7 +384,6 @@ async function initializeWispSelect() {
         }
       } catch (e) {
         console.error("Failed to update parent proxy transports:", e);
-        // Still reload so the app picks up the new setting
         location.reload();
       }
     });
@@ -517,7 +499,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     ],
   });
 
-  // Color target mapping: tab key -> CSS property name(s)
   const COLOR_TARGETS: Record<
     string,
     { property: string; aliases?: string[] }
@@ -531,7 +512,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let activeColorTarget = "accent";
 
-  // Color target tab switching
   const colorTargetTabs = document.getElementById("colorTargetTabs");
   const accentColorPalette = document.getElementById("accentColorPalette");
 
@@ -543,19 +523,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         activeColorTarget = target;
 
-        // Update tab active states
         colorTargetTabs
           .querySelectorAll(".color-target-tab")
           .forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
 
-        // Show/hide accent palette (only relevant when Accent target is active)
         if (accentColorPalette) {
           accentColorPalette.style.display =
             target === "accent" ? "block" : "none";
         }
 
-        // Load the current value for this target into the picker
         const currentColor = await getColorForTarget(target);
         if (currentColor) {
           try {
@@ -569,7 +546,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function getColorForTarget(target: string): Promise<string | null> {
-    // First check if user has a custom color saved for this target
     const targetInfo = COLOR_TARGETS[target];
     if (!targetInfo) return null;
 
@@ -579,11 +555,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (customColors[targetInfo.property]) {
         return customColors[targetInfo.property];
       }
-    } catch {
-      // ignore parse errors
-    }
+    } catch {}
 
-    // Fall back to the current computed CSS variable
     const value = getComputedStyle(document.documentElement)
       .getPropertyValue(`--${targetInfo.property}`)
       .trim();
@@ -1026,7 +999,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             accentColorGrid.appendChild(button);
           });
         } else if (accentColorGrid) {
-          // Fallback to accent-colors array if no color-roles defined
           const accentColors = themeManager.getThemeAccentColors(themeKey);
           accentColorGrid.innerHTML = "";
 

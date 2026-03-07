@@ -28,7 +28,6 @@
   outline-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Color bars row */
 .theme-preview-bars {
   display: flex;
   gap: 0.25rem;
@@ -41,7 +40,6 @@
   border-radius: 9999px;
 }
 
-/* Mock UI block */
 .theme-preview-mockui {
   border-radius: 0.375rem;
   padding: 0.5rem;
@@ -65,7 +63,6 @@
   border-radius: 0.25rem;
 }
 
-/* Theme name */
 .theme-preview-name {
   font-size: 0.75rem;
   font-weight: 500;
@@ -74,7 +71,6 @@
   text-overflow: ellipsis;
 }
 
-/* Active check icon */
 .theme-preview-check {
   position: absolute;
   top: 0.375rem;

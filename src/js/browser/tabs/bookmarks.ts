@@ -293,13 +293,8 @@ export class BookmarkManager {
     return null;
   }
 
-  /**
-   * Public method to add a bookmark from a proxied URL
-   * Decodes the URL and shows the bookmark dialog
-   */
   public addBookmarkFromProxiedUrl(proxiedUrl: string, title: string): void {
     try {
-      // Try to find the iframe with this URL to decode it
       const iframes =
         this.tabs.items.frameContainer?.querySelectorAll("iframe");
       if (iframes) {
@@ -314,18 +309,15 @@ export class BookmarkManager {
         }
       }
 
-      // If we can't find the iframe, try to decode the URL directly
       const decryptedUrl = this.getDecryptedUrlFromIframeSrc(proxiedUrl);
       if (decryptedUrl) {
         this.showBookmarkDialog(title, decryptedUrl);
       } else {
         console.warn("Could not decode URL for bookmarking:", proxiedUrl);
-        // Fall back to showing the dialog with the proxied URL
         this.showBookmarkDialog(title, proxiedUrl);
       }
     } catch (error: any) {
       console.error("Error adding bookmark:", error);
-      // Fall back to showing the dialog with the original URL
       this.showBookmarkDialog(title, proxiedUrl);
     }
   }

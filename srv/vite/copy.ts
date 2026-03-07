@@ -7,7 +7,7 @@ import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
 import { enigmaPath } from "@nightnetwork/enigma/path";
-import {baremuxPath as bmworkerPath} from "@nightnetwork/bm-plusworker/path"
+import { baremuxPath as bmworkerPath } from "@nightnetwork/bm-plusworker/path";
 import path from "path";
 
 export const routePaths = {
@@ -29,7 +29,9 @@ export const routePaths = {
 const authPath = path.resolve(
   "node_modules/@nightnetwork/night-auth/dist/login",
 );
-const plusClientPath = path.resolve("node_modules/@nightnetwork/plus-client/dist");
+const plusClientPath = path.resolve(
+  "node_modules/@nightnetwork/plus-client/dist",
+);
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
 const localforagePath = path.resolve("node_modules/localforage/dist");
