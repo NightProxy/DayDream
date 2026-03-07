@@ -6,6 +6,7 @@ import "basecoat-css/all";
 import "../global/panic";
 import "./shared/themeInit";
 import { createIcons, icons } from "lucide";
+import { resolvePath } from "@js/utils/basepath";
 
 import { BookmarkManager, isBookmark } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
@@ -144,13 +145,12 @@ class NewTabShortcuts {
                   "div",
                   {
                     class: "masked-shape",
-                    style:
-                      "width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('/res/logo/mask.png'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('/res/logo/mask.png'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;",
+                    style: `width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('${resolvePath("res/logo/mask.png")}'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('${resolvePath("res/logo/mask.png")}'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;`,
                   },
                   [
                     this.ui.createElement("img", {
                       class: "overlay",
-                      src: "/res/logo/overlay.png",
+                      src: resolvePath("res/logo/overlay.png"),
                       alt: "overlay gradient",
                       style:
                         "width: 100%; height: 100%; mix-blend-mode: multiply; pointer-events: none;",
@@ -472,7 +472,7 @@ class NewTabShortcuts {
             this.ui.createElement(
               "a",
               {
-                href: "/internal/privacy/",
+                href: resolvePath("internal/privacy/"),
                 class: "hover:text-[var(--text)]",
                 component: "privacy-link",
               },
@@ -482,7 +482,7 @@ class NewTabShortcuts {
             this.ui.createElement(
               "a",
               {
-                href: "/internal/terms/",
+                href: resolvePath("internal/terms/"),
                 class: "hover:text-[var(--text)]",
                 component: "terms-link",
               },
@@ -941,9 +941,9 @@ class NewTabShortcuts {
 
     let plusClient: any;
     try {
-      const basePath = "/plus";
+      const plusBasePath = resolvePath("plus");
       const fileName = "index.mjs";
-      const mod = await import(`${basePath}/${fileName}`);
+      const mod = await import(`${plusBasePath}/${fileName}`);
       const PlusClient = mod.default;
       plusClient = new PlusClient();
     } catch (error) {
@@ -956,7 +956,7 @@ class NewTabShortcuts {
       service: "DayDreamX",
       theme: "system",
       backdropBlur: "8px",
-      API_URL: "/api/plus",
+      API_URL: resolvePath("api/plus"),
       onSuccess: async (token: string) => {
         console.log("Night+ login successful!");
         console.log("Received token:", token);

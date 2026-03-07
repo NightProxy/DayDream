@@ -28,8 +28,7 @@ export function fontObfuscationPlugin() {
       handler(html: string, ctx: any) {
         return html.replace(
           /<\/head>/,
-          `    <link rel="stylesheet" href="/ob-fonts.css">
-    <script>
+          `    <script>
       window.FONT_OBFUSCATION_CONFIG = {
         enabled: true,
         defaultFont: 'plusjakartasans',
@@ -37,8 +36,18 @@ export function fontObfuscationPlugin() {
         obfuscateTitle: false,
         obfuscatePlaceholders: false
       };
+      // Dynamically load ob-fonts assets with base path
+      (function() {
+        var b = self.__ddxBase || '/';
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = b + 'ob-fonts.css';
+        document.head.appendChild(link);
+        var s = document.createElement('script');
+        s.src = b + 'ob-fonts.js';
+        document.head.appendChild(s);
+      })();
     </script>
-    <script src="/ob-fonts.js"></script>
 </head>`,
         );
       },

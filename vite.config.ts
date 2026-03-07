@@ -10,8 +10,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
+import { svgWrapperPlugin } from "./srv/vite/svg";
 
 export default defineConfig({
+  base: "./",
   plugins: [
     tailwindcss(),
     tsconfigPaths({
@@ -23,6 +25,7 @@ export default defineConfig({
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
     vitePluginBundleObfuscator(obfuscationConfig as any),
+    svgWrapperPlugin(),
     {
       name: "remove-debugger-statements",
       enforce: "post",

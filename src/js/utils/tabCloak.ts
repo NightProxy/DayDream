@@ -1,4 +1,5 @@
 import { SettingsAPI } from "@apis/settings";
+import { resolvePath } from "@js/utils/basepath";
 
 export interface TabCloakSettings {
   title: string;
@@ -31,7 +32,7 @@ export class TabCloakManager {
           link.rel = "icon";
           doc.head.appendChild(link);
         }
-        link.href = "/res/logo.png";
+        link.href = resolvePath("res/logo.png");
         return;
       }
 

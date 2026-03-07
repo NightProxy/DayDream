@@ -1,0 +1,422 @@
+import type { Plugin, ResolvedConfig } from "vite";
+import { readFileSync, writeFileSync } from "fs";
+import { resolve } from "path";
+
+/**
+ * Vite plugin that generates an index.svg wrapper from the built index.html.
+ *
+ * The SVG embeds the page via <foreignObject> with the HTML body content,
+ * CSS in a <style> block, and all JavaScript in a <script><![CDATA[...]]>
+ * section that dynamically bootstraps the page.
+ */
+export function svgWrapperPlugin(): Plugin {
+  let config: ResolvedConfig;
+
+  return {
+    name: "ddx-svg-wrapper",
+    apply: "build",
+    enforce: "post",
+
+    configResolved(c) {
+      config = c;
+    },
+
+    closeBundle() {
+      try {
+        const outDir = resolve(config.root, config.build.outDir);
+        const html = readFileSync(resolve(outDir, "index.html"), "utf-8");
+        const svg = convertHtmlToSvg(html);
+        writeFileSync(resolve(outDir, "index.svg"), svg, "utf-8");
+        console.log("\x1b[36m  Generated index.svg from index.html\x1b[0m");
+      } catch (err) {
+        console.error("\x1b[31m  Failed to generate index.svg:\x1b[0m", err);
+      }
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface ScriptEntry {
+  type: "inline" | "external";
+  content?: string; // inline script body
+  src?: string; // external script src
+  isModule?: boolean;
+  hasDefer?: boolean;
+  hasCrossorigin?: boolean;
+}
+
+interface ParsedHtml {
+  inlineStyles: string[]; // contents of <style>...</style> tags
+  headTags: string[]; // non-script, non-style head elements as raw strings
+  bodyAttrs: string; // attributes on the <body> tag
+  bodyInner: string; // innerHTML of <body>
+  scripts: ScriptEntry[]; // all scripts in document order
+}
+
+// ---------------------------------------------------------------------------
+// HTML Parser
+// ---------------------------------------------------------------------------
+
+function parseHtml(html: string): ParsedHtml {
+  // Strip doctype and <html> wrapper
+  let src = html
+    .replace(/<!doctype\s+html>/i, "")
+    .replace(/<html[^>]*>/i, "")
+    .replace(/<\/html\s*>/i, "")
+    .trim();
+
+  const inlineStyles: string[] = [];
+  const headTags: string[] = [];
+  const scripts: ScriptEntry[] = [];
+
+  // Split at <body to separate head from body
+  const bodyMatch = src.match(/<body(\s[^>]*)?>/i);
+  let headPart = src;
+  let bodyAttrs = "";
+  let bodyInner = "";
+
+  if (bodyMatch && bodyMatch.index !== undefined) {
+    headPart = src.slice(0, bodyMatch.index);
+    bodyAttrs = (bodyMatch[1] || "").trim();
+    const afterBody = src.slice(bodyMatch.index + bodyMatch[0].length);
+    bodyInner = afterBody.replace(/<\/body\s*>/i, "").trim();
+  }
+
+  // Extract inline <style> blocks
+  headPart = headPart.replace(
+    /<style(?:\s[^>]*)?>([^]*?)<\/style>/gi,
+    (_, content) => {
+      inlineStyles.push(content);
+      return "";
+    },
+  );
+
+  // Extract all <script> tags (both inline and external)
+  headPart = headPart.replace(
+    /<script(\s[^>]*)?>([^]*?)<\/script>/gi,
+    (full, attrs, content) => {
+      scripts.push(parseScriptTag(attrs || "", content));
+      return "";
+    },
+  );
+
+  // Also extract scripts from body
+  bodyInner = bodyInner.replace(
+    /<script(\s[^>]*)?>([^]*?)<\/script>/gi,
+    (full, attrs, content) => {
+      scripts.push(parseScriptTag(attrs || "", content));
+      return "";
+    },
+  );
+
+  // Remaining head content → individual tags
+  const tagRe = /<([\w-]+)(\s[^>]*)?\/?>/g;
+  let match: RegExpExecArray | null;
+  const seen = new Set<number>();
+
+  while ((match = tagRe.exec(headPart)) !== null) {
+    const tag = match[0];
+    const tagName = match[1].toLowerCase();
+    // Skip already-extracted or irrelevant tags
+    if (seen.has(match.index)) continue;
+    seen.add(match.index);
+
+    if (tagName === "title") {
+      // Grab the full <title>...</title>
+      const titleClose = headPart.indexOf("</title>", match.index);
+      if (titleClose !== -1) {
+        headTags.push(headPart.slice(match.index, titleClose + 8));
+      }
+    } else {
+      headTags.push(tag);
+    }
+  }
+
+  return { inlineStyles, headTags, bodyAttrs, bodyInner, scripts };
+}
+
+function parseScriptTag(attrs: string, content: string): ScriptEntry {
+  const srcMatch = attrs.match(/\bsrc=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  const isModule =
+    /\btype=module\b/i.test(attrs) || /\btype="module"/i.test(attrs);
+  const hasDefer = /\bdefer\b/i.test(attrs);
+  const hasCrossorigin = /\bcrossorigin\b/i.test(attrs);
+
+  if (srcMatch) {
+    const src = srcMatch[1] || srcMatch[2] || srcMatch[3];
+    return {
+      type: "external",
+      src,
+      isModule,
+      hasDefer,
+      hasCrossorigin,
+    };
+  }
+
+  return { type: "inline", content: content.trim() };
+}
+
+// ---------------------------------------------------------------------------
+// HTML → XHTML conversion
+// ---------------------------------------------------------------------------
+
+const VOID_ELEMENTS = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]);
+
+function toXhtml(html: string): string {
+  // Process each HTML tag individually to fix attributes and self-close voids
+  return html.replace(
+    /<([\w-]+)((?:\s[^>]*?)?)\s*(\/?)\s*>/gi,
+    (full, tagName: string, attrsRaw: string, selfClose: string) => {
+      const tag = tagName.toLowerCase();
+
+      // Fix attributes: quote unquoted values and expand boolean attrs
+      const attrs = fixAttributes(attrsRaw || "");
+
+      // Self-close void elements
+      if (VOID_ELEMENTS.has(tag)) {
+        return `<${tagName}${attrs} />`;
+      }
+
+      return `<${tagName}${attrs}${selfClose ? " /" : ""}>`;
+    },
+  );
+}
+
+/**
+ * Process an attribute string: quote unquoted values, expand boolean attrs.
+ * Input:  ` charset=UTF-8 name=viewport content="width=device-width,initial-scale=1"`
+ * Output: ` charset="UTF-8" name="viewport" content="width=device-width,initial-scale=1"`
+ */
+function fixAttributes(raw: string): string {
+  if (!raw) return "";
+
+  // Tokenize: walk through the attribute string character by character
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < raw.length) {
+    // Skip whitespace
+    if (/\s/.test(raw[i])) {
+      result.push(raw[i]);
+      i++;
+      continue;
+    }
+
+    // Read attribute name
+    const nameStart = i;
+    while (i < raw.length && /[\w:.-]/.test(raw[i])) i++;
+    const name = raw.slice(nameStart, i);
+
+    if (!name) {
+      // Skip unexpected characters
+      result.push(raw[i] || "");
+      i++;
+      continue;
+    }
+
+    // Check for =
+    if (i < raw.length && raw[i] === "=") {
+      i++; // skip =
+
+      // Read value
+      if (i < raw.length && raw[i] === '"') {
+        // Already double-quoted — pass through as-is
+        const end = raw.indexOf('"', i + 1);
+        if (end !== -1) {
+          result.push(`${name}=${raw.slice(i, end + 1)}`);
+          i = end + 1;
+        } else {
+          result.push(`${name}=${raw.slice(i)}`);
+          i = raw.length;
+        }
+      } else if (i < raw.length && raw[i] === "'") {
+        // Single-quoted → convert to double quotes
+        const end = raw.indexOf("'", i + 1);
+        if (end !== -1) {
+          const val = raw.slice(i + 1, end);
+          result.push(`${name}="${val}"`);
+          i = end + 1;
+        } else {
+          result.push(`${name}="${raw.slice(i + 1)}"`);
+          i = raw.length;
+        }
+      } else {
+        // Unquoted value — read until whitespace or >
+        const valStart = i;
+        while (i < raw.length && !/[\s>]/.test(raw[i])) i++;
+        const val = raw.slice(valStart, i);
+        result.push(`${name}="${val}"`);
+      }
+    } else {
+      // Boolean attribute (no value) — expand to name=""
+      result.push(`${name}=""`);
+    }
+  }
+
+  return result.join("");
+}
+
+// ---------------------------------------------------------------------------
+// CDATA script builder
+// ---------------------------------------------------------------------------
+
+function escapeCdata(code: string): string {
+  // ]]> inside CDATA breaks the section — split it
+  return code.replace(/\]\]>/g, "]]]]><![CDATA[>");
+}
+
+function buildScriptSection(scripts: ScriptEntry[]): string {
+  const parts: string[] = [];
+
+  // Bootstrap shim: SVG documents lack document.head / document.body and
+  // document.createElement() produces SVG-namespace elements.  Patch these
+  // so that inline scripts (analytics, font-init, etc.) work unchanged.
+  parts.push(
+    [
+      "(function() {",
+      '  var ns = "http://www.w3.org/1999/xhtml";',
+      '  var body = document.querySelector("body");',
+      '  var head = document.createElementNS(ns, "head");',
+      "  body.prepend(head);",
+      '  Object.defineProperty(document, "head", { get: function() { return head; }, configurable: true });',
+      '  Object.defineProperty(document, "body", { get: function() { return body; }, configurable: true });',
+      "  var origCreate = document.createElement.bind(document);",
+      "  document.createElement = function(tag, opts) {",
+      "    return document.createElementNS(ns, tag, opts);",
+      "  };",
+      "})();",
+    ].join("\n"),
+  );
+
+  // Inline scripts (they set up globals needed by external scripts)
+  for (const s of scripts) {
+    if (s.type === "inline" && s.content) {
+      parts.push(s.content);
+    }
+  }
+
+  // Dynamic loader for external scripts.
+  // Non-module scripts MUST fully load before module scripts are injected,
+  // because the module entry point depends on globals they define
+  // (e.g. $scramjetLoadController from assets/all.js).
+  const externals = scripts.filter((s) => s.type === "external" && s.src);
+  if (externals.length > 0) {
+    const nonModule = externals.filter((s) => !s.isModule);
+    const modules = externals.filter((s) => s.isModule);
+
+    const loaderLines: string[] = [];
+    loaderLines.push(
+      "(function() {",
+      '  var ns = "http://www.w3.org/1999/xhtml";',
+      "  var d = document;",
+      '  var b = d.querySelector("body");',
+      "",
+      "  function loadModules() {",
+    );
+
+    if (modules.length > 0) {
+      loaderLines.push(
+        "    var mods = " +
+          JSON.stringify(
+            modules.map((s) => ({
+              src: s.src,
+              co: s.hasCrossorigin || false,
+            })),
+          ) +
+          ";",
+        "    mods.forEach(function(m, i) {",
+        '      var s = d.createElementNS(ns, "script");',
+        '      s.setAttribute("type", "module");',
+        '      s.setAttribute("src", m.src);',
+        '      if (m.co) s.setAttribute("crossorigin", "");',
+        "      if (i === mods.length - 1) {",
+        '        s.onload = function() { d.dispatchEvent(new Event("DOMContentLoaded")); };',
+        "      }",
+        "      b.appendChild(s);",
+        "    });",
+      );
+    }
+
+    loaderLines.push("  }", "");
+
+    if (nonModule.length > 0) {
+      loaderLines.push(
+        "  // Load non-module deps first, then modules after all finish",
+        "  var srcs = " + JSON.stringify(nonModule.map((s) => s.src)) + ";",
+        "  var pending = srcs.length;",
+        "  function done() { if (--pending === 0) loadModules(); }",
+        "  srcs.forEach(function(u) {",
+        '    var s = d.createElementNS(ns, "script");',
+        '    s.setAttribute("src", u);',
+        "    s.async = false;",
+        "    s.onload = done;",
+        "    s.onerror = done;",
+        "    b.appendChild(s);",
+        "  });",
+      );
+    } else {
+      loaderLines.push("  loadModules();");
+    }
+
+    loaderLines.push("})();");
+    parts.push(loaderLines.join("\n"));
+  }
+
+  return escapeCdata(parts.join(";\n\n"));
+}
+
+// ---------------------------------------------------------------------------
+// SVG assembly
+// ---------------------------------------------------------------------------
+
+function convertHtmlToSvg(html: string): string {
+  const parsed = parseHtml(html);
+
+  // Build style content from inline <style> tags
+  const styleContent = parsed.inlineStyles.join("\n");
+
+  // Build foreignObject body content:
+  // Head elements (meta, link, title) + body innerHTML — all as XHTML
+  const headXhtml = parsed.headTags.map((t) => toXhtml(t)).join("\n      ");
+  const bodyXhtml = toXhtml(parsed.bodyInner);
+  const bodyAttrsXhtml = parsed.bodyAttrs
+    ? " " +
+      toXhtml("<x " + parsed.bodyAttrs + ">")
+        .slice(3, -1)
+        .trimEnd()
+    : "";
+
+  // Build script CDATA content
+  const scriptContent = buildScriptSection(parsed.scripts);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position: fixed; top: 0; left: 0;">
+  <style>${styleContent}</style>
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <body xmlns="http://www.w3.org/1999/xhtml"${bodyAttrsXhtml}>
+      ${headXhtml}
+      ${bodyXhtml}
+    </body>
+  </foreignObject>
+  <script><![CDATA[
+${scriptContent}
+  ]]></script>
+</svg>`;
+}

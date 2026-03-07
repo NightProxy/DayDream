@@ -1,5 +1,6 @@
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
+import { resolvePath } from "@js/utils/basepath";
 
 interface ThemePreset {
   name: string;
@@ -340,7 +341,7 @@ class Themeing implements ThemeingInterface {
   async loadThemePresets() {
     try {
       console.log("Loading theme presets from /json/t.json");
-      const response = await fetch("/json/t.json");
+      const response = await fetch(resolvePath("json/t.json"));
 
       if (!response.ok) {
         throw new Error(
@@ -593,7 +594,7 @@ class Themeing implements ThemeingInterface {
         );
         root.style.setProperty("--has-background-image", "1");
 
-        if (window.location.pathname.startsWith("/internal/")) {
+        if (window.location.pathname.includes("/internal/")) {
           document.body.style.backgroundImage = `url("${backgroundImage}")`;
           document.body.style.backgroundSize = "cover";
           document.body.style.backgroundPosition = "center";
@@ -608,7 +609,7 @@ class Themeing implements ThemeingInterface {
         root.style.removeProperty("--background-image-url");
         root.style.removeProperty("--has-background-image");
 
-        if (window.location.pathname.startsWith("/internal/")) {
+        if (window.location.pathname.includes("/internal/")) {
           document.body.style.removeProperty("background-image");
           document.body.style.removeProperty("background-size");
           document.body.style.removeProperty("background-position");

@@ -1,4 +1,5 @@
 import type { ThemePreset } from "@js/global/theming";
+import { resolvePath } from "@js/utils/basepath";
 
 export class ThemeManager {
   private themes: Record<string, ThemePreset> = {};
@@ -9,7 +10,7 @@ export class ThemeManager {
   async loadThemes(): Promise<Record<string, ThemePreset>> {
     try {
       console.log("Loading themes from /json/t.json");
-      const response = await fetch("/json/t.json");
+      const response = await fetch(resolvePath("json/t.json"));
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

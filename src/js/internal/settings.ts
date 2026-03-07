@@ -13,6 +13,7 @@ import {
   KeybindManager,
   KEYBIND_CATEGORIES,
 } from "@browser/functions/keybinds";
+import { resolvePath } from "@js/utils/basepath";
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
 import { createIcons, icons } from "lucide";
@@ -272,7 +273,8 @@ async function initializeWispSelect() {
   const savedWisp = (await settingsAPI.getItem("wisp")) || "auto";
 
   const isGeneratedWisp =
-    typeof savedWisp === "string" && savedWisp.includes(".nightwisp.me.cdn.cloudflare.net/wisp/");
+    typeof savedWisp === "string" &&
+    savedWisp.includes(".nightwisp.me.cdn.cloudflare.net/wisp/");
   const isCustomWisp =
     savedWisp !== "auto" &&
     !isGeneratedWisp &&
@@ -654,7 +656,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       console.log("Initializing tab cloak system...");
 
-      const response = await fetch("/json/c.json");
+      const response = await fetch(resolvePath("json/c.json"));
       const data = await response.json();
       const presets = data.presets;
 

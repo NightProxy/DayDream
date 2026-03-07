@@ -8,6 +8,7 @@ import { NightmarePlugins } from "@browser/nightmarePlugins";
 import { Windowing } from "@browser/windowing";
 import { EventSystem } from "@apis/events";
 import { FuncInterface } from "./types";
+import { resolvePath } from "@js/utils/basepath";
 import { Navigation } from "./navigation";
 import { DevTools } from "./devTools";
 import { MenuManager } from "./menuManager";
@@ -395,7 +396,8 @@ class Functions implements FuncInterface {
     if (games) {
       games.addEventListener("click", async () => {
         const url =
-          (await this.proto.processUrl("ddx://games/")) || "/internal/error/";
+          (await this.proto.processUrl("ddx://games/")) ||
+          resolvePath("internal/error/");
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
@@ -417,7 +419,8 @@ class Functions implements FuncInterface {
     if (history) {
       history.addEventListener("click", async () => {
         const url =
-          (await this.proto.processUrl("ddx://history/")) || "/internal/error/";
+          (await this.proto.processUrl("ddx://history/")) ||
+          resolvePath("internal/error/");
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;
@@ -434,7 +437,7 @@ class Functions implements FuncInterface {
       settings.addEventListener("click", async () => {
         const url =
           (await this.proto.processUrl("ddx://settings/")) ||
-          "/internal/error/";
+          resolvePath("internal/error/");
         const iframe = this.items.frameContainer?.querySelector(
           "iframe.active",
         ) as HTMLIFrameElement | null;

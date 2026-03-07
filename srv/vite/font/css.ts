@@ -1,7 +1,7 @@
 export const cssContent = `@font-face {
     font-family: 'plusjakartasans-obf';
-    src: url('/plusjakartasans-obf.woff2') format('woff2'),
-         url('/plusjakartasans-obf.ttf') format('truetype');
+    src: url('plusjakartasans-obf.woff2') format('woff2'),
+         url('plusjakartasans-obf.ttf') format('truetype');
     font-display: block;
     font-weight: normal;
     font-style: normal;

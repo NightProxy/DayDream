@@ -16,7 +16,7 @@ export async function handleSuggestionClick(
       const processedUrl = await proto.processUrl(suggestion);
       if (
         typeof processedUrl === "string" &&
-        processedUrl.startsWith("/internal/")
+        processedUrl.includes("/internal/")
       ) {
         const iframe = document.querySelector(
           "iframe.active",
@@ -47,7 +47,7 @@ export async function handleDirectNavigation(
       const processedUrl = await proto.processUrl(input);
       if (
         typeof processedUrl === "string" &&
-        processedUrl.startsWith("/internal/")
+        processedUrl.includes("/internal/")
       ) {
         const iframe = document.querySelector(
           "iframe.active",

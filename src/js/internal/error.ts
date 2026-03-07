@@ -5,6 +5,7 @@ import "./shared/themeInit";
 import "../global/panic";
 import { createIcons, icons } from "lucide";
 import { KeybindManager } from "@browser/functions/keybinds";
+import { resolvePath } from "@js/utils/basepath";
 
 const keybindManager = new KeybindManager();
 
@@ -143,7 +144,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
-      window.location.href = "/internal/newtab/";
+      window.location.href = resolvePath("internal/newtab/");
     });
   }
 

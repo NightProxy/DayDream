@@ -1,5 +1,6 @@
 import { SettingsAPI } from "@apis/settings";
 import { tabCloakManager } from "@js/utils/tabCloak";
+import { resolvePath } from "@js/utils/basepath";
 
 interface WindowingInterface {
   settings: SettingsAPI;
@@ -36,7 +37,7 @@ class Windowing implements WindowingInterface {
       link.href =
         cloakSettings.favicon ||
         (await this.settings.getItem("favicon")) ||
-        location.href + "/res/logo.png";
+        new URL(resolvePath("res/logo.png"), location.href).href;
 
       if (cloakSettings.disableTabClose) {
         aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
@@ -71,7 +72,7 @@ class Windowing implements WindowingInterface {
       link.href =
         cloakSettings.favicon ||
         (await this.settings.getItem("favicon")) ||
-        location.href + "/res/logo.png";
+        new URL(resolvePath("res/logo.png"), location.href).href;
 
       if (cloakSettings.disableTabClose) {
         aboutBlankTab!.window.addEventListener("beforeunload", (event) => {
@@ -105,7 +106,7 @@ class Windowing implements WindowingInterface {
       const favicon =
         cloakSettings.favicon ||
         (await this.settings.getItem("favicon")) ||
-        location.href + "/res/logo.png";
+        new URL(resolvePath("res/logo.png"), location.href).href;
       const beforeUnloadScript = cloakSettings.disableTabClose
         ? `window.addEventListener("beforeunload", function(event) {
             event.preventDefault();

@@ -3,6 +3,7 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { EventSystem } from "@apis/events";
 import { createIcons, icons } from "lucide";
+import { resolvePath } from "@js/utils/basepath";
 
 interface renderInterface {
   container: HTMLDivElement;
@@ -73,15 +74,14 @@ class Render implements renderInterface {
                                 "div",
                                 {
                                   class: "masked-shape",
-                                  style:
-                                    "width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('/res/logo/mask.png'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('/res/logo/mask.png'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;",
+                                  style: `width: 100%; height: 100%; background: var(--main); -webkit-mask-image: url('${resolvePath("res/logo/mask.png")}'); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: cover; -webkit-mask-mode: luminance; mask-image: url('${resolvePath("res/logo/mask.png")}'); mask-repeat: no-repeat; mask-position: center; mask-size: cover; mask-mode: luminance;`,
                                 },
                                 [
                                   this.ui.createElement(
                                     "img",
                                     {
                                       class: "overlay",
-                                      src: "/res/logo/overlay.png",
+                                      src: resolvePath("res/logo/overlay.png"),
                                       alt: "overlay gradient",
                                       style:
                                         "width: 100%; height: 100%; mix-blend-mode: multiply; pointer-events: none;",
