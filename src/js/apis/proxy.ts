@@ -33,6 +33,7 @@ interface ProxyInterface {
   fetch(url: string, params?: any): Promise<string>;
   getFavicon(url: string): Promise<string | null>;
   generateWispServer(): string;
+  checkServerWisp(): Promise<boolean>;
   swapWispServer(url?: string): Promise<void>;
 }
 class Proxy implements ProxyInterface {
@@ -69,22 +70,51 @@ class Proxy implements ProxyInterface {
       if (savedWisp) {
         this.wispUrl = savedWisp;
         console.log(`[Proxy] Using saved WISP: ${this.wispUrl}`);
-      } else if (!this.hosting.hasBackend()) {
-        const generated = this.generateWispServer();
-        this.wispUrl = generated;
-        await this.settings.setItem("wisp", generated);
-        console.log(
-          `[Proxy] No WISP configured on static deploy, generated: ${generated}`,
-        );
       } else {
-        this.wispUrl =
-          (location.protocol === "https:" ? "wss" : "ws") +
-          "://" +
-          location.host +
-          "/wisp/";
-        console.log(`[Proxy] Using local WISP: ${this.wispUrl}`);
+        const serverHasWisp = await this.checkServerWisp();
+        if (serverHasWisp) {
+          this.wispUrl =
+            (location.protocol === "https:" ? "wss" : "ws") +
+            "://" +
+            location.host +
+            "/wisp/";
+          await this.settings.setItem("wisp", this.wispUrl);
+          console.log(`[Proxy] Using server /wisp/ endpoint: ${this.wispUrl}`);
+        } else {
+          const generated = this.generateWispServer();
+          this.wispUrl = generated;
+          await this.settings.setItem("wisp", generated);
+          console.log(`[Proxy] No /wisp/ on server, generated: ${generated}`);
+        }
       }
     })();
+  }
+
+  checkServerWisp(): Promise<boolean> {
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${proto}//${location.host}/wisp/`;
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        ws.close();
+        resolve(false);
+      }, 5000);
+
+      const ws = new WebSocket(url);
+
+      ws.addEventListener("open", () => {
+        clearTimeout(timeout);
+        console.log(`[Proxy] Server /wisp/ endpoint found at ${url}`);
+        ws.close();
+        resolve(true);
+      });
+
+      ws.addEventListener("error", () => {
+        clearTimeout(timeout);
+        console.log("[Proxy] Server /wisp/ endpoint not available");
+        resolve(false);
+      });
+    });
   }
 
   generateWispServer(): string {
@@ -435,7 +465,7 @@ class Proxy implements ProxyInterface {
     swConfig: Record<any, any>,
     frame: HTMLIFrameElement,
     code: string,
-  ) {
+  ): Promise<boolean> {
     console.log("[Proxy.eval] Starting eval", {
       hasSrc: !!frame.src,
       src: frame.src,
@@ -445,7 +475,7 @@ class Proxy implements ProxyInterface {
 
     if (!frame.src) {
       console.warn("[Proxy.eval] Cannot eval: frame has no src");
-      return;
+      return false;
     }
 
     let activeProxy: string | null = null;
@@ -477,7 +507,7 @@ class Proxy implements ProxyInterface {
           })),
         },
       );
-      return;
+      return false;
     }
 
     try {
@@ -488,28 +518,30 @@ class Proxy implements ProxyInterface {
           console.error(
             "[Proxy.eval] UV eval function not found on contentWindow",
           );
-          return;
+          return false;
         }
         uvEval(code);
         console.log("[Proxy.eval] UV eval succeeded");
+        return true;
       } else if (activeProxy === "sj") {
         console.log("[Proxy.eval] Using Scramjet eval");
         const contentWindow = frame.contentWindow;
         if (!contentWindow) {
           console.error("[Proxy.eval] contentWindow is null");
-          return;
+          return false;
         }
         const scramjetWrap = (contentWindow as any).$scramjet$wrap;
         if (!scramjetWrap) {
           console.error(
             "[Proxy.eval] Scramjet $scramjet$wrap not found on contentWindow",
           );
-          return;
+          return false;
         }
         contentWindow.$scramjet$wrap(
           (contentWindow as any).eval.call(contentWindow, code),
         );
         console.log("[Proxy.eval] Scramjet eval succeeded");
+        return true;
       } else if (new URL(frame.src).pathname.includes("/internal/")) {
         console.log("[Proxy.eval] Using direct eval for internal page");
         const directEval = (frame.contentWindow as any)?.eval;
@@ -517,10 +549,11 @@ class Proxy implements ProxyInterface {
           console.error(
             "[Proxy.eval] Direct eval function not found on contentWindow",
           );
-          return;
+          return false;
         }
         directEval(code);
         console.log("[Proxy.eval] Direct eval succeeded");
+        return true;
       } else {
         console.warn(
           "[Proxy.eval] Cannot eval: unsupported proxy type for eval",
@@ -529,6 +562,7 @@ class Proxy implements ProxyInterface {
             frameSrc: frame.src,
           },
         );
+        return false;
       }
     } catch (error) {
       console.error("[Proxy.eval] Eval failed with error:", error, {
@@ -536,6 +570,7 @@ class Proxy implements ProxyInterface {
         frameSrc: frame.src,
         code: code.substring(0, 200),
       });
+      return false;
     }
   }
 

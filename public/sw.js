@@ -5,6 +5,34 @@ if (navigator.userAgent.includes("Firefox")) {
   });
 }
 
+// Console polyfill — only allow warn and error, silence everything else
+(function () {
+  const _warn = console.warn.bind(console);
+  const _error = console.error.bind(console);
+  const noop = function () {};
+  self.console = {
+    ...console,
+    log: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    dir: noop,
+    table: noop,
+    count: noop,
+    time: noop,
+    timeEnd: noop,
+    timeLog: noop,
+    group: noop,
+    groupEnd: noop,
+    groupCollapsed: noop,
+    clear: noop,
+    profile: noop,
+    profileEnd: noop,
+    warn: _warn,
+    error: _error,
+  };
+})();
+
 self.__ddxBase = self.location.pathname.replace(/[^/]*$/, "");
 
 const _base = self.__ddxBase;
@@ -65,6 +93,33 @@ class DDXWorker {
     return result;
   }
 
+  checkServerWisp() {
+    const proto = self.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${proto}//${self.location.host}/wisp/`;
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        ws.close();
+        resolve(false);
+      }, 5000);
+
+      const ws = new WebSocket(url);
+
+      ws.addEventListener("open", () => {
+        clearTimeout(timeout);
+        console.log(`[DDXWorker] Server /wisp/ endpoint found at ${url}`);
+        ws.close();
+        resolve(true);
+      });
+
+      ws.addEventListener("error", () => {
+        clearTimeout(timeout);
+        console.log("[DDXWorker] Server /wisp/ endpoint not available");
+        resolve(false);
+      });
+    });
+  }
+
   async ensureWisp() {
     if (this.wispReady) return true;
 
@@ -73,10 +128,21 @@ class DDXWorker {
       console.log(`[DDXWorker] ensureWisp: current value = ${wispUrl}`);
 
       if (!wispUrl) {
-        const subdomain = this.generateRandomString();
-        wispUrl = `wss://${subdomain}.nightwisp.me.cdn.cloudflare.net/wisp/`;
-        await settingsStore.setItem("wisp", wispUrl);
-        console.log(`[DDXWorker] Generated WISP server: ${wispUrl}`);
+        const hasServerWisp = await this.checkServerWisp();
+
+        if (hasServerWisp) {
+          const proto = self.location.protocol === "https:" ? "wss:" : "ws:";
+          wispUrl = `${proto}//${self.location.host}/wisp/`;
+          await settingsStore.setItem("wisp", wispUrl);
+          console.log(
+            `[DDXWorker] Using server-provided WISP endpoint: ${wispUrl}`,
+          );
+        } else {
+          const subdomain = this.generateRandomString();
+          wispUrl = `wss://${subdomain}.nightwisp.me.cdn.cloudflare.net/wisp/`;
+          await settingsStore.setItem("wisp", wispUrl);
+          console.log(`[DDXWorker] Generated WISP server: ${wispUrl}`);
+        }
       }
 
       this.wispReady = true;

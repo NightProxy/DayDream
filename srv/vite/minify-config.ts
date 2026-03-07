@@ -21,9 +21,15 @@ export const minifyConfig = {
       keep_fnames: false,
     },
     compress: {
-      drop_console: process.env.NODE_ENV === "production",
+      drop_console: true,
       drop_debugger: true,
-      pure_funcs: ["console.log", "console.info", "console.debug"],
+      pure_funcs: [
+        "console.log",
+        "console.info",
+        "console.debug",
+        "console.warn",
+        "console.error",
+      ],
       passes: 3,
     },
   },
