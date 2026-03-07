@@ -517,13 +517,11 @@ class NewTabShortcuts {
         latencyElement.classList.remove("text-red-500");
         latencyElement.classList.remove("text-[var(--text)]/80");
         latencyElement.classList.add("text-green-500");
-        //latencyElement.parentElement?.classList.add("text-green-500");
       } else {
         latencyElement.textContent = "Offline";
         latencyElement.classList.remove("text-green-500");
         latencyElement.classList.remove("text-[var(--text)]/80");
         latencyElement.classList.add("text-red-500");
-        //latencyElement.parentElement?.classList.add("text-red-500");
       }
 
       pingButton.innerHTML = '<i data-lucide="refresh-cw" class="h-3 w-3"></i>';

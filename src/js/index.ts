@@ -23,25 +23,15 @@ import { universalTheme } from "@js/global/universalTheme";
 import { checkNightPlusStatus } from "@apis/nightplus";
 import { initClipboardDeobfuscator } from "@js/utils/clipboardDeobfuscator";
 import { basePath, resolvePath } from "@js/utils/basepath";
-//@ts-ignore VScode being dumb???
+//@ts-ignore
 import { RefluxAPI } from "@nightnetwork/reflux/api";
 
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
-// Init Scramjet controller BEFORE registering the root-scope SW.
-// The SW's ScramjetServiceWorker expects the client-side controller to
-// already be initialized when it starts handling fetch events.
 const scramjet = new ScramjetController(window.__scramjet$config);
 const scramjetReady = scramjet.init();
 
-// Register sw.js at root scope — this ensures fetch interception for
-// API restored endpoints (/api/plus/, /api/results/, /api/store/, /auth/)
-// and internal page routing (/internal/*) on static deployments.
-// The proxy-engine-specific registration (scoped to /data/ or /assets/)
-// happens later in proxy.registerSW(), but root scope is needed so the SW
-// can intercept API requests from the main page at /.
-// Must wait for scramjetReady so the controller is initialized first.
 if ("serviceWorker" in navigator) {
   scramjetReady
     .then(() =>
@@ -55,7 +45,6 @@ if ("serviceWorker" in navigator) {
     );
 }
 
-// Listen for SW messages (kept for future use)
 navigator.serviceWorker?.addEventListener("message", (e) => {
   console.log("[Main] SW message received:", e.data);
   if (e.data?.type === "reload") location.reload();
@@ -147,8 +136,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startupCustomUrl =
     (await settingsAPI.getItem("startupCustomUrl")) || "";
 
-  // On static deployments the SW must be active before any internal page
-  // navigation — otherwise the request hits the CDN directly (403/404).
   if ("serviceWorker" in navigator) {
     await navigator.serviceWorker.ready;
   }

@@ -36,7 +36,6 @@ export function fontObfuscationPlugin() {
         obfuscateTitle: false,
         obfuscatePlaceholders: false
       };
-      // Dynamically load ob-fonts assets with base path
       (function() {
         var b = self.__ddxBase || '/';
         var link = document.createElement('link');
