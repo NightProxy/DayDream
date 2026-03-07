@@ -14,7 +14,7 @@ export const obfuscationConfig = {
     deadCodeInjectionThreshold: 0,
     debugProtection: false,
     debugProtectionInterval: 0,
-    disableConsoleOutput: false,
+    disableConsoleOutput: true,
 
     identifierNamesGenerator: "hexadecimal" as const,
 

@@ -46,6 +46,8 @@ class Tabs implements TabsInterface {
   pinManager: TabPinManager;
   keyboard: any;
 
+  private chiiInstances: Map<string, ChiiDevTools> = new Map();
+
   private bookmarkModule: BookmarkManager;
   private layoutModule: TabLayout;
   private lifecycleModule: TabLifecycle;
@@ -228,6 +230,12 @@ class Tabs implements TabsInterface {
   };
 
   closeTabById = async (id: string) => {
+    // Clean up ChiiDevTools instance for this tab before closing
+    const chiiInstance = this.chiiInstances.get(id);
+    if (chiiInstance) {
+      chiiInstance.cleanup();
+      this.chiiInstances.delete(id);
+    }
     return await this.lifecycleModule.closeTabById(id);
   };
 
@@ -356,7 +364,12 @@ class Tabs implements TabsInterface {
       return;
     }
 
-    const chiiDevTools = new ChiiDevTools(activeTab, this.logger);
+    // Reuse existing ChiiDevTools instance for this tab, or create one
+    let chiiDevTools = this.chiiInstances.get(activeTab.id);
+    if (!chiiDevTools) {
+      chiiDevTools = new ChiiDevTools(activeTab, this.logger);
+      this.chiiInstances.set(activeTab.id, chiiDevTools);
+    }
     chiiDevTools.toggleInspect();
   };
 

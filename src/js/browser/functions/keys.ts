@@ -24,13 +24,7 @@ class Keys implements keysInterface {
     this.settings = new SettingsAPI();
     this.events = new EventSystem();
 
-    const devTools = new DevTools(
-      functions.logger,
-      functions.items,
-      functions.devToggle,
-      functions.erudaScriptLoaded,
-      functions.erudaScriptInjecting,
-    );
+    const devTools = new DevTools(functions.logger, functions.items);
 
     this.keyboardManager = new KeyboardManager(
       this.tabs,

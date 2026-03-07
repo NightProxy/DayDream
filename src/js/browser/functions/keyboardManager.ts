@@ -217,7 +217,7 @@ export class KeyboardManager implements KeyboardInterface {
     const devtoolsPreference = (await settings.getItem("devtools")) || "eruda";
 
     if (devtoolsPreference === "eruda") {
-      this.devTools.inspectElement();
+      await this.devTools.inspectElement();
     } else {
       this.tabs.toggleChiiDevTools();
     }
