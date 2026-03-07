@@ -16,7 +16,6 @@ export class TabPageClient {
     this.setupNavigationTracking(iframe);
     this.setupChiiInjection(iframe);
     this.setupKeyboardHandler(iframe);
-    // this.polyfillAlertAPI(iframe);
   };
 
   cleanupIframe = (iframeId: string): void => {
@@ -274,15 +273,4 @@ export class TabPageClient {
     iframe.addEventListener("load", errorPageHandler);
     this.tabs.proto.navigate("error");
   }
-
-  /*private polyfillAlertAPI(iframe: HTMLIFrameElement): void {
-    if (!iframe.contentWindow) return;
-    const win = iframe.contentWindow;
-
-    const originalAlert = win.alert;
-
-    win.alert = (message?: string): void => {
-      window.parent.nightmare?.alert?.display(message || "Alert");
-    }
-  }*/
 }

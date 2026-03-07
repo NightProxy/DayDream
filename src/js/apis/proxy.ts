@@ -65,13 +65,11 @@ class Proxy implements ProxyInterface {
       this.transportVar =
         (await this.settings.getItem("transports")) || "libcurl";
 
-      // Read saved wisp, or auto-generate for static deployments
       const savedWisp = await this.settings.getItem("wisp");
       if (savedWisp) {
         this.wispUrl = savedWisp;
         console.log(`[Proxy] Using saved WISP: ${this.wispUrl}`);
       } else if (!this.hosting.hasBackend()) {
-        // Static deployment with no local WISP — generate a nightwisp.me server
         const generated = this.generateWispServer();
         this.wispUrl = generated;
         await this.settings.setItem("wisp", generated);
@@ -79,7 +77,6 @@ class Proxy implements ProxyInterface {
           `[Proxy] No WISP configured on static deploy, generated: ${generated}`,
         );
       } else {
-        // Server deployment — use local WISP
         this.wispUrl =
           (location.protocol === "https:" ? "wss" : "ws") +
           "://" +
@@ -92,7 +89,7 @@ class Proxy implements ProxyInterface {
 
   generateWispServer(): string {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    const length = 16 + Math.floor(Math.random() * 17); // 16-32
+    const length = 16 + Math.floor(Math.random() * 17);
     let result = "";
     for (let i = 0; i < length; i++) {
       result += chars[Math.floor(Math.random() * chars.length)];
@@ -109,7 +106,6 @@ class Proxy implements ProxyInterface {
   }
 
   async setTransports() {
-    // Ensure settings (wispUrl, transportVar) are loaded before configuring
     await this.initReady;
     console.log("[Proxy] setTransports() called, wispUrl:", this.wispUrl);
     const transports = this.transportVar || "libcurl";
@@ -156,16 +152,11 @@ class Proxy implements ProxyInterface {
       { ...transportOptions },
     ]);
 
-    /*await this.connection.setTransport(transportFile, [
-      { ...transportOptions },
-    ]);*/ // debug function
-
     console.log("[Proxy] Transport set with options:", transportOptions);
     if (this.logging) {
       this.logging.createLog(`Transport Set: ${this.connection.getTransport}`);
     }
 
-    // Notify the SW that transport is configured — so restoreRequest() can proceed.
     this.notifySwTransportReady();
   }
 
@@ -657,7 +648,6 @@ class Proxy implements ProxyInterface {
       if (productionAuthUrl && typeof productionAuthUrl === "string") {
         return productionAuthUrl;
       }
-      //return "https://demoplussrv.night-x.com/auth" CORS is a bitch
       return (
         (location.protocol === "https:" ? "https://" : "http://") +
         location.host +

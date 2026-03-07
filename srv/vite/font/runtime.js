@@ -75,7 +75,6 @@ function fontObfuscationRuntime() {
         Object.keys(plusjakartasansMap).length,
       );
 
-      // Setup clipboard interceptor after mappings are loaded
       setupClipboardInterceptor();
 
       setTimeout(() => processExistingDOM(), 100);
@@ -416,9 +415,7 @@ function fontObfuscationRuntime() {
     });
   }
 
-  // Clipboard deobfuscation interceptor
   function setupClipboardInterceptor() {
-    // Intercept copy events
     document.addEventListener("copy", (e) => {
       if (!initialized) return;
 
@@ -426,20 +423,15 @@ function fontObfuscationRuntime() {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
 
-        // Get the selected text
         const selectedText = selection.toString();
 
-        // Check if the text contains obfuscated characters (CJK characters)
         const hasCJK = /[\u3400-\u4DBF\u4E00-\u9FFF]/.test(selectedText);
 
         if (hasCJK) {
-          // Deobfuscate the text
           const deobfuscated = decode(selectedText, defaultFontType);
 
-          // Prevent default copy behavior
           e.preventDefault();
 
-          // Write deobfuscated text to clipboard
           if (e.clipboardData) {
             e.clipboardData.setData("text/plain", deobfuscated);
             console.log("[Font Obfuscation] Clipboard text deobfuscated");
@@ -453,7 +445,6 @@ function fontObfuscationRuntime() {
       }
     });
 
-    // Intercept modern clipboard API writes
     const originalWriteText = navigator.clipboard?.writeText;
     if (originalWriteText) {
       navigator.clipboard.writeText = async function (text) {
@@ -461,7 +452,6 @@ function fontObfuscationRuntime() {
           return originalWriteText.call(this, text);
         }
 
-        // Check if text contains obfuscated characters
         const hasCJK = /[\u3400-\u4DBF\u4E00-\u9FFF]/.test(text);
 
         if (hasCJK) {
@@ -491,7 +481,7 @@ function fontObfuscationRuntime() {
       defaultFontType = fontType;
     },
     config: obfuscationConfig,
-    setupClipboardInterceptor, // Expose for manual initialization if needed
+    setupClipboardInterceptor,
   };
 
   async function waitForFontsToLoad() {

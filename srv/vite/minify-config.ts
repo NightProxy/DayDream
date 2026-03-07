@@ -28,11 +28,3 @@ export const minifyConfig = {
     },
   },
 };
-
-/* All of these havent caused issues yet, but we should keep an eye out incase something weird happens with certain custom things
- * removeRedundantAttributes
- * removeEmptyAttributes
- * removeScriptTypeAttributes
- * removeStyleLinkTypeAttributes
- * removeOptionalTags
- */

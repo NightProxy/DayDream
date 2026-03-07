@@ -593,7 +593,6 @@ aside[aside="settings"] > * > button:not(#aside-close):hover {
   color: var(--hover-text-color);
 }
 
-/* Color customization layout */
 .color-target-tabs {
   display: flex;
   gap: 0.375rem;

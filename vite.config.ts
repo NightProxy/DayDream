@@ -76,29 +76,29 @@ export default defineConfig({
         arguments: true,
         drop_console: process.env.NODE_ENV === "production",
         drop_debugger: true,
-        hoist_funs: false, // Reduces processing time
-        hoist_props: false, // Reduces processing time
+        hoist_funs: false,
+        hoist_props: false,
         hoist_vars: false,
-        inline: 1, // Reduced from 2 for faster builds
+        inline: 1,
         join_vars: true,
         loops: true,
-        passes: 1, // Reduced from 3 - single pass is much faster
+        passes: 1,
         pure_funcs: [
           "console.log",
           "console.info",
           "console.debug",
           "console.warn",
         ],
-        reduce_vars: false, // EXPENSIVE - disabled for performance
+        reduce_vars: false,
         sequences: true,
         side_effects: false,
         switches: true,
         top_retain: [],
-        typeofs: false, // Reduces processing time
+        typeofs: false,
         unsafe: false,
-        unsafe_arrows: false, // Conservative for compatibility
-        unsafe_methods: false, // Conservative for compatibility
-        unsafe_proto: false, // Conservative for compatibility
+        unsafe_arrows: false,
+        unsafe_methods: false,
+        unsafe_proto: false,
         unused: true,
       },
       mangle: {
@@ -111,7 +111,7 @@ export default defineConfig({
         beautify: false,
         preserve_annotations: false,
       },
-      maxWorkers: 4, // Parallel terser processing
+      maxWorkers: 4,
     },
     rollupOptions: {
       input: pageRoutes(),
@@ -128,14 +128,12 @@ export default defineConfig({
           const hash = Math.random().toString(36).substring(2, 12);
           return `chunks/${hash}.js`;
         },
-        // Increase chunk size to reduce number of files to obfuscate
-        experimentalMinChunkSize: 50000, // 50kb minimum
+        experimentalMinChunkSize: 50000,
         assetFileNames: (assetInfo) => {
           if (
             assetInfo.name?.endsWith(".woff2") ||
             assetInfo.name?.endsWith(".ttf")
           ) {
-            // Keep font files as-is for the font obfuscation system
             return `assets/${assetInfo.name}`;
           }
           const hash = Math.random().toString(36).substring(2, 12);
@@ -177,7 +175,6 @@ export default defineConfig({
     },
   },
   define: {
-    // Define environment variables for runtime obfuscation
     __OBFUSCATION_SEED__: JSON.stringify(
       Math.random().toString(36).substring(2),
     ),

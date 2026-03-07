@@ -111,7 +111,6 @@ class Themeing implements ThemeingInterface {
       if (theme !== this.currentTheme) {
         this.currentTheme = theme;
 
-        // Clear custom property overrides when switching themes
         this.customThemeColors = {};
         try {
           await this.settings.setItem("currentTheme", this.currentTheme);
@@ -220,7 +219,6 @@ class Themeing implements ThemeingInterface {
 
         this.applyCustomProperty(property, color, aliases);
 
-        // Persist
         this.customThemeColors[property] = color;
         try {
           await this.settings.setItem(
@@ -498,7 +496,6 @@ class Themeing implements ThemeingInterface {
       root.style.setProperty(`--${property}`, value);
     });
 
-    // Restore any custom property overrides for customizable themes
     if (
       (themeName === "custom" || theme.customizable) &&
       Object.keys(this.customThemeColors).length > 0
@@ -563,7 +560,6 @@ class Themeing implements ThemeingInterface {
       });
     }
 
-    // Special handling for background-color: also set body bg
     if (property === "background-color") {
       document.body.style.backgroundColor = color;
     }
