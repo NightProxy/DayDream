@@ -3,6 +3,7 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { HostingAPI } from "@apis/platform/hosting";
 import { NetworkAPI } from "@apis/platform/network";
+import { basePath, resolvePath } from "@js/utils/basepath";
 
 interface ProxyInterface {
   connection: BareMux.BareMuxConnection;
@@ -47,7 +48,9 @@ class Proxy implements ProxyInterface {
   initReady: Promise<void>;
 
   constructor() {
-    this.connection = new BareMux.BareMuxConnection("/bmworker/worker.js");
+    this.connection = new BareMux.BareMuxConnection(
+      resolvePath("bmworker/worker.js"),
+    );
 
     this.settings = new SettingsAPI();
     this.hosting = new HostingAPI();
@@ -111,11 +114,12 @@ class Proxy implements ProxyInterface {
     console.log("[Proxy] setTransports() called, wispUrl:", this.wispUrl);
     const transports = this.transportVar || "libcurl";
     const transportMap: Record<any, string> = {
-      epoxy: "/epoxy/index.mjs",
-      libcurl: "/libcurl/index.mjs",
+      epoxy: resolvePath("epoxy/index.mjs"),
+      libcurl: resolvePath("libcurl/index.mjs"),
     };
 
-    const transportFile = transportMap[transports] || "/libcurl/index.mjs";
+    const transportFile =
+      transportMap[transports] || resolvePath("libcurl/index.mjs");
 
     const wispUrl =
       this.wispUrl ||
@@ -137,7 +141,7 @@ class Proxy implements ProxyInterface {
       remoteProxyServer !== "null" &&
       remoteProxyServer !== "disabled" &&
       remoteProxyServer !== "false" &&
-      transportFile === "/libcurl/index.mjs"
+      transportFile === resolvePath("libcurl/index.mjs")
     ) {
       transportOptions.proxy = remoteProxyServer;
     }
@@ -145,10 +149,10 @@ class Proxy implements ProxyInterface {
     const isRefluxEnabled = await this.getRefluxStatus();
 
     if (isRefluxEnabled) {
-      transportOptions.modules.push("/reflux/module.mjs");
+      transportOptions.modules.push(resolvePath("reflux/module.mjs"));
     }
 
-    await this.connection.setTransport("/enigma/index.mjs", [
+    await this.connection.setTransport(resolvePath("enigma/index.mjs"), [
       { ...transportOptions },
     ]);
 
@@ -216,7 +220,10 @@ class Proxy implements ProxyInterface {
       case "sw":
         if ("serviceWorker" in navigator) {
           const scpe: string =
-            swConfig.config.prefix.match(/^\/[^/]+\//)?.[0] || "";
+            basePath +
+            (swConfig.config.prefix
+              .slice(basePath.length)
+              .match(/^[^/]+\//)?.[0] || "");
           console.log("[Proxy] Registering service worker with scope:", scpe);
           await navigator.serviceWorker.register(swConfig.file, {
             scope: scpe,
@@ -270,7 +277,7 @@ class Proxy implements ProxyInterface {
 
   async fetchProxyMapping() {
     try {
-      const response = await fetch("/json/p.json");
+      const response = await fetch(resolvePath("json/p.json"));
       if (!response.ok) throw new Error("Failed to load proxy mappings.");
       return await response.json();
     } catch (error) {
@@ -316,7 +323,7 @@ class Proxy implements ProxyInterface {
         func: swFunction,
       } = swConfig[selectedProxy] ?? {
         type: "sw",
-        file: "/sw.js",
+        file: resolvePath("sw.js"),
         config: window.__uv$config,
         func: null,
       };
@@ -654,7 +661,7 @@ class Proxy implements ProxyInterface {
       return (
         (location.protocol === "https:" ? "https://" : "http://") +
         location.host +
-        "/auth"
+        resolvePath("auth")
       );
     } catch (error) {
       console.error("[Proxy] Error determining auth URL:", error);
@@ -664,9 +671,9 @@ class Proxy implements ProxyInterface {
 
   async checkAuthentication(): Promise<boolean> {
     try {
-      const basePath = "/plus";
+      const basePlusPath = resolvePath("plus");
       const fileName = "index.mjs";
-      const module = await import(`${basePath}/${fileName}`);
+      const module = await import(`${basePlusPath}/${fileName}`);
       const PlusClient = module.default;
       const client = new PlusClient();
       const sessionToken = await client.getSessionToken();

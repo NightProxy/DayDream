@@ -3,6 +3,7 @@ import { Protocols } from "@browser/protocols";
 import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { Proxy } from "@apis/proxy";
+import { resolvePath } from "@js/utils/basepath";
 
 interface Section {
   section: HTMLElement;
@@ -90,9 +91,12 @@ class Search implements SearchInterface {
 
     for (const [path, meta] of Object.entries(INTERNAL_PAGES_MAP)) {
       try {
-        const response = await fetch(`/internal/${path}/index.html`, {
-          method: "HEAD",
-        });
+        const response = await fetch(
+          resolvePath(`internal/${path}/index.html`),
+          {
+            method: "HEAD",
+          },
+        );
         if (response.ok) {
           this.internalPagesList.push({
             name: meta.name,
@@ -449,7 +453,9 @@ class Search implements SearchInterface {
 
   private async fetchSearchSuggestions(query: string): Promise<string[]> {
     try {
-      const response = await fetch(`/api/results/${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `${resolvePath("api/results/")}${encodeURIComponent(query)}`,
+      );
       if (!response.ok) return [];
 
       const data = await response.json();
@@ -517,7 +523,7 @@ class Search implements SearchInterface {
 
   async generatePredictedUrls(query: string): Promise<string[]> {
     try {
-      const response = await fetch(`/api/results/${query}`);
+      const response = await fetch(`${resolvePath("api/results/")}${query}`);
       if (!response || !response.ok)
         throw new Error("Network response was not ok");
       const data = await response.json();
@@ -793,7 +799,7 @@ class Search implements SearchInterface {
         const processedUrl = await this.proto.processUrl(suggestion);
         if (
           typeof processedUrl === "string" &&
-          processedUrl.startsWith("/internal/")
+          processedUrl.includes("/internal/")
         ) {
           const iframe = document.querySelector(
             "iframe.active",
@@ -817,7 +823,7 @@ class Search implements SearchInterface {
         const processedUrl = await this.proto.processUrl(input);
         if (
           typeof processedUrl === "string" &&
-          processedUrl.startsWith("/internal/")
+          processedUrl.includes("/internal/")
         ) {
           const iframe = document.querySelector(
             "iframe.active",
@@ -895,7 +901,7 @@ class Search implements SearchInterface {
 
   async fetchAppData(): Promise<void> {
     try {
-      const response = await fetch("/json/g.json");
+      const response = await fetch(resolvePath("json/g.json"));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

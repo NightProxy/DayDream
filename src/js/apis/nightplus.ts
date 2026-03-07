@@ -1,6 +1,7 @@
 import localforage from "localforage";
+import { resolvePath } from "@js/utils/basepath";
 
-const API_BASE_URL = "/api/plus";
+const API_BASE_URL = resolvePath("api/plus");
 
 interface NightPlusStatus {
   active: boolean;

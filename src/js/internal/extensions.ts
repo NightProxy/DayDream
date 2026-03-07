@@ -5,6 +5,7 @@ import "./shared/themeInit";
 import "../global/panic";
 import { createIcons, icons } from "lucide";
 import { SettingsAPI } from "@apis/settings";
+import { resolvePath } from "@js/utils/basepath";
 
 interface ExtensionState {
   id: string;
@@ -103,7 +104,7 @@ class ExtensionsManager {
 
   private async loadExtensionsFromBackend() {
     try {
-      const response = await fetch("/api/store/catalog-assets/");
+      const response = await fetch(resolvePath("api/store/catalog-assets/"));
       if (response.ok) {
         const data = await response.json();
         const assets = data.assets || {};
@@ -157,9 +158,10 @@ class ExtensionsManager {
         !(window as any).RefluxAPIInstance &&
         !(window as any).RefluxAPIModule
       ) {
+        const refluxSrc = resolvePath("reflux/api.js");
         const scriptExists =
-          document.querySelector('script[src="/reflux/api.js"]') ||
-          document.querySelector('script[data-src="/reflux/api.js"]');
+          document.querySelector(`script[src="${refluxSrc}"]`) ||
+          document.querySelector(`script[data-src="${refluxSrc}"]`);
         if (!scriptExists) {
           console.info("Reflux API not available, skipping sync");
           return;
@@ -625,9 +627,10 @@ async function renderInstalledExtensions() {
       !(window as any).RefluxAPIInstance &&
       !(window as any).RefluxAPIModule
     ) {
+      const refluxSrc = resolvePath("reflux/api.js");
       const scriptExists =
-        document.querySelector('script[src="/reflux/api.js"]') ||
-        document.querySelector('script[data-src="/reflux/api.js"]');
+        document.querySelector(`script[src="${refluxSrc}"]`) ||
+        document.querySelector(`script[data-src="${refluxSrc}"]`);
       if (!scriptExists) {
         console.info(
           "Reflux API not available, skipping Reflux extensions sync",
@@ -1207,7 +1210,7 @@ async function ensureRefluxInstance(): Promise<any> {
 
   if (!ctor) {
     try {
-      await loadScript("/reflux/api.js");
+      await loadScript(resolvePath("reflux/api.js"));
       ctor =
         (window as any).RefluxAPIModule?.RefluxAPI ||
         (window as any).RefluxAPIModule;
@@ -1238,7 +1241,7 @@ async function ensureRefluxInstance(): Promise<any> {
 
 async function fetchCatalogAssets(): Promise<Array<any>> {
   try {
-    const res = await fetch("/api/store/catalog-assets/");
+    const res = await fetch(resolvePath("api/store/catalog-assets/"));
     if (!res.ok) throw new Error(`Status ${res.status}`);
     const json = await res.json();
     const assetsObj = json.assets || {};

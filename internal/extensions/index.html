@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extensions</title>
-    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
-    <meta property="og:image" content="/res/logo.png" />
+    <script>
+      self.__ddxBase = (function () {
+        var p = location.pathname;
+        var i = p.indexOf("/internal/");
+        if (i !== -1) return p.substring(0, i + 1);
+        return new URL("./", location.href).pathname;
+      })();
+    </script>
+    <link rel="icon" type="icon/x-icon" href="../../res/logo.png" />
+    <meta property="og:image" content="../../res/logo.png" />
     <link rel="stylesheet" href="/src/css/internal.css" />
 
     <script type="module" src="/src/js/internal/extensions.ts"></script>
@@ -165,9 +173,9 @@
       </main>
     </div>
 
-    <script src="/data/bundle.js"></script>
-    <script src="/data/config.js"></script>
-    <script src="/assets/config.js"></script>
-    <script src="/assets/all.js"></script>
+    <script src="../../data/bundle.js"></script>
+    <script src="../../data/config.js"></script>
+    <script src="../../assets/config.js"></script>
+    <script src="../../assets/all.js"></script>
   </body>
 </html>

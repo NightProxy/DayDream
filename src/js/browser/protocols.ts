@@ -2,6 +2,7 @@ import { Logger } from "@apis/logging";
 import { SettingsAPI } from "@apis/settings";
 import { Items } from "@browser/items";
 import { Proxy } from "@apis/proxy";
+import { resolvePath } from "@js/utils/basepath";
 
 interface RouteEntry {
   url: string;
@@ -38,9 +39,9 @@ class Protocols implements ProtoInterface {
     this.swConfig = swConfig;
     this.proxySetting = proxySetting;
 
-    this.register("ddx", "newtab", "/internal/newtab", false);
-    this.register("ddx", "home", "/internal/newtab", false);
-    this.register("ddx", "*", "/internal", false);
+    this.register("ddx", "newtab", resolvePath("internal/newtab"), false);
+    this.register("ddx", "home", resolvePath("internal/newtab"), false);
+    this.register("ddx", "*", resolvePath("internal"), false);
 
     this.initCustomProtocols();
   }
@@ -56,13 +57,13 @@ class Protocols implements ProtoInterface {
     } else if (newtabPage === "blank") {
       this.register("ddx", "newtab", "about:blank", false);
     } else {
-      this.register("ddx", "newtab", "/internal/newtab", false);
+      this.register("ddx", "newtab", resolvePath("internal/newtab"), false);
     }
 
     if (homeUrl === "custom" && homeCustomUrl) {
       this.register("ddx", "home", homeCustomUrl, true);
     } else {
-      this.register("ddx", "home", "/internal/newtab", false);
+      this.register("ddx", "home", resolvePath("internal/newtab"), false);
     }
   }
 
@@ -72,7 +73,7 @@ class Protocols implements ProtoInterface {
     } else if (page === "blank") {
       this.register("ddx", "newtab", "about:blank", false);
     } else {
-      this.register("ddx", "newtab", "/internal/newtab", false);
+      this.register("ddx", "newtab", resolvePath("internal/newtab"), false);
     }
   }
 
@@ -80,7 +81,7 @@ class Protocols implements ProtoInterface {
     if (url === "custom" && customUrl) {
       this.register("ddx", "home", customUrl, true);
     } else {
-      this.register("ddx", "home", "/internal/newtab", false);
+      this.register("ddx", "home", resolvePath("internal/newtab"), false);
     }
   }
 
@@ -192,7 +193,7 @@ class Protocols implements ProtoInterface {
       return url;
     }
 
-    return "/internal/" + url;
+    return resolvePath("internal/" + url);
   }
 
   getInternalURL(url: string): Promise<string | void> {
@@ -211,8 +212,9 @@ class Protocols implements ProtoInterface {
       }
     }
 
-    if (url.startsWith("/internal/")) {
-      return Promise.resolve("ddx://" + url.slice("/internal/".length));
+    const internalPrefix = resolvePath("internal/");
+    if (url.startsWith(internalPrefix)) {
+      return Promise.resolve("ddx://" + url.slice(internalPrefix.length));
     }
 
     return Promise.resolve(url);
@@ -221,7 +223,8 @@ class Protocols implements ProtoInterface {
   async navigate(url: string): Promise<void> {
     console.log("[Protocols] navigate() called with url:", url);
     try {
-      const processedUrl = (await this.processUrl(url)) || "/internal/error/";
+      const processedUrl =
+        (await this.processUrl(url)) || resolvePath("internal/error/");
       console.log("[Protocols] Processed URL:", processedUrl);
 
       if (!this.items.frameContainer) {

@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Privacy Policy - DayDreamX</title>
-    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
-    <meta property="og:image" content="/res/logo.png" />
+    <script>
+      self.__ddxBase = (function () {
+        var p = location.pathname;
+        var i = p.indexOf("/internal/");
+        if (i !== -1) return p.substring(0, i + 1);
+        return new URL("./", location.href).pathname;
+      })();
+    </script>
+    <link rel="icon" type="icon/x-icon" href="../../res/logo.png" />
+    <meta property="og:image" content="../../res/logo.png" />
     <link rel="stylesheet" href="/src/css/internal.css" />
     <script type="module" src="/src/js/internal/settings.ts"></script>
   </head>
@@ -24,11 +32,11 @@
                     width: 100%;
                     height: 100%;
                     background: var(--main);
-                    -webkit-mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    -webkit-mask-image: url(&quot;../../res/logo/mask.png&quot;);
                     -webkit-mask-repeat: no-repeat;
                     -webkit-mask-position: center;
                     -webkit-mask-size: cover;
-                    mask-image: url(&quot;/res/logo/mask.png&quot;);
+                    mask-image: url(&quot;../../res/logo/mask.png&quot;);
                     mask-repeat: no-repeat;
                     mask-position: center;
                     mask-size: cover;
@@ -36,7 +44,7 @@
                 >
                   <img
                     class="overlay"
-                    src="/res/logo/overlay.png"
+                    src="../../res/logo/overlay.png"
                     alt="overlay gradient"
                     style="
                       width: 100%;
@@ -55,7 +63,7 @@
               Last Updated: November 3, 2025
             </p>
             <a
-              href="/internal/newtab/"
+              href="../newtab/"
               class="inline-flex items-center gap-2 text-sm text-[var(--main)] hover:text-[var(--main)]/80 transition-colors"
             >
               <i data-lucide="arrow-left" class="h-4 w-4"></i>
@@ -999,14 +1007,14 @@
             <p>© 2025 DayDreamX. All rights reserved.</p>
             <div class="mt-4 flex justify-center gap-4">
               <a
-                href="/internal/privacy/"
+                href="../privacy/"
                 class="text-[var(--main)] hover:text-[var(--main)]/80"
               >
                 Privacy Policy
               </a>
               <span>•</span>
               <a
-                href="/internal/terms/"
+                href="../terms/"
                 class="text-[var(--main)] hover:text-[var(--main)]/80"
               >
                 Terms of Service

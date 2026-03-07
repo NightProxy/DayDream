@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bookmark Manager</title>
-    <link rel="icon" type="icon/x-icon" href="/res/logo.png" />
-    <meta property="og:image" content="/res/logo.png" />
+    <script>
+      self.__ddxBase = (function () {
+        var p = location.pathname;
+        var i = p.indexOf("/internal/");
+        if (i !== -1) return p.substring(0, i + 1);
+        return new URL("./", location.href).pathname;
+      })();
+    </script>
+    <link rel="icon" type="icon/x-icon" href="../../res/logo.png" />
+    <meta property="og:image" content="../../res/logo.png" />
     <link rel="preload" href="/src/css/pages/bookmarks.css" as="style" />
     <link rel="stylesheet" href="/src/css/pages/bookmarks.css" />
     <link rel="stylesheet" href="/src/css/internal.css" />

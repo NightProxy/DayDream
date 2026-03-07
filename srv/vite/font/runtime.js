@@ -47,14 +47,15 @@ function fontObfuscationRuntime() {
     if (initialized) return;
     try {
       console.log("Font obfuscation: Starting initialization...");
+      var _base = self.__ddxBase || "/";
       const [plusjakartasansMap, plusjakartasansRev] = await Promise.all([
-        fetch("/plusjakartasans-obf-mappings.json")
+        fetch(_base + "plusjakartasans-obf-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
             console.error("Failed to load Plus Jakarta Sans mappings:", e);
             return {};
           }),
-        fetch("/plusjakartasans-obf-reverse-mappings.json")
+        fetch(_base + "plusjakartasans-obf-reverse-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
             console.error(
