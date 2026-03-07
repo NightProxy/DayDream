@@ -40,10 +40,10 @@ export interface NavigationInterface {
 }
 
 export interface DevToolsInterface {
-  inspectElement(): void;
-  injectErudaScript(iframeDocument: Document): Promise<string>;
-  injectShowScript(iframeDocument: Document): Promise<void>;
-  injectHideScript(iframeDocument: Document): Promise<void>;
+  inspectElement(): Promise<void>;
+  injectErudaScript(): Promise<string>;
+  injectShowScript(): Promise<void>;
+  injectHideScript(): Promise<void>;
 }
 
 export interface MenuInterface {

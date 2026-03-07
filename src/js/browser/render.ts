@@ -730,7 +730,7 @@ class Render implements renderInterface {
                                       (await settings.getItem("devtools")) ||
                                       "eruda";
                                     if (devtoolsPreference === "eruda") {
-                                      window.functions.inspectElement();
+                                      await window.functions.inspectElement();
                                     } else {
                                       window.functions.toggleChiiInspect();
                                     }

@@ -46,22 +46,16 @@ function fontObfuscationRuntime() {
   async function initMappings() {
     if (initialized) return;
     try {
-      console.log("Font obfuscation: Starting initialization...");
       var _base = self.__ddxBase || "/";
       const [plusjakartasansMap, plusjakartasansRev] = await Promise.all([
         fetch(_base + "plusjakartasans-obf-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
-            console.error("Failed to load Plus Jakarta Sans mappings:", e);
             return {};
           }),
         fetch(_base + "plusjakartasans-obf-reverse-mappings.json")
           .then((r) => r.json())
           .catch((e) => {
-            console.error(
-              "Failed to load Plus Jakarta Sans reverse mappings:",
-              e,
-            );
             return {};
           }),
       ]);
@@ -69,18 +63,11 @@ function fontObfuscationRuntime() {
       mappings = { plusjakartasans: plusjakartasansMap };
       reverseMappings = { plusjakartasans: plusjakartasansRev };
       initialized = true;
-      console.log("Font obfuscation mappings loaded successfully");
-      console.log(
-        "Plus Jakarta Sans mappings count:",
-        Object.keys(plusjakartasansMap).length,
-      );
 
       setupClipboardInterceptor();
 
       setTimeout(() => processExistingDOM(), 100);
-    } catch (e) {
-      console.warn("Failed to load font obfuscation mappings:", e);
-    }
+    } catch (e) {}
   }
 
   function encode(text, fontType = defaultFontType) {
@@ -378,7 +365,6 @@ function fontObfuscationRuntime() {
     });
 
     document.body.classList.add("font-obfuscation-ready");
-    console.log("Font obfuscation ready class added to body");
 
     setupMutationObserver();
   }
@@ -434,15 +420,9 @@ function fontObfuscationRuntime() {
 
           if (e.clipboardData) {
             e.clipboardData.setData("text/plain", deobfuscated);
-            console.log("[Font Obfuscation] Clipboard text deobfuscated");
           }
         }
-      } catch (error) {
-        console.warn(
-          "[Font Obfuscation] Clipboard interception failed:",
-          error,
-        );
-      }
+      } catch (error) {}
     });
 
     const originalWriteText = navigator.clipboard?.writeText;
@@ -456,15 +436,12 @@ function fontObfuscationRuntime() {
 
         if (hasCJK) {
           const deobfuscated = decode(text, defaultFontType);
-          console.log("[Font Obfuscation] Async clipboard write deobfuscated");
           return originalWriteText.call(this, deobfuscated);
         }
 
         return originalWriteText.call(this, text);
       };
     }
-
-    console.log("[Font Obfuscation] Clipboard interceptor initialized");
   }
 
   window.fontObfuscation = {
@@ -493,9 +470,7 @@ function fontObfuscationRuntime() {
           document.fonts.load("18px plusjakartasans-obf"),
         ]);
         await new Promise((resolve) => setTimeout(resolve, 100));
-        console.log("Obfuscated fonts loaded successfully");
       } catch (e) {
-        console.warn("Font loading failed, continuing anyway:", e);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     } else {
@@ -518,7 +493,6 @@ function fontObfuscationRuntime() {
   window.addEventListener("load", () => {
     setTimeout(() => {
       if (initialized) {
-        console.log("Window loaded, processing DOM again");
         processExistingDOM();
       }
     }, 300);

@@ -1,4 +1,8 @@
 import { defineConfig } from "vite";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { minify } from "terser";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
@@ -27,13 +31,83 @@ export default defineConfig({
     vitePluginBundleObfuscator(obfuscationConfig as any),
     svgWrapperPlugin(),
     {
-      name: "remove-debugger-statements",
+      name: "strip-console-and-debugger",
       enforce: "post",
       generateBundle(_, bundle) {
         for (const file in bundle) {
           const chunk = bundle[file];
           if (chunk.type === "chunk" && chunk.code) {
             chunk.code = chunk.code.replace(/\bdebugger\s*;?/g, "");
+          }
+        }
+      },
+      async closeBundle() {
+        const __dirname = dirname(fileURLToPath(import.meta.url));
+        const outDir = resolve(__dirname, "dist");
+
+        // Files in public/ and font runtime bypass terser — process them here
+        // sw.js has a console polyfill that preserves warn/error, so we only
+        // strip the other console methods (drop_console would kill the polyfill)
+        const swPath = resolve(outDir, "sw.js");
+        if (existsSync(swPath)) {
+          const code = readFileSync(swPath, "utf-8");
+          const result = await minify(code, {
+            compress: {
+              drop_debugger: true,
+              pure_funcs: [
+                "console.log",
+                "console.info",
+                "console.debug",
+                "console.trace",
+                "console.dir",
+                "console.table",
+                "console.count",
+                "console.time",
+                "console.timeEnd",
+                "console.timeLog",
+                "console.group",
+                "console.groupEnd",
+                "console.groupCollapsed",
+                "console.clear",
+                "console.profile",
+                "console.profileEnd",
+              ],
+            },
+            mangle: false,
+            format: {
+              comments: false,
+              beautify: false,
+            },
+          });
+          if (result.code) {
+            writeFileSync(swPath, result.code, "utf-8");
+          }
+        }
+
+        // ob-fonts.js has no polyfill — strip all console calls aggressively
+        const obFontsPath = resolve(outDir, "ob-fonts.js");
+        if (existsSync(obFontsPath)) {
+          const code = readFileSync(obFontsPath, "utf-8");
+          const result = await minify(code, {
+            compress: {
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: [
+                "console.log",
+                "console.info",
+                "console.debug",
+                "console.warn",
+                "console.error",
+              ],
+            },
+            mangle: false,
+            format: {
+              comments: false,
+              beautify: false,
+            },
+          });
+          if (result.code) {
+            writeFileSync(obFontsPath, result.code, "utf-8");
           }
         }
       },
@@ -74,7 +148,7 @@ export default defineConfig({
     terserOptions: {
       compress: {
         arguments: true,
-        drop_console: process.env.NODE_ENV === "production",
+        drop_console: true,
         drop_debugger: true,
         hoist_funs: false,
         hoist_props: false,
@@ -88,6 +162,7 @@ export default defineConfig({
           "console.info",
           "console.debug",
           "console.warn",
+          "console.error",
         ],
         reduce_vars: false,
         sequences: true,

@@ -70,13 +70,7 @@ class Functions implements FuncInterface {
       this.currentStep,
     );
 
-    this.devTools = new DevTools(
-      this.logger,
-      this.items,
-      this.devToggle,
-      this.erudaScriptLoaded,
-      this.erudaScriptInjecting,
-    );
+    this.devTools = new DevTools(this.logger, this.items);
 
     this.menuManager = new MenuManager(
       this.items,
@@ -295,32 +289,24 @@ class Functions implements FuncInterface {
     this.navigation.goFullscreen();
   }
 
-  inspectElement(): void {
-    this.devTools.inspectElement();
-    this.devToggle = this.devTools.getDevToggle();
-    this.erudaScriptLoaded = this.devTools.getErudaScriptLoaded();
-    this.erudaScriptInjecting = this.devTools.getErudaScriptInjecting();
-    this.devTools.updateDevState(
-      this.devToggle,
-      this.erudaScriptLoaded,
-      this.erudaScriptInjecting,
-    );
+  async inspectElement(): Promise<void> {
+    await this.devTools.inspectElement();
   }
 
   toggleChiiInspect(): void {
     this.tabs.toggleChiiDevTools();
   }
 
-  injectErudaScript(iframeDocument: Document): Promise<string> {
-    return this.devTools.injectErudaScript(iframeDocument);
+  injectErudaScript(): Promise<string> {
+    return this.devTools.injectErudaScript();
   }
 
-  injectShowScript(iframeDocument: Document): Promise<void> {
-    return this.devTools.injectShowScript(iframeDocument);
+  injectShowScript(): Promise<void> {
+    return this.devTools.injectShowScript();
   }
 
-  injectHideScript(iframeDocument: Document): Promise<void> {
-    return this.devTools.injectHideScript(iframeDocument);
+  injectHideScript(): Promise<void> {
+    return this.devTools.injectHideScript();
   }
 
   menus(): void {

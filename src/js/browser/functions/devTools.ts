@@ -3,82 +3,84 @@ import { Logger } from "@apis/logging";
 import { Items } from "@browser/items";
 import type { TabData } from "@browser/tabs/types";
 
+const ERUDA_INJECT_TIMEOUT_MS = 10000;
+
 export class DevTools implements DevToolsInterface {
   private logger: Logger;
   private items: Items;
-  private devToggle: boolean;
-  private erudaScriptLoaded: boolean;
-  private erudaScriptInjecting: boolean;
+  private devToggle: boolean = false;
+  private erudaScriptLoaded: boolean = false;
+  private erudaScriptInjecting: boolean = false;
 
-  constructor(
-    logger: Logger,
-    items: Items,
-    devToggle: boolean,
-    erudaScriptLoaded: boolean,
-    erudaScriptInjecting: boolean,
-  ) {
+  constructor(logger: Logger, items: Items) {
     this.logger = logger;
     this.items = items;
-    this.devToggle = devToggle;
-    this.erudaScriptLoaded = erudaScriptLoaded;
-    this.erudaScriptInjecting = erudaScriptInjecting;
   }
 
-  injectErudaScript(_iframeDocument: Document): Promise<string> {
-    return new Promise((resolve, reject) => {
-      console.log("[DevTools.injectErudaScript] Starting injection");
+  private getActiveIframe(): HTMLIFrameElement | null {
+    return this.items.frameContainer?.querySelector(
+      "iframe.active",
+    ) as HTMLIFrameElement | null;
+  }
 
-      if (this.erudaScriptLoaded) {
-        console.log("[DevTools.injectErudaScript] Script already loaded");
-        resolve("Loaded!");
-        return;
-      }
+  async injectErudaScript(): Promise<string> {
+    console.log("[DevTools.injectErudaScript] Starting injection");
 
-      if (this.erudaScriptInjecting) {
-        console.warn(
-          "[DevTools.injectErudaScript] Script is already being injected",
-        );
-        resolve("Already Injecting!");
-        return;
-      }
+    if (this.erudaScriptLoaded) {
+      console.log("[DevTools.injectErudaScript] Script already loaded");
+      return "Loaded!";
+    }
 
-      this.erudaScriptInjecting = true;
+    if (this.erudaScriptInjecting) {
+      console.warn(
+        "[DevTools.injectErudaScript] Script is already being injected",
+      );
+      return "Already Injecting!";
+    }
 
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement;
+    this.erudaScriptInjecting = true;
 
-      if (!iframe) {
-        console.error("[DevTools.injectErudaScript] No active iframe found");
+    const iframe = this.getActiveIframe();
+
+    if (!iframe) {
+      console.error("[DevTools.injectErudaScript] No active iframe found");
+      this.erudaScriptInjecting = false;
+      throw new Error("Iframe not available");
+    }
+
+    if (!window.proxy) {
+      console.error("[DevTools.injectErudaScript] window.proxy not available");
+      this.erudaScriptInjecting = false;
+      throw new Error("Proxy not available");
+    }
+
+    const code = `
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://unpkg.com/eruda@3.4.3/eruda.js';
+      script.onload = () => {
+        window.parent.postMessage({ type: 'eruda-loaded' }, '*');
+      };
+      script.onerror = () => {
+        window.parent.postMessage({ type: 'eruda-error' }, '*');
+      };
+      document.body.appendChild(script);
+    `;
+
+    // Set up message listener with timeout
+    const messagePromise = new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        window.removeEventListener("message", messageHandler);
         this.erudaScriptInjecting = false;
-        reject(new Error("Iframe not available"));
-        return;
-      }
-
-      if (!window.proxy) {
         console.error(
-          "[DevTools.injectErudaScript] window.proxy not available",
+          "[DevTools.injectErudaScript] Timed out waiting for eruda script load",
         );
-        this.erudaScriptInjecting = false;
-        reject(new Error("Proxy not available"));
-        return;
-      }
-
-      const code = `
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = '${location.origin}/core/i/eruda/eruda.js';
-        script.onload = () => {
-          window.parent.postMessage({ type: 'eruda-loaded' }, '*');
-        };
-        script.onerror = () => {
-          window.parent.postMessage({ type: 'eruda-error' }, '*');
-        };
-        document.body.appendChild(script);
-      `;
+        reject(new Error("Eruda script injection timed out"));
+      }, ERUDA_INJECT_TIMEOUT_MS);
 
       const messageHandler = (event: MessageEvent) => {
-        if (event.data.type === "eruda-loaded") {
+        if (event.data?.type === "eruda-loaded") {
+          clearTimeout(timeout);
           console.log(
             "[DevTools.injectErudaScript] Eruda script loaded successfully",
           );
@@ -86,7 +88,8 @@ export class DevTools implements DevToolsInterface {
           this.erudaScriptInjecting = false;
           window.removeEventListener("message", messageHandler);
           resolve("Injected!");
-        } else if (event.data.type === "eruda-error") {
+        } else if (event.data?.type === "eruda-error") {
+          clearTimeout(timeout);
           console.error(
             "[DevTools.injectErudaScript] Failed to load Eruda script",
           );
@@ -97,206 +100,174 @@ export class DevTools implements DevToolsInterface {
       };
 
       window.addEventListener("message", messageHandler);
+    });
 
-      console.log("[DevTools.injectErudaScript] Calling proxy.eval with code");
-      try {
-        window.proxy.eval(window.SWconfig, iframe, code);
-        console.log("[DevTools.injectErudaScript] proxy.eval call completed");
-      } catch (error) {
+    // Execute the injection via proxy.eval and check if it succeeded
+    console.log("[DevTools.injectErudaScript] Calling proxy.eval with code");
+    try {
+      const success = await window.proxy.eval(window.SWconfig, iframe, code);
+      if (!success) {
         console.error(
-          "[DevTools.injectErudaScript] proxy.eval threw error:",
-          error,
+          "[DevTools.injectErudaScript] proxy.eval failed to execute code",
         );
         this.erudaScriptInjecting = false;
-        window.removeEventListener("message", messageHandler);
-        reject(error);
+        throw new Error(
+          "proxy.eval failed - proxy may not be active for this page",
+        );
       }
-    });
+      console.log("[DevTools.injectErudaScript] proxy.eval call completed");
+    } catch (error) {
+      console.error(
+        "[DevTools.injectErudaScript] proxy.eval threw error:",
+        error,
+      );
+      this.erudaScriptInjecting = false;
+      throw error;
+    }
+
+    return messagePromise;
   }
 
-  injectShowScript(_iframeDocument: Document): Promise<void> {
-    return new Promise((resolve) => {
-      console.log("[DevTools.injectShowScript] Starting show script injection");
+  async injectShowScript(): Promise<void> {
+    console.log("[DevTools.injectShowScript] Starting show script injection");
 
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement;
+    const iframe = this.getActiveIframe();
 
-      if (!iframe) {
-        console.error("[DevTools.injectShowScript] No active iframe found");
-        resolve();
-        return;
-      }
+    if (!iframe) {
+      console.error("[DevTools.injectShowScript] No active iframe found");
+      return;
+    }
 
-      if (!window.proxy) {
-        console.error("[DevTools.injectShowScript] window.proxy not available");
-        resolve();
-        return;
-      }
+    if (!window.proxy) {
+      console.error("[DevTools.injectShowScript] window.proxy not available");
+      return;
+    }
 
-      const code = `
-        eruda.init({
-          defaults: {
-            displaySize: 50,
-            transparency: 0.85,
-            theme: 'Night Owl'
-          }
-        });
-        eruda.show();
-      `;
+    const code = `
+      eruda.init({
+        defaults: {
+          displaySize: 50,
+          transparency: 0.85,
+          theme: 'Night Owl'
+        }
+      });
+      eruda.show();
+    `;
 
-      try {
-        console.log("[DevTools.injectShowScript] Calling proxy.eval");
-        window.proxy.eval(window.SWconfig, iframe, code);
-        console.log(
-          "[DevTools.injectShowScript] Show script injected successfully",
-        );
-        resolve();
-      } catch (error) {
+    try {
+      console.log("[DevTools.injectShowScript] Calling proxy.eval");
+      const success = await window.proxy.eval(window.SWconfig, iframe, code);
+      if (!success) {
         console.error(
-          "[DevTools.injectShowScript] Failed to inject show script:",
-          error,
+          "[DevTools.injectShowScript] proxy.eval failed to execute show code",
         );
-        resolve();
+        return;
       }
-    });
+      console.log(
+        "[DevTools.injectShowScript] Show script injected successfully",
+      );
+    } catch (error) {
+      console.error(
+        "[DevTools.injectShowScript] Failed to inject show script:",
+        error,
+      );
+    }
   }
 
-  injectHideScript(_iframeDocument: Document): Promise<void> {
-    return new Promise((resolve) => {
-      console.log("[DevTools.injectHideScript] Starting hide script injection");
+  async injectHideScript(): Promise<void> {
+    console.log("[DevTools.injectHideScript] Starting hide script injection");
 
-      const iframe = this.items.frameContainer!.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement;
+    const iframe = this.getActiveIframe();
 
-      if (!iframe) {
-        console.error("[DevTools.injectHideScript] No active iframe found");
-        resolve();
-        return;
-      }
+    if (!iframe) {
+      console.error("[DevTools.injectHideScript] No active iframe found");
+      return;
+    }
 
-      if (!window.proxy) {
-        console.error("[DevTools.injectHideScript] window.proxy not available");
-        resolve();
-        return;
-      }
+    if (!window.proxy) {
+      console.error("[DevTools.injectHideScript] window.proxy not available");
+      return;
+    }
 
-      const code = `
-        eruda.hide();
-        eruda.destroy();
-      `;
+    const code = `
+      eruda.hide();
+      eruda.destroy();
+    `;
 
-      try {
-        console.log("[DevTools.injectHideScript] Calling proxy.eval");
-        window.proxy.eval(window.SWconfig, iframe, code);
-        console.log(
-          "[DevTools.injectHideScript] Hide script injected successfully",
-        );
-        resolve();
-      } catch (error) {
+    try {
+      console.log("[DevTools.injectHideScript] Calling proxy.eval");
+      const success = await window.proxy.eval(window.SWconfig, iframe, code);
+      if (!success) {
         console.error(
-          "[DevTools.injectHideScript] Failed to inject hide script:",
-          error,
+          "[DevTools.injectHideScript] proxy.eval failed to execute hide code",
         );
-        resolve();
+        return;
       }
-    });
+      console.log(
+        "[DevTools.injectHideScript] Hide script injected successfully",
+      );
+    } catch (error) {
+      console.error(
+        "[DevTools.injectHideScript] Failed to inject hide script:",
+        error,
+      );
+    }
   }
 
-  inspectElement(): void {
+  async inspectElement(): Promise<void> {
     console.log("[DevTools.inspectElement] Inspect element triggered");
 
-    const iframe = this.items.frameContainer!.querySelector(
-      "iframe.active",
-    ) as HTMLIFrameElement;
-    if (!iframe || !iframe.contentWindow) {
-      console.error(
-        "[DevTools.inspectElement] Iframe not found or inaccessible. \\(°□°)/ (This shouldn't happen btw)",
-      );
+    const iframe = this.getActiveIframe();
+    if (!iframe) {
+      console.error("[DevTools.inspectElement] No active iframe found");
       return;
     }
 
-    let iframeDocument: Document;
-    let currentHref: string;
-
-    try {
-      iframeDocument = iframe.contentWindow.document;
-      currentHref = iframe.contentWindow.location.href;
-      console.log(
-        "[DevTools.inspectElement] Iframe accessible, href:",
-        currentHref,
-      );
-    } catch (error) {
-      console.error(
-        "[DevTools.inspectElement] Cannot access iframe document or location:",
-        error,
-      );
-      return;
-    }
-
-    const forbiddenSrcs = ["about:blank", null, "a%60owt8bnalk", "a`owt8bnalk"];
-    if (forbiddenSrcs.includes(currentHref)) {
+    // Basic validation: skip about:blank and similar non-content frames
+    const frameSrc = iframe.src || "";
+    const forbiddenSrcs = ["about:blank", "", "a%60owt8bnalk", "a`owt8bnalk"];
+    if (forbiddenSrcs.includes(frameSrc)) {
       console.warn(
         "[DevTools.inspectElement] Iframe src is forbidden, skipping:",
-        currentHref,
-      );
-      return;
-    }
-
-    try {
-      if (iframeDocument.readyState === "loading") {
-        console.warn(
-          "[DevTools.inspectElement] Iframe has not finished loading, skipping Eruda injection. Be patient.",
-        );
-        return;
-      }
-      console.log(
-        "[DevTools.inspectElement] Iframe is ready, readyState:",
-        iframeDocument.readyState,
-      );
-    } catch (error) {
-      console.error(
-        "[DevTools.inspectElement] Cannot check iframe readyState:",
-        error,
+        frameSrc,
       );
       return;
     }
 
     console.log(
-      "[DevTools.inspectElement] Starting Eruda injection, current devToggle:",
+      "[DevTools.inspectElement] Starting Eruda toggle, current devToggle:",
       this.devToggle,
     );
 
-    this.injectErudaScript(iframeDocument)
-      .then(() => {
-        console.log(
-          "[DevTools.inspectElement] Eruda script injection complete, devToggle:",
-          this.devToggle,
-        );
-        if (!this.devToggle) {
-          console.log("[DevTools.inspectElement] Showing devtools");
-          this.injectShowScript(iframeDocument);
-        } else {
-          console.log("[DevTools.inspectElement] Hiding devtools");
-          this.injectHideScript(iframeDocument);
-        }
-
-        this.devToggle = !this.devToggle;
-        console.log(
-          "[DevTools.inspectElement] Toggled devToggle to:",
-          this.devToggle,
-        );
-      })
-      .catch((error) => {
-        console.error(
-          "[DevTools.inspectElement] Error injecting Eruda script:",
-          error,
-        );
-      });
-
     try {
-      iframe.contentWindow.addEventListener(
+      await this.injectErudaScript();
+      console.log(
+        "[DevTools.inspectElement] Eruda script injection complete, devToggle:",
+        this.devToggle,
+      );
+      if (!this.devToggle) {
+        console.log("[DevTools.inspectElement] Showing devtools");
+        await this.injectShowScript();
+      } else {
+        console.log("[DevTools.inspectElement] Hiding devtools");
+        await this.injectHideScript();
+      }
+
+      this.devToggle = !this.devToggle;
+      console.log(
+        "[DevTools.inspectElement] Toggled devToggle to:",
+        this.devToggle,
+      );
+    } catch (error) {
+      console.error(
+        "[DevTools.inspectElement] Error during Eruda toggle:",
+        error,
+      );
+    }
+
+    // Reset state on iframe navigation
+    try {
+      iframe.contentWindow?.addEventListener(
         "unload",
         () => {
           this.devToggle = false;
@@ -325,16 +296,16 @@ export class DevTools implements DevToolsInterface {
     return this.erudaScriptInjecting;
   }
 
-  updateDevState(
-    devToggle: boolean,
-    erudaScriptLoaded: boolean,
-    erudaScriptInjecting: boolean,
-  ): void {
-    this.devToggle = devToggle;
-    this.erudaScriptLoaded = erudaScriptLoaded;
-    this.erudaScriptInjecting = erudaScriptInjecting;
+  resetState(): void {
+    this.devToggle = false;
+    this.erudaScriptLoaded = false;
+    this.erudaScriptInjecting = false;
   }
 }
+
+const CHII_TARGET_SRC = "https://unpkg.com/chii@1.15.5/public/target.js";
+const CHII_CDN = "https://unpkg.com/chii@1.15.5/public/";
+const CHII_INJECT_TIMEOUT_MS = 15000;
 
 export class ChiiDevTools {
   private tabData: TabData;
@@ -343,14 +314,18 @@ export class ChiiDevTools {
   private minHeight: number = 100;
   private isDragging: boolean = false;
   private navigationListener: EventListener | null = null;
+  private devtoolsIframeId: string;
+  private injecting: boolean = false;
 
   constructor(tabData: TabData, logger: Logger) {
     this.tabData = tabData;
     this.logger = logger;
+    // Unique ID so proxy.eval code can find the devtools iframe via parent document
+    this.devtoolsIframeId = `chii-devtools-${tabData.id.replace("tab-", "")}`;
     this.setupNavigationListener();
   }
 
-  toggleInspect(): void {
+  async toggleInspect(): Promise<void> {
     if (!this.tabData.chiiPanel) {
       this.initializePanel();
     }
@@ -358,7 +333,7 @@ export class ChiiDevTools {
     if (this.tabData.chiiPanel!.isActive) {
       this.hidePanel();
     } else {
-      this.showPanel();
+      await this.showPanel();
     }
   }
 
@@ -373,58 +348,174 @@ export class ChiiDevTools {
           "[ChiiDevTools] Page navigated, re-injecting Chii for new page",
           this.tabData.id,
         );
-        this.setupChiiConnection();
-
-        const tabs = (window as any).tabs;
-        if (tabs?.pageClientModule) {
-          setTimeout(() => {
-            tabs.pageClientModule.pageClient(this.tabData.iframe);
-          }, 100);
-        }
+        // Re-inject only the chii target script into the new page, NOT full pageClient()
+        this.injectChiiTarget();
       }
     }) as EventListener;
 
     document.addEventListener("iframeLoaded", this.navigationListener);
   }
 
-  private setupChiiConnection(): void {
+  /**
+   * Injects Chii target.js into the proxied iframe using proxy.eval.
+   *
+   * Following the demo pattern from node_modules/chii/test/iframe.js:
+   * 1. Set window.ChiiDevtoolsIframe = <devtools iframe element> (via proxy.eval
+   *    referencing window.parent.document.getElementById)
+   * 2. Create and inject <script src="target.js" embedded="true" cdn="...">
+   * 3. Parent relays messages from devtools iframe back to target iframe
+   */
+  private async injectChiiTarget(): Promise<boolean> {
     const targetFrame = this.tabData.iframe;
-
     const devtoolsIframe = this.tabData.chiiPanel?.devtoolsIframe;
 
-    if (!targetFrame || !devtoolsIframe || !this.tabData.chiiPanel) return;
-    if (targetFrame.contentWindow) {
-      targetFrame.contentWindow.ChiiDevtoolsIframe = devtoolsIframe;
+    if (!targetFrame || !devtoolsIframe || !this.tabData.chiiPanel) {
+      console.error("[ChiiDevTools] Missing target frame or devtools iframe");
+      return false;
     }
-    console.log(
-      "[ChiiDevTools] Set ChiiDevtoolsIframe on target window",
-      this.tabData.id,
-    );
 
-    if (!this.tabData.chiiPanel.messageRelaySetup) {
-      const messageHandler = (event: MessageEvent) => {
-        if (
-          this.tabData.iframe.contentWindow &&
-          this.tabData.chiiPanel?.isActive
-        ) {
-          try {
-            this.tabData.iframe.contentWindow.postMessage(
-              event.data,
-              event.origin,
-            );
-          } catch (e) {
-            console.warn("[ChiiDevTools] Failed to relay message:", e);
-          }
+    if (!window.proxy) {
+      console.error("[ChiiDevTools] window.proxy not available");
+      return false;
+    }
+
+    if (this.injecting) {
+      console.warn("[ChiiDevTools] Already injecting, skipping");
+      return false;
+    }
+
+    this.injecting = true;
+
+    // The code that runs inside the proxied iframe context.
+    // window.parent.document is the DDX parent document (not proxied),
+    // so we can find our devtools iframe by its unique ID.
+    const code = `
+      (function() {
+        // Step 1: Set ChiiDevtoolsIframe so target.js knows where to load the frontend
+        var dtIframe = window.parent.document.getElementById('${this.devtoolsIframeId}');
+        if (!dtIframe) {
+          console.error('[ChiiDevTools] Could not find devtools iframe by ID: ${this.devtoolsIframeId}');
+          window.parent.postMessage({ type: 'chii-inject-error', error: 'devtools-iframe-not-found' }, '*');
+          return;
+        }
+        window.ChiiDevtoolsIframe = dtIframe;
+        console.log('[ChiiDevTools] Set window.ChiiDevtoolsIframe via proxy.eval');
+
+        // Step 2: Remove any existing chii target.js script to avoid duplicates
+        var existing = document.querySelector('script[src*="chii"][src*="target.js"]');
+        if (existing) {
+          console.log('[ChiiDevTools] Removing existing chii target.js');
+          existing.remove();
+        }
+
+        // Step 3: Inject target.js with embedded=true and cdn attribute
+        var script = document.createElement('script');
+        script.src = '${CHII_TARGET_SRC}';
+        script.setAttribute('embedded', 'true');
+        script.setAttribute('cdn', '${CHII_CDN}');
+        script.onload = function() {
+          console.log('[ChiiDevTools] target.js loaded successfully in proxied page');
+          window.parent.postMessage({ type: 'chii-target-loaded' }, '*');
+        };
+        script.onerror = function() {
+          console.error('[ChiiDevTools] Failed to load target.js');
+          window.parent.postMessage({ type: 'chii-inject-error', error: 'script-load-failed' }, '*');
+        };
+        document.head.appendChild(script);
+        console.log('[ChiiDevTools] Injected target.js script element');
+      })();
+    `;
+
+    // Set up message listener with timeout for injection result
+    const resultPromise = new Promise<boolean>((resolve) => {
+      const timeout = setTimeout(() => {
+        window.removeEventListener("message", handler);
+        console.error("[ChiiDevTools] Chii injection timed out");
+        this.injecting = false;
+        resolve(false);
+      }, CHII_INJECT_TIMEOUT_MS);
+
+      const handler = (event: MessageEvent) => {
+        if (event.data?.type === "chii-target-loaded") {
+          clearTimeout(timeout);
+          window.removeEventListener("message", handler);
+          console.log("[ChiiDevTools] Chii target.js confirmed loaded");
+          this.injecting = false;
+          resolve(true);
+        } else if (event.data?.type === "chii-inject-error") {
+          clearTimeout(timeout);
+          window.removeEventListener("message", handler);
+          console.error(
+            "[ChiiDevTools] Chii injection error:",
+            event.data.error,
+          );
+          this.injecting = false;
+          resolve(false);
         }
       };
-      window.addEventListener("message", messageHandler);
-      this.tabData.chiiPanel.messageRelaySetup = true;
-      this.tabData.chiiPanel.messageHandler = messageHandler;
-      console.log(
-        "[ChiiDevTools] Set up message relay for tab",
-        this.tabData.id,
+
+      window.addEventListener("message", handler);
+    });
+
+    // Execute the code in the proxied context
+    try {
+      console.log("[ChiiDevTools] Calling proxy.eval to inject chii target");
+      const success = await window.proxy.eval(
+        window.SWconfig,
+        targetFrame,
+        code,
       );
+      if (!success) {
+        console.error(
+          "[ChiiDevTools] proxy.eval failed - proxy may not be active for this page",
+        );
+        this.injecting = false;
+        return false;
+      }
+    } catch (error) {
+      console.error("[ChiiDevTools] proxy.eval threw error:", error);
+      this.injecting = false;
+      return false;
     }
+
+    return resultPromise;
+  }
+
+  /**
+   * Set up message relay: messages posted to the parent window (from the devtools
+   * frontend iframe) need to be forwarded into the target (proxied) iframe.
+   * This mirrors the demo: window.addEventListener('message', e => targetIframe.contentWindow.postMessage(e.data, e.origin))
+   *
+   * We use proxy.eval to postMessage into the target so it reaches the proxied context.
+   * Actually, per the demo, plain postMessage to contentWindow works because
+   * the message event listener is on the real window. The proxy wrappers don't
+   * intercept postMessage. So we use direct postMessage here.
+   */
+  private setupMessageRelay(): void {
+    if (!this.tabData.chiiPanel || this.tabData.chiiPanel.messageRelaySetup) {
+      return;
+    }
+
+    const messageHandler = (event: MessageEvent) => {
+      if (
+        this.tabData.iframe.contentWindow &&
+        this.tabData.chiiPanel?.isActive
+      ) {
+        try {
+          this.tabData.iframe.contentWindow.postMessage(
+            event.data,
+            event.origin,
+          );
+        } catch (e) {
+          console.warn("[ChiiDevTools] Failed to relay message:", e);
+        }
+      }
+    };
+
+    window.addEventListener("message", messageHandler);
+    this.tabData.chiiPanel.messageRelaySetup = true;
+    this.tabData.chiiPanel.messageHandler = messageHandler;
+    console.log("[ChiiDevTools] Set up message relay for tab", this.tabData.id);
   }
 
   private initializePanel(): void {
@@ -461,6 +552,7 @@ export class ChiiDevTools {
     resizeHandle.addEventListener("mousedown", this.startResize.bind(this));
 
     const devtoolsIframe = document.createElement("iframe");
+    devtoolsIframe.id = this.devtoolsIframeId;
     devtoolsIframe.className = "chii-devtools-iframe";
     devtoolsIframe.style.cssText = `
       position: absolute;
@@ -495,17 +587,12 @@ export class ChiiDevTools {
     };
   }
 
-  private showPanel(): void {
+  private async showPanel(): Promise<void> {
     if (!this.tabData.chiiPanel) return;
 
-    const { container, devtoolsIframe, height } = this.tabData.chiiPanel;
+    const { container, height } = this.tabData.chiiPanel;
 
-    console.log("[ChiiDevTools] Showing panel", {
-      container,
-      devtoolsIframe,
-      height,
-      parent: this.tabData.iframe.parentElement,
-    });
+    console.log("[ChiiDevTools] Showing panel for tab", this.tabData.id);
 
     const isActiveTab = this.tabData.tab.classList.contains("active");
 
@@ -515,23 +602,17 @@ export class ChiiDevTools {
       this.tabData.iframe.style.height = `calc(100% - ${height}px)`;
     }
 
-    console.log("[ChiiDevTools] Container display:", container!.style.display);
-    console.log(
-      "[ChiiDevTools] Container in DOM:",
-      document.body.contains(container!),
-    );
-    console.log(
-      "[ChiiDevTools] Container dimensions:",
-      container!.getBoundingClientRect(),
-    );
-
     this.tabData.chiiPanel.isActive = true;
 
-    this.setupChiiConnection();
+    // Set up message relay (parent -> target iframe) per the demo pattern
+    this.setupMessageRelay();
 
-    const tabs = (window as any).tabs;
-    if (tabs?.pageClientModule) {
-      tabs.pageClientModule.pageClient(this.tabData.iframe);
+    // Inject chii target.js into the proxied page via proxy.eval
+    const injected = await this.injectChiiTarget();
+    if (!injected) {
+      console.error(
+        "[ChiiDevTools] Failed to inject chii target, panel shown but devtools may not work",
+      );
     }
 
     this.logger.createLog("Chii DevTools Opened");
