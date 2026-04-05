@@ -71,7 +71,10 @@ class DDXWorker {
       "/api/plus",
       "/api/store/",
       "/auth/",
+      "/auth",
     ];
+    this.serverRoutedEndpoints = ["/api/results/", "/auth/", "/auth"];
+    this.hasServerRoutes = null;
     this.productionUrl = "https://daydreamx.pro";
     this.wispReady = false;
 
@@ -163,6 +166,11 @@ class DDXWorker {
     const url = new URL(event.request.url);
     const relativePath = stripBase(url.pathname);
 
+    // Bypass interception for route check requests
+    if (url.searchParams.has("__ddx_route_check")) {
+      return fetch(event.request);
+    }
+
     try {
       await this.sj.loadConfig();
     } catch (e) {
@@ -183,22 +191,34 @@ class DDXWorker {
       return this.serveInternalPage(relativePath);
     }
 
-    if (
-      event.request.method === "OPTIONS" &&
-      this.shouldRestoreRequest(relativePath)
-    ) {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-          "Access-Control-Max-Age": "86400",
-        },
-      });
-    }
-
     if (this.shouldRestoreRequest(relativePath)) {
+      if (this.isServerRoutedEndpoint(relativePath)) {
+        const hasServerRoutes = await this.checkHasServerRoutes();
+        if (hasServerRoutes) {
+          console.log(
+            `[DDXWorker] Using server route for ${event.request.method} ${relativePath}`,
+          );
+          const serverUrl = new URL(relativePath + url.search, url.origin);
+          const serverRequest = new Request(
+            serverUrl.toString(),
+            event.request,
+          );
+          return fetch(serverRequest);
+        }
+      }
+
+      if (event.request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+          },
+        });
+      }
+
       return this.restoreRequest(event.request);
     }
 
@@ -253,6 +273,40 @@ class DDXWorker {
     return this.restoredEndpoints.some((endpoint) =>
       relativePath.startsWith(endpoint),
     );
+  }
+
+  isServerRoutedEndpoint(relativePath) {
+    return this.serverRoutedEndpoints.some((endpoint) =>
+      relativePath.startsWith(endpoint),
+    );
+  }
+
+  async checkHasServerRoutes() {
+    if (this.hasServerRoutes !== null) {
+      return this.hasServerRoutes;
+    }
+
+    try {
+      const checkUrl = new URL("/api/results/", self.location.origin);
+      checkUrl.searchParams.set("__ddx_route_check", "1");
+      const response = await fetch(checkUrl.toString(), {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      // Server has routes if it responds with anything other than 404
+      this.hasServerRoutes = response.status !== 404;
+
+      console.log(
+        `[DDXWorker] Server routes check: ${this.hasServerRoutes ? "available (status: " + response.status + ")" : "not available"}`,
+      );
+
+      return this.hasServerRoutes;
+    } catch (err) {
+      console.log(`[DDXWorker] Server routes check failed:`, err.message);
+      this.hasServerRoutes = false;
+      return false;
+    }
   }
 
   async restoreRequest(request) {
