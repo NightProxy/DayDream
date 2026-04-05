@@ -6,6 +6,9 @@ export const config = {
     // with proper firewall rules and HTTPS enabled.
     host: "127.0.0.1",
     port: 8080,
+    // SITE PATH: Set this if your app is hosted at a subpath (e.g., "/dashboard/").
+    // Leave as "/" for root hosting. Must start and end with "/".
+    sitePath: "/",
   },
   obfuscation: false,
   logging: false,
