@@ -5,7 +5,6 @@ declare global {
     __uv$eval: Function;
     $scramjet$wrap: Function;
     nightmare: Nightmare;
-    nightmarePlugins: NightmarePlugins;
     settings: SettingsAPI;
     cache: CacheAPI;
     eventsAPI: EventSystem;
@@ -28,6 +27,7 @@ declare global {
     ChiiDevtoolsIframe?: HTMLIFrameElement;
     liveInject?: any;
     codeInject?: any;
+    d: ShadowRoot;
   }
 
   interface UVConfig {
