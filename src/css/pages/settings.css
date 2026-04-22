@@ -1,4 +1,4 @@
-select[component="dropdown"] {
+select[data-component="dropdown"] {
   background-color: var(--bg-2);
   color: var(--text);
   border: 1px solid var(--white-10);
@@ -11,47 +11,47 @@ select[component="dropdown"] {
   outline: none;
 }
 
-select[component="dropdown"]:hover {
+select[data-component="dropdown"]:hover {
   border-color: var(--white-20);
 }
 
-select[component="dropdown"]:focus {
+select[data-component="dropdown"]:focus {
   outline: none;
   border-color: var(--main);
   box-shadow: 0 0 0 3px var(--main-20a);
 }
 
-select[component="dropdown"] option {
+select[data-component="dropdown"] option {
   background-color: var(--bg-2);
   color: var(--text);
   padding: 8px;
 }
 
-input[component="switch"] + div {
+input[data-component="switch"] + div {
   background-color: var(--white-10);
   transition: all 0.3s ease;
 }
 
-input[component="switch"]:checked + div {
+input[data-component="switch"]:checked + div {
   background-color: var(--main);
 }
 
-input[component="switch"]:focus + div {
+input[data-component="switch"]:focus + div {
   box-shadow: 0 0 0 4px var(--main-20a);
 }
 
-input[component="switch"] + div::after {
+input[data-component="switch"] + div::after {
   background-color: white;
   border: 1px solid var(--white-20);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-input[component="switch"]:checked + div::after {
+input[data-component="switch"]:checked + div::after {
   border-color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-button[component="button"] {
+button[data-component="button"] {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
@@ -63,7 +63,7 @@ button[component="button"] {
   border: 1px solid transparent;
 }
 
-button[component="button"]:focus {
+button[data-component="button"]:focus {
   outline: none;
   box-shadow: 0 0 0 3px var(--main-20a);
 }

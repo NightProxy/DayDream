@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { minify } from "terser";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
 import vitePluginBundleObfuscator from "vite-plugin-bundle-obfuscator";
@@ -19,11 +19,8 @@ import { svgWrapperPlugin } from "./srv/vite/svg";
 export default defineConfig({
   base: "./",
   plugins: [
+    react(),
     tailwindcss(),
-    tsconfigPaths({
-      ignoreConfigErrors: true,
-      projects: ["./tsconfig.json"],
-    }),
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
     viteStaticCopy(copyRoutes()),
@@ -203,7 +200,6 @@ export default defineConfig({
           const hash = Math.random().toString(36).substring(2, 12);
           return `chunks/${hash}.js`;
         },
-        experimentalMinChunkSize: 50000,
         assetFileNames: (assetInfo) => {
           if (
             assetInfo.name?.endsWith(".woff2") ||
@@ -248,11 +244,9 @@ export default defineConfig({
         return result;
       },
     },
+    transformer: "lightningcss",
   },
-  define: {
-    __OBFUSCATION_SEED__: JSON.stringify(
-      Math.random().toString(36).substring(2),
-    ),
-    __BUILD_TIME__: JSON.stringify(Date.now()),
+  resolve: {
+    tsconfigPaths: true,
   },
 });

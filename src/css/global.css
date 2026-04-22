@@ -607,23 +607,23 @@ li {
   transform: scale(0.92);
 }
 
-div[component="frame-container"] iframe {
+div[data-component="frame-container"] iframe {
   width: 100%;
   height: 100%;
   border: none;
   display: none;
 }
 
-div[component="frame-container"] iframe.active {
+div[data-component="frame-container"] iframe.active {
   display: block;
 }
 
-div[component="top-bar"] {
+div[data-component="top-bar"] {
   display: flex;
   min-width: 0;
 }
 
-div[component="tab-bar-container"] {
+div[data-component="tab-bar-container"] {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -631,7 +631,7 @@ div[component="tab-bar-container"] {
   z-index: 999;
 }
 
-div[component="tab-bar"] {
+div[data-component="tab-bar"] {
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
@@ -647,31 +647,31 @@ div[component="tab-bar"] {
   margin-bottom: calc(-1 * var(--scrollbar-size));
 }
 
-div[component="utility-bar"] {
+div[data-component="utility-bar"] {
   z-index: 99;
 }
 
 @supports selector(::-webkit-scrollbar) {
-  div[component="tab-bar"]::-webkit-scrollbar-track {
+  div[data-component="tab-bar"]::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  div[component="tab-bar"]::-webkit-scrollbar {
+  div[data-component="tab-bar"]::-webkit-scrollbar {
     height: 8px;
   }
 
-  div[component="tab-bar"]::-webkit-scrollbar-track {
+  div[data-component="tab-bar"]::-webkit-scrollbar-track {
     background: transparent !important;
   }
 
-  div[component="tab-bar"]::-webkit-scrollbar-thumb {
+  div[data-component="tab-bar"]::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb) !important;
     border-radius: 9999px !important;
   }
 }
 
 @-moz-document url-prefix() {
-  div[component="tab-bar"] {
+  div[data-component="tab-bar"] {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
