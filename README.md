@@ -4,7 +4,7 @@
     <h2>Explore the Web with DayDream</h2>
 </div>
 
-![inpreview](https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/daydreamx.png)
+![inpreview](https://gitlab.com/nightnetwork/daydreamx/-/raw/main/assets/preview/1.png)
 
 > [!IMPORTANT]
 > Please consider giving the original repository a star if you fork this project.
