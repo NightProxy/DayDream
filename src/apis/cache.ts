@@ -1,4 +1,4 @@
-import localforage from "localforage";
+import { SettingsAPI } from "./settings";
 
 interface TabCache {
   id: string;
@@ -26,15 +26,11 @@ interface CacheData {
 }
 
 class CacheAPI {
-  private store: LocalForage;
+  private store: SettingsAPI;
   private initialized: boolean = false;
 
   constructor() {
-    this.store = localforage.createInstance({
-      name: "ddx",
-      storeName: "cache",
-      description: "DayDreamX cache storage for tabs and session data",
-    });
+    this.store = new SettingsAPI("/data/tabCache.json");
   }
 
   async init(): Promise<void> {

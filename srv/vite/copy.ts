@@ -8,6 +8,7 @@ import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
 import { enigmaPath } from "@nightnetwork/enigma/path";
 import { baremuxPath as bmworkerPath } from "@nightnetwork/bm-plusworker/path";
+import {tfsPath} from "@terbiumos/tfs";
 import path from "path";
 
 export const routePaths = {
@@ -24,6 +25,7 @@ export const routePaths = {
   eruda: "core/i/eruda",
   chii: "core/i/chii",
   localforage: "core/localforage",
+  tfs: "core/fs",
 };
 
 const authPath = path.resolve(
@@ -128,6 +130,11 @@ const copyMap = {
     path: localforagePath,
     files: ["*"],
     dest: routePaths.localforage,
+  },
+  tfs: {
+    path: tfsPath,
+    files: ["*"],
+    dest: routePaths.tfs,
   },
 };
 

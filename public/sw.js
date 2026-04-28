@@ -37,14 +37,20 @@ self.__ddxBase = self.location.pathname.replace(/[^/]*$/, "");
 
 const _base = self.__ddxBase;
 
-importScripts(_base + "baremux/index.js");
-importScripts(_base + "core/localforage/localforage.min.js");
+self.window = self;
+
+importScripts(_base + "baremux/index.js", _base + "core/fs/tfs.js");
+
+self.TFS = self.tfs;
+
 importScripts(
+  _base + "sw/fs.js",
+  _base + "sw/s.js",
   _base + "data/bundle.js",
   _base + "data/config.js",
   _base + "data/worker.js",
+  _base + "assets/all.js",
 );
-importScripts(_base + "assets/all.js");
 
 const CACHE_NAME = "DaydreamSPAPages";
 
@@ -55,10 +61,7 @@ function stripBase(pathname) {
   return pathname;
 }
 
-const settingsStore = localforage.createInstance({
-  name: "settings",
-  storeName: "settings",
-});
+const settingsStore = new SettingsAPI();
 
 class DDXWorker {
   constructor() {

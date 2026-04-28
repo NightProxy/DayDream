@@ -25,7 +25,7 @@ export default defineConfig({
     fontObfuscationPlugin(),
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
-    vitePluginBundleObfuscator(obfuscationConfig as any),
+    //vitePluginBundleObfuscator(obfuscationConfig as any),
     svgWrapperPlugin(),
     {
       name: "strip-console-and-debugger",
@@ -138,7 +138,7 @@ export default defineConfig({
       },
     },
   },
-  build: {
+  /*build: {
     emptyOutDir: true,
     target: ["es2020", "chrome80", "firefox78", "safari14"],
     minify: "terser",
@@ -227,7 +227,7 @@ export default defineConfig({
     minifySyntax: true,
     minifyWhitespace: true,
     target: "es2020",
-  },
+  },*/
   css: {
     modules: {
       generateScopedName: () => {

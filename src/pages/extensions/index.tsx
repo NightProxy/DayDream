@@ -683,7 +683,7 @@ async function renderInstalledExtensions() {
 function createInstalledExtensionCard(extension: ExtensionState): HTMLElement {
   const card = document.createElement("div");
   card.className =
-    "bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] flex flex-col";
+    "bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur flex flex-col";
   card.setAttribute("data-extension-id", extension.id);
 
   const header = document.createElement("div");

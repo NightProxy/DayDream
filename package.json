@@ -51,6 +51,7 @@
     "@nightnetwork/plus-client": "^1.0.0",
     "@nightnetwork/reflux": "^2.2.0",
     "@tailwindcss/vite": "^4.1.12",
+    "@terbiumos/tfs": "^1.0.24",
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "@types/content-type": "^1.1.9",
     "@types/uuid": "^10.0.0",

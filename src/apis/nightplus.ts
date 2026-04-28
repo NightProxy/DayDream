@@ -1,4 +1,4 @@
-import localforage from "localforage";
+import { SettingsAPI } from "@apis/settings";
 import { resolvePath } from "@utils/basepath";
 
 const API_BASE_URL = resolvePath("api/plus");
@@ -31,10 +31,7 @@ interface NightPlusCache {
   lastUpdated: number;
 }
 
-const nightPlusStore = localforage.createInstance({
-  name: "NightPlus",
-  storeName: "session",
-});
+const nightPlusStore = new SettingsAPI("/data/nightplus.json");
 
 async function getAccessToken(): Promise<string | null> {
   return await nightPlusStore.getItem<string>("access_token");
@@ -256,7 +253,7 @@ export async function dumpNightPlusData(): Promise<void> {
       proxyServers,
     });
 
-    console.log("Night+ data dumped to localforage successfully");
+    console.log("Night+ data dumped successfully");
   } catch (error) {
     console.error("Failed to dump Night+ data:", error);
     throw error;

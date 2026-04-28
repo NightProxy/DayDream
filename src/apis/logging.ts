@@ -1,20 +1,27 @@
-import localforage from "localforage";
+import { NightFS } from "./data/fs";
+import type { FSType } from "@terbiumos/tfs";
 
 interface LogEntry {
   timestamp: string;
   message: string;
 }
 
+const LOGS_DIR = "/data/logs";
+
 class Logger {
-  store: typeof localforage;
+  store!: FSType;
   sessionId: string;
+  private ready: Promise<void>;
+  private currentLogPath: string;
 
   constructor() {
-    this.store = localforage.createInstance({
-      name: "logs",
-      storeName: "logs",
-    });
     this.sessionId = this.getSessionId();
+    this.currentLogPath = `${LOGS_DIR}/${this.sessionId}.log`;
+    const nfs = new NightFS();
+    this.ready = nfs.init.then(() => {
+      this.store = nfs.core.fs;
+      return this.ensureLogsDir();
+    });
   }
 
   getSessionId() {
@@ -33,20 +40,92 @@ class Logger {
     return `log-${date.toISOString()}`;
   }
 
-  async createLog(message: string) {
-    const log = await this.getLog(this.sessionId);
-    if (log) {
-      log.push({ timestamp: new Date().toISOString(), message });
-      await this.store.setItem(this.sessionId, log);
-    } else {
-      await this.store.setItem(this.sessionId, [
-        { timestamp: new Date().toISOString(), message },
-      ]);
+  private async ensureLogsDir(): Promise<void> {
+    const exists = await new Promise<boolean>((resolve) => {
+      this.store.exists(LOGS_DIR, resolve);
+    });
+    if (!exists) {
+      await new Promise<void>((resolve, reject) => {
+        this.store.mkdir(LOGS_DIR, (err) => (err ? reject(err) : resolve()));
+      });
     }
   }
 
+  private parseLogText(text: string): LogEntry[] {
+    const lines = text.split("\n").filter((line) => line.trim() !== "");
+    const entries: LogEntry[] = [];
+    for (const line of lines) {
+      const match = line.match(/^\[(.*?)\] (.*)$/);
+      if (match) {
+        entries.push({ timestamp: match[1], message: match[2] });
+      }
+    }
+    return entries;
+  }
+
+  private formatLogEntry(entry: LogEntry): string {
+    return `[${entry.timestamp}] ${entry.message}\n`;
+  }
+
+  private async readLogFile(path: string): Promise<LogEntry[]> {
+    await this.ready;
+    const fileExists = await new Promise<boolean>((resolve) => {
+      this.store.exists(path, resolve);
+    });
+    if (!fileExists) return [];
+
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        this.store.readFile(path, "utf8", (err, content) =>
+          err ? reject(err) : resolve(content as string),
+        );
+      });
+      return this.parseLogText(data);
+    } catch {
+      return [];
+    }
+  }
+
+  private async writeLogFile(path: string, entries: LogEntry[]): Promise<void> {
+    await this.ready;
+    const text = entries.map((e) => this.formatLogEntry(e)).join("");
+    return new Promise<void>((resolve, reject) => {
+      this.store.writeFile(path, text, "utf8", (err) =>
+        err ? reject(err) : resolve(),
+      );
+    });
+  }
+
+  async createLog(message: string) {
+    await this.ready;
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      message,
+    };
+    const formatted = this.formatLogEntry(entry);
+
+    const fileExists = await new Promise<boolean>((resolve) => {
+      this.store.exists(this.currentLogPath, resolve);
+    });
+
+    if (!fileExists) {
+      return new Promise<void>((resolve, reject) => {
+        this.store.writeFile(this.currentLogPath, formatted, "utf8", (err) =>
+          err ? reject(err) : resolve(),
+        );
+      });
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      this.store.appendFile(this.currentLogPath, formatted, (err) =>
+        err ? reject(err) : resolve(),
+      );
+    });
+  }
+
   async getLog(id: string): Promise<LogEntry[] | null> {
-    return await this.store.getItem<LogEntry[]>(id);
+    const log = await this.readLogFile(`${LOGS_DIR}/${id}.log`);
+    return log.length > 0 ? log : null;
   }
 
   async editLog(id: string, index: number, newMessage: string) {
@@ -73,29 +152,71 @@ class Logger {
     }
 
     log[index].message = newMessage;
-    await this.store.setItem(id, log);
+    await this.writeLogFile(`${LOGS_DIR}/${id}.log`, log);
+  }
+
+  async listLogFiles(): Promise<string[]> {
+    await this.ready;
+    const files = await new Promise<string[]>((resolve, reject) => {
+      this.store.readdir(LOGS_DIR, {}, (err, data) =>
+        err ? reject(err) : resolve((data as string[]) || []),
+      );
+    });
+    return files
+      .filter((f) => f.endsWith(".log"))
+      .map((f) => f.replace(".log", ""));
+  }
+
+  async dumpLogs(): Promise<string> {
+    await this.ready;
+    const files = await this.listLogFiles();
+    const sections: string[] = [];
+
+    for (const file of files) {
+      const data = await new Promise<string>((resolve, reject) => {
+        this.store.readFile(
+          `${LOGS_DIR}/${file}.log`,
+          "utf8",
+          (err, content) => (err ? reject(err) : resolve(content as string)),
+        );
+      });
+      sections.push(`=== ${file}.log ===\n${data}`);
+    }
+
+    return sections.join("\n");
   }
 
   async exportLogs() {
-    const logs = await this.store.keys();
-    const exportData: Record<
-      string,
-      Awaited<ReturnType<typeof this.getLog>>
-    > = {};
+    await this.ready;
+    const files = await this.listLogFiles();
+    const exportData: Record<string, LogEntry[] | null> = {};
 
-    for (const logId of logs) {
-      exportData[logId] = await this.getLog(logId as string);
+    for (const logId of files) {
+      exportData[logId] = await this.getLog(logId);
     }
     return exportData;
   }
 
   async clearAllLogs() {
-    await this.store.clear();
+    await this.ready;
+    const files = await this.listLogFiles();
+    for (const file of files) {
+      await new Promise<void>((resolve, reject) => {
+        this.store.unlink(`${LOGS_DIR}/${file}.log`, (err) =>
+          err ? reject(err) : resolve(),
+        );
+      });
+    }
     sessionStorage.removeItem("sessionId");
   }
 
   async deleteLog(id: string) {
-    await this.store.removeItem(id);
+    await this.ready;
+    await new Promise<void>((resolve, reject) => {
+      this.store.unlink(`${LOGS_DIR}/${id}.log`, (err) =>
+        err ? reject(err) : resolve(),
+      );
+    });
     if (id === this.sessionId) {
       sessionStorage.removeItem("sessionId");
     }
