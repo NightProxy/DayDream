@@ -1,11 +1,11 @@
-import localforage from "localforage";
 import type { ProfileData } from "./types";
 import { PROFILE_VERSION } from "./constants";
+import { SettingsAPI } from "@apis/settings";
 
 export class ProfileManager {
   private canExceedProfileLimit: (() => boolean | Promise<boolean>) | null;
   private maxProfiles: number;
-  private profileStore: LocalForage;
+  private profileStore: SettingsAPI;
 
   constructor(
     canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
@@ -14,13 +14,10 @@ export class ProfileManager {
     this.canExceedProfileLimit = canExceedProfileLimit;
     this.maxProfiles = maxProfiles;
 
-    this.profileStore = localforage.createInstance({
-      name: "Profiles",
-      storeName: "profiles_v2",
-    });
+    this.profileStore = new SettingsAPI("/data/profiles.json", "/data");
   }
 
-  getStore(): LocalForage {
+  getStore(): SettingsAPI {
     return this.profileStore;
   }
 

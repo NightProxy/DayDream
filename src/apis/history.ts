@@ -1,4 +1,4 @@
-import localforage from "localforage";
+import { SettingsAPI } from "./settings";
 import { v4 as uuidv4 } from "uuid";
 
 export interface HistoryEntry {
@@ -54,7 +54,7 @@ export type HistoryFilter = "today" | "yesterday" | "week" | "month" | "all";
 export class HistoryManager {
   private storageKey: string;
   private sessionStorageKey: string;
-  private store: LocalForage;
+  private store: SettingsAPI;
   private autoSync: boolean;
   private maxEntries: number;
   private retentionDays: number;
@@ -68,10 +68,7 @@ export class HistoryManager {
   constructor(config: HistoryManagerConfig = {}) {
     this.storageKey = config.storageKey || "browsing-history";
     this.sessionStorageKey = "history-sessions";
-    this.store = localforage.createInstance({
-      name: "BrowsingHistory",
-      storeName: "history",
-    });
+    this.store = new SettingsAPI("/data/history.json", "/data");
     this.autoSync = config.autoSync ?? true;
     this.maxEntries = config.maxEntries || 10000;
     this.retentionDays = config.retentionDays || 90;

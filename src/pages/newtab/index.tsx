@@ -136,7 +136,7 @@ class NewTabShortcuts {
             "div",
             {
               class:
-                "inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]",
+                "backdrop-blur inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]",
               component: "logo-container",
             },
             [
@@ -209,7 +209,7 @@ class NewTabShortcuts {
       [
         this.ui.createElement("input", {
           class:
-            "w-full rounded-xl bg-[var(--bg-2)] pl-4 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]",
+            "w-full rounded-xl bg-[var(--bg-2)] pl-4 pr-12 py-3 text-sm text-[var(--text)] backdrop-blur placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]",
           placeholder: "Search for anything...",
           "aria-label": "Search",
           id: "searchInput",
@@ -686,7 +686,7 @@ class NewTabShortcuts {
           "div",
           {
             class:
-              "shortcut-link block relative rounded-xl bg-[var(--bg-2)] p-3 h-24 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition group cursor-pointer",
+              "shortcut-link block relative rounded-xl bg-[var(--bg-2)] backdrop-blur p-3 h-24 ring-1 ring-inset ring-[var(--white-08)] shadow-[0_0_1px_var(--shadow-outer)] hover:ring-[var(--main-35a)] transition group cursor-pointer",
             component: "shortcut-link",
             onclick: (e: Event) => {
               e.preventDefault();
@@ -806,7 +806,7 @@ class NewTabShortcuts {
           "div",
           {
             class:
-              "block relative rounded-xl bg-[var(--bg-2)] border-2 border-dashed border-[var(--white-20)] p-3 h-24 hover:border-[var(--main-35a)] transition group",
+              "block relative rounded-xl bg-[var(--bg-2)] border-2 border-dashed border-[var(--white-20)] backdrop-blur p-3 h-24 hover:border-[var(--main-35a)] transition group",
           },
           [
             this.ui.createElement(

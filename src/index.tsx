@@ -23,7 +23,7 @@ import { patchDocument } from "./utils/document";
 import { Render } from "@components/Render";
 import { Items } from "@browser/items";
 import { Protocols } from "@browser/protocols";
-import { Tabs } from "@browser/tabs";
+import { Tabs } from "@browser/tabs-updated";
 import { Functions } from "@browser/functions";
 import { Search } from "@browser/search";
 import { universalTheme } from "@utils/global/universalTheme";

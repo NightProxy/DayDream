@@ -1,4 +1,4 @@
-import localforage from "localforage";
+import { SettingsAPI } from "./settings";
 import { v4 as uuidv4 } from "uuid";
 
 export interface Bookmark {
@@ -72,7 +72,7 @@ export function isBookmark(item: BookmarkItem): item is Bookmark {
 export class BookmarkManager {
   private storageKey: string;
   private faviconCacheKey: string;
-  private store: LocalForage;
+  private store: SettingsAPI;
   private autoSync: boolean;
   private bookmarks: Bookmark[] = [];
   private folders: BookmarkFolder[] = [];
@@ -82,10 +82,7 @@ export class BookmarkManager {
   constructor(config: BookmarkManagerConfig = {}) {
     this.storageKey = config.storageKey || "bookmarks-data";
     this.faviconCacheKey = "favicon-cache";
-    this.store = localforage.createInstance({
-      name: "Bookmarks",
-      storeName: "bookmarks",
-    });
+    this.store = new SettingsAPI("/data/bookmarks.json", "/data");
     this.autoSync = config.autoSync ?? true;
   }
 
