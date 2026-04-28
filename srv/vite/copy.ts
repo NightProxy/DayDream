@@ -24,7 +24,6 @@ export const routePaths = {
   plusClient: "plus",
   eruda: "core/i/eruda",
   chii: "core/i/chii",
-  localforage: "core/localforage",
   tfs: "core/fs",
 };
 
@@ -36,7 +35,6 @@ const plusClientPath = path.resolve(
 );
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
-const localforagePath = path.resolve("node_modules/localforage/dist");
 const copyMap = {
   epoxy: {
     path: epoxyPath,
@@ -125,11 +123,6 @@ const copyMap = {
     path: chiiPath,
     files: ["*"],
     dest: routePaths.chii,
-  },
-  localforage: {
-    path: localforagePath,
-    files: ["*"],
-    dest: routePaths.localforage,
   },
   tfs: {
     path: tfsPath,
