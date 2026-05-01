@@ -1,8 +1,4 @@
-//@ts-ignore
-import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
-import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
-import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
@@ -16,7 +12,6 @@ export const routePaths = {
   scramjet: "assets",
   libcurl: "libcurl",
   baremux: "baremux",
-  uv: "data",
   reflux: "reflux",
   enigma: "enigma",
   auth: "",
@@ -25,6 +20,8 @@ export const routePaths = {
   eruda: "core/i/eruda",
   chii: "core/i/chii",
   tfs: "core/fs",
+  obscura: "core/o",
+  sw: "",
 };
 
 const authPath = path.resolve(
@@ -35,35 +32,19 @@ const plusClientPath = path.resolve(
 );
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
+const obscuraPath = path.resolve("src/pkgs/Obscura/pkg");
+const swPath = path.resolve("src/core/sw/dist");
+const sjConfigPath = path.resolve("src/core/sjConfig/dist");
+const sjControllerPath = path.resolve("node_modules/@mercuryworkshop/scramjet-controller/dist");
 const copyMap = {
-  epoxy: {
-    path: epoxyPath,
-    files: ["*"],
-    dest: routePaths.epoxy,
-  },
-  uv: {
-    path: uvPath,
-    files: [
-      { name: "uv.bundle.js", rename: "bundle.js" },
-      { name: "uv.handler.js", rename: "handler.js" },
-      { name: "uv.client.js", rename: "client.js" },
-      { name: "uv.sw.js", rename: "worker.js" },
-    ],
-    dest: routePaths.uv,
-  },
   scramjet: {
     path: scramjetPath,
     files: [
-      { name: "scramjet.all.js", rename: "all.js" },
-      { name: "scramjet.sync.js", rename: "sync.js" },
-      { name: "scramjet.wasm.wasm", rename: "wasm.wasm" },
+      { name: "scramjet.js", rename: "s.js" },
+      { name: "scramjet.wasm", rename: "s.wasm" },
+      { name: "scramjet_bundled.js", rename: "bundled.js" },
     ],
     dest: routePaths.scramjet,
-  },
-  libcurl: {
-    path: libcurlPath,
-    files: ["*"],
-    dest: routePaths.libcurl,
   },
   baremux: {
     path: baremuxPath,
@@ -129,6 +110,30 @@ const copyMap = {
     files: ["*"],
     dest: routePaths.tfs,
   },
+  obscura: {
+    path: obscuraPath,
+    files: ["*"],
+    dest: routePaths.obscura,
+  },
+  sw: {
+    path: swPath,
+    files: ["*"],
+    dest: routePaths.sw,
+  },
+  sjConfig: {
+    path: sjConfigPath,
+    files: ["*"],
+    dest: routePaths.scramjet,
+  },
+  sjController: {
+    path: sjControllerPath,
+    files: [
+      { name: "controller.api.js", rename: "api.js" },
+      { name: "controller.sw.js", rename: "sw.js" },
+      {name: "controller.inject.js", rename: "inject.js"},
+    ],
+    dest: routePaths.scramjet,
+  }
 };
 
 function generateStaticCopyTargets(map: typeof copyMap) {

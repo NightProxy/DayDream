@@ -12,7 +12,7 @@ plus-backend/
 .github/
 concepting/
 *.uo.ts
-demo/
-TSX/
 DaydreamStaticTest/
+target/
 tabs-updated/
+demo/

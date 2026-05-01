@@ -46,9 +46,6 @@ self.TFS = self.tfs;
 importScripts(
   _base + "sw/fs.js",
   _base + "sw/s.js",
-  _base + "data/bundle.js",
-  _base + "data/config.js",
-  _base + "data/worker.js",
   _base + "assets/all.js",
 );
 
@@ -67,7 +64,6 @@ class DDXWorker {
   constructor() {
     const { ScramjetServiceWorker } = $scramjetLoadWorker();
     this.sj = new ScramjetServiceWorker();
-    this.uv = new UVServiceWorker();
     this.cfBlockPatterns = ["**/cdn-cgi/**"];
     this.restoredEndpoints = [
       "/api/results/",
@@ -231,14 +227,6 @@ class DDXWorker {
       }
     } catch (e) {
       console.warn("[DDXWorker] Scramjet route/fetch error:", e);
-    }
-
-    try {
-      if (this.uv.route(event)) {
-        return await this.uv.fetch(event);
-      }
-    } catch (e) {
-      console.warn("[DDXWorker] UV route/fetch error:", e);
     }
 
     return fetch(event.request);

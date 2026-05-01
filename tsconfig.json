@@ -17,6 +17,7 @@
       "@utils/*": ["utils/*"],
       "@types/*": ["types/*"],
       "@pages/*": ["pages/*"],
+      "@core/*": ["core/*"],
       "@/*": ["*"],
       "@../*": ["../*"]
     },
@@ -44,6 +45,7 @@
     "src/apis/platform/hosting.hostlist.ts",
     "src/apis/platform/hosting.hostlist.uo.ts",
     "pkgs/**",
-    "TSX/**"
+    "TSX/**",
+    "demo/**"
   ]
 }
