@@ -1,199 +1,222 @@
-import "@css/vars.css";
-import "@css/imports.css";
-import "@css/global.css";
-import "basecoat-css/all";
+import '@css/vars.css';
+import '@css/imports.css';
+import '@css/global.css';
+import 'basecoat-css/all';
 
 // Inline CSS for Shadow DOM injection
-import varsCSS from "@css/vars.css?inline";
-import importsCSS from "@css/imports.css?inline";
-import globalCSS from "@css/global.css?inline";
+import varsCSS from '@css/vars.css?inline';
+import importsCSS from '@css/imports.css?inline';
+import globalCSS from '@css/global.css?inline';
 
-import { StrictMode, Suspense } from "react";
-import { createRoot } from "react-dom/client";
-import { SettingsAPI } from "@apis/settings";
-import { cache } from "@apis/cache";
-import { EventSystem } from "@apis/events";
-import { ProfilesAPI } from "@apis/profiles";
-import { Logger } from "@apis/logging";
-import { Proxy } from "@apis/proxy";
-import { Windowing } from "@browser/windowing";
-import { DDXGlobal } from "@utils/global/index";
-import { patchDocument } from "./utils/document";
+import { StrictMode, Suspense } from 'react';
+import { createRoot } from 'react-dom/client';
+import { SettingsAPI } from '@apis/settings';
+import { cache } from '@apis/cache';
+import { EventSystem } from '@apis/events';
+import { ProfilesAPI } from '@apis/profiles';
+import { Logger } from '@apis/logging';
+import { Proxy } from '@apis/proxy';
+import { Windowing } from '@browser/windowing';
+import { DDXGlobal } from '@utils/global/index';
+import { patchDocument } from './utils/document';
 //import { Render } from "@browser/render";
-import { Render } from "@components/Render";
-import { Items } from "@browser/items";
-import { Protocols } from "@browser/protocols";
-import { Tabs } from "@browser/tabs-updated";
-import { Functions } from "@browser/functions";
-import { Search } from "@browser/search";
-import { universalTheme } from "@utils/global/universalTheme";
-import { checkNightPlusStatus } from "@apis/nightplus";
-import { initClipboardDeobfuscator } from "@utils/clipboardDeobfuscator";
-import { basePath, resolvePath } from "@utils/basepath";
+import { Render } from '@components/Render';
+import { Items } from '@browser/items';
+import { Protocols } from '@browser/protocols';
+import { Tabs } from '@browser/tabs';
+import { Functions } from '@browser/functions';
+import { Search } from '@browser/search';
+import { universalTheme } from '@utils/global/universalTheme';
+import { checkNightPlusStatus } from '@apis/nightplus';
+import { initClipboardDeobfuscator } from '@utils/clipboardDeobfuscator';
+import { basePath, resolvePath } from '@utils/basepath';
 //@ts-ignore
-import { RefluxAPI } from "@nightnetwork/reflux/api";
-// @ts-ignore
-const { ScramjetController } = $scramjetLoadController();
+import { RefluxAPI } from '@nightnetwork/reflux/api';
 
-const scramjet = new ScramjetController(window.__scramjet$config);
-const scramjetReady = scramjet.init();
+const { Controller } = $scramjetController;
 
-if ("serviceWorker" in navigator) {
-  scramjetReady
-    .then(() =>
-      navigator.serviceWorker.register(resolvePath("sw.js"), {
-        scope: basePath,
-      }),
-    )
-    .then(() => console.log("[Main] Root-scope SW registered at", basePath))
-    .catch((err: any) =>
-      console.warn("[Main] Root-scope SW registration failed:", err),
-    );
-}
-
-navigator.serviceWorker?.addEventListener("message", (e) => {
+/*navigator.serviceWorker?.addEventListener("message", (e) => {
   console.log("[Main] SW message received:", e.data);
   if (e.data?.type === "reload") location.reload();
 });
-navigator.serviceWorker?.startMessages();
+navigator.serviceWorker?.startMessages();*/
 
-document.addEventListener("DOMContentLoaded", async () => {
-  let systemInitialized = false;
+document.addEventListener('DOMContentLoaded', async () => {
+	// Clean up any stale service worker registrations from previous versions
+	// (e.g. older code registered SW at scope /assets/ for scramjet specifically).
+	// We now register a single SW at root scope which handles everything.
+	// If we find stale registrations, unregister them and reload once so the
+	// new root-scoped SW can take control of all paths cleanly.
+	try {
+		const existing = await navigator.serviceWorker.getRegistrations();
+		const desiredScopeUrl = new URL(basePath, location.href).href;
+		const stale = existing.filter(reg => reg.scope !== desiredScopeUrl);
+		if (stale.length > 0 && !sessionStorage.getItem('__ddx_sw_cleanup')) {
+			for (const reg of stale) {
+				console.log(
+					'[Main] Unregistering stale SW with scope:',
+					reg.scope
+				);
+				try {
+					await reg.unregister();
+				} catch (err) {
+					console.warn('[Main] Failed to unregister stale SW:', err);
+				}
+			}
+			// Mark cleanup done so we don't loop, then reload to drop any
+			// active controller bindings to the unregistered SWs.
+			sessionStorage.setItem('__ddx_sw_cleanup', '1');
+			console.log(
+				'[Main] Reloading after cleaning up stale SW registrations'
+			);
+			location.reload();
+			return;
+		}
+		// Clear the cleanup flag once we've successfully loaded without stale SWs
+		sessionStorage.removeItem('__ddx_sw_cleanup');
+	} catch (err) {
+		console.warn('[Main] Failed to enumerate SW registrations:', err);
+	}
 
-  await universalTheme.init();
+	const SW = await navigator.serviceWorker.register(resolvePath('sw.js'), {
+		scope: basePath
+	});
+	await navigator.serviceWorker.ready;
+	let systemInitialized = false;
 
-  setTimeout(() => {
-    initClipboardDeobfuscator({ debug: false });
-  }, 500);
+	await universalTheme.init();
 
-  const settingsAPI = new SettingsAPI();
-  const eventsAPI = new EventSystem();
-  const refluxAPI = new RefluxAPI();
-  await cache.init();
+	setTimeout(() => {
+		initClipboardDeobfuscator({ debug: false });
+	}, 500);
 
-  const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
-  await profilesAPI.initPromise;
+	const settingsAPI = new SettingsAPI();
+	const eventsAPI = new EventSystem();
+	const refluxAPI = new RefluxAPI();
+	//await cache.init();
 
-  const loggingAPI = new Logger();
+	const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
+	await profilesAPI.initPromise;
 
-  const proxy = new Proxy();
+	const loggingAPI = new Logger();
 
-  const proxySetting = (await settingsAPI.getItem("proxy")) ?? "sj";
-  let swConfigSettings: Record<string, any> = {};
-  const swConfig = {
-    uv: {
-      type: "sw",
-      file: resolvePath("sw.js"),
-      config: window.__uv$config,
-      func: null,
-    },
-    sj: {
-      type: "sw",
-      file: resolvePath("sw.js"),
-      config: window.__scramjet$config,
-      func: async () => {
-        await scramjetReady;
-        await proxy.setTransports();
-        console.log("Scramjet Service Worker registered.");
-      },
-    },
-    auto: {
-      type: "multi",
-      file: null,
-      config: null,
-      func: null,
-    },
-  };
+	const proxy = new Proxy(
+		Controller,
+		SW,
+		window.__scramjet$config,
+		window.__scramjet$flags
+	);
+	window.proxy = proxy;
 
-  const container: HTMLDivElement | null = document.getElementById(
-    "browser-container",
-  ) as HTMLDivElement;
+	const proxySetting = ((await settingsAPI.getItem('proxy')) ??
+		'sj') as string;
+	let swConfigSettings: Record<string, any> = {};
+	var swConfig = {
+		sj: {
+			file: resolvePath('sw.js'),
+			config: window.__scramjet$config,
+			func: async () => {
+				await proxy.setTransports();
+				console.log('Scramjet Service Worker registered.');
+			}
+		},
+		auto: {
+			file: null,
+			config: null,
+			func: null
+		}
+	};
 
-  let shadowRoot: ShadowRoot;
-  if (container) {
-    shadowRoot = container.attachShadow({ mode: "open" });
-  } else {
-    console.error("Browser container not found");
-    return;
-  }
+	const container: HTMLDivElement | null = document.getElementById(
+		'browser-container'
+	) as HTMLDivElement;
 
-  shadowRoot.append(
-    Object.assign(document.createElement("style"), {
-      textContent: varsCSS + importsCSS + globalCSS,
-    }),
-    Object.assign(document.createElement("div"), {
-      id: "root",
-      style: "width: 100%; height: 100%; position: fixed; inset: 0;",
-    }),
-  );
+	let shadowRoot: ShadowRoot;
+	if (container) {
+		shadowRoot = container.attachShadow({ mode: 'open' });
+	} else {
+		console.error('Browser container not found');
+		return;
+	}
 
-  const shadowDocument = document.implementation.createHTMLDocument("");
+	shadowRoot.append(
+		Object.assign(document.createElement('style'), {
+			textContent: varsCSS + importsCSS + globalCSS
+		}),
+		Object.assign(document.createElement('div'), {
+			id: 'root',
+			style: 'width: 100%; height: 100%; position: fixed; inset: 0;'
+		})
+	);
 
-  patchDocument(shadowRoot, shadowDocument);
+	const shadowDocument = document.implementation.createHTMLDocument('');
 
-  window.d = shadowRoot; //DONT FUCKING CHNAGE THIS TO "doc" OR ANYTHING ELSE, IT'S USED IN THE DOCUMENT PATCHING AND IF YOU CHANGE IT, THE PATCHING WILL BREAK AND THE WHOLE BROWSER WILL BREAK
+	patchDocument(shadowRoot, shadowDocument);
 
-  const initializeSystem = async () => {
-    if (systemInitialized) {
-      return;
-    }
+	window.d = shadowRoot; //DONT FUCKING CHNAGE THIS TO "doc" OR ANYTHING ELSE, IT'S USED IN THE DOCUMENT PATCHING AND IF YOU CHANGE IT, THE PATCHING WILL BREAK AND THE WHOLE BROWSER WILL BREAK
 
-    systemInitialized = true;
+	const initializeSystem = async () => {
+		console.log(swConfig[proxySetting as keyof typeof swConfig]);
+		if (systemInitialized) {
+			return;
+		}
 
-    setTimeout(() => {
-      const theming = universalTheme.getTheming();
-      theming.applyTheme(theming.currentTheme);
-    }, 100);
+		systemInitialized = true;
 
-    const proto = new Protocols(swConfig, proxySetting, proxy);
-    const windowing = new Windowing();
-    const globalFunctions = new DDXGlobal();
-    const items = new Items();
-    const tabs = new Tabs(proto, swConfig, proxySetting, items, proxy);
+		setTimeout(() => {
+			const theming = universalTheme.getTheming();
+			theming.applyTheme(theming.currentTheme);
+		}, 100);
 
-    window.tabs = tabs;
-    window.protocols = proto;
-    window.windowing = windowing;
-    window.items = items;
-    window.eventsAPI = eventsAPI;
-    window.settings = settingsAPI;
-    window.cache = cache;
-    window.proxy = proxy;
-    //@ts-ignore
-    window.reflux = refluxAPI;
-    window.logging = loggingAPI;
+		const proto = new Protocols(swConfig, proxySetting, proxy);
+		const windowing = new Windowing();
+		const globalFunctions = new DDXGlobal();
+		const items = new Items();
+		const tabs = new Tabs(proto, swConfig, proxySetting, items, proxy);
 
-  const startupBehavior =
-    (await settingsAPI.getItem("startupBehavior")) || "newtab";
-  const startupCustomUrl =
-    (await settingsAPI.getItem("startupCustomUrl")) || "";
+		window.tabs = tabs;
+		window.protocols = proto;
+		window.windowing = windowing;
+		window.items = items;
+		window.eventsAPI = eventsAPI;
+		window.settings = settingsAPI;
+		window.cache = cache;
+		window.proxy = proxy;
+		//@ts-ignore
+		window.reflux = refluxAPI;
+		window.logging = loggingAPI;
 
-  if ("serviceWorker" in navigator) {
+		const startupBehavior =
+			(await settingsAPI.getItem('startupBehavior')) || 'newtab';
+		const startupCustomUrl =
+			(await settingsAPI.getItem('startupCustomUrl')) || '';
+
+		/*if ("serviceWorker" in navigator) {
     await navigator.serviceWorker.ready;
-  }
+  }*/
 
-  let restored = false;
-  if (startupBehavior === "restore") {
-    restored = await window.tabs.restoreSession();
-  }
+		let restored = false;
+		if (startupBehavior === 'restore') {
+			restored = await window.tabs.restoreSession();
+		}
 
-  if (!restored) {
-    if (startupBehavior === "custom" && startupCustomUrl) {
-      window.tabs.createTab(startupCustomUrl);
-    } else {
-      window.tabs.createTab("ddx://newtab/");
-    }
-  }
+		if (!restored) {
+			if (startupBehavior === 'custom' && startupCustomUrl) {
+				window.tabs.createTab(startupCustomUrl);
+			} else {
+				window.tabs.createTab('ddx://newtab/');
+			}
+		}
 
-  window.addEventListener("beforeunload", () => {
-    window.tabs.saveSession();
-  });
+		window.addEventListener('beforeunload', () => {
+			window.tabs.saveSession();
+		});
 
-  const functions = new Functions(tabs, proto);
-  await functions.initPromise;
-  await functions.init();
+		const functions = new Functions(tabs, proto);
+		await functions.initPromise;
+		await functions.init();
 
-  if (
+		/*if (
     proxySetting === "sj" &&
     swConfig[proxySetting as keyof typeof swConfig] &&
     typeof swConfig[proxySetting as keyof typeof swConfig].func === "function"
@@ -207,13 +230,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (transport == null) {
     await proxy.setTransports();
   }
-  const uvSearchBar = items.addressBar;
+  const searchBar = items.addressBar;
 
-  uvSearchBar!.addEventListener("keydown", async (e) => {
+  searchBar!.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
 
-      const searchValue = uvSearchBar!.value.trim();
+      const searchValue = searchBar!.value.trim();
 
       if (proto.isRegisteredProtocol(searchValue)) {
         const url =
@@ -260,16 +283,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (swConfigSettings && swConfigSettings.type) {
           switch (swConfigSettings.type) {
             case "sw":
-              let encodedUrl =
-                swConfigSettings.config.prefix +
-                window.__uv$config.encodeUrl(proxy.search(searchValue));
               const activeIframe = document.querySelector(
                 "iframe.active",
-              ) as HTMLIFrameElement;
+              ) as HTMLIFrameElement | null;
+              const framePrefix =
+                (activeIframe && proxy.getPrefixByFrame(activeIframe)) ||
+                swConfigSettings.config.prefix;
+              const encodedUrl =
+                framePrefix +
+                proxy.encodeUrl(proxy.search(searchValue));
               if (activeIframe) {
                 activeIframe.src = encodedUrl;
-              }
-              if (!activeIframe) {
+              } else {
                 tabs.createTab(location.origin + encodedUrl);
               }
               break;
@@ -281,29 +306,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const searchSuggestionsEnabled =
     (await settingsAPI.getItem("searchSuggestions")) !== "false";
-  if (searchSuggestionsEnabled) {
+  /*if (searchSuggestionsEnabled) {
     const searchbar = new Search(proxy, swConfig, proxySetting, proto);
     if (items.addressBar) {
       await searchbar.init(items.addressBar);
     }
     window.searchbar = searchbar;
-  }
+  }*/
 
-  window.logging = loggingAPI;
-  window.profiles = profilesAPI;
-  window.globals = globalFunctions;
-  //window.renderer = render;
-  window.functions = functions;
-  window.SWconfig = swConfig;
-  window.ProxySettings = proxySetting;
+		window.logging = loggingAPI;
+		window.profiles = profilesAPI;
+		window.globals = globalFunctions;
+		//window.renderer = render;
+		window.functions = functions;
+		window.SWconfig = swConfig;
+		window.ProxySettings = proxySetting;
+	};
 
-  };
-
-  createRoot(shadowRoot.getElementById("root")!).render(
-    <StrictMode>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Render onReady={initializeSystem} />
-      </Suspense>
-    </StrictMode>,
-  );
+	createRoot(shadowRoot.getElementById('root')!).render(
+		<StrictMode>
+			<Suspense fallback={<div>Loading...</div>}>
+				<Render onReady={initializeSystem} />
+			</Suspense>
+		</StrictMode>
+	);
 });

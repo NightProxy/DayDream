@@ -228,6 +228,13 @@ export function Render({ onReady }: RenderProps) {
               <div className="flex items-center gap-1 rounded-xl bg-[var(--bg-2)] p-1 ring-1 ring-[var(--white-10)]">
                 <button
                   className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  aria-label="Vertical Tabs"
+                  data-component="vertical-tabs"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
                   aria-label="Back"
                   data-component="back"
                 >
@@ -265,10 +272,8 @@ export function Render({ onReady }: RenderProps) {
                 <input
                   type="text"
                   data-component="address-bar"
-                  value="newtab"
                   className="w-full rounded-xl bg-[var(--bg-2)] pl-[2.5rem] py-2 text-sm text-[var(--text)] ring-1 ring-inset ring-[var(--main-35a)] outline-none placeholder:text-[var(--text)]/40 focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_0_1px_var(--shadow-outer),inset_0_0_0_1px_var(--shadow-inner)]"
                   placeholder="Search or enter website name"
-                  readOnly
                 />
               </div>
               <button

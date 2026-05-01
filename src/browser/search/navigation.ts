@@ -1,177 +1,167 @@
-import type { Protocols } from "@browser/protocols";
-import type { Proxy } from "@apis/proxy";
-import type { Logger } from "@apis/logging";
-import type { GameData } from "./types";
+import type { Protocols } from '@browser/protocols';
+import type { Proxy } from '@apis/proxy';
+import type { Logger } from '@apis/logging';
+import type { GameData } from './types';
+import { decodeProxiedUrl } from '@browser/tabs/urlDecoder';
 
 export async function handleSuggestionClick(
-  suggestion: string,
-  proto: Protocols,
-  proxy: Proxy,
-  swConfig: any,
-  proxySetting: string,
-  logger: Logger,
+	suggestion: string,
+	proto: Protocols,
+	proxy: Proxy,
+	swConfig: any,
+	proxySetting: string,
+	logger: Logger
 ): Promise<void> {
-  try {
-    if (proto.isRegisteredProtocol(suggestion)) {
-      const processedUrl = await proto.processUrl(suggestion);
-      if (
-        typeof processedUrl === "string" &&
-        processedUrl.includes("/internal/")
-      ) {
-        const iframe = document.querySelector(
-          "iframe.active",
-        ) as HTMLIFrameElement | null;
-        if (iframe) {
-          iframe.setAttribute("src", processedUrl);
-        }
-      }
-    } else {
-      await proxy.redirect(swConfig, proxySetting, suggestion);
-    }
-  } catch (error) {
-    console.error("Navigation error:", error);
-    logger.createLog(`Navigation error: ${error}`);
-  }
+	try {
+		if (proto.isRegisteredProtocol(suggestion)) {
+			const processedUrl = await proto.processUrl(suggestion);
+			if (
+				typeof processedUrl === 'string' &&
+				processedUrl.includes('/internal/')
+			) {
+				const iframe = document.querySelector(
+					'iframe.active'
+				) as HTMLIFrameElement | null;
+				if (iframe) {
+					iframe.setAttribute('src', processedUrl);
+				}
+			}
+		} else {
+			await proxy.redirect(swConfig, proxySetting, suggestion);
+		}
+	} catch (error) {
+		console.error('Navigation error:', error);
+		logger.createLog(`Navigation error: ${error}`);
+	}
 }
 
 export async function handleDirectNavigation(
-  input: string,
-  proto: Protocols,
-  proxy: Proxy,
-  swConfig: any,
-  proxySetting: string,
-  logger: Logger,
+	input: string,
+	proto: Protocols,
+	proxy: Proxy,
+	swConfig: any,
+	proxySetting: string,
+	logger: Logger
 ): Promise<void> {
-  try {
-    if (proto.isRegisteredProtocol(input)) {
-      const processedUrl = await proto.processUrl(input);
-      if (
-        typeof processedUrl === "string" &&
-        processedUrl.includes("/internal/")
-      ) {
-        const iframe = document.querySelector(
-          "iframe.active",
-        ) as HTMLIFrameElement | null;
-        if (iframe) {
-          iframe.setAttribute("src", processedUrl);
+	try {
+		if (proto.isRegisteredProtocol(input)) {
+			const processedUrl = await proto.processUrl(input);
+			if (
+				typeof processedUrl === 'string' &&
+				processedUrl.includes('/internal/')
+			) {
+				const iframe = document.querySelector(
+					'iframe.active'
+				) as HTMLIFrameElement | null;
+				if (iframe) {
+					iframe.setAttribute('src', processedUrl);
 
-          window.dispatchEvent(
-            new CustomEvent("tabNavigated", {
-              detail: {
-                tabId: iframe.getAttribute("data-tab-id") || "unknown",
-                url: processedUrl,
-                fromSearch: true,
-              },
-            }),
-          );
-        }
-      }
-    } else {
-      await proxy.redirect(swConfig, proxySetting, input);
+					window.dispatchEvent(
+						new CustomEvent('tabNavigated', {
+							detail: {
+								tabId:
+									iframe.getAttribute('data-tab-id') ||
+									'unknown',
+								url: processedUrl,
+								fromSearch: true
+							}
+						})
+					);
+				}
+			}
+		} else {
+			await proxy.redirect(swConfig, proxySetting, input);
 
-      const iframe = document.querySelector(
-        "iframe.active",
-      ) as HTMLIFrameElement | null;
-      if (iframe) {
-        window.dispatchEvent(
-          new CustomEvent("tabNavigated", {
-            detail: {
-              tabId: iframe.getAttribute("data-tab-id") || "unknown",
-              url: input,
-              fromSearch: true,
-            },
-          }),
-        );
-      }
-    }
-  } catch (error) {
-    console.error("Direct navigation error:", error);
-    logger.createLog(`Direct navigation error: ${error}`);
-  }
+			const iframe = document.querySelector(
+				'iframe.active'
+			) as HTMLIFrameElement | null;
+			if (iframe) {
+				window.dispatchEvent(
+					new CustomEvent('tabNavigated', {
+						detail: {
+							tabId:
+								iframe.getAttribute('data-tab-id') || 'unknown',
+							url: input,
+							fromSearch: true
+						}
+					})
+				);
+			}
+		}
+	} catch (error) {
+		console.error('Direct navigation error:', error);
+		logger.createLog(`Direct navigation error: ${error}`);
+	}
 }
 
 export async function handleGameClick(
-  game: GameData,
-  proxy: Proxy,
-  swConfig: any,
-  proxySetting: string,
-  logger: Logger,
+	game: GameData,
+	proxy: Proxy,
+	swConfig: any,
+	proxySetting: string,
+	logger: Logger
 ): Promise<void> {
-  try {
-    await proxy.redirect(swConfig, proxySetting, game.link);
+	try {
+		await proxy.redirect(swConfig, proxySetting, game.link);
 
-    const iframe = document.querySelector(
-      "iframe.active",
-    ) as HTMLIFrameElement | null;
-    if (iframe) {
-      window.dispatchEvent(
-        new CustomEvent("tabNavigated", {
-          detail: {
-            tabId: iframe.getAttribute("data-tab-id") || "unknown",
-            url: game.link,
-            fromGame: true,
-            gameTitle: game.name,
-          },
-        }),
-      );
-    }
-  } catch (error) {
-    console.error("Game navigation error:", error);
-    logger.createLog(`Game navigation error: ${error}`);
-  }
+		const iframe = document.querySelector(
+			'iframe.active'
+		) as HTMLIFrameElement | null;
+		if (iframe) {
+			window.dispatchEvent(
+				new CustomEvent('tabNavigated', {
+					detail: {
+						tabId: iframe.getAttribute('data-tab-id') || 'unknown',
+						url: game.link,
+						fromGame: true,
+						gameTitle: game.name
+					}
+				})
+			);
+		}
+	} catch (error) {
+		console.error('Game navigation error:', error);
+		logger.createLog(`Game navigation error: ${error}`);
+	}
 }
 
 export async function syncAddressBar(
-  iframe: HTMLIFrameElement,
-  searchbar: HTMLInputElement,
-  proto: Protocols,
-  logger: Logger,
+	iframe: HTMLIFrameElement,
+	searchbar: HTMLInputElement,
+	proto: Protocols,
+	logger: Logger
 ): Promise<void> {
-  try {
-    let url = new URL(iframe.src).pathname;
+	try {
+		// First chance: raw path maps to an internal URL.
+		const rawPath = new URL(iframe.src).pathname;
+		const internalCheck = await proto.getInternalURL(rawPath);
+		if (
+			typeof internalCheck === 'string' &&
+			proto.isRegisteredProtocol(internalCheck)
+		) {
+			searchbar.value = internalCheck;
+			return;
+		}
 
-    const internalCheck = await proto.getInternalURL(url);
-    if (
-      typeof internalCheck === "string" &&
-      proto.isRegisteredProtocol(internalCheck)
-    ) {
-      searchbar.value = internalCheck;
-      return;
-    }
+		// Centralized decode (active iframe → registered frames → SWconfig).
+		const decodedUrl = decodeProxiedUrl(iframe.src, (window as any).proxy);
 
-    const windowObj = window as any;
-    const proxyConfig = windowObj.SWconfig?.[windowObj.ProxySettings];
-
-    if (proxyConfig?.config?.prefix) {
-      url = url.replace(proxyConfig.config.prefix, "");
-    }
-
-    let decodedUrl = url;
-    if (windowObj.__uv$config?.decodeUrl) {
-      try {
-        decodedUrl = windowObj.__uv$config.decodeUrl(url);
-      } catch {
-        decodedUrl = iframe.src;
-      }
-    }
-
-    const decodedCheck = await proto.getInternalURL(decodedUrl);
-
-    if (
-      typeof decodedCheck === "string" &&
-      proto.isRegisteredProtocol(decodedCheck)
-    ) {
-      searchbar.value = decodedCheck;
-    } else {
-      try {
-        const urlObj = new URL(decodedUrl);
-        searchbar.value = urlObj.href;
-      } catch {
-        searchbar.value = decodedUrl;
-      }
-    }
-  } catch (error) {
-    console.warn("Failed to sync address bar:", error);
-    logger.createLog(`Address bar sync error: ${error}`);
-  }
+		const decodedCheck = await proto.getInternalURL(decodedUrl);
+		if (
+			typeof decodedCheck === 'string' &&
+			proto.isRegisteredProtocol(decodedCheck)
+		) {
+			searchbar.value = decodedCheck;
+		} else {
+			try {
+				const urlObj = new URL(decodedUrl);
+				searchbar.value = urlObj.href;
+			} catch {
+				searchbar.value = decodedUrl;
+			}
+		}
+	} catch (error) {
+		console.warn('Failed to sync address bar:', error);
+		logger.createLog(`Address bar sync error: ${error}`);
+	}
 }

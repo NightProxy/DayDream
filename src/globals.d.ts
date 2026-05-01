@@ -1,54 +1,52 @@
+import type { ProxyTransport } from '@mercuryworkshop/proxy-transports';
+import type * as ScramjetGlobal from '@mercuryworkshop/scramjet';
+import type * as ScramjetControllerGlobal from '@mercuryworkshop/scramjet-controller';
+
 declare global {
-  interface Window {
-    __uv$config: UVConfig;
-    __scramjet$config: SJConfig;
-    __uv$eval: Function;
-    $scramjet$wrap: Function;
-    nightmare: Nightmare;
-    settings: SettingsAPI;
-    cache: CacheAPI;
-    eventsAPI: EventSystem;
-    extensions: ExtensionsAPI;
-    proxy: Proxy;
-    protocols: Protocols;
-    logging: Logger;
-    profiles: ProfilesAPI;
-    globals: DDXGlobal;
-    renderer: Render;
-    items: Items;
-    tabs: Tabs;
-    windowing: Windowing;
-    functions: Functions;
-    keys: Keys;
-    searchbar: Search;
-    SWconfig: any;
-    SWSettings: any;
-    ProxySettings: string;
-    ChiiDevtoolsIframe?: HTMLIFrameElement;
-    liveInject?: any;
-    codeInject?: any;
-    d: ShadowRoot;
-  }
+	const $scramjet: typeof ScramjetGlobal;
+	const $scramjetController: typeof ScramjetControllerGlobal;
+	interface Window {
+		__scramjet$config: SJConfig;
+		__scramjet$flags: SJFlags;
+		__obscura: {
+			ready: boolean;
+			encode: (url: string) => string;
+			decode: (url: string) => string;
+		};
+		$scramjet$wrap: Function;
+		nightmare: Nightmare;
+		settings: SettingsAPI;
+		cache: CacheAPI;
+		eventsAPI: EventSystem;
+		extensions: ExtensionsAPI;
+		proxy: Proxy;
+		protocols: Protocols;
+		logging: Logger;
+		profiles: ProfilesAPI;
+		globals: DDXGlobal;
+		renderer: Render;
+		items: Items;
+		tabs: Tabs;
+		windowing: Windowing;
+		functions: Functions;
+		keys: Keys;
+		searchbar: Search;
+		SWconfig: any;
+		SWSettings: any;
+		ProxySettings: string;
+		ChiiDevtoolsIframe?: HTMLIFrameElement;
+		liveInject?: any;
+		codeInject?: any;
+		d: ShadowRoot;
+	}
 
-  interface UVConfig {
-    prefix: string;
-    encodeUrl: Function;
-    decodeUrl: Function;
-    handler: string;
-    client: string;
-    bundle: string;
-    config: string;
-    sw: string;
-  }
+	interface SWConfig {
+		file: string;
+		config: any;
+		func: Function;
+	}
 
-  interface SWConfig {
-    type: string;
-    file: string;
-    config: any;
-    func: Function;
-  }
-
-  interface SJOptions {
+	/*interface SJOptions {
     prefix: string;
     globals?: {
       wrapfn: string;
@@ -83,13 +81,69 @@ declare global {
       encode: string;
       decode: string;
     };
-  }
+  }*/
 
-  declare class ScramjetController {
+	interface SJConfig {
+		prefix: string;
+		injectPath: string;
+		scramjetPath: string;
+		virtualWasmPath: string;
+		wasmPath: string;
+		codec: {
+			encode: (url: string) => string;
+			decode: (url: string) => string;
+		};
+	}
+
+	interface SJFlags {
+		globals: {
+			wrapfn: string;
+			wrappropertybase: string;
+			wrappropertyfn: string;
+			cleanrestfn: string;
+			importfn: string;
+			rewritefn: string;
+			metafn: string;
+			wrappostmessagefn: string;
+			pushsourcemapfn: string;
+			trysetfn: string;
+			templocid: string;
+			tempunusedid: string;
+		};
+		flags: {
+			syncxhr: boolean;
+			strictRewrites: boolean;
+			rewriterLogs: boolean;
+			captureErrors: boolean;
+			cleanErrors: boolean;
+			scramitize: boolean;
+			sourcemaps: boolean;
+			destructureRewrites: boolean;
+			allowInvalidJs: boolean;
+			debugTrampolines: boolean;
+			allowFailedIntercepts: boolean;
+			encapsulateWorkers: boolean;
+			debugSourceURL: boolean;
+		};
+		siteFlags: Record<string, any>;
+		maskedfiles: string[];
+	}
+
+	/*declare class ScramjetController {
     constructor(opts: SJOptions);
     init(path?: string): Promise<void>;
     encodeUrl(term: string): string;
-  }
+  }*/
+
+	interface SJController {
+		id: string;
+		config: SJConfig;
+		scramjetConfig: SJFlags;
+		frames: ScramjetControllerGlobal.Frame[];
+		serviceWorkerController: ServiceWorker | null;
+		rpc: any;
+		transport: ProxyTransport | null;
+	}
 }
 
 export {};

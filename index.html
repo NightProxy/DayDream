@@ -1,55 +1,55 @@
 <!doctype html>
 
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DayDream X</title>
-    <script>
-      self.__ddxBase = (function () {
-        var p = location.pathname;
-        var i = p.indexOf("/internal/");
-        if (i !== -1) return p.substring(0, i + 1);
-        return new URL("./", location.href).pathname;
-      })();
-    </script>
-    <script src="./data/bundle.js" defer></script>
-    <script src="./data/config.js" defer></script>
-    <script src="./assets/config.js" defer></script>
-    <script src="./assets/all.js" defer></script>
-    <link rel="icon" type="image/x-icon" href="./res/logo.png" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
-    />
-    <meta name="description" content="Your favorite Browser in a browser" />
-    <meta
-      name="keywords"
-      content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
-    />
-    <meta property="og:image" content="./res/logo.png" />
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>DayDream X</title>
+		<script>
+			self.__ddxBase = (function () {
+				var p = location.pathname;
+				var i = p.indexOf('/internal/');
+				if (i !== -1) return p.substring(0, i + 1);
+				return new URL('./', location.href).pathname;
+			})();
+		</script>
+		<script src="./assets/config.js" defer></script>
+		<script type="module" src="./obscura-init.js"></script>
+		<script src="./assets/s.js" defer></script>
+    <script src="./assets/api.js" defer></script>
+		<link rel="icon" type="image/x-icon" href="./res/logo.png" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+		/>
+		<meta name="description" content="Your favorite Browser in a browser" />
+		<meta
+			name="keywords"
+			content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
+		/>
+		<meta property="og:image" content="./res/logo.png" />
 
-    <script>
-      // Analytics
-      document.head.append(
-        Object.assign(document.createElement("script"), {
-          async: true,
-          src: "https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z",
-        }),
-        Object.assign(document.createElement("script"), {
-          textContent:
-            "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-BMERY7ZH6Z');",
-        }),
-      );
-    </script>
-  </head>
+		<script>
+			// Analytics
+			document.head.append(
+				Object.assign(document.createElement('script'), {
+					async: true,
+					src: 'https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z'
+				}),
+				Object.assign(document.createElement('script'), {
+					textContent:
+						"window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-BMERY7ZH6Z');"
+				})
+			);
+		</script>
+	</head>
 
-  <body class="bg-[var(--background-color)] text-[var(--text-color)]">
-    <div id="browser-container"></div>
-    <script type="module" src="/src/index.tsx" defer></script>
-  </body>
+	<body class="bg-[var(--background-color)] text-[var(--text-color)]">
+		<div id="browser-container"></div>
+		<script type="module" src="/src/index.tsx" defer></script>
+	</body>
 </html>
