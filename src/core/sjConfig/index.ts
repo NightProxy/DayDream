@@ -1,23 +1,45 @@
 import { basePath } from '@core/shared/path';
-// Pre-bundled Obscura: a single ES module with the wasm bytes inlined as
-// base64 and `initSync` running on import. It exports `encode` / `decode`
-// directly and also pins itself to `globalThis.__obscura`.
-//
-// Building this once up front (`bun run obscura:bundle`) means sjConfig pulls
-// in a self-contained codec — no second HTTP fetch, no async dance, no
-// blocking XHR. SJ V2 runs on the main thread, so attaching here is enough.
-import {
-	encode as __obscuraEncode,
-	decode as __obscuraDecode,
-	obscura as __obscura
-} from '../../pkgs/Obscura/dist/obscura.js';
+// NOTE: WASM Obscura implementation temporarily disabled due to upstream SJ bug.
+// import {
+// 	encode as __obscuraEncode,
+// 	decode as __obscuraDecode,
+// 	obscura as __obscura
+// } from '../../pkgs/Obscura/dist/obscura.js';
 
 var _b = basePath || '/';
 
-// Re-pin in case load order ever ends up with this module evaluated before
-// the obscura bundle's own side-effectful `globalThis.__obscura = ...` runs
-// (it shouldn't, since we statically import it, but cheap insurance).
-self.__obscura = __obscura;
+const encodeUrl = function encode(str: string) {
+	if (!str) return str;
+	return encodeURIComponent(
+		str
+			.toString()
+			.split('')
+			.map((char, ind) =>
+				ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char
+			)
+			.join('')
+	);
+};
+
+const decodeUrl = function decode(str: string) {
+	if (!str) return str;
+	let [input, ...search] = str.split('?');
+
+	return (
+		decodeURIComponent(input)
+			.split('')
+			.map((char, ind) =>
+				ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char
+			)
+			.join('') + (search.length ? '?' + search.join('?') : '')
+	);
+};
+
+self.__obscura = {
+	ready: true,
+	encode: encodeUrl,
+	decode: decodeUrl
+};
 
 /*self.__scramjet$config = {
 	prefix: _b + 'assets/res/',
@@ -125,16 +147,8 @@ const scramjetConfig = {
 	virtualWasmPath: 'wasm.js',
 	wasmPath: _b + 'assets/s.wasm',
 	codec: {
-		encode: (url: string) => {
-			if (!url) return url;
-
-			return __obscuraEncode(url);
-		},
-		decode: (url: string) => {
-			if (!url) return url;
-
-			return __obscuraDecode(url);
-		}
+		encode: encodeUrl,
+		decode: decodeUrl
 	}
 };
 

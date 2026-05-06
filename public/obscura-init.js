@@ -1,23 +1,40 @@
-// Backwards-compatibility shim.
-//
-// Obscura is now bootstrapped synchronously by the sjConfig bundle
-// (assets/config.js) which loads before this file. That bundle attaches
-// `window.__obscura` and wires the codec into `window.__scramjet$config.codec`.
-//
-// This file used to own that responsibility (with an encodeURIComponent stub).
-// It is kept around solely so existing call sites that import or reference
-// `obscura-init.js` continue to work without changes. It is intentionally a
-// no-op when `__obscura` is already present, and just warns otherwise — we no
-// longer install a fallback codec because that masks real load failures and
-// would silently produce non-Obscura URLs that decode would reject.
-
 (() => {
-	if (self.__obscura && typeof self.__obscura.encode === 'function') {
-		// sjConfig already initialized Obscura — nothing to do.
-		return;
-	}
+	const encodeUrl = function encode(str) {
+		if (!str) return str;
+		return encodeURIComponent(
+			str
+				.toString()
+				.split('')
+				.map((char, ind) =>
+					ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char
+				)
+				.join('')
+		);
+	};
 
-	console.warn(
-		'[obscura-init] __obscura not found on global; sjConfig may have failed to load.'
-	);
+	const decodeUrl = function decode(str) {
+		if (!str) return str;
+		let [input, ...search] = str.split('?');
+
+		return (
+			decodeURIComponent(input)
+				.split('')
+				.map((char, ind) =>
+					ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char
+				)
+				.join('') + (search.length ? '?' + search.join('?') : '')
+		);
+	};
+
+	self.__obscura = {
+		encode: encodeUrl,
+		decode: decodeUrl
+	};
+
+	if (self.__scramjet$config) {
+		self.__scramjet$config.codec = {
+			encode: encodeUrl,
+			decode: decodeUrl
+		};
+	}
 })();

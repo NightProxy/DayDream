@@ -712,11 +712,12 @@ class Proxy implements ProxyInterface {
 		return encodedUrl;
 	}
 
-	async fetch(url: any, params?: any) {
+	async fetch(url: string, method?: string, body?: any, headers: [string, string][] = []): Promise<string> {
 		await this.setTransports();
 		const transport = await this.getTransports();
 		const client = transport.controller;
-		const response = await client.request(url, params);
+		transport.controller.init();
+		const response = await client.request(url, method, body, headers);
 
 		return await response.text();
 	}

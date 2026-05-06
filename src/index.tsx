@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		await functions.initPromise;
 		await functions.init();
 
-		/*if (
+		if (
     proxySetting === "sj" &&
     swConfig[proxySetting as keyof typeof swConfig] &&
     typeof swConfig[proxySetting as keyof typeof swConfig].func === "function"
@@ -252,17 +252,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.warn("No active iframe found for navigation");
         }
       } else {
-        if (proxySetting === "auto") {
-          const result = (await proxy.automatic(
-            proxy.search(searchValue),
-            swConfig,
-          )) as Record<string, any>;
-          swConfigSettings = result;
-          window.SWSettings = swConfigSettings;
-        } else {
           swConfigSettings = swConfig[proxySetting as keyof typeof swConfig];
           window.SWSettings = swConfigSettings;
-        }
 
         if (
           proxySetting === "sj" &&

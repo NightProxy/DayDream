@@ -3,16 +3,17 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --host & tsx index.ts",
+    "dev": "tsx devserver.ts",
+    "core:dev": "vite dev --host & tsx index.ts",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "start": "tsx index.ts",
     "knip": "knip",
     "obscura:build": "cd src/pkgs/Obscura && wasm-pack build --target web",
-    "obscura:bundle": "rolldown -c src/pkgs/Obscura/rolldown.config.mjs",
-    "sw:build": "rolldown src/core/sw/index.ts --format iife -m --file src/core/sw/dist/sw.js",
-    "config:build": "rolldown src/core/sjConfig/index.ts --file src/core/sjConfig/dist/config.js --format iife"
+    "obscura:bundle": "rolldown -c src/pkgs/Obscura/rolldown.config.ts",
+    "sw:build": "rolldown -c src/core/sw/rolldown.config.ts",
+    "config:build": "rolldown -c src/core/sjConfig/rolldown.config.ts"
   },
   "devDependencies": {
     "@types/draggabilly": "^2.1.6",
