@@ -11,6 +11,7 @@ import {
 	createCorsPreflightResponse,
 	getErrorMessage,
 	isCfRequest,
+	isAdRequest,
 	isInternalRoute,
 	isJsonCacheRoute,
 	isServerRoutedEndpoint,
@@ -100,9 +101,11 @@ class DDXWorker {
 	private transportReadyResolve: (() => void) | null = null;
 	private readonly transportReady: Promise<void>;
 	private readonly wispManager: WispManager;
+	private readonly settings: SettingsAPI;
 
 	constructor() {
-		this.wispManager = new WispManager(new SettingsAPI());
+		this.settings = new SettingsAPI();
+		this.wispManager = new WispManager(this.settings);
 		this.transportReady = new Promise(resolve => {
 			this.transportReadyResolve = resolve;
 		});
@@ -258,6 +261,16 @@ class DDXWorker {
 		}
 	}
 
+	private async isAdBlockEnabled(): Promise<boolean> {
+		const adblockSetting = await this.settings.getItem<boolean>('adblock');
+		if (adblockSetting !== null) {
+			return adblockSetting;
+		}
+
+		// Default to disabled if not set
+		return false;
+	}
+
 	async handleRequest(event: FetchEventLike): Promise<Response> {
 		const url = new URL(event.request.url);
 		const relativePath = stripBase(url.pathname);
@@ -269,6 +282,10 @@ class DDXWorker {
 		await this.wispManager.ensureWisp();
 
 		if (isCfRequest(event.request.url, this.cfBlockPatterns)) {
+			return new Response(null, { status: 204 });
+		}
+
+		if (await this.isAdBlockEnabled() && isAdRequest(event.request.url, event.request)) {
 			return new Response(null, { status: 204 });
 		}
 

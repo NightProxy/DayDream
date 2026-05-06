@@ -279,40 +279,6 @@
     },
     "customizable": true
   },
-  "one-dark": {
-    "name": "One Dark",
-    "description": "Atom One Dark theme",
-    "background-color": "rgba(40, 44, 52, 1)",
-    "hover-background-color": "rgba(97, 175, 239, 0.13)",
-    "input-background-color": "rgba(33, 37, 43, 1)",
-    "tab-bg-color": "rgba(54, 59, 69, 1)",
-    "tab-active-bg-color": "rgba(76, 82, 99, 1)",
-    "utility-background-color": "rgba(54, 59, 69, 1)",
-    "dark-translucent-bg": "rgba(76, 82, 99, 0.43)",
-    "border-color": "rgba(76, 82, 99, 1)",
-    "text-color": "rgba(171, 178, 191, 1)",
-    "hover-text-color": "rgba(171, 178, 191, 0.7)",
-    "active-text-color": "rgba(97, 175, 239, 1)",
-    "main-color": "rgba(97, 175, 239, 1)",
-    "faded-main-color": "rgba(97, 175, 239, 0.26)",
-    "accent-colors": [
-      "#61afef",
-      "#98c379",
-      "#e5c07b",
-      "#d19a66",
-      "#be5046",
-      "#c678dd"
-    ],
-    "color-roles": {
-      "blue": "#61afef",
-      "green": "#98c379",
-      "yellow": "#e5c07b",
-      "orange": "#d19a66",
-      "red": "#be5046",
-      "purple": "#c678dd"
-    },
-    "customizable": true
-  },
   "Amoled": {
     "name": "Amoled",
     "description": "By Name=Yug",

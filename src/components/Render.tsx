@@ -21,6 +21,8 @@ import {
   Bookmark,
   Dices,
   SquareMousePointer,
+  PanelLeft,
+  Brain
 } from "lucide-react";
 import { resolvePath } from "@utils/basepath";
 
@@ -138,6 +140,20 @@ export function Render({ onReady }: RenderProps) {
                   <History className="h-4 w-4" />
                 </button>
               </li>
+              <li className="self-center">
+                <button
+                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                  data-tooltip="AI"
+                  data-side="right"
+                  data-align="center"
+                  onClick={async () => {
+                    await window.tabs.createTab("ddx://ai/")
+                  }}
+
+                >
+                  <Brain className="h-4 w-4" />
+                </button>
+              </li>
             </div>
             <div className="flex flex-col gap-2">
               <li className="self-center">
@@ -231,7 +247,7 @@ export function Render({ onReady }: RenderProps) {
                   aria-label="Vertical Tabs"
                   data-component="vertical-tabs"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <PanelLeft className="h-4 w-4"/>
                 </button>
                 <button
                   className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
