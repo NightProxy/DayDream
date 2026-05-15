@@ -61,6 +61,35 @@ async function writeFileUtf8(
 	});
 }
 
+async function readFileBinary(
+	store: FSType,
+	path: string
+): Promise<Uint8Array> {
+	return new Promise((resolve, reject) => {
+		store.readFile(path, (err, content) => {
+			if (err) {
+				reject(err);
+				return;
+			}
+			if (content instanceof Uint8Array) {
+				resolve(content);
+				return;
+			}
+			resolve(new Uint8Array(content as ArrayBuffer));
+		});
+	});
+}
+
+async function writeFileBinary(
+	store: FSType,
+	path: string,
+	content: Uint8Array
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		store.writeFile(path, content, err => (err ? reject(err) : resolve()));
+	});
+}
+
 async function ensureDir(store: FSType, path: string): Promise<void> {
 	if (path === '/' || path === '') return;
 
@@ -113,8 +142,69 @@ async function readCacheFile(relativePath: string): Promise<string | null> {
 	}
 }
 
+async function writeCacheBinaryFile(
+	relativePath: string,
+	body: Uint8Array
+): Promise<void> {
+	const store = await getStore();
+	const path = cachePath(relativePath);
+	await ensureDir(store, dirname(path));
+	await writeFileBinary(store, path, body);
+}
+
+async function readCacheBinaryFile(
+	relativePath: string
+): Promise<Uint8Array | null> {
+	const store = await getStore();
+	const path = cachePath(relativePath);
+	if (!(await exists(store, path))) return null;
+
+	try {
+		return await readFileBinary(store, path);
+	} catch {
+		return null;
+	}
+}
+
+function cacheMetaPath(relativePath: string): string {
+	return `${relativePath}.meta.json`;
+}
+
+async function writeCacheMeta(
+	relativePath: string,
+	meta: { contentType: string }
+): Promise<void> {
+	await writeCacheFile(cacheMetaPath(relativePath), JSON.stringify(meta));
+}
+
+async function readCacheMeta(
+	relativePath: string
+): Promise<{ contentType: string } | null> {
+	const raw = await readCacheFile(cacheMetaPath(relativePath));
+	if (!raw) return null;
+	try {
+		const parsed = JSON.parse(raw) as { contentType?: unknown };
+		if (
+			typeof parsed.contentType === 'string' &&
+			parsed.contentType.length > 0
+		) {
+			return { contentType: parsed.contentType };
+		}
+		return null;
+	} catch {
+		return null;
+	}
+}
+
 function buildFetchPath(relativePath: string): string {
 	return basePath + relativePath.replace(/^\//, '');
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+	return bytes.buffer.slice(
+		bytes.byteOffset,
+		bytes.byteOffset + bytes.byteLength
+	) as ArrayBuffer;
 }
 
 export async function serveInternalPage(
@@ -209,6 +299,66 @@ export async function serveJsonFile(relativePath: string): Promise<Response> {
 			err
 		);
 		return new Response('JSON not available', {
+			status: 503,
+			headers: {
+				'Content-Type': 'text/plain; charset=utf-8'
+			}
+		});
+	}
+}
+
+export async function serveResFile(relativePath: string): Promise<Response> {
+	const fetchPath = buildFetchPath(relativePath);
+
+	try {
+		const response = await fetch(fetchPath);
+		if (response.ok) {
+			const bytes = new Uint8Array(await response.clone().arrayBuffer());
+			await writeCacheBinaryFile(relativePath, bytes);
+
+			const headers = new Headers(response.headers);
+			const contentType =
+				headers.get('Content-Type') || 'application/octet-stream';
+			headers.set('Content-Type', contentType);
+			await writeCacheMeta(relativePath, { contentType });
+			return new Response(toArrayBuffer(bytes), {
+				status: response.status,
+				statusText: response.statusText,
+				headers
+			});
+		}
+
+		const cached = await readCacheBinaryFile(relativePath);
+		if (cached !== null) {
+			const meta = await readCacheMeta(relativePath);
+			return new Response(toArrayBuffer(cached), {
+				status: 200,
+				headers: {
+					'Content-Type':
+						meta?.contentType || 'application/octet-stream'
+				}
+			});
+		}
+
+		return response;
+	} catch (err) {
+		const cached = await readCacheBinaryFile(relativePath);
+		if (cached !== null) {
+			const meta = await readCacheMeta(relativePath);
+			return new Response(toArrayBuffer(cached), {
+				status: 200,
+				headers: {
+					'Content-Type':
+						meta?.contentType || 'application/octet-stream'
+				}
+			});
+		}
+
+		console.error(
+			`[DDXWorker] Failed to serve /res file: ${relativePath}`,
+			err
+		);
+		return new Response('Resource not available', {
 			status: 503,
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8'

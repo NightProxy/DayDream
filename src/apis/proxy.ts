@@ -6,7 +6,6 @@ import { NetworkAPI } from '@apis/platform/network';
 import { basePath, resolvePath } from '@utils/basepath';
 import LibcurlClient from '@mercuryworkshop/libcurl-transport';
 import EpoxyClient from '@mercuryworkshop/epoxy-transport';
-import { defaultConfigDev } from '@mercuryworkshop/scramjet';
 
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
@@ -34,7 +33,12 @@ interface ProxyInterface {
 		proxySetting: string,
 		url: string
 	): Promise<void>;
-	fetch(url: string, params?: any): Promise<string>;
+	fetch(
+		url: string,
+		method?: string,
+		body?: any,
+		headers?: [string, string][]
+	): Promise<Response>;
 	getFavicon(url: string): Promise<string | null>;
 	generateWispServer(): string;
 	checkServerWisp(): Promise<boolean>;
@@ -112,7 +116,7 @@ class Proxy implements ProxyInterface {
 				serviceworker: navigator.serviceWorker.controller ?? SW.active,
 				transport: transportConfig.instance,
 				config: this.controllerConfig,
-				scramjetConfig: defaultConfigDev || this.scramjetFlags
+				scramjetConfig: this.scramjetFlags
 			});
 			await this.controller.wait();
 		})();
@@ -401,12 +405,10 @@ class Proxy implements ProxyInterface {
 			epoxy: {
 				constructor: EpoxyClient,
 				opts: ['wisp'],
-				base: resolvePath('epoxy/index.mjs')
 			},
 			libcurl: {
 				constructor: LibcurlClient,
 				opts: ['wisp', 'proxy'],
-				base: resolvePath('libcurl/index.mjs')
 			}
 		};
 	}
@@ -712,14 +714,153 @@ class Proxy implements ProxyInterface {
 		return encodedUrl;
 	}
 
-	async fetch(url: string, method?: string, body?: any, headers: [string, string][] = []): Promise<string> {
-		await this.setTransports();
-		const transport = await this.getTransports();
-		const client = transport.controller;
-		transport.controller.init();
-		const response = await client.request(url, method, body, headers);
+	async fetch(
+		url: string,
+		method?: string,
+		body?: any,
+		headers: [string, string][] = []
+	): Promise<Response> {
+		if (
+			typeof url !== 'string' ||
+			url.trim() === '' ||
+			url === 'undefined' ||
+			url === 'null'
+		) {
+			throw new Error('[Proxy.fetch] A valid URL string is required');
+		}
 
-		return await response.text();
+		await this.setTransports();
+		const transportState = await this.getTransports();
+		const transport = transportState.controller;
+
+		if (!transport) {
+			throw new Error('[Proxy.fetch] Transport is unavailable');
+		}
+
+		if (!transport.ready && typeof transport.init === 'function') {
+			await transport.init();
+		}
+
+		let remote: URL;
+		try {
+			remote = new URL(url);
+		} catch {
+			remote = new URL(this.search(url));
+		}
+
+		const requestMethod =
+			typeof method === 'string' && method.trim() !== ''
+				? method.toUpperCase()
+				: body == null
+					? 'GET'
+					: 'POST';
+
+		const readHeader = (rawHeaders: any, name: string): string | null => {
+			const needle = name.toLowerCase();
+
+			if (rawHeaders instanceof Headers) {
+				return rawHeaders.get(name);
+			}
+
+			if (Array.isArray(rawHeaders)) {
+				for (const entry of rawHeaders) {
+					if (
+						Array.isArray(entry) &&
+						entry.length >= 2 &&
+						typeof entry[0] === 'string' &&
+						entry[0].toLowerCase() === needle
+					) {
+						return String(entry[1]);
+					}
+				}
+				return null;
+			}
+
+			if (rawHeaders && typeof rawHeaders === 'object') {
+				for (const [key, value] of Object.entries(rawHeaders)) {
+					if (key.toLowerCase() === needle) {
+						return String(value);
+					}
+				}
+			}
+
+			return null;
+		};
+
+		const normalizeHeaderEntries = (
+			rawHeaders: any
+		): [string, string][] => {
+			if (rawHeaders instanceof Headers) {
+				return Array.from(rawHeaders.entries());
+			}
+
+			if (Array.isArray(rawHeaders)) {
+				return rawHeaders
+					.filter(
+						(entry: any) =>
+							Array.isArray(entry) &&
+							entry.length >= 2 &&
+							typeof entry[0] === 'string'
+					)
+					.map((entry: any) => [String(entry[0]), String(entry[1])]);
+			}
+
+			if (rawHeaders && typeof rawHeaders === 'object') {
+				return Object.entries(rawHeaders).map(([key, value]) => [
+					key,
+					String(value)
+				]);
+			}
+
+			return [];
+		};
+
+		const maxRedirects = 20;
+		let response: any = null;
+
+		for (
+			let redirectCount = 0;
+			redirectCount <= maxRedirects;
+			redirectCount++
+		) {
+			response = await transport.request(
+				remote,
+				requestMethod,
+				body ?? null,
+				headers,
+				undefined
+			);
+
+			const status = response?.status;
+			if (![301, 302, 303, 307, 308].includes(status)) {
+				break;
+			}
+
+			const location = readHeader(response?.headers, 'location');
+
+			if (!location) {
+				break;
+			}
+
+			remote = new URL(location, remote);
+		}
+
+		if (!response) {
+			throw new Error(
+				'[Proxy.fetch] No response returned from transport'
+			);
+		}
+
+		const responseHeaders = new Headers();
+		for (const [key, value] of normalizeHeaderEntries(response.headers)) {
+			responseHeaders.append(key, value);
+		}
+
+		return new Response(response.body ?? null, {
+			status: response.status,
+			statusText: response.statusText,
+			headers: responseHeaders
+		});
 	}
 
 	async eval(
@@ -846,7 +987,7 @@ class Proxy implements ProxyInterface {
 
 	async getFavicon(url: string) {
 		try {
-			const domain = (new URL(url)).hostname;
+			const domain = new URL(url).hostname;
 			if (!domain) {
 				return null;
 			}
@@ -877,13 +1018,12 @@ class Proxy implements ProxyInterface {
 				}
 			}
 
-			const client = new BareMux.BareClient();
-			const response = await client.fetch(googleFaviconUrl, {
-				headers: {
-					'User-Agent':
-						'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-				}
-			});
+			const response = await this.fetch(googleFaviconUrl, 'GET', null, [
+				[
+					'User-Agent',
+					'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+				]
+			]);
 
 			if (!response.ok) {
 				return null;

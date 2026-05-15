@@ -3,7 +3,8 @@ import { SettingsAPI } from '@apis/settings';
 import {
 	primeJsonCache,
 	serveInternalPage,
-	serveJsonFile
+	serveJsonFile,
+	serveResFile
 } from '@core/sw/cache';
 import { installConsolePolyfill } from '@core/sw/console';
 import { basePath, stripBase } from '@core/shared/path';
@@ -14,6 +15,7 @@ import {
 	isAdRequest,
 	isInternalRoute,
 	isJsonCacheRoute,
+	isResCacheRoute,
 	isServerRoutedEndpoint,
 	shouldRestoreRequest
 } from '@core/sw/req';
@@ -27,20 +29,6 @@ if (navigator.userAgent.includes('Firefox')) {
 }
 
 installConsolePolyfill();
-
-const g = self as unknown as {
-	tfs?: unknown;
-	TFS?: unknown;
-	__ddxBase?: string;
-	$scramjetLoadWorker?: () => {
-		ScramjetServiceWorker: new () => {
-			config?: unknown;
-			loadConfig: () => Promise<void>;
-			route: (event: FetchEventLike) => boolean;
-			fetch: (event: FetchEventLike) => Promise<Response>;
-		};
-	};
-};
 
 type FetchEventLike = {
 	request: Request;
@@ -285,7 +273,10 @@ class DDXWorker {
 			return new Response(null, { status: 204 });
 		}
 
-		if (await this.isAdBlockEnabled() && isAdRequest(event.request.url, event.request)) {
+		if (
+			(await this.isAdBlockEnabled()) &&
+			isAdRequest(event.request.url, event.request)
+		) {
 			return new Response(null, { status: 204 });
 		}
 
@@ -300,6 +291,10 @@ class DDXWorker {
 
 		if (isJsonCacheRoute(relativePath) && event.request.method === 'GET') {
 			return serveJsonFile(relativePath);
+		}
+
+		if (isResCacheRoute(relativePath) && event.request.method === 'GET') {
+			return serveResFile(relativePath);
 		}
 
 		if (shouldRestoreRequest(relativePath, this.restoredEndpoints)) {
