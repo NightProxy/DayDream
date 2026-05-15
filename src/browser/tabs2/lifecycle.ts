@@ -22,17 +22,12 @@ export class TabLifecycle {
 
 		const id = `tab-${this.tabs.tabCount}`;
 
-		const iframe = this.tabs.ui.createElement('iframe', {
-			id: `iframe-${this.tabs.tabCount}`,
-			title: `Iframe #${this.tabs.tabCount}`
-		}) as HTMLIFrameElement;
-
-		this.scramFrame = await this.tabs.proxy.createFrame(iframe);
-
-		const processedSrc = await this.tabs.proto.processUrl(url, iframe);
-		if (processedSrc) {
-			iframe.setAttribute('src', processedSrc);
-		}
+		const managedFrame = await this.tabs.frameManager!.createManagedFrame(
+			id,
+			url,
+			'main'
+		);
+		const iframe = managedFrame.iframe;
 
 		console.log(
 			'[TabLifecycle] Created iframe:',
@@ -40,7 +35,7 @@ export class TabLifecycle {
 			'for tabId:',
 			id,
 			'src:',
-			processedSrc
+			iframe.getAttribute('src')
 		);
 
 		const tab = this.tabs.ui.createElement(
@@ -181,7 +176,10 @@ export class TabLifecycle {
 		}
 
 		this.tabs.items.tabBar!.appendChild(tab);
-		this.tabs.items.frameContainer!.appendChild(iframe);
+		this.tabs.frameManager!.attachFrame(
+			id,
+			this.tabs.items.frameContainer!
+		);
 		createIcons({ icons });
 
 		const tabData: TabData = {
@@ -194,7 +192,7 @@ export class TabLifecycle {
 			groupId: undefined,
 			isPinned: false,
 			splitPlacement: 'main',
-			frameId: iframe.id,
+			frameId: managedFrame.frameId,
 			lastInternalRoute: undefined,
 			lastAddressShown: undefined,
 			cache: undefined,
@@ -202,10 +200,13 @@ export class TabLifecycle {
 		};
 
 		this.tabs.registerTab(tabData);
+		this.tabs.syncTabVisualState(id);
+		this.tabs.renderTabStrip();
 
 		this.selectTab(id);
 
 		this.tabs.logger.createLog(`Created tab: ${url}`);
+		return id;
 	};
 
 	closeTabById = async (id: string) => {
@@ -239,17 +240,13 @@ export class TabLifecycle {
 		}
 
 		tabInfo.tab.remove();
-		const deleted = this.tabs.proxy.deleteFrame(tabInfo.iframe);
-		if (!deleted) {
-			tabInfo.iframe.remove();
-		}
+		this.tabs.frameManager?.cleanupFrame(id);
 		console.log(
-			'[TabLifecycle] Removed tab and iframe DOM elements (proxy frame unregistered:',
-			deleted,
-			')'
+			'[TabLifecycle] Removed tab and iframe DOM elements via frame manager'
 		);
 
 		this.tabs.removeTab(id);
+		this.tabs.renderTabStrip();
 		console.log(
 			'[TabLifecycle] Removed tab from tabs array, remaining tabs:',
 			this.tabs.getTabsInOrder().length
@@ -346,17 +343,11 @@ export class TabLifecycle {
 		document.dispatchEvent(tabClosedEvent);
 
 		activeTab.remove();
-		const deleted = this.tabs.proxy.deleteFrame(activeIFrame);
-		if (!deleted) {
-			activeIFrame.remove();
-		}
-		console.log(
-			'[TabLifecycle] Active iframe removed (proxy frame unregistered:',
-			deleted,
-			')'
-		);
+		this.tabs.frameManager?.cleanupFrame(activeTab.id);
+		console.log('[TabLifecycle] Active iframe removed via frame manager');
 
 		this.tabs.removeTab(activeTab.id);
+		this.tabs.renderTabStrip();
 
 		this.updateTabAttributes();
 
@@ -418,20 +409,9 @@ export class TabLifecycle {
 		console.log('[TabLifecycle] Cleaning up all pageClient resources');
 		this.tabs.pageClientModule?.cleanupAll();
 
-		this.tabs.items
-			.frameContainer!.querySelectorAll('iframe')
-			.forEach((page: HTMLIFrameElement) => {
-				try {
-					page.src = 'about:blank';
-					page.contentWindow?.stop();
-				} catch (e) {
-					console.warn('Could not clear iframe:', e);
-				}
-				const deleted = this.tabs.proxy.deleteFrame(page);
-				if (!deleted) {
-					page.remove();
-				}
-			});
+		this.tabs.getTabsInOrder().forEach(tabData => {
+			this.tabs.frameManager?.cleanupFrame(tabData.id);
+		});
 		console.log('[TabLifecycle] Removed all iframes');
 
 		this.tabs.ui.queryComponentAll('tab').forEach((tab: HTMLElement) => {
@@ -442,6 +422,7 @@ export class TabLifecycle {
 		this.tabs.getTabsInOrder().forEach(tab => {
 			this.tabs.removeTab(tab.id);
 		});
+		this.tabs.renderTabStrip();
 		console.log('[TabLifecycle] Cleared tabs array');
 
 		this.tabs.logger.createLog(`Closed all tabs`);

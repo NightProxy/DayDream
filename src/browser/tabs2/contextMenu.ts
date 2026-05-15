@@ -29,14 +29,66 @@ export class TabContextMenu {
 			? this.tabs.pinManager.isPinned(tabId)
 			: this.tabs.isTabPinned(tabId);
 
-		if (!tab.groupId && !isPinned) {
+		menuItems.push(
+			this.tabs.ui.createElement(
+				'button',
+				{
+					class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+					onclick: async () => {
+						await this.tabs.createTabToRight(
+							tabId,
+							'ddx://newtab/'
+						);
+						this.closeContextMenu();
+					}
+				},
+				[
+					this.tabs.ui.createElement(
+						'i',
+						{
+							'data-lucide': 'plus-square',
+							class: 'h-4 w-4'
+						},
+						[]
+					),
+					this.tabs.ui.createElement('span', {}, [
+						'New Tab to the Right'
+					])
+				]
+			)
+		);
+
+		menuItems.push(
+			this.tabs.ui.createElement(
+				'button',
+				{
+					class: 'flex items-center gap-3 px-4 py-2 opacity-60 cursor-not-allowed w-full text-left text-sm rounded-md',
+					disabled: true
+				},
+				[
+					this.tabs.ui.createElement(
+						'i',
+						{
+							'data-lucide': 'columns-2',
+							class: 'h-4 w-4'
+						},
+						[]
+					),
+					this.tabs.ui.createElement('span', {}, [
+						'Add Tab to New Split View'
+					])
+				]
+			)
+		);
+
+		if (!tab.groupId) {
 			menuItems.push(
 				this.tabs.ui.createElement(
 					'button',
 					{
 						class: 'flex items-start gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
 						onclick: () => {
-							this.tabs.groupManager.createGroupWithTab(tabId);
+							this.tabs.groupManager?.createGroupWithTab(tabId);
 							this.closeContextMenu();
 						}
 					},
@@ -105,7 +157,7 @@ export class TabContextMenu {
 									{
 										class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm',
 										onclick: () => {
-											this.tabs.groupManager.addTabToGroup(
+											this.tabs.groupManager?.addTabToGroup(
 												tabId,
 												group.id
 											);
@@ -145,7 +197,7 @@ export class TabContextMenu {
 					{
 						class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
 						onclick: () => {
-							this.tabs.groupManager.removeTabFromGroup(tabId);
+							this.tabs.groupManager?.removeTabFromGroup(tabId);
 							this.closeContextMenu();
 						}
 					},
@@ -217,7 +269,7 @@ export class TabContextMenu {
 									{
 										class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm',
 										onclick: () => {
-											this.tabs.groupManager.addTabToGroup(
+											this.tabs.groupManager?.addTabToGroup(
 												tabId,
 												group.id
 											);
@@ -248,7 +300,7 @@ export class TabContextMenu {
 						{
 							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
 							onclick: () => {
-								this.tabs.groupManager.renameGroup(
+								this.tabs.groupManager?.renameGroup(
 									currentGroup.id
 								);
 								this.closeContextMenu();
@@ -327,7 +379,7 @@ export class TabContextMenu {
 									{
 										class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left',
 										onclick: () => {
-											this.tabs.groupManager.changeGroupColor(
+											this.tabs.groupManager?.changeGroupColor(
 												currentGroup.id,
 												color
 											);
@@ -358,7 +410,7 @@ export class TabContextMenu {
 						{
 							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
 							onclick: () => {
-								this.tabs.groupManager.toggleGroup(
+								this.tabs.groupManager?.toggleGroupCollapse(
 									currentGroup.id
 								);
 								this.closeContextMenu();
@@ -424,7 +476,7 @@ export class TabContextMenu {
 						{
 							class: 'flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md',
 							onclick: () => {
-								this.tabs.groupManager.ungroupAllTabs(
+								this.tabs.groupManager?.ungroupAllTabs(
 									currentGroup.id
 								);
 								this.closeContextMenu();
@@ -452,7 +504,7 @@ export class TabContextMenu {
 						{
 							class: 'flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md',
 							onclick: () => {
-								this.tabs.groupManager.deleteGroup(
+								this.tabs.groupManager?.deleteGroup(
 									currentGroup.id
 								);
 								this.closeContextMenu();
@@ -480,6 +532,32 @@ export class TabContextMenu {
 			this.tabs.ui.createElement('div', {
 				class: 'h-px bg-[var(--white-08)] my-1'
 			})
+		);
+
+		menuItems.push(
+			this.tabs.ui.createElement(
+				'button',
+				{
+					class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+					onclick: () => {
+						this.tabs.pinManager?.togglePin(tabId);
+						this.closeContextMenu();
+					}
+				},
+				[
+					this.tabs.ui.createElement(
+						'i',
+						{
+							'data-lucide': isPinned ? 'pin-off' : 'pin',
+							class: 'h-4 w-4'
+						},
+						[]
+					),
+					this.tabs.ui.createElement('span', {}, [
+						isPinned ? 'Unpin Tab' : 'Pin Tab'
+					])
+				]
+			)
 		);
 
 		menuItems.push(
@@ -614,6 +692,30 @@ export class TabContextMenu {
 			this.tabs.ui.createElement(
 				'button',
 				{
+					class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+					onclick: async () => {
+						await this.tabs.closeOtherTabs(tabId);
+						this.closeContextMenu();
+					}
+				},
+				[
+					this.tabs.ui.createElement(
+						'i',
+						{
+							'data-lucide': 'panel-right-close',
+							class: 'h-4 w-4'
+						},
+						[]
+					),
+					this.tabs.ui.createElement('span', {}, ['Close Other Tabs'])
+				]
+			)
+		);
+
+		menuItems.push(
+			this.tabs.ui.createElement(
+				'button',
+				{
 					class: 'flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md',
 					onclick: () => {
 						this.tabs.closeTabById(tabId);
@@ -668,4 +770,147 @@ export class TabContextMenu {
 			}
 		}
 	}
+
+	setupGroupHeaderContextMenu = (
+		groupHeader: HTMLElement,
+		groupId: string
+	) => {
+		const rightClickMenu = this.getRightClickMenu();
+		if (!rightClickMenu) return;
+
+		rightClickMenu.attachTo(groupHeader, () => {
+			const group = this.tabs.getGroupById(groupId);
+			if (!group) return this.tabs.ui.createElement('div');
+
+			const menu = this.tabs.ui.createElement(
+				'div',
+				{
+					class: 'fixed z-50 bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 min-w-48',
+					style: 'backdrop-filter: blur(8px);'
+				},
+				[
+					this.tabs.ui.createElement(
+						'button',
+						{
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+							onclick: () => {
+								this.tabs.groupManager?.renameGroup(groupId);
+								this.closeContextMenu();
+							}
+						},
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{ 'data-lucide': 'edit-3', class: 'h-4 w-4' },
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								'Rename Group'
+							])
+						]
+					),
+					this.tabs.ui.createElement(
+						'button',
+						{
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+							onclick: () => {
+								this.tabs.groupManager?.toggleGroupCollapse(
+									groupId
+								);
+								this.closeContextMenu();
+							}
+						},
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{
+									'data-lucide': group.isCollapsed
+										? 'folder-open'
+										: 'folder-closed',
+									class: 'h-4 w-4'
+								},
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								group.isCollapsed
+									? 'Expand Group'
+									: 'Collapse Group'
+							])
+						]
+					),
+					this.tabs.ui.createElement(
+						'button',
+						{
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+							onclick: () => {
+								this.tabs.groupManager?.ungroupAllTabs(groupId);
+								this.closeContextMenu();
+							}
+						},
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{
+									'data-lucide': 'folder-open',
+									class: 'h-4 w-4'
+								},
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								'Ungroup All Tabs'
+							])
+						]
+					),
+					this.tabs.ui.createElement(
+						'button',
+						{
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md',
+							onclick: async () => {
+								await this.tabs.groupManager?.closeAllTabsInGroup(
+									groupId
+								);
+								this.closeContextMenu();
+							}
+						},
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{ 'data-lucide': 'folder-x', class: 'h-4 w-4' },
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								'Close All Tabs in Group'
+							])
+						]
+					),
+					this.tabs.ui.createElement('div', {
+						class: 'h-px bg-[var(--white-08)] my-1'
+					}),
+					this.tabs.ui.createElement(
+						'button',
+						{
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left text-sm rounded-md',
+							onclick: () => {
+								this.tabs.groupManager?.deleteGroup(groupId);
+								this.closeContextMenu();
+							}
+						},
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{ 'data-lucide': 'trash-2', class: 'h-4 w-4' },
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								'Delete Group'
+							])
+						]
+					)
+				]
+			);
+
+			this.initializeLucideIcons(menu);
+			return menu;
+		});
+	};
 }
