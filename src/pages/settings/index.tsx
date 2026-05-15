@@ -1276,7 +1276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const response = await window.parent.proxy.fetch(
           "https://api.mullvad.net/public/relays/wireguard/v1/",
         );
-        const data = JSON.parse(response);
+        const data = response.ok ? await response.json() : null;
 
         if (data.countries && Array.isArray(data.countries)) {
           const mullvadOptgroup = document.createElement("optgroup");
