@@ -6,6 +6,15 @@ export interface TabGroup {
 	tabIds: string[];
 }
 
+export type VisualOrderMode = 'horizontal' | 'vertical';
+
+export interface VisualTabOrderEntry {
+	kind: 'tab' | 'groupHeader';
+	id: string;
+	groupId?: string;
+	tabId?: string;
+}
+
 export type TabSplitPlacement =
 	| 'main'
 	| 'split-left'
@@ -62,6 +71,7 @@ export interface TabsInterface {
 	frameByTabId: Map<string, HTMLIFrameElement>;
 	tabElementById: Map<string, HTMLElement>;
 	tabIdsByGroupId: Map<string, Set<string>>;
+	groupHeaderElementById: Map<string, HTMLElement>;
 	pinnedTabIds: Set<string>;
 	splitByTabId: Map<string, TabSplitPlacement>;
 	tabCacheById: Map<string, TabCacheEntry>;
@@ -76,8 +86,13 @@ export interface TabsInterface {
 	tabEls: HTMLElement[];
 	bookmarkUI: any;
 
-	createTab: (url: string) => Promise<void>;
+	createTab: (url: string) => Promise<string>;
+	createTabToRight: (
+		referenceTabId: string,
+		url?: string
+	) => Promise<string | null>;
 	closeTabById: (id: string) => Promise<void>;
+	closeOtherTabs: (tabId: string) => Promise<void>;
 	closeCurrentTab: () => Promise<void>;
 	closeAllTabs: () => Promise<void>;
 	selectTab: (tabId: string) => Promise<void>;
@@ -85,6 +100,10 @@ export interface TabsInterface {
 	updateTabAttributes: () => void;
 
 	getTabsInOrder: () => TabData[];
+	getPinnedTabs: () => TabData[];
+	getUngroupedUnpinnedTabs: () => TabData[];
+	getGroupTabs: (groupId: string) => TabData[];
+	getVisualTabOrder: (mode: VisualOrderMode) => VisualTabOrderEntry[];
 	getTabById: (id: string) => TabData | undefined;
 	getTabIndex: (id: string) => number;
 	registerTab: (tabData: TabData) => void;
@@ -94,6 +113,17 @@ export interface TabsInterface {
 		targetTabId: string,
 		placeAfter?: boolean
 	) => void;
+	reorderPinned: (tabId: string, toIndex: number) => void;
+	reorderUngrouped: (tabId: string, toIndex: number) => void;
+	reorderWithinGroup: (
+		tabId: string,
+		groupId: string,
+		toIndex: number
+	) => void;
+	reorderGroups: (groupId: string, toIndex: number) => void;
+	renderTabStrip: () => void;
+	ensureStateInvariants: () => boolean;
+	runStateTransaction: (label: string, mutate: () => void) => boolean;
 
 	getGroups: () => TabGroup[];
 	getGroupById: (groupId: string) => TabGroup | undefined;
@@ -102,6 +132,7 @@ export interface TabsInterface {
 
 	isTabPinned: (tabId: string) => boolean;
 	setTabPinned: (tabId: string, pinned: boolean) => void;
+	syncTabVisualState: (tabId: string) => void;
 
 	setTabSplitPlacement: (tabId: string, placement: TabSplitPlacement) => void;
 
@@ -122,6 +153,24 @@ export interface TabsInterface {
 		cleanupIframe: (iframeId: string) => void;
 		cleanupAll: () => void;
 	};
+	frameManager?: {
+		createManagedFrame: (
+			tabId: string,
+			url: string,
+			placement?: TabSplitPlacement
+		) => Promise<{
+			iframe: HTMLIFrameElement;
+			frameId: string;
+			proxyHandle: any;
+		}>;
+		attachFrame: (tabId: string, container: HTMLElement) => void;
+		navigateFrame: (tabId: string, url: string) => Promise<void>;
+		cleanupFrame: (tabId: string) => void;
+		setFramePlacement: (
+			tabId: string,
+			splitPlacement: TabSplitPlacement
+		) => void;
+	};
 
 	startMetaWatcher: (
 		tabId: string,
@@ -135,8 +184,30 @@ export interface TabsInterface {
 	toggleVerticalTabsLayout: () => boolean;
 	toggleVerticalTabsCollapsed: () => boolean;
 
-	groupManager?: any;
-	pinManager?: any;
+	groupManager?: {
+		createGroupWithTab: (tabId: string) => string | null;
+		addTabToGroup: (
+			tabId: string,
+			groupId: string,
+			targetIndex?: number
+		) => boolean;
+		removeTabFromGroup: (
+			tabId: string,
+			toUngroupedIndex?: number
+		) => boolean;
+		deleteGroup: (groupId: string) => boolean;
+		ungroupAllTabs: (groupId: string) => boolean;
+		toggleGroupCollapse: (groupId: string) => boolean;
+		renameGroup: (groupId: string, nextName?: string) => boolean;
+		changeGroupColor: (groupId: string, color: string) => boolean;
+		closeAllTabsInGroup: (groupId: string) => Promise<void>;
+	};
+	pinManager?: {
+		pinTab: (tabId: string) => boolean;
+		unpinTab: (tabId: string) => boolean;
+		togglePin: (tabId: string) => boolean;
+		isPinned: (tabId: string) => boolean;
+	};
 	nightmarePlugins?: any;
-	closeAllTabsInGroup?: (groupId: string) => void;
+	closeAllTabsInGroup?: (groupId: string) => Promise<void>;
 }
