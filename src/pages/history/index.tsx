@@ -1,5 +1,6 @@
-import '@css/global.css';
-import '@css/internal.css';
+import '@css/tailwind.css';
+import '@css/global.scss';
+import '@css/internal.scss';
 import 'basecoat-css/all';
 import '@utils/global/panic';
 import '@pages/shared/themeInit';

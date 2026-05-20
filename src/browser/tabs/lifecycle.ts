@@ -10,7 +10,7 @@ export class TabLifecycle {
 		this.tabs = tabs;
 	}
 
-	createTab = async (url: string) => {
+	createTab = async (url: string = 'ddx://newtab') => {
 		this.tabs.tabCount++;
 		console.log(
 			'[TabLifecycle] createTab() called for url:',
@@ -22,22 +22,12 @@ export class TabLifecycle {
 
 		const id = `tab-${this.tabs.tabCount}`;
 
-		// Create iframe FIRST (without src) so we can register it with the
-		// scramjet controller and obtain a per-frame prefix. This prefix is
-		// needed when processUrl encodes the target URL.
-		const iframe = this.tabs.ui.createElement('iframe', {
-			id: `iframe-${this.tabs.tabCount}`,
-			title: `Iframe #${this.tabs.tabCount}`
-		}) as HTMLIFrameElement;
-
-		this.scramFrame = await this.tabs.proxy.createFrame(iframe);
-
-		// Now that the frame is registered, processUrl can resolve the
-		// per-frame prefix when encoding proxied URLs.
-		const processedSrc = await this.tabs.proto.processUrl(url, iframe);
-		if (processedSrc) {
-			iframe.setAttribute('src', processedSrc);
-		}
+		const managedFrame = await this.tabs.frameManager!.createManagedFrame(
+			id,
+			url,
+			'main'
+		);
+		const iframe = managedFrame.iframe;
 
 		console.log(
 			'[TabLifecycle] Created iframe:',
@@ -45,7 +35,7 @@ export class TabLifecycle {
 			'for tabId:',
 			id,
 			'src:',
-			processedSrc
+			iframe.getAttribute('src')
 		);
 
 		const tab = this.tabs.ui.createElement(
@@ -53,7 +43,7 @@ export class TabLifecycle {
 			{
 				class: 'tab inactive transition-all duration-200 ease-out tab-anim',
 				id: id,
-				component: 'tab'
+				'data-component': 'tab'
 			},
 			[
 				this.tabs.ui.createElement(
@@ -102,6 +92,11 @@ export class TabLifecycle {
 			]
 		);
 
+		const tabStyleMode = this.tabs.items.tabBar?.getAttribute('styleMode');
+		if (tabStyleMode) {
+			tab.setAttribute('styleMode', tabStyleMode);
+		}
+
 		iframe.addEventListener('load', async () => {
 			console.log(
 				'[TabLifecycle] iframe load event fired for:',
@@ -114,7 +109,7 @@ export class TabLifecycle {
 					console.error('Iframe contentWindow is not accessible.');
 				}
 
-				const tabInfo = this.tabs.tabs.find(t => t.id === id);
+				const tabInfo = this.tabs.getTabById(id);
 				if (tabInfo && tabInfo.tab.classList.contains('active')) {
 					// First check if the raw path maps directly to an internal
 					// URL (e.g. /internal/newtab → ddx://newtab).
@@ -181,38 +176,49 @@ export class TabLifecycle {
 		}
 
 		this.tabs.items.tabBar!.appendChild(tab);
-		this.tabs.items.frameContainer!.appendChild(iframe);
+		this.tabs.frameManager!.attachFrame(
+			id,
+			this.tabs.items.frameContainer!
+		);
 		createIcons({ icons });
 
 		const tabData: TabData = {
 			id,
 			tab,
 			iframe,
+			title: tabTitle,
+			favicon: null,
 			url,
 			groupId: undefined,
 			isPinned: false,
+			splitPlacement: 'main',
+			frameId: managedFrame.frameId,
 			lastInternalRoute: undefined,
 			lastAddressShown: undefined,
+			cache: undefined,
 			chiiPanel: undefined
 		};
 
-		this.tabs.tabs.push(tabData);
+		this.tabs.registerTab(tabData);
+		this.tabs.syncTabVisualState(id);
+		this.tabs.renderTabStrip();
 
 		this.selectTab(id);
 
-		this.tabs.setupSortable();
 		this.tabs.logger.createLog(`Created tab: ${url}`);
+		return id;
 	};
 
 	closeTabById = async (id: string) => {
 		console.log('[TabLifecycle] closeTabById() called for tabId:', id);
-		const tabInfo = this.tabs.tabs.find(tab => tab.id === id);
+		const tabInfo = this.tabs.getTabById(id);
 		if (!tabInfo) {
 			console.log('[TabLifecycle] Tab not found:', id);
 			return;
 		}
 
-		const currentTabIndex = this.tabs.tabs.findIndex(tab => tab.id === id);
+		const orderedTabs = this.tabs.getTabsInOrder();
+		const currentTabIndex = orderedTabs.findIndex(tab => tab.id === id);
 
 		console.log('[TabLifecycle] Stopping metaWatcher for tabId:', id);
 		await this.tabs.stopMetaWatcher(id);
@@ -234,49 +240,44 @@ export class TabLifecycle {
 		}
 
 		tabInfo.tab.remove();
-		const deleted = this.tabs.proxy.deleteFrame(tabInfo.iframe);
-		if (!deleted) {
-			tabInfo.iframe.remove();
-		}
+		this.tabs.frameManager?.cleanupFrame(id);
 		console.log(
-			'[TabLifecycle] Removed tab and iframe DOM elements (proxy frame unregistered:',
-			deleted,
-			')'
+			'[TabLifecycle] Removed tab and iframe DOM elements via frame manager'
 		);
 
-		this.tabs.tabs = this.tabs.tabs.filter(tab => tab.id !== id);
+		this.tabs.removeTab(id);
+		this.tabs.renderTabStrip();
 		console.log(
 			'[TabLifecycle] Removed tab from tabs array, remaining tabs:',
-			this.tabs.tabs.length
+			this.tabs.getTabsInOrder().length
 		);
 		this.updateTabAttributes();
-
-		this.tabs.saveSession();
 
 		const tabClosedEvent = new CustomEvent('tabClosed', {
 			detail: { tabId: id }
 		});
 		document.dispatchEvent(tabClosedEvent);
 
-		if (this.tabs.tabs.length > 0) {
+		const remainingTabs = this.tabs.getTabsInOrder();
+		if (remainingTabs.length > 0) {
 			let nextTabToSelect: TabData | null = null;
 
 			switch (true) {
 				case currentTabIndex > 0 &&
-					this.tabs.tabs[currentTabIndex - 1] !== undefined:
-					nextTabToSelect = this.tabs.tabs[currentTabIndex - 1];
+					remainingTabs[currentTabIndex - 1] !== undefined:
+					nextTabToSelect = remainingTabs[currentTabIndex - 1];
 					break;
-				case this.tabs.tabs[currentTabIndex] !== undefined:
-					nextTabToSelect = this.tabs.tabs[currentTabIndex];
+				case remainingTabs[currentTabIndex] !== undefined:
+					nextTabToSelect = remainingTabs[currentTabIndex];
 					break;
 				default:
-					nextTabToSelect = this.tabs.tabs[this.tabs.tabs.length - 1];
+					nextTabToSelect = remainingTabs[remainingTabs.length - 1];
 			}
 
 			if (nextTabToSelect) {
 				this.selectTab(nextTabToSelect.id);
 			}
-		} else if (this.tabs.tabs.length === 0) {
+		} else if (remainingTabs.length === 0) {
 			this.createTab('ddx://newtab/');
 		}
 
@@ -285,14 +286,17 @@ export class TabLifecycle {
 
 	closeCurrentTab = async () => {
 		console.log('[TabLifecycle] closeCurrentTab() called');
-		const activeTab = Array.from(
-			this.tabs.ui.queryComponentAll('tab', this.tabs.el)
-		).find((tab: any) =>
-			(tab as HTMLElement).classList.contains('active')
-		) as HTMLElement;
-		const activeIFrame = document.querySelector(
-			'iframe.active'
-		) as HTMLIFrameElement;
+		const activeTabId = this.tabs.activeTabId;
+		const activeTab = activeTabId
+			? this.tabs.tabElementById.get(activeTabId)
+			: (Array.from(
+					this.tabs.ui.queryComponentAll('tab', this.tabs.el)
+				).find((tab: any) =>
+					(tab as HTMLElement).classList.contains('active')
+				) as HTMLElement | undefined);
+		const activeIFrame = activeTab?.id
+			? this.tabs.frameByTabId.get(activeTab.id)
+			: undefined;
 
 		if (!activeTab || !activeIFrame) {
 			console.log('[TabLifecycle] No active tab or iframe found');
@@ -339,17 +343,11 @@ export class TabLifecycle {
 		document.dispatchEvent(tabClosedEvent);
 
 		activeTab.remove();
-		const deleted = this.tabs.proxy.deleteFrame(activeIFrame);
-		if (!deleted) {
-			activeIFrame.remove();
-		}
-		console.log(
-			'[TabLifecycle] Active iframe removed (proxy frame unregistered:',
-			deleted,
-			')'
-		);
+		this.tabs.frameManager?.cleanupFrame(activeTab.id);
+		console.log('[TabLifecycle] Active iframe removed via frame manager');
 
-		this.tabs.tabs = this.tabs.tabs.filter(tab => tab.id !== activeTab.id);
+		this.tabs.removeTab(activeTab.id);
+		this.tabs.renderTabStrip();
 
 		this.updateTabAttributes();
 
@@ -391,10 +389,10 @@ export class TabLifecycle {
 	closeAllTabs = async () => {
 		console.log(
 			'[TabLifecycle] closeAllTabs() called, total tabs:',
-			this.tabs.tabs.length
+			this.tabs.getTabsInOrder().length
 		);
 		await Promise.all(
-			this.tabs.tabs.map(async tabData => {
+			this.tabs.getTabsInOrder().map(async tabData => {
 				console.log(
 					'[TabLifecycle] Stopping metaWatcher for tabId:',
 					tabData.id
@@ -411,20 +409,9 @@ export class TabLifecycle {
 		console.log('[TabLifecycle] Cleaning up all pageClient resources');
 		this.tabs.pageClientModule?.cleanupAll();
 
-		this.tabs.items
-			.frameContainer!.querySelectorAll('iframe')
-			.forEach((page: HTMLIFrameElement) => {
-				try {
-					page.src = 'about:blank';
-					page.contentWindow?.stop();
-				} catch (e) {
-					console.warn('Could not clear iframe:', e);
-				}
-				const deleted = this.tabs.proxy.deleteFrame(page);
-				if (!deleted) {
-					page.remove();
-				}
-			});
+		this.tabs.getTabsInOrder().forEach(tabData => {
+			this.tabs.frameManager?.cleanupFrame(tabData.id);
+		});
 		console.log('[TabLifecycle] Removed all iframes');
 
 		this.tabs.ui.queryComponentAll('tab').forEach((tab: HTMLElement) => {
@@ -432,19 +419,25 @@ export class TabLifecycle {
 		});
 		console.log('[TabLifecycle] Removed all tab elements');
 
-		this.tabs.tabs = [];
+		this.tabs.getTabsInOrder().forEach(tab => {
+			this.tabs.removeTab(tab.id);
+		});
+		this.tabs.renderTabStrip();
 		console.log('[TabLifecycle] Cleared tabs array');
 
 		this.tabs.logger.createLog(`Closed all tabs`);
 	};
 
 	async selectTab(tabId: string) {
-		const tabInfo = this.tabs.tabs.find(t => t.id === tabId);
+		const tabInfo = this.tabs.getTabById(tabId);
 		if (!tabInfo) return;
 
-		const iframeId = `iframe-${tabId.replace('tab-', '')}`;
-		const iframe = document.getElementById(iframeId) as HTMLIFrameElement;
-		const tabElement = document.getElementById(tabId) as HTMLElement;
+		const iframe =
+			this.tabs.frameByTabId.get(tabId) ||
+			(document.getElementById(tabInfo.frameId) as HTMLIFrameElement);
+		const tabElement =
+			this.tabs.tabElementById.get(tabId) ||
+			(document.getElementById(tabId) as HTMLElement);
 
 		if (!iframe || !tabElement) return;
 
@@ -460,7 +453,7 @@ export class TabLifecycle {
 			iframe.classList.remove('active');
 		});
 
-		this.tabs.tabs.forEach(tab => {
+		this.tabs.getTabsInOrder().forEach(tab => {
 			if (tab.chiiPanel?.container) {
 				if (tab.id === tabId && tab.chiiPanel.isActive) {
 					tab.chiiPanel.container.style.display = 'block';

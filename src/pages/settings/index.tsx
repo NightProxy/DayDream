@@ -1,7 +1,8 @@
-import "@css/vars.css";
-import "@css/imports.css";
-import "@css/global.css";
-import "@css/internal.css";
+import "@css/vars.scss";
+import "@css/imports.scss";
+import "@css/tailwind.css";
+import "@css/global.scss";
+import "@css/internal.scss";
 import "@pages/shared/themeInit";
 import "basecoat-css/all";
 import { SettingsAPI } from "@apis/settings";

@@ -59,7 +59,7 @@ export class TabMetaWatcher {
 		iframe: HTMLIFrameElement,
 		tabEl: HTMLElement
 	) => {
-		const tabData = this.tabs.tabs.find(t => t.id === tabId);
+		const tabData = this.tabs.getTabById(tabId);
 		if (!tabData) return;
 
 		const titleEl = tabEl.querySelector('.tab-title') as HTMLElement;
@@ -88,6 +88,7 @@ export class TabMetaWatcher {
 					titleEl.textContent = pageTitle;
 					titleEl.setAttribute('title', pageTitle);
 				}
+				this.tabs.updateTabMetadata(tabId, { title: pageTitle });
 			}
 		} catch (e) {
 			console.warn('Could not update title:', e);
@@ -100,6 +101,7 @@ export class TabMetaWatcher {
 			? decodeProxiedUrl(locHref, this.tabs.proxy)
 			: null;
 		if (decodedFromIframe) currentUrl = decodedFromIframe;
+		this.tabs.updateTabMetadata(tabId, { url: currentUrl });
 
 		try {
 			if (locHref && tabEl.classList.contains('active')) {
@@ -134,6 +136,15 @@ export class TabMetaWatcher {
 					faviconEl,
 					tabEl
 				);
+				this.tabs.updateTabMetadata(tabId, {
+					favicon: faviconUrl || null
+				});
+				this.tabs.setTabCache(tabId, {
+					title: pageTitle,
+					favicon: faviconUrl || null,
+					url: currentUrl,
+					timestamp: Date.now()
+				});
 			}
 		} catch (e) {
 			console.warn('Could not update favicon:', e);
@@ -180,7 +191,7 @@ export class TabMetaWatcher {
 			return locHref;
 		}
 
-		const tabRef = this.tabs.tabs.find(t => t.id === tabId);
+		const tabRef = this.tabs.getTabById(tabId);
 
 		// First chance: the path itself maps to an internal/protocol URL
 		// (e.g. /internal/newtab → ddx://newtab).
@@ -236,6 +247,13 @@ export class TabMetaWatcher {
 		faviconEl: HTMLImageElement,
 		tabEl: HTMLElement
 	): Promise<string | null> => {
+		const isHttpIcon = (
+			value: string | null | undefined
+		): value is string => {
+			if (!value) return false;
+			return value.startsWith('http://') || value.startsWith('https://');
+		};
+
 		const link = document.querySelector<HTMLLinkElement>(
 			"link[rel~='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']"
 		);
@@ -262,8 +280,19 @@ export class TabMetaWatcher {
 					this.tabs.proxy
 				);
 
+				const iconTarget = isHttpIcon(decodedUrl)
+					? decodedUrl
+					: isHttpIcon(faviconUrl)
+						? faviconUrl
+						: null;
+
+				if (!iconTarget) {
+					this.clearFavicon(faviconEl, tabEl);
+					return null;
+				}
+
 				const proxyFavicon =
-					await this.tabs.proxy.getFavicon(decodedUrl);
+					await this.tabs.proxy.getFavicon(iconTarget);
 
 				if (
 					proxyFavicon &&
@@ -274,6 +303,14 @@ export class TabMetaWatcher {
 					tabEl.classList.add('has-favicon');
 					return proxyFavicon;
 				}
+
+				if (faviconEl.getAttribute('data-favicon') !== iconTarget) {
+					faviconEl.src = iconTarget;
+					faviconEl.setAttribute('data-favicon', iconTarget);
+					tabEl.classList.add('has-favicon');
+				}
+
+				return iconTarget;
 			} catch (e) {
 				console.warn('Could not load favicon:', e);
 				this.clearFavicon(faviconEl, tabEl);

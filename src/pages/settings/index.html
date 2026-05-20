@@ -16,11 +16,11 @@
   </script>
   <link rel="icon" type="image/png" href="../../res/logo.png" />
   <meta property="og:image" content="../../res/logo.png" />
-  <link rel="preload" href="/src/css/pages/settings.css" as="style" onload="this.rel='stylesheet'" />
+  <link rel="preload" href="/src/css/pages/settings.scss" as="style" onload="this.rel='stylesheet'" />
   <noscript>
-    <link rel="stylesheet" href="/src/css/pages/settings.css" />
+    <link rel="stylesheet" href="/src/css/pages/settings.scss" />
   </noscript>
-  <link rel="stylesheet" href="/src/css/internal.css" />
+  <link rel="stylesheet" href="/src/css/internal.scss" />
 
   <script type="module" src="/src/pages/settings/index.tsx" defer></script>
 </head>
@@ -422,6 +422,7 @@
                 class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
                 <option value="libcurl">LibCurl</option>
                 <option value="epoxy">Epoxy</option>
+                <option value="pulsar">Pulsar (WebRTC)</option>
               </select>
             </div>
 

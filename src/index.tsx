@@ -1,12 +1,14 @@
-import '@css/vars.css';
-import '@css/imports.css';
-import '@css/global.css';
+import '@css/vars.scss';
+import '@css/imports.scss';
+import '@css/tailwind.css';
+import '@css/global.scss';
 import 'basecoat-css/all';
 
 // Inline CSS for Shadow DOM injection
-import varsCSS from '@css/vars.css?inline';
-import importsCSS from '@css/imports.css?inline';
-import globalCSS from '@css/global.css?inline';
+import varsCSS from '@css/vars.scss?inline';
+import importsCSS from '@css/imports.scss?inline';
+import tailwindCSS from '@css/tailwind.css?inline';
+import globalCSS from '@css/global.scss?inline';
 
 import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -23,7 +25,7 @@ import { patchDocument } from './utils/document';
 import { Render } from '@components/Render';
 import { Items } from '@browser/items';
 import { Protocols } from '@browser/protocols';
-import { Tabs } from '@browser/tabs2';
+import { Tabs } from '@browser/tabs';
 import { Functions } from '@browser/functions';
 import { universalTheme } from '@utils/global/universalTheme';
 import { checkNightPlusStatus } from '@apis/nightplus';
@@ -135,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	shadowRoot.append(
 		Object.assign(document.createElement('style'), {
-			textContent: varsCSS + importsCSS + globalCSS
+			textContent: varsCSS + importsCSS + tailwindCSS + globalCSS
 		}),
 		Object.assign(document.createElement('div'), {
 			id: 'root',
@@ -260,47 +262,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 						swConfig[proxySetting as keyof typeof swConfig];
 					window.SWSettings = swConfigSettings;
 
-					if (
-						proxySetting === 'sj' &&
-						swConfigSettings &&
-						typeof swConfigSettings.func === 'function'
-					) {
-						(await swConfigSettings.func()) as Function;
+					if (!swConfigSettings || !swConfigSettings.config) {
+						console.warn(
+							'[urlbar] No swConfig for proxySetting',
+							proxySetting
+						);
+						return;
 					}
 
-					await proxy.registerSW(swConfigSettings).then(async () => {
+					const activeIframe = document.querySelector(
+						'iframe.active'
+					) as HTMLIFrameElement | null;
+
+					if (activeIframe) {
+						await proxy.redirect(
+							swConfig,
+							proxySetting,
+							searchValue,
+							activeIframe
+						);
+					} else {
+						// No tab open yet — open a new one with the encoded URL
+						await proxy.registerSW(swConfigSettings);
 						await proxy.setTransports();
-					});
-
-					if (
-						swConfigSettings &&
-						typeof swConfigSettings.func === 'function'
-					) {
-						swConfigSettings.func();
-					}
-
-					if (swConfigSettings && swConfigSettings.type) {
-						switch (swConfigSettings.type) {
-							case 'sw':
-								const activeIframe = document.querySelector(
-									'iframe.active'
-								) as HTMLIFrameElement | null;
-								const framePrefix =
-									(activeIframe &&
-										proxy.getPrefixByFrame(activeIframe)) ||
-									swConfigSettings.config.prefix;
-								const encodedUrl =
-									framePrefix +
-									proxy.encodeUrl(proxy.search(searchValue));
-								if (activeIframe) {
-									activeIframe.src = encodedUrl;
-								} else {
-									tabs.createTab(
-										location.origin + encodedUrl
-									);
-								}
-								break;
-						}
+						const prefix =
+							swConfigSettings.config?.prefix ?? '/~/sj/';
+						const encodedUrl =
+							prefix +
+							proxy.encodeUrl(proxy.search(searchValue));
+						tabs.createTab(location.origin + encodedUrl);
 					}
 				}
 			}

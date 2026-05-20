@@ -1,6 +1,6 @@
-@import url("/src/css/vars.css");
-@import url("/src/css/components/theme-preset.css");
-@import url("/src/css/components/tab-context-menu.css");
+@use "vars";
+@use "components/theme-preset";
+@use "components/tab-context-menu";
 
 @font-face {
   font-family: "Plus Jakarta Sans";

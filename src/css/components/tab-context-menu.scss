@@ -194,7 +194,6 @@ body.tab-dragging {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 0.75rem;
   font-size: 0.875rem;
@@ -205,11 +204,6 @@ body.tab-dragging {
   isolation: isolate;
   margin: calc(var(--scrollbar-size)) 0 0 0;
   height: 100%;
-}
-
-.tab-group-header:hover {
-  color: var(--text);
-  border-color: var(--white-08);
 }
 
 .tab-group-header.collapsed {
@@ -236,7 +230,6 @@ body.tab-dragging {
   visibility: hidden;
   transition: all 0.2s ease;
   z-index: 1000;
-  border: 1px solid var(--tooltip-border);
   backdrop-filter: blur(8px);
 }
 

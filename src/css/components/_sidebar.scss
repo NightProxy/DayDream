@@ -1,0 +1,347 @@
+// Vertical sidebar (left-side navbar) styling.
+// Selector: aside[data-component='navbar'][stylemode='vertical']
+// State variant: [state='collapsed'] for the narrow icon-only mode.
+// Includes sidebar-scoped tab layout overrides — tab visuals themselves
+// live in _tabs.scss; this file covers sidebar-specific layout/sizing/hiding.
+
+aside[data-component='navbar'][stylemode='vertical'] {
+	width: 10rem;
+	position: relative;
+}
+
+// Thin vertical separator line along the outer (left) edge of the sidebar.
+// Mirrors the chrome-style sidebar gutter shown in reference designs while
+// keeping the existing tab visuals untouched.
+aside[data-component='navbar'][stylemode='vertical']::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0.75rem;
+	bottom: 0.75rem;
+	width: 1px;
+	background: color-mix(in oklab, var(--text) 18%, transparent);
+	pointer-events: none;
+	z-index: 5;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed'] {
+	width: 3rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	div[data-vertical-move='profiles'],
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-header']
+	[data-component='new-tab']::after,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-title {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-top'] {
+	display: flex;
+	flex-direction: row;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-top-portal'],
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-middle'],
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-bottom'] {
+	display: grid !important;
+	justify-items: center;
+	align-items: center;
+	column-gap: 0.5rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-top-portal'] {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-middle'],
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-bottom'] {
+	flex: 0 0 auto;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	row-gap: 0.75rem;
+	width: 100%;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-middle'] {
+	margin-top: auto;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-bottom'] {
+	margin-top: 0.75rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-portal'],
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space'] {
+	display: flex !important;
+	width: 100%;
+	min-height: 0;
+	margin-bottom: 0;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-portal'] {
+	margin-top: 0;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space'] {
+	flex: 1 1 auto;
+	flex-direction: column;
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-header'] {
+	display: flex !important;
+	align-items: center;
+	justify-content: flex-start;
+	min-height: 2rem;
+	margin-bottom: 0.5rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-header']
+	[data-component='new-tab'] {
+	width: auto;
+	padding: 0 0.25rem;
+	justify-content: flex-start;
+	gap: 0.25rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-header']
+	[data-component='new-tab']::after {
+	content: 'New Tab';
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--text-70);
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab-bar-container'] {
+	width: 100%;
+	min-height: 0;
+	height: auto;
+	flex: 1 1 auto;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab-bar'] {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	height: 100%;
+	overflow-x: hidden;
+	overflow-y: auto !important;
+	white-space: normal;
+	padding-bottom: 0;
+	margin-bottom: 0;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab'] {
+	width: 100%;
+	height: auto;
+	min-width: 0;
+	padding: 0.45rem 0.6rem;
+	margin: 0;
+	justify-content: flex-start;
+	align-items: center;
+	border-radius: 0.74rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'] {
+	width: 2.35rem;
+	height: 2.35rem;
+	min-width: 2.35rem;
+	padding: 0;
+	margin: 0;
+	justify-content: center;
+	align-items: center;
+	border-radius: 0.74rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-content {
+	justify-content: flex-start;
+	align-items: center;
+	gap: 0.45rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-title,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-close,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-drag-handle {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'][state='pinned'] {
+	width: 2.05rem;
+	height: 2.05rem;
+	opacity: 0.95;
+	transform: scale(0.96);
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'][state='pinned']
+	.tab-favicon {
+	width: 14px;
+	height: 14px;
+	min-width: 14px;
+	min-height: 14px;
+	opacity: 0.9;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']:not([state='pinned'])
+	.tab-favicon {
+	width: 15px;
+	height: 15px;
+	min-width: 15px;
+	min-height: 15px;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	.tab-pinned-divider {
+	width: 1px;
+	height: 2.45rem;
+	margin: 0.3rem 0 0.6rem;
+	background: color-mix(in oklab, var(--main) 72%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in oklab, var(--main) 30%, transparent);
+	border-radius: 999px;
+	opacity: 0.9;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-middle']
+	li,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-bottom']
+	li,
+div[data-component='top-bar'][stylemode='vertical'] {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*
+	*
+	.tab {
+	/* make collapsed tabs square and such */
+	aspect-ratio: 1 / 1;
+	padding: 0.2rem;
+	width: 100%;
+	height: auto;
+	margin: 0;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*
+	*
+	.inactive.tab {
+	background: transparent;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*
+	*
+	.active.tab:hover
+	*
+	*:not(button):not(button *) {
+	/* make x the only thing on hover*/
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*
+	*
+	.active.tab
+	*
+	button {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*
+	*
+	.active.tab:hover
+	*
+	button {
+	margin-left: 1px;
+	display: block;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*[data-component='navbar-tab-space']
+	*[data-component='navbar-tab-header']
+	*[data-vertical-move='new-tab'] {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	*[data-component='navbar-tab-space']
+	*[data-component='navbar-tab-header']
+	*[data-vertical-move='new-tab']
+	button[data-component='new-tab'] {
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	height: auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='tab-bar'] {
+	align-items: center;
+	gap: 0.28rem;
+}
+
+/*
+ * Note: a previous WIP block here (hardcoded #2b2f39 / #ef8f85 / #ff7f73
+ * backgrounds for collapsed vertical tabs) was removed — it was overriding
+ * the theme-driven `.tab[stylemode='vertical'].active` radial-gradient
+ * left-edge accent (defined in _tabs.scss) and producing a salmon
+ * full-tab fill in collapsed mode. The theme-aware rules now apply
+ * unobstructed and restore the snapshot's behavior:
+ *   - inactive collapsed tabs: transparent (.inactive.tab rule above)
+ *   - active collapsed tabs:   thin accent stripe on the left edge from the
+ *     radial-gradient backdrop, masked by the .active::before panel.
+ */

@@ -1,0 +1,92 @@
+// Profile manager popup menu and basecoat-css (.bc-*) dialog/button overrides.
+
+.profile-manager-menu {
+	font-family: inherit;
+	line-height: 1.4;
+	top: 2rem;
+	left: 3.5rem;
+	position: fixed;
+	box-shadow:
+		#000000 0px 5px 5px -3px,
+		#000000 0px 4px 6px -2px,
+		inset 0 0 8px 3px var(--shadow-inner),
+		inset 0 0 12px 6px var(--shadow-inner);
+}
+
+.profile-manager-menu button {
+	transition: all 0.15s ease;
+	cursor: pointer;
+}
+
+.profile-manager-menu button:hover {
+	transform: scale(1.02);
+}
+
+.profile-manager-menu button:active {
+	transform: scale(0.98);
+}
+
+.profile-manager-menu .profile-row:hover {
+	transform: translateX(2px);
+}
+
+.profile-manager-menu .profile-actions button {
+	opacity: 0.7;
+	transition:
+		opacity 0.15s ease,
+		transform 0.15s ease;
+}
+
+.profile-manager-menu .profile-row:hover .profile-actions button {
+	opacity: 1;
+}
+
+.profile-manager-menu .profile-actions button:hover {
+	transform: scale(1.1);
+	opacity: 1;
+}
+
+.profile-manager-menu div::-webkit-scrollbar {
+	width: 4px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-track {
+	background: var(--white-05);
+	border-radius: 2px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-thumb {
+	background: var(--white-20);
+	border-radius: 2px;
+}
+
+.profile-manager-menu div::-webkit-scrollbar-thumb:hover {
+	background: var(--white-30);
+}
+
+// basecoat-css overrides
+
+.bc-dialog-overlay {
+	animation: fadeIn 0.2s ease;
+}
+
+.bc-dialog-content {
+	animation: slideIn 0.2s ease;
+}
+
+.bc-input:focus {
+	border-color: var(--main) !important;
+	box-shadow: 0 0 0 3px var(--main-20a) !important;
+}
+
+.bc-btn-primary:hover {
+	transform: scale(1.02) !important;
+}
+
+.bc-btn-primary:active {
+	transform: scale(0.98) !important;
+}
+
+.bc-btn-secondary:hover {
+	background: var(--white-05) !important;
+}

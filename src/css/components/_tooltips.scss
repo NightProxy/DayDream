@@ -1,0 +1,94 @@
+// Data-attribute-driven tooltips. Direction is set via [data-side="..."]
+// (top/right/bottom/left) and [data-align="..."] (start/center/end).
+
+[data-tooltip] {
+	position: relative;
+	z-index: 9999;
+	overflow: visible !important;
+}
+
+[data-tooltip]::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	z-index: 999 !important;
+	overflow: visible !important;
+	max-width: 28rem;
+	padding: 6px 8px;
+	border-radius: 6px;
+	font-size: 12px;
+	line-height: 1;
+	color: var(--text);
+	background: var(--tooltip-bg);
+	backdrop-filter: blur(0.5rem);
+	border: 1px solid var(--tooltip-border);
+	box-shadow: inset 0 0 4px 3px var(--tooltip-inset);
+	white-space: nowrap;
+	pointer-events: none;
+	opacity: 0;
+	transform: translateY(0) translateX(1rem) scale(0.98);
+	transition:
+		opacity 0.12s ease,
+		transform 0.12s ease;
+}
+
+[data-tooltip]::before {
+	display: none !important;
+	content: none !important;
+	background: none !important;
+	border: none !important;
+	box-shadow: none !important;
+	filter: none !important;
+	opacity: 0 !important;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+	opacity: 1;
+}
+
+[data-tooltip]::after {
+	left: calc(100% + 16px);
+	top: 0;
+}
+
+[data-tooltip][data-side='right']::after {
+	left: calc(100% + 16px);
+	right: auto;
+}
+
+[data-tooltip][data-side='left']::after {
+	right: calc(100% + 16px);
+	left: auto;
+}
+
+[data-tooltip][data-side='top']::after {
+	left: 50%;
+	top: auto;
+	bottom: calc(100% + 16px);
+	transform: translateX(-50%) scale(0.98);
+}
+
+[data-tooltip][data-side='bottom']::after {
+	left: 50%;
+	top: calc(100% + 8px);
+	transform: translateX(-50%) scale(0.98);
+}
+
+[data-tooltip][data-side='right'][data-align='start']::after,
+[data-tooltip][data-side='left'][data-align='start']::after {
+	top: 0;
+	transform: translateY(0) scale(0.98);
+}
+
+[data-tooltip][data-side='right'][data-align='center']::after,
+[data-tooltip][data-side='left'][data-align='center']::after {
+	top: 50%;
+	transform: translateY(-50%) scale(0.98);
+}
+
+[data-tooltip][data-side='right'][data-align='end']::after,
+[data-tooltip][data-side='left'][data-align='end']::after {
+	bottom: 0;
+	top: auto;
+	transform: translateY(0) scale(0.98);
+}
