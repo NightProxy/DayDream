@@ -1,4 +1,10 @@
 [
+    {
+    "name": "Krunker Private Server",
+    "link": "https://totallynotio.krunker.zip/",
+    "image": "/res/g/krunkerprivateserver.png",
+    "categories": ["all", "popular", "multiplayer", "competitive"]
+  },
   {
     "name": "1v1.LOL",
     "link": "https://1v1.lol/",

@@ -6,6 +6,7 @@ import { NetworkAPI } from '@apis/platform/network';
 import { basePath, resolvePath } from '@utils/basepath';
 import LibcurlClient from '@mercuryworkshop/libcurl-transport';
 import EpoxyClient from '@mercuryworkshop/epoxy-transport';
+import PulsarClient from '@pkgs/pulsar';
 
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
@@ -45,6 +46,7 @@ interface ProxyInterface {
 	swapWispServer(url?: string): Promise<void>;
 	libcurl: LibcurlClient;
 	epoxy: EpoxyClient;
+	pulsar: PulsarClient;
 	controller: any;
 }
 class Proxy implements ProxyInterface {
@@ -60,6 +62,7 @@ class Proxy implements ProxyInterface {
 	initReady: Promise<void>;
 	libcurl!: LibcurlClient;
 	epoxy!: EpoxyClient;
+	pulsar!: PulsarClient;
 	controller: any;
 	private activeTransport: string = 'libcurl';
 	private readonly controllerConfig: SJConfig;
@@ -409,6 +412,10 @@ class Proxy implements ProxyInterface {
 			libcurl: {
 				constructor: LibcurlClient,
 				opts: ['wisp', 'proxy'],
+			},
+			pulsar: {
+				constructor: PulsarClient,
+				opts: ['host', 'port'],
 			}
 		};
 	}
@@ -431,28 +438,42 @@ class Proxy implements ProxyInterface {
 				location.host +
 				'/wisp/';
 
-		const clientOptions: Record<string, any> = {
-			wisp: wispUrl
-		};
+		const clientOptions: Record<string, any> = {};
+		const transportOptions: Record<string, any> = {};
 
-		const remoteProxyServer = await this.getRemoteProxyServer();
-		if (
-			this.activeTransport === 'libcurl' &&
-			remoteProxyServer &&
-			remoteProxyServer !== 'undefined' &&
-			remoteProxyServer !== 'null' &&
-			remoteProxyServer !== 'disabled' &&
-			remoteProxyServer !== 'false'
-		) {
-			clientOptions.proxy = remoteProxyServer;
-		}
+		if (this.activeTransport === 'pulsar') {
+			// Pulsar takes the server IP + UDP port directly (no WISP).
+			// Reads optional overrides from settings; falls back to the
+			// official Abundance server inside PulsarClient itself.
+			const savedHost = await this.settings.getItem('pulsarHost');
+			const savedPort = await this.settings.getItem('pulsarPort');
+			if (savedHost) {
+				clientOptions.host = savedHost;
+				transportOptions.host = savedHost;
+			}
+			if (savedPort) {
+				const portNum = Number(savedPort);
+				if (Number.isFinite(portNum) && portNum > 0) {
+					clientOptions.port = portNum;
+					transportOptions.port = portNum;
+				}
+			}
+		} else {
+			clientOptions.wisp = wispUrl;
+			transportOptions.wisp = wispUrl;
 
-		const transportOptions: Record<string, any> = {
-			wisp: wispUrl
-		};
-
-		if (clientOptions.proxy) {
-			transportOptions.proxy = clientOptions.proxy;
+			const remoteProxyServer = await this.getRemoteProxyServer();
+			if (
+				this.activeTransport === 'libcurl' &&
+				remoteProxyServer &&
+				remoteProxyServer !== 'undefined' &&
+				remoteProxyServer !== 'null' &&
+				remoteProxyServer !== 'disabled' &&
+				remoteProxyServer !== 'false'
+			) {
+				clientOptions.proxy = remoteProxyServer;
+				transportOptions.proxy = remoteProxyServer;
+			}
 		}
 
 		return {

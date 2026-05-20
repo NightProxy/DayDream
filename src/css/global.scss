@@ -1,6 +1,4 @@
-@import 'tailwindcss';
-@import 'basecoat-css';
-@import './components/search.css';
+@use 'components/search';
 
 @font-face {
 	font-family: 'Plus Jakarta Sans';
@@ -238,11 +236,11 @@ li {
 }
 
 aside[data-component='navbar'][stylemode='vertical'] {
-	@apply w-40;
+	width: 10rem;
 }
 
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed'] {
-	@apply w-12;
+	width: 3rem;
 }
 
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
@@ -254,12 +252,13 @@ aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	[data-component='navbar-tab-space']
 	[data-component='tab']
 	.tab-title {
-	@apply hidden;
+	display: none;
 }
 
 aside[data-component='navbar'][stylemode='vertical']
 	[data-component='navbar-top'] {
-	@apply flex flex-row;
+	display: flex;
+	flex-direction: row;
 }
 
 aside[data-component='navbar'][stylemode='vertical']
@@ -372,6 +371,97 @@ aside[data-component='navbar'][stylemode='vertical']
 	margin-bottom: 0;
 }
 
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab'] {
+	width: 100%;
+	height: auto;
+	min-width: 0;
+	padding: 0.45rem 0.6rem;
+	margin: 0;
+	justify-content: flex-start;
+	align-items: center;
+	border-radius: 0.74rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'] {
+	width: 2.35rem;
+	height: 2.35rem;
+	min-width: 2.35rem;
+	padding: 0;
+	margin: 0;
+	justify-content: center;
+	align-items: center;
+	border-radius: 0.74rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-content {
+	justify-content: flex-start;
+	align-items: center;
+	gap: 0.45rem;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-title,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-close,
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-drag-handle {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'][state='pinned'] {
+	width: 2.05rem;
+	height: 2.05rem;
+	opacity: 0.95;
+	transform: scale(0.96);
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab'][state='pinned']
+	.tab-favicon {
+	width: 14px;
+	height: 14px;
+	min-width: 14px;
+	min-height: 14px;
+	opacity: 0.9;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='navbar-tab-space']
+	[data-component='tab']:not([state='pinned'])
+	.tab-favicon {
+	width: 15px;
+	height: 15px;
+	min-width: 15px;
+	min-height: 15px;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	.tab-pinned-divider {
+	width: 1px;
+	height: 2.45rem;
+	margin: 0.3rem 0 0.6rem;
+	background: color-mix(in oklab, var(--main) 72%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in oklab, var(--main) 30%, transparent);
+	border-radius: 999px;
+	opacity: 0.9;
+}
+
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	[data-component='navbar-middle']
 	li,
@@ -382,10 +472,11 @@ div[data-component='top-bar'][stylemode='vertical'] {
 	display: none;
 }
 
-
 /* MY SHIT AMP DO NOT TOUCH */
 
-div[data-component='top-bar'] [data-component='tab'][state='pinned'] .tab-title {
+div[data-component='top-bar']
+	[data-component='tab'][state='pinned']
+	.tab-title {
 	display: none;
 }
 
@@ -396,16 +487,19 @@ div[data-component='top-bar'] [data-component='tab'][state='pinned'] {
 	width: 36px;
 	height: 36px;
 }
-div[data-component='top-bar'] [data-component='tab'][state='pinned'].active:hover *
+div[data-component='top-bar']
+	[data-component='tab'][state='pinned'].active:hover
+	*
 	*:not(button):not(button *) {
 	/* make x the only thing on hover*/
 	display: none;
 }
-div[data-component='top-bar'] [data-component='tab'][state='pinned']
-	button {
+div[data-component='top-bar'] [data-component='tab'][state='pinned'] button {
 	display: none;
 }
-div[data-component='top-bar'] [data-component='tab'][state='pinned'].active:hover button {
+div[data-component='top-bar']
+	[data-component='tab'][state='pinned'].active:hover
+	button {
 	display: block;
 }
 div[data-component='top-bar'] [data-component='tab'][state='pinned'] {
@@ -424,14 +518,6 @@ aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	margin: 0;
 }
 
-aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
-	*
-	*
-	.inactive.tab::before {
-	/* remove inactive tab dark shit */
-	background: transparent;
-	display: none;
-}
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	*
 	*
@@ -878,35 +964,73 @@ aside[data-component='navbar'][stylemode='vertical']
 	pointer-events: none;
 }
 
+.tab[stylemode='vertical']:not([data-dnd-lane="ungrouped"])::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 0.4rem;
+	height: 0.7rem;
+	border-radius: 0 0.18rem 0.18rem 0;
+	background: var(--group-color) !important;
+	pointer-events: none;
+	z-index: 2;
+}
+
+/*
+ * Active tab in vertical mode: replace the old half-pill radial-gradient
+ * accent with two cleaner Chrome-style elements:
+ *   ::before — small rounded-square "chip" hugging the tab's left edge.
+ *   ::after  — thin vertical line spanning the full tab height alongside
+ *              the chip. Suppressed when the tab is in a group (grouped
+ *              tabs use ::after for the group accent bar; see rules under
+ *              `aside[stylemode='vertical'] [data-group-id]::after`).
+ * Both are tinted from --main via the existing --grad-active-* tokens so
+ * they react to theme changes.
+ */
 .tab[stylemode='vertical'].active {
 	box-sizing: border-box;
 	border: none;
 	position: relative;
 	border-radius: 0.75rem;
-
-	background: radial-gradient(
-		12% 90% at 0% 50%,
-		var(--grad-active-0) 0%,
-		var(--grad-active-15) 25%,
-		var(--grad-active-35) 45%,
-		transparent 80%
-	);
+	background: transparent;
 }
 
-.tab[stylemode='vertical'].active::before {
+/*
+ * Active vertical tab accent chip — Chrome / VS Code-style.
+ * Uses :where() on the group-id so this rule wins over the group-color
+ * chip rule (`.tab[stylemode='vertical']:not([data-dnd-lane="ungrouped"])::before`)
+ * regardless of whether the active tab is part of a group. Pure --main so
+ * "active" always reads as the main accent (matches horizontal tab look).
+ * !important on background defends against the group-color chip's
+ * background being injected via the same pseudo-element when both rules'
+ * specificity ties — kept minimal and only on the visual property.
+ */
+.tab[stylemode='vertical'].active[data-component='tab']::before {
 	content: '';
 	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 0.4rem;
+	height: 0.9rem;
+	border-radius: 0 0.18rem 0.18rem 0;
+	background: var(--main) !important;
+	box-shadow: 0 0 6px color-mix(in oklab, var(--main) 45%, transparent);
+	pointer-events: none;
+	z-index: 3;
+}
 
-	/* expose left edge */
-	top: 0.05rem;
-	bottom: 0.05rem;
-	left: 0.15rem;
-	right: 0.05rem;
-
-	border-radius: 0.65rem;
-
-	background: var(--grad-base-1);
-
+.tab[stylemode='vertical'].active:not([data-group-id])::after {
+	content: '';
+	position: absolute;
+	left: -0.05rem;
+	top: 0.35rem;
+	bottom: 0.35rem;
+	width: 1.5px;
+	border-radius: 999px;
+	background: color-mix(in oklab, var(--main) 70%, transparent);
 	pointer-events: none;
 }
 
@@ -923,7 +1047,7 @@ aside[data-component='navbar'][stylemode='vertical']
 	);
 }
 
-.tab.inactive::before {
+.tab.inactive:not([stylemode='vertical'])::before {
 	content: '';
 	display: block;
 	position: absolute;
@@ -1056,48 +1180,140 @@ div[data-component='utility-bar'] {
 	transition: all 0.2s ease;
 }
 
+/*
+ * Group underline: continuous line spanning every tab in a group.
+ * Parent flex gap is 0.5rem (8px); each tab's underline extends slightly past
+ * its own edges so neighbours visually merge into a single line.
+ * Positions:
+ *   - single: short rounded pill under a lone grouped tab (no neighbours).
+ *   - start:  rounded left cap, extends right to meet the next tab.
+ *   - middle: square ends, extends both sides to bridge gaps.
+ *   - end:    rounded right cap, extends left to meet the previous tab.
+ */
 .tab[data-group-id]::after {
-	transition: all 0.2s ease;
 	content: '';
 	position: absolute;
-	top: -6px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 32px;
-	height: 4px;
-	border-radius: 0 0 12px 12px;
-	background: color-mix(
-		in oklab,
-		var(--group-color, var(--main)) 85%,
-		transparent
-	);
-	opacity: 0.8;
+	bottom: -5px;
+	left: -0.26rem;
+	right: -0.26rem;
+	height: 1.5px;
+	border-radius: 0;
+	background: var(--group-color, var(--main));
+	opacity: 1;
 	pointer-events: none;
-	box-shadow: 0 2px 2px -1px
-		color-mix(in oklab, var(--group-color, var(--main)) 75%, transparent);
+	transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+/*
+ * Pull the first grouped tab close to its preceding header chip (Chrome-style
+ * tight group). Parent flex gap is 0.5rem (8px); we cancel half of it with a
+ * -0.25rem margin-left so header+first-tab sit ~4px apart instead of 8px.
+ * The JS HEADER_GAP_PX constant in tabs2/index.ts must match this effective
+ * gap so the underline extension lands at the header's left edge.
+ */
+.tab-group-header + .tab[data-group-id] {
+	margin-left: -0.25rem;
+}
+
+.tab[data-group-id][data-group-position='single']::after {
+	/* Lone grouped tab: extend left under the header chip (see start rule). */
+	left: calc(-1 * (var(--header-extent, 0px) + 0.5rem));
+	right: -0.5rem;
+	border-radius: 999px;
+}
+
+.tab[data-group-id][data-group-position='start']::after {
+	/*
+	 * Extend left under the preceding group-header chip so the underline is
+	 * one continuous line beneath the header + every grouped tab.
+	 * --header-extent (header_width + 8px flex-gap) is written from JS in
+	 * Tabs.applyGroupHeaderExtents(); the extra 0.5rem produces the rounded
+	 * left cap that pokes past the header's left edge.
+	 */
+	left: calc(-1 * (var(--header-extent, 0px) + 0.5rem));
+	right: -0.26rem;
+	border-radius: 999px 0 0 999px;
+}
+
+.tab[data-group-id][data-group-position='middle']::after {
+	left: -0.26rem;
+	right: -0.26rem;
+	border-radius: 0;
+}
+
+.tab[data-group-id][data-group-position='end']::after {
+	left: -0.26rem;
+	right: -0.5rem;
+	border-radius: 0 999px 999px 0;
 }
 
 .tab[data-group-id].active::after {
-	content: '';
-	position: absolute;
-	top: -6px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 48px;
-	height: 4px;
-	border-radius: 0 0 12px 12px;
-	background: color-mix(
-		in oklab,
-		var(--group-color, var(--main)) 85%,
-		transparent
-	);
-	opacity: 0.8;
-	pointer-events: none;
-	box-shadow: 0 2px 2px -1px
-		color-mix(in oklab, var(--group-color, var(--main)) 75%, transparent);
+	height: 1.5px;
+	opacity: 1;
+}
+
+/*
+ * The group's underline is now rendered entirely by the first grouped tab's
+ * ::after (which extends left under this header via the --header-extent CSS
+ * variable set by Tabs.applyGroupHeaderExtents). Suppressing this ::after
+ * avoids drawing a duplicate / mis-aligned line beneath the header.
+ */
+.tab-group-header::after {
+	content: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='tab'][data-group-id]::after {
+	top: -0.28rem;
+	bottom: -0.28rem;
+	left: -0.48rem;
+	right: auto;
+	width: 1.5px;
+	height: auto;
+	border-radius: 0;
+}
+
+/*
+ * In vertical mode the group accent is a vertical bar on the tab's left
+ * edge. For start/single tabs we extend the bar UPWARD past the preceding
+ * group-header chip so the bar visually wraps the entire group (header +
+ * tabs) — mirrors the horizontal continuous-underline behavior. The
+ * --header-extent variable carries the header's measured offsetHeight and
+ * is written from JS in Tabs.applyGroupHeaderExtents(). The extra 0.28rem
+ * matches the base rule's overshoot and produces the rounded top cap.
+ */
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='tab'][data-group-id][data-group-position='single']::after {
+	/* Lone grouped tab: bar wraps the header above and ends with a rounded
+	   bottom cap inset from the tab's bottom edge. */
+	top: calc(-1 * (var(--header-extent, 0px) + 0.28rem));
+	bottom: 0.42rem;
+	border-radius: 999px;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='tab'][data-group-id][data-group-position='start']::after {
+	top: calc(-1 * (var(--header-extent, 0px) + 0.28rem));
+	border-radius: 999px 999px 0 0;
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='tab'][data-group-id][data-group-position='end']::after {
+	bottom: 0.42rem;
+	border-radius: 0 0 999px 999px;
+}
+
+aside[data-component='navbar'][stylemode='vertical'] .tab-group-header::after {
+	content: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='tab'][data-group-id]::after {
+	left: -0.86rem;
 }
 
 .tab-group-header {
+	position: relative;
 	display: flex;
 	align-items: center;
 	font-size: 0.75rem;
@@ -1107,6 +1323,122 @@ div[data-component='utility-bar'] {
 	border-radius: 0.5rem;
 	cursor: pointer;
 	transition: all 0.2s ease;
+}
+
+aside[data-component='navbar'][stylemode='vertical'] .tab-group-header {
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	justify-content: flex-start;
+	margin: 0;
+	background: transparent;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	.tab-group-header {
+	width: 2.35rem;
+	height: 2.35rem;
+	padding: 0;
+	/* Center the now-square 18×18 indicator chip inside the 37.6×37.6
+	   collapsed-mode header (chevron is hidden in this mode). */
+	justify-content: center;
+}
+
+aside[data-component='navbar'][stylemode='vertical'] .tab-group-header:hover {
+	background: color-mix(in oklab, var(--white-08) 60%, transparent);
+	border-color: color-mix(in oklab, var(--white-20) 65%, transparent);
+}
+
+/*
+ * Vertical-mode group-header indicator: a small square (mirrors the 24×24
+ * square used in horizontal mode), so the visible chip reads as a "vertical
+ * version of the horizontal tab-groups header" instead of a thin pill bar.
+ * The continuous accent bar that runs alongside grouped tabs is provided by
+ * the first grouped tab's ::after rule + --header-extent variable elsewhere
+ * in this file.
+ */
+aside[data-component='navbar'][stylemode='vertical'] .tab-group-indicator {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	border-radius: 5px;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	.tab-group-indicator {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	border-radius: 5px;
+}
+
+/* Collapsed sidebar is too narrow to fit both the square indicator and the
+   collapse chevron — hide the chevron so only the indicator chip shows. */
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	.tab-group-collapse-icon {
+	display: none;
+}
+
+aside[data-component='navbar'][stylemode='vertical'] .tab-group-collapse-icon {
+	width: 12px;
+	height: 12px;
+	color: color-mix(in oklab, var(--text) 60%, transparent);
+	margin-left: auto;
+}
+
+/* (collapsed-mode collapse-icon visibility/positioning is handled above by
+   the `display: none` rule; the previous `margin-left: 0.42rem` override is
+   no longer needed.) */
+
+aside[data-component='navbar'][stylemode='vertical']
+	.tab-group-header.collapsed {
+	opacity: 1;
+	border-color: color-mix(in oklab, var(--white-16) 70%, transparent);
+}
+
+aside[data-component='navbar'][stylemode='vertical']
+	.tab-group-header.collapsed
+	.tab-group-indicator {
+	height: 10px;
+	opacity: 0.74;
+}
+
+.group-header-context-menu .group-menu-name-input {
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.62rem;
+	border: 1px solid color-mix(in oklab, var(--main) 35%, transparent);
+	background: color-mix(in oklab, var(--bg-2) 84%, transparent);
+	color: var(--text);
+	font-size: 0.875rem;
+	outline: none;
+}
+
+.group-header-context-menu .group-menu-name-input:focus {
+	border-color: color-mix(in oklab, var(--main) 72%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in oklab, var(--main) 22%, transparent);
+}
+
+.group-header-context-menu .group-menu-color-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-top: 0.65rem;
+	padding: 0 0.1rem;
+}
+
+.group-header-context-menu .group-menu-color-dot {
+	width: 0.95rem;
+	height: 0.95rem;
+	border-radius: 999px;
+	background: var(--group-color-dot);
+	border: 1px solid color-mix(in oklab, white 28%, transparent);
+	padding: 0;
+	min-width: 0;
+	flex: 0 0 auto;
+}
+
+.group-header-context-menu .group-menu-color-dot.is-active {
+	box-shadow: 0 0 0 2px color-mix(in oklab, var(--group-color-dot) 44%, white);
 }
 
 .tab-group-header:hover {
@@ -1143,3 +1475,21 @@ div[data-component='utility-bar'] {
 	font-weight: 600;
 	color: var(--text);
 }
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
+	[data-component='tab-bar'] {
+	align-items: center;
+	gap: 0.28rem;
+}
+
+/*
+ * Note: the previous WIP block here (hardcoded #2b2f39 / #ef8f85 / #ff7f73
+ * backgrounds for collapsed vertical tabs) was removed — it was overriding
+ * the theme-driven `.tab[stylemode='vertical'].active` radial-gradient
+ * left-edge accent (defined earlier in this file) and producing a salmon
+ * full-tab fill in collapsed mode. The earlier theme-aware rules now apply
+ * unobstructed and restore the snapshot's behavior:
+ *   - inactive collapsed tabs: transparent (.inactive.tab rule above)
+ *   - active collapsed tabs:   thin accent stripe on the left edge from the
+ *     radial-gradient backdrop, masked by the .active::before panel.
+ */

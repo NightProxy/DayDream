@@ -9,7 +9,7 @@ export class TabManipulation {
 	}
 
 	duplicateTab = (tabId: string): string | null => {
-		const tabInfo = this.tabs.tabs.find(t => t.id === tabId);
+		const tabInfo = this.tabs.getTabById(tabId);
 		if (!tabInfo) return null;
 
 		// Decode iframe.src before passing to createTab. createTab → processUrl
@@ -32,7 +32,7 @@ export class TabManipulation {
 	};
 
 	refreshTab = (tabId: string) => {
-		const tabInfo = this.tabs.tabs.find(t => t.id === tabId);
+		const tabInfo = this.tabs.getTabById(tabId);
 		if (!tabInfo) return;
 
 		if (tabInfo.iframe && tabInfo.iframe.src) {
@@ -42,11 +42,12 @@ export class TabManipulation {
 	};
 
 	closeTabsToRight = (tabId: string): void => {
-		const targetIndex = this.tabs.tabs.findIndex(t => t.id === tabId);
-		if (targetIndex === -1 || targetIndex === this.tabs.tabs.length - 1)
+		const orderedTabs = this.tabs.getTabsInOrder();
+		const targetIndex = orderedTabs.findIndex(t => t.id === tabId);
+		if (targetIndex === -1 || targetIndex === orderedTabs.length - 1)
 			return;
 
-		const tabsToClose = this.tabs.tabs.slice(targetIndex + 1);
+		const tabsToClose = orderedTabs.slice(targetIndex + 1);
 		for (let i = tabsToClose.length - 1; i >= 0; i--) {
 			this.tabs.closeTabById(tabsToClose[i].id);
 		}
@@ -61,7 +62,7 @@ export class TabManipulation {
 		if (!container) return;
 
 		const fragment = document.createDocumentFragment();
-		this.tabs.tabs.forEach(tabData => {
+		this.tabs.getTabsInOrder().forEach(tabData => {
 			const tabElement = document.getElementById(tabData.id);
 			if (tabElement && tabElement.parentNode === container) {
 				fragment.appendChild(tabElement);
@@ -128,25 +129,29 @@ export class TabManipulation {
 	}
 
 	moveTabToPosition(draggedTabId: string, targetTabId: string, e: DragEvent) {
-		const draggedIndex = this.tabs.tabs.findIndex(
+		const orderedTabs = this.tabs.getTabsInOrder();
+		const draggedIndex = orderedTabs.findIndex(
 			(t: any) => t.id === draggedTabId
 		);
-		let targetIndex = this.tabs.tabs.findIndex(
+		let targetIndex = orderedTabs.findIndex(
 			(t: any) => t.id === targetTabId
 		);
+		if (draggedIndex === -1 || targetIndex === -1) return;
 
 		const targetElement = document.querySelector(
 			`[data-tab-id="${targetTabId}"]`
 		) as HTMLElement;
+		let placeAfter = false;
 		if (targetElement) {
 			const rect = targetElement.getBoundingClientRect();
 			const isRightSide = e.clientX > rect.left + rect.width / 2;
-			if (isRightSide) targetIndex++;
+			if (isRightSide) {
+				targetIndex++;
+				placeAfter = true;
+			}
 		}
 
-		const [removed] = this.tabs.tabs.splice(draggedIndex, 1);
-		if (draggedIndex < targetIndex) targetIndex--;
-		this.tabs.tabs.splice(targetIndex, 0, removed);
+		this.tabs.moveTabInOrder(draggedTabId, targetTabId, placeAfter);
 	}
 
 	shouldUngroupBasedOnEdge(
@@ -163,12 +168,13 @@ export class TabManipulation {
 			return draggedTab.groupId && !targetTab.groupId;
 		}
 
-		const group = this.tabs.groups.find(
-			(g: any) => g.id === draggedTab.groupId
-		);
+		const group = this.tabs
+			.getGroups()
+			.find((g: any) => g.id === draggedTab.groupId);
 		if (!group) return false;
 
-		const groupTabs = this.tabs.tabs
+		const groupTabs = this.tabs
+			.getTabsInOrder()
 			.map((tab: any, index: number) => ({ ...tab, index }))
 			.filter((t: any) => t.groupId === group.id)
 			.sort((a: any, b: any) => a.index - b.index);

@@ -1,5 +1,5 @@
-@import "./vars.css";
-@import "./global.css";
+@use "vars";
+@use "global";
 
 :root {
   --internal-bg: var(--background-color, var(--bg-2));

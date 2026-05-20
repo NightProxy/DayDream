@@ -1,114 +1,213 @@
 export interface TabGroup {
-  id: string;
-  name: string;
-  color: string;
-  isCollapsed: boolean;
-  tabIds: string[];
+	id: string;
+	name: string;
+	color: string;
+	isCollapsed: boolean;
+	tabIds: string[];
+}
+
+export type VisualOrderMode = 'horizontal' | 'vertical';
+
+export interface VisualTabOrderEntry {
+	kind: 'tab' | 'groupHeader';
+	id: string;
+	groupId?: string;
+	tabId?: string;
+}
+
+export type TabSplitPlacement =
+	| 'main'
+	| 'split-left'
+	| 'split-right'
+	| 'sidepanel-left'
+	| 'sidepanel-right'
+	| 'devtools';
+
+export interface TabCacheEntry {
+	title: string;
+	favicon: string | null;
+	url: string;
+	timestamp: number;
 }
 
 export interface TabData {
-  id: string;
-  tab: HTMLElement;
-  iframe: HTMLIFrameElement;
-  url: string;
-  groupId: string | undefined;
-  isPinned: boolean;
-  lastInternalRoute: string | undefined;
-  lastAddressShown: string | undefined;
-  chiiPanel:
-    | {
-        isActive: boolean;
-        devtoolsIframe: HTMLIFrameElement | null;
-        container: HTMLDivElement | null;
-        resizeHandle: HTMLDivElement | null;
-        height: number;
-        messageRelaySetup?: boolean;
-        messageHandler?: (event: MessageEvent) => void;
-      }
-    | undefined;
+	id: string;
+	tab: HTMLElement;
+	iframe: HTMLIFrameElement;
+	title: string;
+	favicon: string | null;
+	url: string;
+	groupId: string | undefined;
+	isPinned: boolean;
+	splitPlacement: TabSplitPlacement;
+	frameId: string;
+	lastInternalRoute: string | undefined;
+	lastAddressShown: string | undefined;
+	cache: TabCacheEntry | undefined;
+	chiiPanel:
+		| {
+				isActive: boolean;
+				devtoolsIframe: HTMLIFrameElement | null;
+				container: HTMLDivElement | null;
+				resizeHandle: HTMLDivElement | null;
+				height: number;
+				messageRelaySetup?: boolean;
+				messageHandler?: (event: MessageEvent) => void;
+		  }
+		| undefined;
 }
 
 export interface TabsInterface {
-  ui: any;
-  proto: any;
-  items: any;
-  logger: any;
-  settings: any;
-  eventsAPI: any;
-  tabCount: number;
-  tabs: TabData[];
-  groups: TabGroup[];
-  el: HTMLDivElement;
-  instanceId: number;
-  styleEl: HTMLStyleElement;
-  proxy: any;
-  bookmarkManager: any;
-  swConfig: any;
-  proxySetting: string;
-  dragHandler: any;
-  groupManager: any;
-  pinManager: any;
+	ui: any;
+	proto: any;
+	items: any;
+	logger: any;
+	settings: any;
+	eventsAPI: any;
+	tabCount: number;
+	activeTabId: string | null;
+	tabs: TabData[];
+	groups: TabGroup[];
+	frameByTabId: Map<string, HTMLIFrameElement>;
+	tabElementById: Map<string, HTMLElement>;
+	tabIdsByGroupId: Map<string, Set<string>>;
+	groupHeaderElementById: Map<string, HTMLElement>;
+	pinnedTabIds: Set<string>;
+	splitByTabId: Map<string, TabSplitPlacement>;
+	tabCacheById: Map<string, TabCacheEntry>;
+	el: HTMLDivElement;
+	instanceId: number;
+	styleEl: HTMLStyleElement;
+	proxy: any;
+	bookmarkManager: any;
+	swConfig: any;
+	proxySetting: string;
 
-  tabEls: HTMLElement[];
-  pinnedTabEls: HTMLElement[];
-  unpinnedTabEls: HTMLElement[];
+	tabEls: HTMLElement[];
+	bookmarkUI: any;
 
-  tabContentWidths: number[];
-  tabContentPositions: number[];
-  tabPositions: number[];
-  tabContentHeights: number[];
-  tabContentPositionsY: number[];
-  tabPositionsY: number[];
+	createTab: (url: string) => Promise<string>;
+	createTabToRight: (
+		referenceTabId: string,
+		url?: string
+	) => Promise<string | null>;
+	closeTabById: (id: string) => Promise<void>;
+	closeOtherTabs: (tabId: string) => Promise<void>;
+	closeCurrentTab: () => Promise<void>;
+	closeAllTabs: () => Promise<void>;
+	selectTab: (tabId: string) => Promise<void>;
+	selectTabById: (id: string) => void;
+	updateTabAttributes: () => void;
 
-  bookmarkUI: any;
-  popGlow: (el: HTMLElement) => void;
+	getTabsInOrder: () => TabData[];
+	getPinnedTabs: () => TabData[];
+	getUngroupedUnpinnedTabs: () => TabData[];
+	getGroupTabs: (groupId: string) => TabData[];
+	getVisualTabOrder: (mode: VisualOrderMode) => VisualTabOrderEntry[];
+	getTabById: (id: string) => TabData | undefined;
+	getTabIndex: (id: string) => number;
+	registerTab: (tabData: TabData) => void;
+	removeTab: (id: string) => TabData | undefined;
+	moveTabInOrder: (
+		draggedTabId: string,
+		targetTabId: string,
+		placeAfter?: boolean
+	) => void;
+	reorderPinned: (tabId: string, toIndex: number) => void;
+	reorderUngrouped: (tabId: string, toIndex: number) => void;
+	reorderWithinGroup: (
+		tabId: string,
+		groupId: string,
+		toIndex: number
+	) => void;
+	reorderGroups: (groupId: string, toIndex: number) => void;
+	renderTabStrip: () => void;
+	ensureStateInvariants: () => boolean;
+	runStateTransaction: (label: string, mutate: () => void) => boolean;
 
-  createTab: (url: string) => Promise<void>;
-  closeTabById: (id: string) => Promise<void>;
-  closeCurrentTab: () => Promise<void>;
-  closeAllTabs: () => Promise<void>;
-  selectTab: (tabId: string) => Promise<void>;
-  selectTabById: (id: string) => void;
-  updateTabAttributes: () => void;
+	getGroups: () => TabGroup[];
+	getGroupById: (groupId: string) => TabGroup | undefined;
+	registerGroup: (group: TabGroup) => void;
+	updateTabGroup: (tabId: string, groupId: string | undefined) => void;
 
-  duplicateTab: (tabId: string) => string | null;
-  refreshTab: (tabId: string) => void;
-  closeTabsToRight: (tabId: string) => void;
-  reorderTabElements: () => void;
-  setFavicon: (tabElement: HTMLElement, iframe: HTMLIFrameElement) => void;
+	isTabPinned: (tabId: string) => boolean;
+	setTabPinned: (tabId: string, pinned: boolean) => void;
+	syncTabVisualState: (tabId: string) => void;
 
-  pageClient: (iframe: HTMLIFrameElement) => void;
-  pageClientModule?: {
-    cleanupIframe: (iframeId: string) => void;
-    cleanupAll: () => void;
-  };
+	setTabSplitPlacement: (tabId: string, placement: TabSplitPlacement) => void;
 
-  startMetaWatcher: (
-    tabId: string,
-    iframe: HTMLIFrameElement,
-    tabEl: HTMLElement,
-  ) => void;
-  stopMetaWatcher: (tabId: string) => Promise<void>;
+	setTabCache: (tabId: string, cache: TabCacheEntry | undefined) => void;
+	updateTabMetadata: (
+		tabId: string,
+		data: Partial<Pick<TabData, 'title' | 'favicon' | 'url'>>
+	) => void;
 
-  setupTabContextMenu: (tabElement: HTMLElement, tabId: string) => void;
-  setupSortable: () => void;
-  layoutTabs: () => void;
+	duplicateTab: (tabId: string) => string | null;
+	refreshTab: (tabId: string) => void;
+	closeTabsToRight: (tabId: string) => void;
+	reorderTabElements: () => void;
+	setFavicon: (tabElement: HTMLElement, iframe: HTMLIFrameElement) => void;
 
-  renameGroup: (groupId: string, newName?: string) => boolean;
-  changeGroupColor: (groupId: string, color: string) => boolean;
-  ungroupAllTabs: (groupId: string) => boolean;
-  deleteGroup: (groupId: string) => boolean;
-  createGroupWithTab: (tabId: string, groupName?: string) => string | null;
-  addTabToGroup: (tabId: string, groupId: string) => boolean;
-  removeTabFromGroup: (tabId: string) => boolean;
-  toggleGroup: (groupId: string) => boolean;
-  getTabGroup: (tabId: string) => TabGroup | null;
-  getGroupTabs: (groupId: string) => TabData[];
-  closeAllTabsInGroup: (groupId: string) => boolean;
+	pageClient: (iframe: HTMLIFrameElement) => void;
+	pageClientModule?: {
+		cleanupIframe: (iframeId: string) => void;
+		cleanupAll: () => void;
+	};
+	frameManager?: {
+		createManagedFrame: (
+			tabId: string,
+			url: string,
+			placement?: TabSplitPlacement
+		) => Promise<{
+			iframe: HTMLIFrameElement;
+			frameId: string;
+			proxyHandle: any;
+		}>;
+		attachFrame: (tabId: string, container: HTMLElement) => void;
+		navigateFrame: (tabId: string, url: string) => Promise<void>;
+		cleanupFrame: (tabId: string) => void;
+		setFramePlacement: (
+			tabId: string,
+			splitPlacement: TabSplitPlacement
+		) => void;
+	};
 
-  togglePinTab: (tabId: string) => void;
-  isPinned: (tabId: string) => boolean;
+	startMetaWatcher: (
+		tabId: string,
+		iframe: HTMLIFrameElement,
+		tabEl: HTMLElement
+	) => void;
+	stopMetaWatcher: (tabId: string) => Promise<void>;
 
-  saveSession: () => Promise<void>;
-  restoreSession: () => Promise<boolean>;
+	setupTabContextMenu: (tabElement: HTMLElement, tabId: string) => void;
+	setupVerticalTabsToggle: () => void;
+	toggleVerticalTabsLayout: () => boolean;
+	toggleVerticalTabsCollapsed: () => boolean;
+
+	groupManager?: {
+		createGroupWithTab: (tabId: string) => string | null;
+		addTabToGroup: (
+			tabId: string,
+			groupId: string,
+			targetIndex?: number
+		) => boolean;
+		removeTabFromGroup: (
+			tabId: string,
+			toUngroupedIndex?: number
+		) => boolean;
+		deleteGroup: (groupId: string) => boolean;
+		ungroupAllTabs: (groupId: string) => boolean;
+		toggleGroupCollapse: (groupId: string) => boolean;
+		renameGroup: (groupId: string, nextName?: string) => boolean;
+		changeGroupColor: (groupId: string, color: string) => boolean;
+		closeAllTabsInGroup: (groupId: string) => Promise<void>;
+	};
+	pinManager?: {
+		pinTab: (tabId: string) => boolean;
+		unpinTab: (tabId: string) => boolean;
+		togglePin: (tabId: string) => boolean;
+		isPinned: (tabId: string) => boolean;
+	};
+	nightmarePlugins?: any;
+	closeAllTabsInGroup?: (groupId: string) => Promise<void>;
 }
