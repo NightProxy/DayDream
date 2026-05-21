@@ -1,40 +1,4 @@
 {
-  "daydreamer": {
-    "name": "Daydreamer",
-    "description": "Offical Theme for daydream",
-    "background-color": "rgba(12, 12, 12, 1)",
-    "hover-background-color": "rgba(25, 25, 25, 0.13)",
-    "input-background-color": "rgba(10, 10, 10, 1)",
-    "tab-bg-color": "rgba(50, 50, 50, 1)",
-    "tab-active-bg-color": "rgba(90, 90, 90, 1)",
-    "utility-background-color": "rgba(50, 50, 50, 1)",
-    "dark-translucent-bg": "rgba(80, 80, 80, 0.43)",
-    "border-color": "rgba(90, 90, 90, 1)",
-    "text-color": "rgba(178, 178, 178, 1)",
-    "hover-text-color": "rgba(178, 178, 178, 0.8)",
-    "active-text-color": "rgba(128, 128, 128, 1)",
-    "main-color": "rgba(199, 125, 255,1)",
-    "faded-main-color": "rgba(128, 128, 128, 0.26)",
-    "accent-colors": [
-      "#ff6b6b",
-      "#6bff95",
-      "#6ba8ff",
-      "#e6e6e6",
-      "#6bfff5",
-      "#c77dff",
-      "#ffe66b"
-    ],
-    "color-roles": {
-      "red": "#ff6b6b",
-      "green": "#6bff95",
-      "blue": "#6ba8ff",
-      "white": "#e6e6e6",
-      "cyan": "#6bfff5",
-      "purple": "#c77dff",
-      "yellow": "#ffe66b"
-    },
-    "customizable": true
-  },
   "catppuccin-mocha": {
     "name": "Catppuccin Mocha",
     "description": "The warmer and darker variant of Catppuccin",
@@ -74,6 +38,48 @@
       "sky": "#89dceb",
       "sapphire": "#74c7ec",
       "lavender": "#b4befe"
+    },
+    "customizable": true
+  },
+  "soap": {
+    "name": "soap theme",
+    "description": "soap theme, but for DayDreamX",
+    "background-color": "#2c1c2eff",
+    "hover-background-color": "#ebaaee21",
+    "input-background-color": "#231625ff",
+    "tab-bg-color": "#3d2740ff",
+    "tab-active-bg-color": "#4f3252ff",
+    "utility-background-color": "#3d2740ff",
+    "dark-translucent-bg": "#4f32526e",
+    "border-color": "#4f3252ff",
+    "text-color": "#fde8ffff",
+    "hover-text-color": "#fde8ffb3",
+    "active-text-color": "#ebaaeeff",
+    "main-color": "#ebaaeeff",
+    "faded-main-color": "#ebaaee42",
+    "accent-colors": [
+      "#ebaaee",
+      "#95a9f5",
+      "#a2e6d6",
+      "#ace6b4",
+      "#f9dca1",
+      "#d698e6"
+    ],
+    "color-roles": {
+      "pink": "#ebaaee",
+      "blue": "#95a9f5",
+      "teal": "#a2e6d6",
+      "green": "#ace6b4",
+      "yellow": "#f9dca1",
+      "mauve": "#d698e6",
+      "red": "#f38fad",
+      "peach": "#f5b1a8",
+      "rosewater": "#f8e0f9",
+      "flamingo": "#f6cef7",
+      "maroon": "#e684a1",
+      "sky": "#98def0",
+      "sapphire": "#82d1e6",
+      "lavender": "#cba6f7"
     },
     "customizable": true
   },
@@ -312,6 +318,40 @@
       "yellow": "#b58900",
       "orange": "#cb4b16",
       "magenta": "#d33682"
+    },
+    "customizable": true
+  },
+  "one-dark": {
+    "name": "One Dark",
+    "description": "Atom One Dark theme",
+    "background-color": "rgba(40, 44, 52, 1)",
+    "hover-background-color": "rgba(97, 175, 239, 0.13)",
+    "input-background-color": "rgba(33, 37, 43, 1)",
+    "tab-bg-color": "rgba(54, 59, 69, 1)",
+    "tab-active-bg-color": "rgba(76, 82, 99, 1)",
+    "utility-background-color": "rgba(54, 59, 69, 1)",
+    "dark-translucent-bg": "rgba(76, 82, 99, 0.43)",
+    "border-color": "rgba(76, 82, 99, 1)",
+    "text-color": "rgba(171, 178, 191, 1)",
+    "hover-text-color": "rgba(171, 178, 191, 0.7)",
+    "active-text-color": "rgba(97, 175, 239, 1)",
+    "main-color": "rgba(97, 175, 239, 1)",
+    "faded-main-color": "rgba(97, 175, 239, 0.26)",
+    "accent-colors": [
+      "#61afef",
+      "#98c379",
+      "#e5c07b",
+      "#d19a66",
+      "#be5046",
+      "#c678dd"
+    ],
+    "color-roles": {
+      "blue": "#61afef",
+      "green": "#98c379",
+      "yellow": "#e5c07b",
+      "orange": "#d19a66",
+      "red": "#be5046",
+      "purple": "#c678dd"
     },
     "customizable": true
   },
