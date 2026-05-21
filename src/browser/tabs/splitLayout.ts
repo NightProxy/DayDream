@@ -28,6 +28,8 @@ export class SplitLayoutManager {
 	private leftPane!: HTMLElement;
 	private rightPane!: HTMLElement;
 	private gutter!: HTMLElement;
+	private leftOverlay!: HTMLElement;
+	private rightOverlay!: HTMLElement;
 	private midPercent: number;
 	private mode: 'main' | 'split' = 'main';
 
@@ -56,11 +58,21 @@ export class SplitLayoutManager {
 		this.gutter.dataset.gutter = 'split';
 		this.gutter.dataset.shown = 'false';
 
+		// Build click-catcher overlays. These sit absolutely-positioned on
+		// top of the non-focused split pane(s) and intercept the first
+		// click so we can swap focus before any iframe content sees it.
+		// The overlay for the focused pane is hidden so that side gets
+		// clicks directly.
+		this.leftOverlay = this.createOverlay('left');
+		this.rightOverlay = this.createOverlay('right');
+
 		container.append(
 			this.mainPane,
 			this.leftPane,
 			this.rightPane,
-			this.gutter
+			this.gutter,
+			this.leftOverlay,
+			this.rightOverlay
 		);
 
 		for (const iframe of preservedIframes) {
@@ -69,7 +81,47 @@ export class SplitLayoutManager {
 
 		this.applyMidPercent();
 		this.attachGutterHandler();
-		this.attachPaneFocusHandlers();
+	}
+
+	private createOverlay(side: 'left' | 'right'): HTMLElement {
+		const el = document.createElement('div');
+		el.className = `split-click-catcher split-click-catcher--${side}`;
+		el.dataset.side = side;
+		el.dataset.shown = 'false';
+		// First click: switch focus to this side. We use mousedown (not
+		// click) so the focus swap happens before the click event has a
+		// chance to land on anything else.
+		el.addEventListener('mousedown', evt => {
+			if (this.mode !== 'split') return;
+			// Don't preventDefault — we still want this click to focus
+			// the iframe behind us. We just want to be FIRST to react.
+			const pane = side === 'left' ? this.leftPane : this.rightPane;
+			const iframe = pane.querySelector(
+				'iframe'
+			) as HTMLIFrameElement | null;
+			const tabId = iframe?.getAttribute('data-tab-id') ?? null;
+			if (!tabId) return;
+
+			// Hide the overlay BEFORE the click finishes so the same
+			// pointer event can re-target onto the iframe. We do this by
+			// setting pointer-events:none on the overlay synchronously,
+			// then dispatching a synthetic click at the same coords on
+			// whatever lands underneath.
+			el.style.pointerEvents = 'none';
+			this.tabs.setSplitFocus?.(tabId);
+			// After focus updates, redraw overlay state. selectTab calls
+			// apply() which calls applyOverlayVisibility() so the now-
+			// focused side ends up with overlay hidden, and the other
+			// side picks up the overlay.
+			// Note: we don't need to manually re-show — apply() handles
+			// it. But we also don't need to dispatch a synthetic click,
+			// since the user's click was already routed through the
+			// iframe focus mechanism (the overlay was on TOP of the
+			// iframe but became pointer-events:none mid-click — the
+			// browser will land the click on the iframe behind it).
+			void evt;
+		});
+		return el;
 	}
 
 	getPane(
@@ -149,6 +201,28 @@ export class SplitLayoutManager {
 			splitActive && opts.focusedSide === 'left' ? 'true' : 'false';
 		this.rightPane.dataset.focused =
 			splitActive && opts.focusedSide === 'right' ? 'true' : 'false';
+
+		// Click-catcher overlays: shown on the NON-focused side(s) so the
+		// first click switches focus before reaching iframe content. The
+		// focused side has its overlay hidden + pointer-events:none so it
+		// receives clicks normally.
+		if (splitActive) {
+			const leftIsFocused = opts.focusedSide === 'left';
+			this.leftOverlay.dataset.shown = leftIsFocused
+				? 'false'
+				: 'true';
+			this.rightOverlay.dataset.shown = leftIsFocused
+				? 'true'
+				: 'false';
+			// Reset pointer-events; createOverlay's handler sets it to
+			// none mid-click so it can pass the click through to the
+			// iframe. apply() restores the default for the next cycle.
+			this.leftOverlay.style.pointerEvents = '';
+			this.rightOverlay.style.pointerEvents = '';
+		} else {
+			this.leftOverlay.dataset.shown = 'false';
+			this.rightOverlay.dataset.shown = 'false';
+		}
 	}
 
 	private applyMidPercent(): void {
@@ -191,62 +265,6 @@ export class SplitLayoutManager {
 		};
 		this.gutter.addEventListener('pointerup', release);
 		this.gutter.addEventListener('pointercancel', release);
-	}
-
-	/**
-	 * Detect which split pane the user interacted with so we can swap
-	 * focus to that side.
-	 *
-	 * Cross-origin iframes don't bubble pointer/click events to the host,
-	 * but they DO steal window focus when clicked. The reliable detection
-	 * trick: listen for `blur` on the host window, then check
-	 * `document.activeElement` — if it's one of our pane iframes, that
-	 * iframe just received focus from a user click.
-	 *
-	 * We also keep host-side pane pointerdown handlers as a fallback for
-	 * when the user clicks the thin pane border outside the iframe.
-	 */
-	private attachPaneFocusHandlers(): void {
-		// Fallback: clicks on pane border (outside iframe).
-		this.leftPane.addEventListener('pointerdown', () => {
-			this.notifyFocusChange('left');
-		});
-		this.rightPane.addEventListener('pointerdown', () => {
-			this.notifyFocusChange('right');
-		});
-
-		// Primary: window blur means an iframe stole focus. Identify which.
-		const onWindowBlur = () => {
-			// Wait one tick so document.activeElement settles on the new
-			// element (the iframe element that took focus).
-			setTimeout(() => {
-				if (this.mode !== 'split') return;
-				const active = document.activeElement;
-				if (!active || active.tagName !== 'IFRAME') return;
-				if (this.leftPane.contains(active)) {
-					this.notifyFocusChange('left');
-				} else if (this.rightPane.contains(active)) {
-					this.notifyFocusChange('right');
-				}
-			}, 0);
-		};
-		window.addEventListener('blur', onWindowBlur);
-	}
-
-	private notifyFocusChange(side: 'left' | 'right'): void {
-		if (this.mode !== 'split') return;
-		const pane = side === 'left' ? this.leftPane : this.rightPane;
-		const iframe = pane.querySelector('iframe') as HTMLIFrameElement | null;
-		if (!iframe) return;
-		const tabId = iframe.getAttribute('data-tab-id');
-		if (!tabId) return;
-		// Don't churn if it's already focused.
-		if (
-			this.tabs.getSplitFocusedTabId?.(tabId) === tabId
-		) {
-			return;
-		}
-		this.tabs.setSplitFocus?.(tabId);
 	}
 
 	private loadMidPercent(): number {
