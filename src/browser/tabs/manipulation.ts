@@ -41,6 +41,131 @@ export class TabManipulation {
 		}
 	};
 
+	/**
+	 * Hard reload: bypass the proxy/HTTP cache by appending a unique
+	 * cache-busting query param to the iframe src and reassigning.
+	 *
+	 * The "Empty Cache and Hard Reload" variant (clear scramjet's cache
+	 * plugin too) is left out until the per-site permissions system lands —
+	 * cache state will live there. This implementation handles the
+	 * common case (force a fresh fetch ignoring browser HTTP cache).
+	 */
+	hardReloadTab = (tabId: string) => {
+		const tabInfo = this.tabs.getTabById(tabId);
+		if (!tabInfo?.iframe) return;
+
+		const currentSrc = tabInfo.iframe.src;
+		if (!currentSrc) return;
+
+		try {
+			const url = new URL(currentSrc);
+			// Use a stable parameter key so back-to-back hard-reloads don't
+			// pile up multiple cache-bust params on the URL.
+			url.searchParams.set('__ddxHardReload', String(Date.now()));
+			tabInfo.iframe.src = url.toString();
+			this.tabs.logger.createLog(`Hard reloaded tab: ${tabId}`);
+		} catch (error) {
+			// URL parsing can fail for unusual srcs (data:, blob:, malformed).
+			// Fall back to plain refresh so the user still gets feedback.
+			console.warn(
+				`[Tabs] hardReloadTab fell back to plain refresh for ${tabId}:`,
+				error
+			);
+			tabInfo.iframe.src = currentSrc;
+			this.tabs.logger.createLog(
+				`Hard reload fell back to refresh: ${tabId}`
+			);
+		}
+	};
+
+	/**
+	 * Stop loading: equivalent to the browser's Stop button. Halts the
+	 * current navigation/resource fetches inside the proxied iframe.
+	 * Safe to call on a tab that isn't currently loading (no-op).
+	 */
+	stopTab = (tabId: string) => {
+		const tabInfo = this.tabs.getTabById(tabId);
+		if (!tabInfo?.iframe) return;
+
+		try {
+			tabInfo.iframe.contentWindow?.stop();
+			this.tabs.logger.createLog(`Stopped tab: ${tabId}`);
+		} catch (error) {
+			console.warn(`[Tabs] stopTab failed for ${tabId}:`, error);
+		}
+	};
+
+	/**
+	 * Save Page: fetch the tab's current URL through the proxy and
+	 * trigger a browser-level download of the rendered HTML.
+	 *
+	 * For proxied tabs we fetch via `this.tabs.proxy.fetch(url)` so the
+	 * request goes through the same transport / WISP server the tab
+	 * itself uses, getting around CORS that would block a direct fetch.
+	 * For internal `ddx://` pages we just fetch directly — they're same
+	 * origin to the host.
+	 *
+	 * Filename is derived from the URL host + path. Defaults to
+	 * `page.html` when we can't derive anything meaningful.
+	 */
+	savePage = async (tabId: string): Promise<void> => {
+		const tabInfo = this.tabs.getTabById(tabId);
+		if (!tabInfo?.iframe) return;
+
+		const decoded = decodeIframeUrl(tabInfo.iframe, this.tabs.proxy);
+		if (!decoded || decoded === 'about:blank') {
+			this.tabs.logger.createLog(`Save page: nothing to save`);
+			return;
+		}
+
+		try {
+			let response: Response;
+			if (decoded.startsWith('ddx://') || decoded.startsWith('/')) {
+				response = await fetch(decoded);
+			} else if (
+				typeof this.tabs.proxy?.fetch === 'function'
+			) {
+				response = await this.tabs.proxy.fetch(decoded);
+			} else {
+				// Last resort, will likely fail on cross-origin URLs.
+				response = await fetch(decoded);
+			}
+
+			const blob = await response.blob();
+			const downloadUrl = URL.createObjectURL(blob);
+			const filename = this.derivePageFilename(decoded);
+
+			const anchor = document.createElement('a');
+			anchor.href = downloadUrl;
+			anchor.download = filename;
+			anchor.style.display = 'none';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+
+			// Give the browser a moment to start the download before
+			// revoking the blob URL.
+			setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+
+			this.tabs.logger.createLog(`Saved page: ${filename}`);
+		} catch (error) {
+			console.error(`[Tabs] savePage failed for ${tabId}:`, error);
+			this.tabs.logger.createLog(`Save page failed: ${error}`);
+		}
+	};
+
+	private derivePageFilename(url: string): string {
+		try {
+			const u = new URL(url);
+			const host = u.hostname || 'page';
+			const path = u.pathname.replace(/[\/\s]+/g, '_').replace(/^_+|_+$/g, '');
+			const base = path && path !== '_' ? `${host}_${path}` : host;
+			return `${base}.html`.slice(0, 200);
+		} catch {
+			return 'page.html';
+		}
+	}
+
 	closeTabsToRight = (tabId: string): void => {
 		const orderedTabs = this.tabs.getTabsInOrder();
 		const targetIndex = orderedTabs.findIndex(t => t.id === tabId);

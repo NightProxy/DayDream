@@ -16,6 +16,9 @@ import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
 import { svgWrapperPlugin } from "./srv/vite/svg";
 
+// Matches anything under src/pkgs/Helium (any depth, any separator).
+const HELIUM_IGNORE_RE = /[\\/]src[\\/]pkgs[\\/]Helium([\\/]|$)/;
+
 export default defineConfig({
   base: "./",
   plugins: [
@@ -27,6 +30,29 @@ export default defineConfig({
     ViteMinifyPlugin(minifyConfig),
     //vitePluginBundleObfuscator(obfuscationConfig as any),
     svgWrapperPlugin(),
+    {
+      // TODO: remove once Helium is wired into the app build.
+      // For now, short-circuit any import that points at src/pkgs/Helium so
+      // Vite never traverses into it (it has its own package.json/node_modules
+      // and is not yet meant to be part of this Vite build).
+      name: "ignore-helium",
+      enforce: "pre",
+      resolveId(source, importer) {
+        if (HELIUM_IGNORE_RE.test(source)) {
+          return { id: "\0helium-ignored", moduleSideEffects: false };
+        }
+        if (importer && HELIUM_IGNORE_RE.test(importer)) {
+          return { id: "\0helium-ignored", moduleSideEffects: false };
+        }
+        return null;
+      },
+      load(id) {
+        if (id === "\0helium-ignored") {
+          return "export default {};";
+        }
+        return null;
+      },
+    },
     {
       name: "strip-console-and-debugger",
       enforce: "post",
@@ -111,6 +137,10 @@ export default defineConfig({
     },
   ],
   appType: "mpa",
+  optimizeDeps: {
+    // Don't try to pre-bundle anything from the Helium sub-package.
+    exclude: ["@pkgs/Helium", "src/pkgs/Helium"],
+  },
   server: {
     allowedHosts: allowedHosts,
     watch: {
@@ -119,7 +149,10 @@ export default defineConfig({
         "**/plus-backend/**",
         "**/.github/**",
         "**/hostlist.uo*",
+        "**/src/pkgs/Helium/**",
       ],
+      // Belt-and-suspenders: also tell chokidar to ignore Helium entirely.
+      // (some Vite versions key off this even when `ignored` is set above)
     },
     proxy: {
       "/api": {

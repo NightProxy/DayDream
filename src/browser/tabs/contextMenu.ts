@@ -7,6 +7,27 @@ export class TabContextMenu {
 		this.tabs = tabs;
 	}
 
+	/**
+	 * Pair two tabs into a split view. `leftTabId` becomes split-left and
+	 * is the one we focus / make active afterwards. `rightTabId` becomes
+	 * split-right.
+	 */
+	private splitTwoTabs(leftTabId: string, rightTabId: string): void {
+		const left = this.tabs.getTabById(leftTabId);
+		const right = this.tabs.getTabById(rightTabId);
+		if (!left || !right) return;
+		if (left.splitPartnerId) this.tabs.unsplitTab?.(left.id);
+		if (right.splitPartnerId) this.tabs.unsplitTab?.(right.id);
+		left.splitPartnerId = right.id;
+		right.splitPartnerId = left.id;
+		(this.tabs as any).setTabSplitPlacement?.(left.id, 'split-left');
+		(this.tabs as any).setTabSplitPlacement?.(right.id, 'split-right');
+		this.tabs.focusedSplitSideByPairKey?.set(left.id, left.id);
+		this.tabs.focusedSplitSideByPairKey?.set(right.id, left.id);
+		this.tabs.renderTabStrip();
+		this.tabs.selectTab(left.id);
+	}
+
 	private getRightClickMenu() {
 		return (
 			this.tabs.ui?.rightclickmenu ??
@@ -58,28 +79,184 @@ export class TabContextMenu {
 			)
 		);
 
-		menuItems.push(
-			this.tabs.ui.createElement(
-				'button',
-				{
-					class: 'flex items-center gap-3 px-4 py-2 opacity-60 cursor-not-allowed w-full text-left text-sm rounded-md',
-					disabled: true
-				},
-				[
+		// Edge-style split-view controls.
+		const isInSplit = !!tab.splitPartnerId;
+
+		if (isInSplit) {
+			menuItems.push(
+				this.tabs.ui.createElement(
+					'button',
+					{
+						class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+						onclick: () => {
+							this.tabs.unsplitTab?.(tabId);
+							this.closeContextMenu();
+						}
+					},
+					[
+						this.tabs.ui.createElement(
+							'i',
+							{
+								'data-lucide': 'minimize-2',
+								class: 'h-4 w-4'
+							},
+							[]
+						),
+						this.tabs.ui.createElement('span', {}, [
+							'Exit Split View'
+						])
+					]
+				)
+			);
+		} else if (!tab.isPinned) {
+			// Collect candidate partners: any other tab not pinned and not
+			// already in a split.
+			const candidates = this.tabs.tabs.filter(
+				t =>
+					t.id !== tabId &&
+					!t.isPinned &&
+					!t.splitPartnerId
+			);
+
+			if (candidates.length === 1) {
+				// Only one possible partner — single-click action.
+				const partner = candidates[0];
+				const partnerTitle =
+					partner.title ||
+					(() => {
+						try {
+							return new URL(partner.url).hostname;
+						} catch {
+							return partner.url;
+						}
+					})();
+				menuItems.push(
 					this.tabs.ui.createElement(
-						'i',
+						'button',
 						{
-							'data-lucide': 'columns-2',
-							class: 'h-4 w-4'
+							class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md',
+							onclick: () => {
+								this.splitTwoTabs(tabId, partner.id);
+								this.closeContextMenu();
+							}
 						},
-						[]
-					),
-					this.tabs.ui.createElement('span', {}, [
-						'Add Tab to New Split View'
-					])
-				]
-			)
-		);
+						[
+							this.tabs.ui.createElement(
+								'i',
+								{
+									'data-lucide': 'columns-2',
+									class: 'h-4 w-4'
+								},
+								[]
+							),
+							this.tabs.ui.createElement('span', {}, [
+								`Split with "${partnerTitle}"`
+							])
+						]
+					)
+				);
+			} else if (candidates.length > 1) {
+				// Multiple candidates — show a hover submenu listing each.
+				const splitSubmenu = this.tabs.ui.createElement(
+					'div',
+					{ class: 'relative group' },
+					[
+						this.tabs.ui.createElement(
+							'button',
+							{
+								class: 'flex items-center justify-between gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm rounded-md'
+							},
+							[
+								this.tabs.ui.createElement(
+									'div',
+									{ class: 'flex items-center gap-3' },
+									[
+										this.tabs.ui.createElement(
+											'i',
+											{
+												'data-lucide': 'columns-2',
+												class: 'h-4 w-4'
+											},
+											[]
+										),
+										this.tabs.ui.createElement('span', {}, [
+											'Split View with…'
+										])
+									]
+								),
+								this.tabs.ui.createElement(
+									'i',
+									{
+										'data-lucide': 'chevron-right',
+										class: 'h-3 w-3'
+									},
+									[]
+								)
+							]
+						),
+						this.tabs.ui.createElement(
+							'div',
+							{
+								class: 'absolute left-full top-0 ml-1 min-w-56 max-h-72 overflow-y-auto bg-[var(--bg-1)] border border-[var(--white-08)] rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50'
+							},
+							candidates.map(partner => {
+								const label =
+									partner.title ||
+									(() => {
+										try {
+											return new URL(partner.url)
+												.hostname;
+										} catch {
+											return partner.url;
+										}
+									})();
+								return this.tabs.ui.createElement(
+									'button',
+									{
+										class: 'flex items-center gap-3 px-4 py-2 hover:bg-[var(--white-05)] transition-colors w-full text-left text-sm',
+										onclick: () => {
+											this.splitTwoTabs(
+												tabId,
+												partner.id
+											);
+											this.closeContextMenu();
+										}
+									},
+									[
+										partner.favicon
+											? this.tabs.ui.createElement(
+													'img',
+													{
+														src: partner.favicon,
+														class: 'w-4 h-4'
+													},
+													[]
+												)
+											: this.tabs.ui.createElement(
+													'i',
+													{
+														'data-lucide':
+															'square',
+														class: 'h-4 w-4 opacity-50'
+													},
+													[]
+												),
+										this.tabs.ui.createElement(
+											'span',
+											{
+												class: 'truncate'
+											},
+											[label]
+										)
+									]
+								);
+							})
+						)
+					]
+				);
+				menuItems.push(splitSubmenu);
+			}
+		}
 
 		if (!tab.groupId) {
 			menuItems.push(

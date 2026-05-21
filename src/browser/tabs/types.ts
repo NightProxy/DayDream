@@ -15,13 +15,7 @@ export interface VisualTabOrderEntry {
 	tabId?: string;
 }
 
-export type TabSplitPlacement =
-	| 'main'
-	| 'split-left'
-	| 'split-right'
-	| 'sidepanel-left'
-	| 'sidepanel-right'
-	| 'devtools';
+export type TabSplitPlacement = 'main' | 'split-left' | 'split-right';
 
 export interface TabCacheEntry {
 	title: string;
@@ -40,6 +34,13 @@ export interface TabData {
 	groupId: string | undefined;
 	isPinned: boolean;
 	splitPlacement: TabSplitPlacement;
+	/**
+	 * If set, this tab is paired with another tab in a 2-pane split.
+	 * Both tabs reference each other (a.splitPartnerId === b.id, and
+	 * b.splitPartnerId === a.id). The left/right assignment is given
+	 * by each tab's splitPlacement.
+	 */
+	splitPartnerId: string | undefined;
 	frameId: string;
 	lastInternalRoute: string | undefined;
 	lastAddressShown: string | undefined;
@@ -144,6 +145,13 @@ export interface TabsInterface {
 
 	duplicateTab: (tabId: string) => string | null;
 	refreshTab: (tabId: string) => void;
+	hardReloadTab: (tabId: string) => void;
+	stopTab: (tabId: string) => void;
+	savePage: (tabId: string) => Promise<void>;
+	reopenClosedTab: () => Promise<string | null>;
+	closedTabStack: import('./closedTabStack').TabClosedStack;
+	navStack: import('./navStack').TabNavStack;
+	auxiliaryMenus: import('./auxiliaryMenus').AuxiliaryMenus;
 	closeTabsToRight: (tabId: string) => void;
 	reorderTabElements: () => void;
 	setFavicon: (tabElement: HTMLElement, iframe: HTMLIFrameElement) => void;
@@ -171,6 +179,22 @@ export interface TabsInterface {
 			splitPlacement: TabSplitPlacement
 		) => void;
 	};
+	splitLayout?: import('./splitLayout').SplitLayoutManager;
+	/**
+	 * Pair the given tab with the active tab in a 2-pane split. The
+	 * active tab becomes split-left, partnerTabId becomes split-right.
+	 * Returns true on success.
+	 */
+	splitWithActiveTab?: (partnerTabId: string) => boolean;
+	/** Dissolve the split that the given tab is part of. */
+	unsplitTab?: (tabId: string) => void;
+	/**
+	 * For a split tab pair, which side is the focused frame.
+	 * The keys are tabId of either side; both keys map to the same value.
+	 */
+	focusedSplitSideByPairKey?: Map<string, string>;
+	setSplitFocus?: (tabId: string) => void;
+	getSplitFocusedTabId?: (tabId: string) => string;
 
 	startMetaWatcher: (
 		tabId: string,

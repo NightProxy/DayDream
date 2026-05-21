@@ -40,15 +40,191 @@
 	overflow: visible;
 }
 
-div[data-component='frame-container'] iframe {
+// Split-screen layout: absolute-positioned panes inside frame-container.
+// CSS variables drive pane sizes; splitLayout.ts writes them imperatively.
+// Defaults are set so a stock single-tab setup looks like the legacy
+// behavior (one fullscreen iframe).
+div[data-component='frame-container'] {
+	position: relative;
+	overflow: hidden;
+	--sp-left: 0px;
+	--sp-right: 0px;
+	--devtools-height: 0px;
+	--split-mid-pct: 50%;
+	--gutter: 4px;
+}
+
+// Any iframe directly inside the frame-container fills it. This is a
+// safety net for boot-time races where an iframe gets attached before
+// splitLayout.mount() runs.
+div[data-component='frame-container'] > iframe {
+	position: absolute;
+	inset: 0;
 	width: 100%;
 	height: 100%;
 	border: none;
+	display: block;
+}
+
+// Panes — base. Default to filling the parent so the most common case
+// (single main pane, no splits) is correct without needing more-specific
+// rules to also fire.
+div[data-component='frame-container'] .split-pane {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	background: var(--bg-2);
+}
+
+div[data-component='frame-container'] .split-pane[data-shown='false'] {
 	display: none;
 }
 
-div[data-component='frame-container'] iframe.active {
+// Iframes inside any pane fill the pane.
+div[data-component='frame-container'] .split-pane > iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
 	display: block;
+}
+
+// The center wrapper holds main/split-left/split-right/devtools. It's
+// positioned between the two sidepanels.
+div[data-component='frame-container'] .split-layout-center {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: var(--sp-left);
+	right: var(--sp-right);
+	overflow: hidden;
+}
+
+// Sidepanels — pinned to the edges of frame-container.
+div[data-component='frame-container'] .split-pane--sidepanel-left {
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: var(--sp-left);
+}
+div[data-component='frame-container'] .split-pane--sidepanel-right {
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: var(--sp-right);
+}
+
+// Main / split panes inside the center wrapper. Heights stop above the
+// devtools strip when devtools is present.
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--main {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: 0;
+	right: 0;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--split-left,
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--split-right {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--main {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--split-left {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--split-right {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+div[data-component='frame-container'] .split-pane--devtools {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: var(--devtools-height);
+}
+
+// Gutters.
+div[data-component='frame-container'] .split-gutter {
+	position: absolute;
+	background: var(--white-08, rgba(255, 255, 255, 0.08));
+	z-index: 5;
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container'] .split-gutter:hover,
+div[data-component='frame-container'] .split-gutter:active {
+	background: var(--white-20, rgba(255, 255, 255, 0.2));
+}
+
+div[data-component='frame-container'] .split-gutter[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container'] .split-gutter--vertical {
+	top: 0;
+	bottom: 0;
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+div[data-component='frame-container'] .split-gutter--horizontal {
+	left: 0;
+	right: 0;
+	height: var(--gutter);
+	cursor: ns-resize;
+}
+
+div[data-component='frame-container']
+	> .split-gutter[data-gutter='gutter-sidepanel-left'] {
+	left: calc(var(--sp-left) - (var(--gutter) / 2));
+}
+
+div[data-component='frame-container']
+	> .split-gutter[data-gutter='gutter-sidepanel-right'] {
+	right: calc(var(--sp-right) - (var(--gutter) / 2));
+}
+
+div[data-component='frame-container']
+	.split-layout-center
+	> .split-gutter[data-gutter='gutter-split'] {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: calc(var(--split-mid-pct) - (var(--gutter) / 2));
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+div[data-component='frame-container']
+	.split-layout-center
+	> .split-gutter[data-gutter='gutter-devtools'] {
+	left: 0;
+	right: 0;
+	bottom: var(--devtools-height);
+	height: var(--gutter);
+	cursor: ns-resize;
 }
 
 div[data-component='top-bar'] {

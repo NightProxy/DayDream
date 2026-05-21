@@ -59,10 +59,7 @@ export class TabFrameManager {
 
 	attachFrame = (tabId: string, container: HTMLElement): void => {
 		const managed = this.managedByTabId.get(tabId);
-		if (!managed) {
-			return;
-		}
-
+		if (!managed) return;
 		if (managed.iframe.parentElement !== container) {
 			container.appendChild(managed.iframe);
 		}
@@ -70,10 +67,7 @@ export class TabFrameManager {
 
 	navigateFrame = async (tabId: string, url: string): Promise<void> => {
 		const managed = this.managedByTabId.get(tabId);
-		if (!managed) {
-			return;
-		}
-
+		if (!managed) return;
 		const processedSrc = await this.tabs.proto.processUrl(
 			url,
 			managed.iframe
@@ -85,9 +79,7 @@ export class TabFrameManager {
 
 	cleanupFrame = (tabId: string): void => {
 		const managed = this.managedByTabId.get(tabId);
-		if (!managed) {
-			return;
-		}
+		if (!managed) return;
 
 		try {
 			managed.iframe.src = 'about:blank';
@@ -109,10 +101,7 @@ export class TabFrameManager {
 		splitPlacement: TabSplitPlacement
 	): void => {
 		const managed = this.managedByTabId.get(tabId);
-		if (!managed) {
-			return;
-		}
-
+		if (!managed) return;
 		managed.placement = splitPlacement;
 		managed.iframe.setAttribute('data-split-placement', splitPlacement);
 	};

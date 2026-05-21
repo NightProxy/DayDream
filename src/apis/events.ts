@@ -1,3 +1,5 @@
+import { postEventToIframe } from "./eventsBridge";
+
 class EventSystem {
   eventListeners: any;
   channel: any;
@@ -36,13 +38,25 @@ class EventSystem {
       __senderId: this.senderId,
     };
 
+    // Per-iframe routing: scramjet-proxied iframes need our payload wrapped
+    // in scramjet's postMessage envelope, internal iframes get the message
+    // unchanged. Errors are absorbed per-iframe so one bad frame can't
+    // poison the rest of the broadcast. See `eventsBridge.ts` for details.
+    const controller = (window as any).proxy?.controller ?? null;
     const iframes = document.querySelectorAll("iframe");
     iframes.forEach((iframe) => {
-      iframe.contentWindow!.postMessage(message, "*");
+      postEventToIframe(iframe as HTMLIFrameElement, message, controller);
     });
 
     if (window.parent && window !== window.parent) {
-      window.parent.postMessage(message, "*");
+      try {
+        window.parent.postMessage(message, "*");
+      } catch (error) {
+        console.warn(
+          "[EventSystem] postMessage to window.parent failed:",
+          error,
+        );
+      }
     }
 
     this.channel.postMessage(message);

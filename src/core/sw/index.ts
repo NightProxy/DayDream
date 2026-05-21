@@ -9,6 +9,12 @@ import {
 import { installConsolePolyfill } from '@core/sw/console';
 import { basePath, stripBase } from '@core/shared/path';
 import {
+	buildTransport,
+	resolveTransportConfig,
+	transportFetch,
+	type BuiltTransport
+} from '@core/shared/transport';
+import {
 	createCorsPreflightResponse,
 	getErrorMessage,
 	isCfRequest,
@@ -51,23 +57,7 @@ const swSelf = self as unknown as {
 	addEventListener: (type: string, listener: (event: any) => void) => void;
 };
 
-importScripts(basePath + 'baremux/index.js');
 importScripts(basePath + 'assets/sw.js');
-
-type BareClientInstance = {
-	fetch: (
-		input: RequestInfo | URL,
-		init?: {
-			method?: string;
-			headers?: Record<string, string>;
-			body?: BodyInit;
-		}
-	) => Promise<Response>;
-};
-
-declare const BareMux: {
-	BareClient: new () => BareClientInstance;
-};
 
 class DDXWorker {
 	private readonly cfBlockPatterns = ['**/cdn-cgi/**'];
@@ -85,36 +75,42 @@ class DDXWorker {
 	];
 	private hasServerRoutes: boolean | null = null;
 	private readonly productionUrl = 'https://daydreamx.pro';
-	private bareClient: BareClientInstance | null = null;
-	private transportReadyResolve: (() => void) | null = null;
-	private readonly transportReady: Promise<void>;
+	/**
+	 * Cached transport instance keyed by the JSON signature of its
+	 * config. Settings changes (transport kind, wisp, proxy, pulsar
+	 * host/port) yield a new signature on the next request, which
+	 * triggers a rebuild. Errors null this out so the next request
+	 * starts fresh.
+	 */
+	private transportCache: BuiltTransport | null = null;
 	private readonly wispManager: WispManager;
 	private readonly settings: SettingsAPI;
 
 	constructor() {
 		this.settings = new SettingsAPI();
 		this.wispManager = new WispManager(this.settings);
-		this.transportReady = new Promise(resolve => {
-			this.transportReadyResolve = resolve;
-		});
 	}
 
-	onTransportReady(): void {
-		console.log(
-			'[DDXWorker] Transport ready signal received from main thread'
+	/**
+	 * Resolves the configured transport, rebuilding only when settings
+	 * have changed since the last fetch. Mirrors the construction logic
+	 * used by `Proxy.buildTransportConfig` (src/apis/proxy.ts) via the
+	 * shared module — no IPC, no SharedWorker, no BareMux.
+	 */
+	private async getTransport() {
+		const cfg = await resolveTransportConfig(this.settings, () =>
+			this.wispManager.computeWispUrl()
 		);
-		if (this.transportReadyResolve) {
-			this.transportReadyResolve();
-			this.transportReadyResolve = null;
-		}
-	}
+		const signature = JSON.stringify(cfg);
 
-	private getBareClient(): BareClientInstance {
-		if (!this.bareClient) {
-			console.log('[DDXWorker] Creating singleton BareClient');
-			this.bareClient = new BareMux.BareClient();
+		if (this.transportCache?.signature !== signature) {
+			console.log(
+				`[DDXWorker] Building transport (kind=${cfg.kind}, sig changed)`
+			);
+			this.transportCache = buildTransport(cfg);
 		}
-		return this.bareClient;
+
+		return this.transportCache.instance;
 	}
 
 	private async checkHasServerRoutes(): Promise<boolean> {
@@ -159,60 +155,34 @@ class DDXWorker {
 			`[DDXWorker] restoreRequest: ${request.method} ${relativePath} -> ${productionUrl.toString()}`
 		);
 
-		const headers: Record<string, string> = {};
+		const headerPairs: [string, string][] = [];
 		for (const [key, value] of request.headers.entries()) {
 			if (key.toLowerCase() === 'host') continue;
-			headers[key] = value;
+			headerPairs.push([key, value]);
 		}
 
-		const fetchOptions: {
-			method: string;
-			headers: Record<string, string>;
-			body?: ArrayBuffer;
-		} = {
-			method: request.method,
-			headers
-		};
-
+		let body: ArrayBuffer | null = null;
 		if (request.method !== 'GET' && request.method !== 'HEAD') {
-			fetchOptions.body = await request.clone().arrayBuffer();
+			body = await request.clone().arrayBuffer();
 		}
 
-		const transportTimeoutMs = 15000;
 		try {
-			await Promise.race([
-				this.transportReady,
-				new Promise<never>((_, reject) =>
-					setTimeout(
-						() => reject(new Error('Transport ready timeout')),
-						transportTimeoutMs
-					)
-				)
-			]);
-		} catch (err) {
-			console.warn(
-				`[DDXWorker] Transport not ready within ${transportTimeoutMs}ms, attempting fetch anyway:`,
-				getErrorMessage(err)
-			);
-		}
-
-		const client = this.getBareClient();
-
-		try {
-			const response = await client.fetch(
-				productionUrl.toString(),
-				fetchOptions
-			);
+			const transport = await this.getTransport();
+			const response = await transportFetch(transport, productionUrl, {
+				method: request.method,
+				headers: headerPairs,
+				body
+			});
 
 			console.log(
 				`[DDXWorker] restoreRequest OK: ${response.status} ${relativePath}`
 			);
 
-			const responseHeaders = new Headers();
-			for (const [key, value] of response.headers.entries()) {
-				responseHeaders.set(key, value);
-			}
-
+			// Add CORS so the calling page can read the response. We
+			// rebuild the Headers from the existing response (rather
+			// than mutating it in-place) so we can layer in the CORS
+			// fields without losing transport-supplied headers.
+			const responseHeaders = new Headers(response.headers);
 			responseHeaders.set('Access-Control-Allow-Origin', '*');
 			responseHeaders.set(
 				'Access-Control-Allow-Methods',
@@ -230,7 +200,10 @@ class DDXWorker {
 				'[DDXWorker] restoreRequest failed:',
 				getErrorMessage(error)
 			);
-			this.bareClient = null;
+			// Drop the cached transport so the next request rebuilds
+			// from scratch — same self-healing pattern the BareClient
+			// path used.
+			this.transportCache = null;
 
 			return new Response(
 				JSON.stringify({
@@ -371,9 +344,6 @@ swSelf.addEventListener('message', (event: MessageEventLike) => {
 	if (!data?.type) return;
 
 	switch (data.type) {
-		case 'transportReady':
-			ddx.onTransportReady();
-			break;
 		default:
 			console.log('[DDXWorker] Unknown message type:', data.type);
 			break;
