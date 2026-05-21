@@ -88,6 +88,7 @@
     "react-dom": "^19.2.4",
     "react-router": "^7.14.0",
     "react-router-dom": "^7.14.0",
+    "rolldown": "^1.0.2",
     "sequelize": "^6.37.7",
     "sortablejs": "^1.15.6",
     "sqlite3": "^5.1.7",
