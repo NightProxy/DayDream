@@ -176,9 +176,14 @@ export class TabLifecycle {
 		}
 
 		this.tabs.items.tabBar!.appendChild(tab);
+		const mainPane =
+			(this.tabs.splitLayout?.getPane('main') as HTMLElement | null) ??
+			(this.tabs.items.frameContainer!.querySelector(
+				'[data-pane="main"]'
+			) as HTMLElement | null);
 		this.tabs.frameManager!.attachFrame(
 			id,
-			this.tabs.items.frameContainer!
+			mainPane ?? this.tabs.items.frameContainer!
 		);
 		createIcons({ icons });
 
@@ -192,6 +197,7 @@ export class TabLifecycle {
 			groupId: undefined,
 			isPinned: false,
 			splitPlacement: 'main',
+			splitPartnerId: undefined,
 			frameId: managedFrame.frameId,
 			lastInternalRoute: undefined,
 			lastAddressShown: undefined,
@@ -215,6 +221,17 @@ export class TabLifecycle {
 		if (!tabInfo) {
 			console.log('[TabLifecycle] Tab not found:', id);
 			return;
+		}
+
+		// Snapshot pre-teardown for the recently-closed stack. Must run
+		// before iframe.src is cleared / contentWindow is stopped so
+		// `closedTabStack.push` can read the live URL/favicon.
+		this.tabs.closedTabStack?.push(tabInfo);
+
+		// If this tab is in a split, dissolve the pair so the partner returns
+		// to a normal main-pane tab before we tear down.
+		if (tabInfo.splitPartnerId) {
+			this.tabs.unsplitTab?.(id);
 		}
 
 		const orderedTabs = this.tabs.getTabsInOrder();
@@ -310,6 +327,9 @@ export class TabLifecycle {
 			activeIFrame.id
 		);
 
+		// Snapshot for the recently-closed stack BEFORE teardown.
+		this.tabs.closedTabStack?.push(this.tabs.getTabById(activeTab.id));
+
 		// Capture the URL for the close-log message in decoded form so we
 		// don't dump scramjet-encoded gibberish into the user-facing log.
 		const activeIframeUrl = decodeProxiedUrl(
@@ -391,6 +411,15 @@ export class TabLifecycle {
 			'[TabLifecycle] closeAllTabs() called, total tabs:',
 			this.tabs.getTabsInOrder().length
 		);
+
+		// Snapshot ALL tabs to the recently-closed stack in display order.
+		// Pushed oldest-first so the rightmost tab ends up on top (matches
+		// Chrome's "Reopen Closed Tab" repeated-press behavior of reopening
+		// tabs from right to left).
+		for (const tabData of this.tabs.getTabsInOrder()) {
+			this.tabs.closedTabStack?.push(tabData);
+		}
+
 		await Promise.all(
 			this.tabs.getTabsInOrder().map(async tabData => {
 				console.log(
@@ -432,27 +461,135 @@ export class TabLifecycle {
 		const tabInfo = this.tabs.getTabById(tabId);
 		if (!tabInfo) return;
 
-		const iframe =
-			this.tabs.frameByTabId.get(tabId) ||
-			(document.getElementById(tabInfo.frameId) as HTMLIFrameElement);
 		const tabElement =
 			this.tabs.tabElementById.get(tabId) ||
 			(document.getElementById(tabId) as HTMLElement);
+		if (!tabElement) return;
 
-		if (!iframe || !tabElement) return;
-
+		// Tab strip visual active state. For a split pair, the WHOLE capsule
+		// is active when either side is the activeTabId — the capsule's
+		// rendering takes care of that. Just toggle .active/.inactive here.
 		const allTabs = this.tabs.items.tabBar!.querySelectorAll('.tab');
 		allTabs.forEach((tab: Element) => {
 			tab.classList.remove('active');
 			tab.classList.add('inactive');
 		});
+		const capsule = tabElement.closest(
+			'[data-component="split-capsule"]'
+		) as HTMLElement | null;
+		if (capsule) {
+			capsule
+				.querySelectorAll('.tab')
+				.forEach((t: Element) => {
+					t.classList.remove('inactive');
+					t.classList.add('active');
+				});
+		} else {
+			tabElement.classList.remove('inactive');
+			tabElement.classList.add('active');
+		}
 
-		const allIframes =
-			this.tabs.items.frameContainer!.querySelectorAll('iframe');
-		allIframes.forEach((iframe: Element) => {
-			iframe.classList.remove('active');
-		});
+		// Resolve the split pair state, if any.
+		const partnerId = tabInfo.splitPartnerId;
+		const partner = partnerId
+			? this.tabs.getTabById(partnerId)
+			: undefined;
+		const inSplit = !!partner;
 
+		// When the user clicks one side of a split capsule we want THAT side
+		// to become the focused frame (Edge behavior). Update the focus map
+		// before reading it.
+		if (inSplit && partner && this.tabs.focusedSplitSideByPairKey) {
+			this.tabs.focusedSplitSideByPairKey.set(tabInfo.id, tabInfo.id);
+			this.tabs.focusedSplitSideByPairKey.set(partner.id, tabInfo.id);
+
+			// Update the capsule indicator (which side has the underline)
+			// without a full strip re-render. The data-split-focused attr
+			// is read by CSS to draw the focus underline.
+			const capsuleEl = tabInfo.tab.closest(
+				'[data-component="split-capsule"]'
+			) as HTMLElement | null;
+			if (capsuleEl) {
+				capsuleEl
+					.querySelectorAll<HTMLElement>('.tab')
+					.forEach(t => {
+						const tid = t.getAttribute('data-tab-id');
+						t.dataset.splitFocused =
+							tid === tabInfo.id ? 'true' : 'false';
+					});
+			}
+		}
+
+		// Decide which iframe owns the address bar / nav buttons / legacy
+		// `.active` selector. In a split pair this is the user-focused side.
+		const focusedTabId = inSplit
+			? this.tabs.getSplitFocusedTabId?.(tabId) ?? tabId
+			: tabId;
+		const focusedTab = this.tabs.getTabById(focusedTabId) ?? tabInfo;
+		const focusedIframe =
+			this.tabs.frameByTabId.get(focusedTab.id) ??
+			(document.getElementById(focusedTab.frameId) as HTMLIFrameElement | null);
+
+		// CSS hides every iframe by default. Visible iframes carry one of
+		// these classes:
+		//   .active         — the focused frame. Exactly one in the DOM.
+		//                     Legacy call-sites that querySelector(
+		//                     'iframe.active') get this one.
+		//   .split-visible  — the non-focused half of a split pair. Visible
+		//                     but not the focus target.
+		// Selecting a tab clears all of them and re-applies fresh.
+		if (this.tabs.items.frameContainer) {
+			this.tabs.items.frameContainer
+				.querySelectorAll('iframe.active, iframe.split-visible')
+				.forEach((el: Element) => {
+					el.classList.remove('active');
+					el.classList.remove('split-visible');
+				});
+		}
+		if (focusedIframe) focusedIframe.classList.add('active');
+
+		// Non-focused split partner stays visible alongside the focused one.
+		if (inSplit && partner) {
+			const partnerIframe = this.tabs.frameByTabId.get(partner.id);
+			if (partnerIframe && partnerIframe !== focusedIframe) {
+				partnerIframe.classList.add('split-visible');
+			}
+			const myIframe = this.tabs.frameByTabId.get(tabInfo.id);
+			if (myIframe && myIframe !== focusedIframe) {
+				myIframe.classList.add('split-visible');
+			}
+		}
+
+		// Hand the layout the iframes per pane. In split mode we put the
+		// pair's left+right iframes into the split panes; in main mode we
+		// show whichever non-split tab is active.
+		if (inSplit && partner) {
+			const leftTab =
+				tabInfo.splitPlacement === 'split-left' ? tabInfo : partner;
+			const rightTab =
+				tabInfo.splitPlacement === 'split-right' ? tabInfo : partner;
+			const leftIframe =
+				this.tabs.frameByTabId.get(leftTab.id) ?? null;
+			const rightIframe =
+				this.tabs.frameByTabId.get(rightTab.id) ?? null;
+			this.tabs.splitLayout?.apply({
+				mainIframe: null,
+				leftIframe,
+				rightIframe,
+				focusedSide:
+					focusedTabId === leftTab.id ? 'left' : 'right'
+			});
+		} else {
+			this.tabs.splitLayout?.apply({
+				mainIframe:
+					this.tabs.frameByTabId.get(tabId) ?? null,
+				leftIframe: null,
+				rightIframe: null,
+				focusedSide: null
+			});
+		}
+
+		// chiiPanel toggling — only for active tab in main.
 		this.tabs.getTabsInOrder().forEach(tab => {
 			if (tab.chiiPanel?.container) {
 				if (tab.id === tabId && tab.chiiPanel.isActive) {
@@ -469,41 +606,47 @@ export class TabLifecycle {
 			}
 		});
 
-		tabElement.classList.remove('inactive');
-		tabElement.classList.add('active');
-		iframe.classList.add('active');
-
 		const tabSelectedEvent = new CustomEvent('tabSelected', {
 			detail: {
 				tabId,
-				iframe,
+				iframe: focusedIframe,
 				tabElement
 			}
 		});
 		document.dispatchEvent(tabSelectedEvent);
 
-		const rawPath = new URL(iframe.src).pathname;
-		const internalCheck = await this.tabs.proto.getInternalURL(rawPath);
-		if (
-			typeof internalCheck === 'string' &&
-			this.tabs.proto.isRegisteredProtocol(internalCheck)
-		) {
-			this.tabs.items.addressBar!.value = internalCheck;
-		} else {
-			// Centralized decode of the iframe URL.
-			const decoded = decodeProxiedUrl(iframe.src, this.tabs.proxy);
-			const decodedCheck = await this.tabs.proto.getInternalURL(decoded);
+		// Address bar reflects the focused iframe's URL.
+		if (focusedIframe) {
+			const rawPath = new URL(focusedIframe.src).pathname;
+			const internalCheck = await this.tabs.proto.getInternalURL(
+				rawPath
+			);
 			if (
-				typeof decodedCheck === 'string' &&
-				this.tabs.proto.isRegisteredProtocol(decodedCheck)
+				typeof internalCheck === 'string' &&
+				this.tabs.proto.isRegisteredProtocol(internalCheck)
 			) {
-				this.tabs.items.addressBar!.value = decodedCheck;
+				this.tabs.items.addressBar!.value = internalCheck;
 			} else {
-				this.tabs.items.addressBar!.value = decoded;
+				const decoded = decodeProxiedUrl(
+					focusedIframe.src,
+					this.tabs.proxy
+				);
+				const decodedCheck =
+					await this.tabs.proto.getInternalURL(decoded);
+				if (
+					typeof decodedCheck === 'string' &&
+					this.tabs.proto.isRegisteredProtocol(decodedCheck)
+				) {
+					this.tabs.items.addressBar!.value = decodedCheck;
+				} else {
+					this.tabs.items.addressBar!.value = decoded;
+				}
 			}
 		}
 
-		this.tabs.logger.createLog(`Selected tab: ${tabInfo.url || tabId}`);
+		this.tabs.logger.createLog(
+			`Selected tab: ${focusedTab.url || focusedTab.id}`
+		);
 	}
 
 	selectTabById = (id: string) => {

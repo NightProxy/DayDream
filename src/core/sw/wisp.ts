@@ -82,6 +82,21 @@ class WispManager {
 			return false;
 		}
 	}
+
+	/**
+	 * Synchronously synthesises a fallback WISP URL without touching
+	 * settings or the network. Used by the shared transport module as a
+	 * `defaultWisp` provider when the `wisp` setting is missing — this
+	 * avoids re-running the full `ensureWisp` probe on every fetch.
+	 *
+	 * Prefers the same-origin `/wisp/` endpoint (matches the path the
+	 * page server serves when it has wisp built in); falls back to a
+	 * Cloudflare-fronted random subdomain on `nightwisp.me`.
+	 */
+	computeWispUrl(): string {
+		const proto = self.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		return `${proto}//${self.location.host}/wisp/`;
+	}
 }
 
 export { WispManager };

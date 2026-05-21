@@ -1,4 +1,5 @@
 import type { TabsInterface } from './types';
+import { decodeProxiedUrl } from './urlDecoder';
 
 export class TabPageClient {
 	private tabs: TabsInterface;
@@ -6,6 +7,14 @@ export class TabPageClient {
 	private intervalIds: Map<string, number[]> = new Map();
 	private linkContextHandlers: Map<string, (event: MouseEvent) => void> =
 		new Map();
+	private pageBgContextHandlers: Map<
+		string,
+		(event: MouseEvent) => void
+	> = new Map();
+	private modifierClickHandlers: Map<
+		string,
+		(event: MouseEvent) => void
+	> = new Map();
 
 	constructor(tabs: TabsInterface) {
 		this.tabs = tabs;
@@ -13,8 +22,10 @@ export class TabPageClient {
 
 	pageClient = (iframe: HTMLIFrameElement): void => {
 		this.setupWindowOpenInterceptor(iframe);
+		this.setupModifierClickInterceptor(iframe);
 		this.setupClickListener(iframe);
 		this.setupLinkContextBridge(iframe);
+		this.setupPageBackgroundContextBridge(iframe);
 		this.setupErrorPageRedirect(iframe);
 		this.setupNavigationTracking(iframe);
 		this.setupKeyboardHandler(iframe);
@@ -49,6 +60,45 @@ export class TabPageClient {
 			}
 			this.linkContextHandlers.delete(iframeId);
 		}
+
+		const modifierHandler = this.modifierClickHandlers.get(iframeId);
+		if (modifierHandler) {
+			try {
+				const iframe = document.getElementById(
+					iframeId
+				) as HTMLIFrameElement | null;
+				iframe?.contentDocument?.removeEventListener(
+					'click',
+					modifierHandler,
+					true
+				);
+				iframe?.contentDocument?.removeEventListener(
+					'auxclick',
+					modifierHandler,
+					true
+				);
+			} catch {
+				// ignore
+			}
+			this.modifierClickHandlers.delete(iframeId);
+		}
+
+		const pageBgHandler = this.pageBgContextHandlers.get(iframeId);
+		if (pageBgHandler) {
+			try {
+				const iframe = document.getElementById(
+					iframeId
+				) as HTMLIFrameElement | null;
+				iframe?.contentDocument?.removeEventListener(
+					'contextmenu',
+					pageBgHandler,
+					true
+				);
+			} catch {
+				// ignore
+			}
+			this.pageBgContextHandlers.delete(iframeId);
+		}
 	};
 
 	cleanupAll = (): void => {
@@ -75,6 +125,43 @@ export class TabPageClient {
 			}
 		});
 		this.linkContextHandlers.clear();
+
+		this.modifierClickHandlers.forEach((handler, iframeId) => {
+			try {
+				const iframe = document.getElementById(
+					iframeId
+				) as HTMLIFrameElement | null;
+				iframe?.contentDocument?.removeEventListener(
+					'click',
+					handler,
+					true
+				);
+				iframe?.contentDocument?.removeEventListener(
+					'auxclick',
+					handler,
+					true
+				);
+			} catch {
+				// ignore
+			}
+		});
+		this.modifierClickHandlers.clear();
+
+		this.pageBgContextHandlers.forEach((handler, iframeId) => {
+			try {
+				const iframe = document.getElementById(
+					iframeId
+				) as HTMLIFrameElement | null;
+				iframe?.contentDocument?.removeEventListener(
+					'contextmenu',
+					handler,
+					true
+				);
+			} catch {
+				// ignore
+			}
+		});
+		this.pageBgContextHandlers.clear();
 	};
 
 	private setupLinkContextBridge(iframe: HTMLIFrameElement): void {
@@ -106,6 +193,87 @@ export class TabPageClient {
 
 		iframe.contentDocument.addEventListener('contextmenu', handler, true);
 		this.linkContextHandlers.set(iframe.id, handler);
+	}
+
+	/**
+	 * Page-background context menu bridge.
+	 *
+	 * Fires for `contextmenu` events that DON'T land on a link (the link
+	 * bridge already handles those). Always preventDefault — per the design
+	 * decision to override site contextmenu handlers for consistent UX.
+	 *
+	 * Listens at capture phase so we beat any inner site handlers.
+	 */
+	private setupPageBackgroundContextBridge(iframe: HTMLIFrameElement): void {
+		if (!iframe.contentDocument) return;
+
+		const existing = this.pageBgContextHandlers.get(iframe.id);
+		if (existing) {
+			iframe.contentDocument.removeEventListener(
+				'contextmenu',
+				existing,
+				true
+			);
+		}
+
+		const handler = (event: MouseEvent) => {
+			const target = event.target as HTMLElement | null;
+			// If the click is on an anchor, the link bridge will fire and
+			// open the link menu instead — don't double-handle.
+			if (target?.closest('a[href]')) return;
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			this.openPageBackgroundMenu(iframe, event);
+		};
+
+		iframe.contentDocument.addEventListener('contextmenu', handler, true);
+		this.pageBgContextHandlers.set(iframe.id, handler);
+	}
+
+	private openPageBackgroundMenu(
+		iframe: HTMLIFrameElement,
+		event: MouseEvent
+	): void {
+		const rightClickMenu =
+			this.tabs.ui?.rightclickmenu ??
+			this.tabs.ui?.np?.rightclickmenu ??
+			this.tabs.nightmarePlugins?.rightclickmenu;
+		if (!rightClickMenu) return;
+
+		rightClickMenu.closeMenu();
+
+		const menu = this.tabs.auxiliaryMenus?.buildPageBackgroundMenu(iframe);
+		if (!menu) return;
+
+		// Compute pageX/Y in HOST coordinates from the iframe-local event.
+		// The iframe contentDocument's MouseEvent has clientX/Y relative to
+		// the iframe viewport — translate to host viewport via the iframe's
+		// bounding rect.
+		const rect = iframe.getBoundingClientRect();
+		const hostX = rect.left + event.clientX;
+		const hostY = rect.top + event.clientY;
+
+		const tempAnchor = this.tabs.ui.createElement('div', {
+			style: `position:fixed;left:${hostX}px;top:${hostY}px;width:1px;height:1px;opacity:0;pointer-events:none;`
+		});
+		document.body.appendChild(tempAnchor);
+
+		// openMenu reads pageX/pageY from the event; build a synthetic event
+		// with translated coords.
+		const hostEvent = new MouseEvent('contextmenu', {
+			clientX: hostX,
+			clientY: hostY,
+			bubbles: false,
+			cancelable: true
+		});
+		Object.defineProperty(hostEvent, 'pageX', { value: hostX });
+		Object.defineProperty(hostEvent, 'pageY', { value: hostY });
+
+		rightClickMenu.openMenu(tempAnchor, hostEvent, menu);
+
+		setTimeout(() => tempAnchor.remove(), 0);
 	}
 
 	private openLinkContextMenu(
@@ -219,30 +387,105 @@ export class TabPageClient {
 		}, 0);
 	}
 
+	/**
+	 * Patch the iframe's `window.open` to route popups into a new host tab.
+	 * Mirrors the behavior of native `window.open(url)` from the user's
+	 * perspective (a fresh tab opens) but keeps the new content inside our
+	 * tab UI instead of spawning a real top-level browser window.
+	 */
 	private setupWindowOpenInterceptor(iframe: HTMLIFrameElement): void {
 		if (!iframe.contentWindow) return;
 
 		iframe.contentWindow.window.open = (
 			url?: string | URL
 		): Window | null => {
-			this.handleWindowOpen(url);
+			this.handleNewWindowNavigation(url);
 			return null;
 		};
 	}
 
-	private async handleWindowOpen(url?: string | URL): Promise<void> {
+	/**
+	 * Catch ctrl/cmd+click and middle-click on `<a[href]>` inside the iframe.
+	 * Without this, the browser opens those as native top-level popup windows
+	 * pointing at the scramjet-rewritten URL, which would load our host shell
+	 * outside the current tab UI. We preventDefault and route to a new tab.
+	 *
+	 * Listens at capture phase to beat any inner click handlers, and tracks
+	 * registration per-iframe so cleanup can remove the listener.
+	 */
+	private setupModifierClickInterceptor(iframe: HTMLIFrameElement): void {
+		if (!iframe.contentDocument) return;
+
+		const existing = this.modifierClickHandlers.get(iframe.id);
+		if (existing) {
+			iframe.contentDocument.removeEventListener(
+				'click',
+				existing,
+				true
+			);
+			iframe.contentDocument.removeEventListener(
+				'auxclick',
+				existing,
+				true
+			);
+		}
+
+		const handler = (event: MouseEvent) => {
+			// Middle button = button 1 on `auxclick`. Ctrl/meta + left click =
+			// modifier-tab on `click`. Anything else, leave alone.
+			const isMiddle = event.button === 1;
+			const isModifierLeft =
+				event.button === 0 && (event.ctrlKey || event.metaKey);
+			if (!isMiddle && !isModifierLeft) return;
+
+			const target = event.target as HTMLElement | null;
+			const anchor = target?.closest(
+				'a[href]'
+			) as HTMLAnchorElement | null;
+			if (!anchor) return;
+
+			const href = anchor.href;
+			if (!href) return;
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			this.handleNewWindowNavigation(href);
+		};
+
+		iframe.contentDocument.addEventListener('click', handler, true);
+		iframe.contentDocument.addEventListener('auxclick', handler, true);
+		this.modifierClickHandlers.set(iframe.id, handler);
+	}
+
+	/**
+	 * Common entrypoint for "open this URL in a new host tab".
+	 * Used by both the window.open polyfill and the modifier-click handler.
+	 *
+	 * URLs reaching this method can be scramjet-encoded (e.g. when read
+	 * from `anchor.href` in the host context, since the per-anchor href
+	 * getter trap only fires in the proxied window's prototype chain).
+	 * We always run them through `decodeProxiedUrl` so `createTab` gets
+	 * the real underlying URL and re-proxies it cleanly for the new tab.
+	 */
+	private async handleNewWindowNavigation(
+		url?: string | URL
+	): Promise<void> {
 		try {
 			if (!url) return;
 
-			const urlString = url instanceof URL ? url.href : url.toString();
-			console.log('Opening new tab with URL:', urlString);
+			const raw = url instanceof URL ? url.href : url.toString();
+			if (!raw) return;
 
-			await this.tabs.createTab(urlString);
-			this.tabs.logger.createLog(
-				`New tab opened via window.open: ${urlString}`
-			);
+			const decoded = decodeProxiedUrl(raw, this.tabs.proxy);
+			const target = decoded || raw;
+
+			console.log('[PageClient] Opening new tab with URL:', target);
+
+			await this.tabs.createTab(target);
+			this.tabs.logger?.createLog?.(`New tab opened: ${target}`);
 		} catch (error) {
-			console.error('Error opening new tab via window.open:', error);
+			console.error('[PageClient] Error opening new tab:', error);
 		}
 	}
 

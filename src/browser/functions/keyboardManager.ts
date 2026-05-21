@@ -147,7 +147,18 @@ export class KeyboardManager implements KeyboardInterface {
   }
 
   private async handleReopenTab(): Promise<void> {
-    console.log("Reopen tab functionality not yet implemented");
+    if (typeof this.tabs?.reopenClosedTab !== "function") {
+      console.warn("[keyboardManager] reopenClosedTab API not available");
+      return;
+    }
+    try {
+      const reopenedId = await this.tabs.reopenClosedTab();
+      if (!reopenedId) {
+        console.log("[keyboardManager] No recently-closed tab to reopen");
+      }
+    } catch (error) {
+      console.error("[keyboardManager] Reopen tab failed:", error);
+    }
   }
 
   private async handleDuplicateTab(): Promise<void> {
@@ -185,16 +196,24 @@ export class KeyboardManager implements KeyboardInterface {
 
   private handleReload(hard: boolean): void {
     const activeIframe = this.getActiveIframe();
-    if (activeIframe) {
-      try {
-        if (hard) {
-          activeIframe?.contentWindow?.location.reload();
+    if (!activeIframe) return;
+
+    try {
+      if (hard) {
+        // Hard reload: cache-busts via tabs.hardReloadTab. Falls back
+        // to a plain location.reload if we can't resolve the tab id
+        // (e.g. activeIframe missing data-tab-id attribute).
+        const tabId = activeIframe.getAttribute("data-tab-id");
+        if (tabId && this.tabs?.hardReloadTab) {
+          this.tabs.hardReloadTab(tabId);
         } else {
           activeIframe?.contentWindow?.location.reload();
         }
-      } catch (error) {
-        console.warn("Could not reload via keyboard shortcut:", error);
+      } else {
+        activeIframe?.contentWindow?.location.reload();
       }
+    } catch (error) {
+      console.warn("Could not reload via keyboard shortcut:", error);
     }
   }
 

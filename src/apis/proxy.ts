@@ -7,7 +7,18 @@ import { basePath, resolvePath } from '@utils/basepath';
 import LibcurlClient from '@mercuryworkshop/libcurl-transport';
 import EpoxyClient from '@mercuryworkshop/epoxy-transport';
 import PulsarClient from '@pkgs/pulsar';
+import { installEventsBridge } from '@apis/eventsBridge';
+import {
+	buildTransport,
+	resolveTransportConfig,
+	transportFetch,
+	type TransportKind
+} from '@core/shared/transport';
 
+// `BareMuxConnection` here is page-side state read by external callers
+// (notably src/index.tsx via `proxy.connection.getTransport()`). The
+// service worker no longer touches BareMux at all — it builds its own
+// transport directly via the shared module. See src/core/sw/index.ts.
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
 	searchVar: string;
@@ -65,8 +76,12 @@ class Proxy implements ProxyInterface {
 	pulsar!: PulsarClient;
 	controller: any;
 	private activeTransport: string = 'libcurl';
-	private readonly controllerConfig: SJConfig;
-	private readonly scramjetFlags: SJFlags;
+	// `controllerConfig` and `scramjetFlags` are assigned synchronously in
+	// the constructor before the async IIFE runs, but TS's flow analysis
+	// can't trace assignments across the closure boundary, so use the
+	// definite-assignment assertion (matches the other fields above).
+	private controllerConfig!: SJConfig;
+	private scramjetFlags!: SJFlags;
 	constructor(Controller: any, SW: any, config: SJConfig, flags: SJFlags) {
 		this.connection = new BareMux.BareMuxConnection(
 			resolvePath('bmworker/worker.js')
@@ -122,6 +137,14 @@ class Proxy implements ProxyInterface {
 				scramjetConfig: this.scramjetFlags
 			});
 			await this.controller.wait();
+
+			// Install the cross-frame events bridge. This wraps
+			// `controller.createFrame` so every proxied frame gets a
+			// host-side message receiver attached at boot, AND ensures
+			// host-originated `eventsAPI.emit()` broadcasts can be sent
+			// to proxied frames without crashing scramjet's postMessage
+			// wrapper. See `src/apis/eventsBridge.ts` for the design.
+			installEventsBridge(this.controller);
 		})();
 	}
 
@@ -404,82 +427,53 @@ class Proxy implements ProxyInterface {
 	}
 
 	async TransportMapping(): Promise<Record<any, any>> {
+		// Kept for backwards compatibility with any external callers. The
+		// shared transport module (src/core/shared/transport.ts) is the
+		// real source of truth — `buildTransportConfig` and `fetch` both
+		// route through it.
 		return {
 			epoxy: {
 				constructor: EpoxyClient,
-				opts: ['wisp'],
+				opts: ['wisp']
 			},
 			libcurl: {
 				constructor: LibcurlClient,
-				opts: ['wisp', 'proxy'],
+				opts: ['wisp', 'proxy']
 			},
 			pulsar: {
 				constructor: PulsarClient,
-				opts: ['host', 'port'],
+				opts: ['host', 'port']
 			}
 		};
 	}
 
 	private async buildTransportConfig() {
-		const transportMap = await this.TransportMapping();
-		const selectedTransport = this.transportVar || 'libcurl';
-		const fallbackTransport = transportMap.libcurl;
-		const mappedTransport =
-			transportMap[selectedTransport] || fallbackTransport;
+		// Delegates to the shared module so the SW and the page agree
+		// byte-for-byte on transport construction. The `defaultWisp`
+		// provider reproduces this class's prior fallback (current
+		// `this.wispUrl` if set, else same-origin /wisp/).
+		const cfg = await resolveTransportConfig(this.settings, () => {
+			if (this.wispUrl) return this.wispUrl;
+			const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+			return `${proto}://${location.host}/wisp/`;
+		});
 
-		this.activeTransport = transportMap[selectedTransport]
-			? selectedTransport
-			: 'libcurl';
+		const built = buildTransport(cfg);
+		this.activeTransport = built.kind;
 
-		const wispUrl =
-			this.wispUrl ||
-			(location.protocol === 'https:' ? 'wss' : 'ws') +
-				'://' +
-				location.host +
-				'/wisp/';
-
-		const clientOptions: Record<string, any> = {};
-		const transportOptions: Record<string, any> = {};
-
-		if (this.activeTransport === 'pulsar') {
-			// Pulsar takes the server IP + UDP port directly (no WISP).
-			// Reads optional overrides from settings; falls back to the
-			// official Abundance server inside PulsarClient itself.
-			const savedHost = await this.settings.getItem('pulsarHost');
-			const savedPort = await this.settings.getItem('pulsarPort');
-			if (savedHost) {
-				clientOptions.host = savedHost;
-				transportOptions.host = savedHost;
-			}
-			if (savedPort) {
-				const portNum = Number(savedPort);
-				if (Number.isFinite(portNum) && portNum > 0) {
-					clientOptions.port = portNum;
-					transportOptions.port = portNum;
-				}
-			}
-		} else {
-			clientOptions.wisp = wispUrl;
-			transportOptions.wisp = wispUrl;
-
-			const remoteProxyServer = await this.getRemoteProxyServer();
-			if (
-				this.activeTransport === 'libcurl' &&
-				remoteProxyServer &&
-				remoteProxyServer !== 'undefined' &&
-				remoteProxyServer !== 'null' &&
-				remoteProxyServer !== 'disabled' &&
-				remoteProxyServer !== 'false'
-			) {
-				clientOptions.proxy = remoteProxyServer;
-				transportOptions.proxy = remoteProxyServer;
-			}
-		}
+		// Reconstruct the legacy connection-options shape so existing
+		// callers (e.g. things consuming `connectionOptions`) keep
+		// working without change.
+		const connectionOptions: Record<string, unknown> = {};
+		if (cfg.wisp !== undefined) connectionOptions.wisp = cfg.wisp;
+		if (cfg.proxy !== undefined) connectionOptions.proxy = cfg.proxy;
+		if (cfg.host !== undefined) connectionOptions.host = cfg.host;
+		if (cfg.port !== undefined) connectionOptions.port = cfg.port;
 
 		return {
-			key: this.activeTransport,
-			instance: new mappedTransport.constructor(clientOptions),
-			connectionOptions: transportOptions
+			key: built.kind as TransportKind,
+			instance: built.instance,
+			connectionOptions
 		};
 	}
 
@@ -500,23 +494,6 @@ class Proxy implements ProxyInterface {
 		});
 		if (this.logging) {
 			this.logging.createLog(`Transport Set: ${transportConfig.key}`);
-		}
-
-		this.notifySwTransportReady();
-	}
-
-	private async notifySwTransportReady() {
-		try {
-			const registration = await navigator.serviceWorker?.ready;
-			if (registration?.active) {
-				registration.active.postMessage({ type: 'transportReady' });
-				console.log('[Proxy] Sent transportReady to SW');
-			}
-		} catch (err) {
-			console.warn(
-				'[Proxy] Failed to notify SW of transport ready:',
-				err
-			);
 		}
 	}
 
@@ -758,10 +735,8 @@ class Proxy implements ProxyInterface {
 			throw new Error('[Proxy.fetch] Transport is unavailable');
 		}
 
-		if (!transport.ready && typeof transport.init === 'function') {
-			await transport.init();
-		}
-
+		// Be forgiving of bare hostnames / search terms — fall back to
+		// the configured search engine, same as before.
 		let remote: URL;
 		try {
 			remote = new URL(url);
@@ -769,118 +744,13 @@ class Proxy implements ProxyInterface {
 			remote = new URL(this.search(url));
 		}
 
-		const requestMethod =
-			typeof method === 'string' && method.trim() !== ''
-				? method.toUpperCase()
-				: body == null
-					? 'GET'
-					: 'POST';
-
-		const readHeader = (rawHeaders: any, name: string): string | null => {
-			const needle = name.toLowerCase();
-
-			if (rawHeaders instanceof Headers) {
-				return rawHeaders.get(name);
-			}
-
-			if (Array.isArray(rawHeaders)) {
-				for (const entry of rawHeaders) {
-					if (
-						Array.isArray(entry) &&
-						entry.length >= 2 &&
-						typeof entry[0] === 'string' &&
-						entry[0].toLowerCase() === needle
-					) {
-						return String(entry[1]);
-					}
-				}
-				return null;
-			}
-
-			if (rawHeaders && typeof rawHeaders === 'object') {
-				for (const [key, value] of Object.entries(rawHeaders)) {
-					if (key.toLowerCase() === needle) {
-						return String(value);
-					}
-				}
-			}
-
-			return null;
-		};
-
-		const normalizeHeaderEntries = (
-			rawHeaders: any
-		): [string, string][] => {
-			if (rawHeaders instanceof Headers) {
-				return Array.from(rawHeaders.entries());
-			}
-
-			if (Array.isArray(rawHeaders)) {
-				return rawHeaders
-					.filter(
-						(entry: any) =>
-							Array.isArray(entry) &&
-							entry.length >= 2 &&
-							typeof entry[0] === 'string'
-					)
-					.map((entry: any) => [String(entry[0]), String(entry[1])]);
-			}
-
-			if (rawHeaders && typeof rawHeaders === 'object') {
-				return Object.entries(rawHeaders).map(([key, value]) => [
-					key,
-					String(value)
-				]);
-			}
-
-			return [];
-		};
-
-		const maxRedirects = 20;
-		let response: any = null;
-
-		for (
-			let redirectCount = 0;
-			redirectCount <= maxRedirects;
-			redirectCount++
-		) {
-			response = await transport.request(
-				remote,
-				requestMethod,
-				body ?? null,
-				headers,
-				undefined
-			);
-
-			const status = response?.status;
-			if (![301, 302, 303, 307, 308].includes(status)) {
-				break;
-			}
-
-			const location = readHeader(response?.headers, 'location');
-
-			if (!location) {
-				break;
-			}
-
-			remote = new URL(location, remote);
-		}
-
-		if (!response) {
-			throw new Error(
-				'[Proxy.fetch] No response returned from transport'
-			);
-		}
-
-		const responseHeaders = new Headers();
-		for (const [key, value] of normalizeHeaderEntries(response.headers)) {
-			responseHeaders.append(key, value);
-		}
-
-		return new Response(response.body ?? null, {
-			status: response.status,
-			statusText: response.statusText,
-			headers: responseHeaders
+		// Redirect-following, header normalisation, and Response shape
+		// are all owned by the shared transport module so the SW gets
+		// identical behavior.
+		return transportFetch(transport, remote, {
+			method,
+			body: body ?? null,
+			headers
 		});
 	}
 
@@ -1083,7 +953,7 @@ class Proxy implements ProxyInterface {
 		await this.network.setRemoteProxyServer(server);
 	}
 
-	async getRemoteProxyServer(): Promise<string> {
+	async getRemoteProxyServer(): Promise<string | null> {
 		return await this.network.getRemoteProxyServer();
 	}
 

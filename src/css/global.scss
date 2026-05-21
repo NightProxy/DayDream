@@ -1082,15 +1082,148 @@ aside[data-component='navbar'][stylemode='vertical']
 	transform: scale(0.92);
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Edge-style split-screen layout for the frame-container.
+// Single main pane by default; switches to 2-pane (split-left +
+// split-right + draggable midpoint gutter) when --split-mid-pct
+// is set and data-split-mode="split" on frame-container.
+// ─────────────────────────────────────────────────────────────────
+div[data-component='frame-container'] {
+	position: relative;
+	overflow: hidden;
+	--split-mid-pct: 50%;
+	--gutter: 4px;
+	--focus-ring: var(--main, #a974de);
+}
+
+// Iframes inside the frame-container are stacked, only those with
+// .active (the focused frame) or .split-visible (the non-focused half
+// of a split pair) are shown. Selecting a tab toggles these classes.
 div[data-component='frame-container'] iframe {
+	position: absolute;
+	inset: 0;
 	width: 100%;
 	height: 100%;
 	border: none;
 	display: none;
 }
 
-div[data-component='frame-container'] iframe.active {
+div[data-component='frame-container'] iframe.active,
+div[data-component='frame-container'] iframe.split-visible {
 	display: block;
+}
+
+div[data-component='frame-container'] .split-pane {
+	position: absolute;
+	overflow: hidden;
+	background: var(--bg-2);
+}
+
+div[data-component='frame-container'] .split-pane[data-shown='false'] {
+	display: none;
+}
+
+// Default main pane = fills everything.
+div[data-component='frame-container'] .split-pane--main {
+	inset: 0;
+}
+
+// Split mode: hide main, show two halves.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--main {
+	display: none;
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-left {
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-right {
+	top: 0;
+	bottom: 0;
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Subtle focus ring around the focused split pane.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane[data-focused='true']::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	box-shadow: inset 0 0 0 1px var(--focus-ring);
+	border-radius: 2px;
+	z-index: 4;
+}
+
+div[data-component='frame-container'] .split-gutter {
+	position: absolute;
+	background: var(--white-08, rgba(255, 255, 255, 0.08));
+	z-index: 5;
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container'] .split-gutter:hover,
+div[data-component='frame-container'] .split-gutter:active {
+	background: var(--white-20, rgba(255, 255, 255, 0.2));
+}
+
+div[data-component='frame-container'] .split-gutter[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-gutter[data-gutter='split'] {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--split-mid-pct) - (var(--gutter) / 2));
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Edge-style split-capsule tab pill: wraps two paired tabs in a
+// single rounded container. Both child .tab elements lose their
+// own outer rounding so they sit flush.
+// ─────────────────────────────────────────────────────────────────
+.split-capsule {
+	display: inline-flex;
+	align-items: stretch;
+	background: var(--white-05, rgba(255, 255, 255, 0.05));
+	border: 1px solid var(--white-08, rgba(255, 255, 255, 0.08));
+	border-radius: 10px;
+	overflow: hidden;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.split-capsule > .tab {
+	border-radius: 0 !important;
+	max-width: 50%;
+	min-width: 0;
+	flex: 1 1 auto;
+	position: relative;
+}
+
+.split-capsule > .tab[data-split-side='left'] {
+	border-right: 1px solid var(--white-08, rgba(255, 255, 255, 0.08));
+}
+
+.split-capsule > .tab[data-split-focused='true']::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 2px;
+	background: var(--main, #a974de);
+	pointer-events: none;
 }
 
 div[data-component='top-bar'] {

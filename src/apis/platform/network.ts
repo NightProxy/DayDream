@@ -17,7 +17,7 @@ class NetworkAPI {
     return await this.settings.setItem("serverType", serverType);
   }
 
-  async getServerAddress(): Promise<networkTypes.ServerAddressResponse> {
+  async getServerAddress(): Promise<networkTypes.ServerAddressResponse | null> {
     return await this.settings.getItem(await this.getServerType());
   }
 
@@ -29,7 +29,7 @@ class NetworkAPI {
     await this.settings.setItem("proxyServer", server);
   }
 
-  async getRemoteProxyServer(): Promise<string> {
+  async getRemoteProxyServer(): Promise<string | null> {
     return await this.settings.getItem("proxyServer");
   }
 

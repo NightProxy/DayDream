@@ -129,6 +129,100 @@ class HistoryUI {
 			}
 		});
 
+		// Right-click on a history row opens our context menu. The menu
+		// content is built by the host's `auxiliaryMenus.buildHistoryItemMenu`
+		// and rendered by the host's RightClickMenu instance, since this
+		// page lives inside an iframe and the menu container needs to be
+		// positioned in host viewport coordinates.
+		document.addEventListener('contextmenu', (e: MouseEvent) => {
+			const target = e.target as HTMLElement;
+			const item = target.closest('[data-history-url]');
+			if (!item) return;
+			if (target.closest("[data-action='delete']")) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			const parentWin: any = window.parent;
+			const auxMenus = parentWin?.tabs?.auxiliaryMenus;
+			const rcm = parentWin?.nightmare?.rightclickmenu;
+			if (!auxMenus || !rcm) {
+				console.warn(
+					'[history] auxiliaryMenus / rightclickmenu unavailable in parent'
+				);
+				return;
+			}
+
+			const url = item.getAttribute('data-history-url') || '';
+			const entryId = item.getAttribute('data-history-id') || '';
+			const titleEl = item.querySelector('h4, .history-title');
+			const title = (titleEl?.textContent || url).trim();
+			let hostname: string | undefined;
+			try {
+				hostname = new URL(url).hostname;
+			} catch {
+				hostname = undefined;
+			}
+
+			const menu = auxMenus.buildHistoryItemMenu({
+				url,
+				title,
+				entryId,
+				hostname,
+				onRemoveEntry: async () => {
+					if (entryId) {
+						await this.historyManager.deleteEntry(entryId);
+						await this.renderHistory();
+						this.updateStats();
+					}
+				},
+				onRemoveAllFromSite: async () => {
+					if (!hostname) return;
+					try {
+						const entries = this.historyManager.getEntriesByDomain
+							? this.historyManager.getEntriesByDomain(hostname)
+							: [];
+						for (const entry of entries) {
+							await this.historyManager.deleteEntry(entry.id);
+						}
+						await this.renderHistory();
+						this.updateStats();
+					} catch (error) {
+						console.error(
+							'[history] delete-all-from-site failed:',
+							error
+						);
+					}
+				}
+			});
+
+			// Translate iframe-local mouse coords into host coords for the
+			// host-side RightClickMenu container.
+			const hostIframe = parentWin.document
+				?.querySelector('iframe.active') as HTMLIFrameElement | null;
+			const rect = hostIframe?.getBoundingClientRect();
+			const hostX = (rect?.left ?? 0) + e.clientX;
+			const hostY = (rect?.top ?? 0) + e.clientY;
+
+			const hostDoc: Document = parentWin.document;
+			const tempAnchor = hostDoc.createElement('div');
+			tempAnchor.style.cssText = `position:fixed;left:${hostX}px;top:${hostY}px;width:1px;height:1px;opacity:0;pointer-events:none;`;
+			hostDoc.body.appendChild(tempAnchor);
+
+			const hostEvent = new parentWin.MouseEvent('contextmenu', {
+				clientX: hostX,
+				clientY: hostY,
+				bubbles: false,
+				cancelable: true
+			});
+			Object.defineProperty(hostEvent, 'pageX', { value: hostX });
+			Object.defineProperty(hostEvent, 'pageY', { value: hostY });
+
+			rcm.closeMenu();
+			rcm.openMenu(tempAnchor, hostEvent, menu);
+			setTimeout(() => tempAnchor.remove(), 0);
+		});
+
 		this.historyManager.addListener(() => {
 			this.renderHistory();
 			this.updateStats();

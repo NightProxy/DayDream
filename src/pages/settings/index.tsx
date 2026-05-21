@@ -1226,28 +1226,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await initializeWispSelect();
 
-  const refluxToggle = document.getElementById(
-    "refluxToggle",
-  ) as HTMLInputElement;
-  if (refluxToggle) {
-    const savedRefluxStatus = await settingsAPI.getItem("RefluxStatus");
-    if (savedRefluxStatus === null || savedRefluxStatus === undefined) {
-      await settingsAPI.setItem("RefluxStatus", "true");
-      refluxToggle.checked = true;
-    } else {
-      refluxToggle.checked = savedRefluxStatus !== "false";
-    }
-
-    refluxToggle.addEventListener("change", async () => {
-      await settingsAPI.setItem(
-        "RefluxStatus",
-        refluxToggle.checked.toString(),
-      );
-      console.log("Reflux toggle changed to:", refluxToggle.checked);
-      location.reload();
-    });
-  }
-
   async function initializeProxyServerSelect() {
     const proxyServerSelect = document.getElementById(
       "proxyServerSelect",

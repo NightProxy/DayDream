@@ -1,19 +1,14 @@
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
-import { enigmaPath } from "@nightnetwork/enigma/path";
 import { baremuxPath as bmworkerPath } from "@nightnetwork/bm-plusworker/path";
 import {tfsPath} from "@terbiumos/tfs";
 import path from "path";
 
 export const routePaths = {
-  epoxy: "epoxy",
   scramjet: "assets",
   libcurl: "libcurl",
-  baremux: "baremux",
   reflux: "reflux",
-  enigma: "enigma",
   auth: "",
   bmworker: "bmworker",
   plusClient: "plus",
@@ -35,6 +30,9 @@ const chiiPath = path.resolve("node_modules/chii/public");
 const obscuraPath = path.resolve("src/pkgs/Obscura/pkg");
 const swPath = path.resolve("src/core/sw/dist");
 const sjConfigPath = path.resolve("src/core/sjConfig/dist");
+const libcurlPath = path.dirname(
+  path.resolve("node_modules/libcurl.js/libcurl.wasm"),
+);
 const sjControllerPath = path.resolve("node_modules/@mercuryworkshop/scramjet-controller/dist");
 const copyMap = {
   scramjet: {
@@ -46,20 +44,15 @@ const copyMap = {
     ],
     dest: routePaths.scramjet,
   },
-  baremux: {
-    path: baremuxPath,
-    files: ["*"],
-    dest: routePaths.baremux,
+  libcurl: {
+    path: libcurlPath,
+    files: ["libcurl.wasm"],
+    dest: routePaths.libcurl,
   },
   reflux: {
     path: refluxPath,
     files: ["*"],
     dest: routePaths.reflux,
-  },
-  enigma: {
-    path: enigmaPath,
-    files: ["*"],
-    dest: routePaths.enigma,
   },
   auth: {
     path: authPath,

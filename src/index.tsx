@@ -31,8 +31,6 @@ import { universalTheme } from '@utils/global/universalTheme';
 import { checkNightPlusStatus } from '@apis/nightplus';
 import { initClipboardDeobfuscator } from '@utils/clipboardDeobfuscator';
 import { basePath, resolvePath } from '@utils/basepath';
-//@ts-ignore
-import { RefluxAPI } from '@nightnetwork/reflux/api';
 
 const { Controller } = $scramjetController;
 
@@ -88,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	const settingsAPI = new SettingsAPI();
 	const eventsAPI = new EventSystem();
-	const refluxAPI = new RefluxAPI();
 	//await cache.init();
 
 	const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
@@ -176,7 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 		(window as any).toggleVerticalTabsCollapsed = () =>
 			window.tabs.toggleVerticalTabsCollapsed();
 
+		tabs.initSplitLayout();
 		tabs.setupVerticalTabsToggle();
+		// Wire host-shell context menus (tab strip background, back/forward/
+		// reload buttons). Must run after items are ready and tabs are wired.
+		tabs.auxiliaryMenus.installHostShellMenus();
 
 		window.protocols = proto;
 		window.windowing = windowing;
@@ -186,7 +187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		window.cache = cache;
 		window.proxy = proxy;
 		//@ts-ignore
-		window.reflux = refluxAPI;
 		window.logging = loggingAPI;
 
 		const startupBehavior =

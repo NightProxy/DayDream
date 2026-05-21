@@ -1,0 +1,30 @@
+{
+  "//": [
+    "Used by `tsc` during `npm run build` (and only there).",
+    "Extends the base tsconfig.json with extra `paths` entries that route",
+    "@terbiumos/tfs to a local .d.ts shim — needed because the upstream",
+    "package's .d.ts re-exports types from its own .ts source, which has",
+    "errors that skipLibCheck does not suppress.",
+    "Vite still reads the base tsconfig.json so its bundler resolves the",
+    "real package at runtime via node_modules. See src/types/terbiumos-tfs.d.ts."
+  ],
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@browser/*": ["browser/*"],
+      "@apis/*": ["apis/*"],
+      "@css/*": ["css/*"],
+      "@pkgs/*": ["pkgs/*"],
+      "@components/*": ["components/*"],
+      "@hooks/*": ["hooks/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"],
+      "@pages/*": ["pages/*"],
+      "@core/*": ["core/*"],
+      "@/*": ["*"],
+      "@../*": ["../*"],
+      "@terbiumos/tfs": ["types/terbiumos-tfs.d.ts"],
+      "@terbiumos/tfs/browser": ["types/terbiumos-tfs.d.ts"]
+    }
+  }
+}

@@ -36,6 +36,10 @@ import { TabHistoryIntegration } from './historyIntegration';
 import { TabPinManager2 } from './pinManager';
 import { TabGroupManager2 } from './groupManager';
 import { TabFrameManager } from './frameManager';
+import { SplitLayoutManager } from './splitLayout';
+import { TabClosedStack } from './closedTabStack';
+import { TabNavStack } from './navStack';
+import { AuxiliaryMenus } from './auxiliaryMenus';
 import { decodeIframeUrl, decodeProxiedUrl } from './urlDecoder';
 
 type DragItemKind = 'tab' | 'group';
@@ -86,8 +90,18 @@ class Tabs implements TabsInterface {
 
 	pageClientModule: TabPageClient;
 	frameManager?: TabFrameManager;
+	splitLayout?: SplitLayoutManager;
+	/**
+	 * For a split pair {a,b}, this map holds focusedSplitSideByPairKey[a]=focused
+	 * and focusedSplitSideByPairKey[b]=focused (same value). The "focused" tabId
+	 * is which side of the pair owns the address bar / nav buttons / page input.
+	 */
+	focusedSplitSideByPairKey: Map<string, string> = new Map();
 	groupManager?: TabGroupManager2;
 	pinManager?: TabPinManager2;
+	closedTabStack: TabClosedStack;
+	navStack: TabNavStack;
+	auxiliaryMenus: AuxiliaryMenus;
 	nightmarePlugins?: any;
 	closeAllTabsInGroup?: (groupId: string) => Promise<void>;
 
@@ -141,6 +155,7 @@ class Tabs implements TabsInterface {
 
 		this.bookmarkModule = new BookmarkManager(this);
 		this.frameManager = new TabFrameManager(this);
+		this.splitLayout = new SplitLayoutManager(this);
 		this.lifecycleModule = new TabLifecycle(this);
 		this.manipulationModule = new TabManipulation(this);
 		this.contextMenuModule = new TabContextMenu(this);
@@ -149,6 +164,9 @@ class Tabs implements TabsInterface {
 		this.historyIntegration = new TabHistoryIntegration(this);
 		this.pinManager = new TabPinManager2(this);
 		this.groupManager = new TabGroupManager2(this);
+		this.closedTabStack = new TabClosedStack(this);
+		this.navStack = new TabNavStack(this);
+		this.auxiliaryMenus = new AuxiliaryMenus(this);
 		this.closeAllTabsInGroup = (groupId: string) =>
 			this.groupManager!.closeAllTabsInGroup(groupId);
 
@@ -384,6 +402,83 @@ class Tabs implements TabsInterface {
 		this.frameManager?.setFramePlacement(tabId, placement);
 	};
 
+	/**
+	 * Pair `partnerTabId` with the active tab into a 2-pane split. The active
+	 * tab becomes split-left, the partner becomes split-right. The active tab
+	 * keeps its existing focus. If either tab is already in a split, that
+	 * existing split is dissolved first.
+	 */
+	splitWithActiveTab = (partnerTabId: string): boolean => {
+		const activeId = this.activeTabId;
+		if (!activeId) return false;
+		if (activeId === partnerTabId) return false;
+		const active = this.getTabById(activeId);
+		const partner = this.getTabById(partnerTabId);
+		if (!active || !partner) return false;
+		if (active.isPinned || partner.isPinned) return false;
+
+		// Dissolve any pre-existing splits both tabs may be in.
+		if (active.splitPartnerId) this.unsplitTab(active.id);
+		if (partner.splitPartnerId) this.unsplitTab(partner.id);
+
+		active.splitPartnerId = partner.id;
+		partner.splitPartnerId = active.id;
+		this.setTabSplitPlacement(active.id, 'split-left');
+		this.setTabSplitPlacement(partner.id, 'split-right');
+
+		// Default focus = the partner tab the user just split off into.
+		this.focusedSplitSideByPairKey.set(active.id, partner.id);
+		this.focusedSplitSideByPairKey.set(partner.id, partner.id);
+
+		this.renderTabStrip();
+		this.selectTab(activeId);
+		return true;
+	};
+
+	/** Dissolve the split that `tabId` is part of. Both tabs return to main. */
+	unsplitTab = (tabId: string): void => {
+		const tab = this.getTabById(tabId);
+		if (!tab || !tab.splitPartnerId) return;
+		const partner = this.getTabById(tab.splitPartnerId);
+		tab.splitPartnerId = undefined;
+		this.setTabSplitPlacement(tab.id, 'main');
+		this.focusedSplitSideByPairKey.delete(tab.id);
+		if (partner) {
+			partner.splitPartnerId = undefined;
+			this.setTabSplitPlacement(partner.id, 'main');
+			this.focusedSplitSideByPairKey.delete(partner.id);
+		}
+		this.renderTabStrip();
+		if (this.activeTabId) this.selectTab(this.activeTabId);
+	};
+
+	/**
+	 * Set the focused side of a split pair. `tabId` is whichever side of the
+	 * pair should now own the address bar / nav buttons / tab-strip
+	 * indicator. This becomes the new active tab.
+	 */
+	setSplitFocus = (tabId: string): void => {
+		const tab = this.getTabById(tabId);
+		if (!tab) return;
+		const pairId = tab.splitPartnerId;
+		if (!pairId) return;
+		this.focusedSplitSideByPairKey.set(tab.id, tab.id);
+		this.focusedSplitSideByPairKey.set(pairId, tab.id);
+		// Make the focused side the active tab. selectTab handles the
+		// capsule indicator swap + address bar update.
+		this.selectTab(tab.id);
+	};
+
+	/**
+	 * Resolve the focused tabId for whatever pair the given tabId is in.
+	 * If the tab isn't in a split, returns the tabId itself.
+	 */
+	getSplitFocusedTabId = (tabId: string): string => {
+		const tab = this.getTabById(tabId);
+		if (!tab || !tab.splitPartnerId) return tabId;
+		return this.focusedSplitSideByPairKey.get(tabId) ?? tabId;
+	};
+
 	setTabCache = (tabId: string, cache: TabCacheEntry | undefined) => {
 		const tab = this.getTabById(tabId);
 		if (!tab) return;
@@ -453,6 +548,62 @@ class Tabs implements TabsInterface {
 
 	reloadTab = (tabId: string) => this.manipulationModule.refreshTab(tabId);
 
+	hardReloadTab = (tabId: string) =>
+		this.manipulationModule.hardReloadTab(tabId);
+
+	stopTab = (tabId: string) => this.manipulationModule.stopTab(tabId);
+
+	savePage = (tabId: string) => this.manipulationModule.savePage(tabId);
+
+	/**
+	 * Reopen the most recently-closed tab. Pops the top of the stack;
+	 * if the closed entry was pinned and/or grouped, attempts to restore
+	 * those affordances on the freshly-created tab. Group restore is
+	 * best-effort: if the group has since been deleted we just leave the
+	 * reopened tab ungrouped.
+	 *
+	 * Returns the new tab id, or null if there was nothing to reopen.
+	 */
+	reopenClosedTab = async (): Promise<string | null> => {
+		const record = this.closedTabStack.popMostRecent();
+		if (!record) return null;
+
+		const newTabId = await this.createTab(record.url);
+		if (!newTabId) return null;
+
+		// Re-pin if needed.
+		if (record.wasPinned && this.pinManager) {
+			try {
+				this.pinManager.pinTab(newTabId);
+			} catch (error) {
+				console.warn('[Tabs] reopenClosedTab: re-pin failed:', error);
+			}
+		}
+
+		// Re-attach to original group if it still exists.
+		if (record.groupId && this.groupManager) {
+			const groupStillExists = this.groups.some(
+				g => g.id === record.groupId
+			);
+			if (groupStillExists) {
+				try {
+					this.groupManager.addTabToGroup(
+						newTabId,
+						record.groupId
+					);
+				} catch (error) {
+					console.warn(
+						'[Tabs] reopenClosedTab: re-group failed:',
+						error
+					);
+				}
+			}
+		}
+
+		this.logger.createLog(`Reopened closed tab: ${record.url}`);
+		return newTabId;
+	};
+
 	closeTabsToRight = (tabId: string): void =>
 		this.manipulationModule.closeTabsToRight(tabId);
 
@@ -511,6 +662,11 @@ class Tabs implements TabsInterface {
 				.filter(entry => entry.kind === 'tab' && entry.tabId)
 				.map(entry => entry.tabId!)
 		);
+
+		// Track which split-paired tabs have already been emitted as part
+		// of a capsule, so we don't render them twice.
+		const consumedBySplit = new Set<string>();
+
 		for (const entry of visual) {
 			if (
 				this.verticalTabsEnabled &&
@@ -537,6 +693,8 @@ class Tabs implements TabsInterface {
 			if (entry.kind === 'tab' && entry.tabId) {
 				const tab = this.getTabById(entry.tabId);
 				if (!tab) continue;
+				if (consumedBySplit.has(tab.id)) continue;
+
 				tab.tab.setAttribute('draggable', 'true');
 				tab.tab.setAttribute('data-tab-id', tab.id);
 				tab.tab.setAttribute('data-dnd-kind', 'tab');
@@ -548,6 +706,77 @@ class Tabs implements TabsInterface {
 				this.setupTabDragHandlers(tab.tab, tab.id);
 				this.syncTabVisualState(tab.id);
 				this.syncTabGroupPosition(tab.id, visibleGroupedTabIds);
+
+				const partnerId = tab.splitPartnerId;
+				const partner = partnerId
+					? this.getTabById(partnerId)
+					: undefined;
+
+				if (partner && !consumedBySplit.has(partner.id)) {
+					// Render both halves wrapped in a split capsule. Use
+					// the left-hand tab of the pair on the left.
+					const leftTab =
+						tab.splitPlacement === 'split-left' ? tab : partner;
+					const rightTab =
+						tab.splitPlacement === 'split-right'
+							? tab
+							: partner;
+
+					[leftTab, rightTab].forEach(t => {
+						t.tab.setAttribute('draggable', 'true');
+						t.tab.setAttribute('data-tab-id', t.id);
+						t.tab.setAttribute('data-dnd-kind', 'tab');
+						t.tab.setAttribute(
+							'data-dnd-lane',
+							this.getLaneForTab(t)
+						);
+						if (
+							!t.tab.hasAttribute('data-context-menu-setup')
+						) {
+							this.setupTabContextMenu(t.tab, t.id);
+							t.tab.setAttribute(
+								'data-context-menu-setup',
+								'true'
+							);
+						}
+						this.setupTabDragHandlers(t.tab, t.id);
+						this.syncTabVisualState(t.id);
+						this.syncTabGroupPosition(
+							t.id,
+							visibleGroupedTabIds
+						);
+					});
+
+					const focused = this.getSplitFocusedTabId(tab.id);
+					leftTab.tab.dataset.splitSide = 'left';
+					rightTab.tab.dataset.splitSide = 'right';
+					leftTab.tab.dataset.splitFocused =
+						focused === leftTab.id ? 'true' : 'false';
+					rightTab.tab.dataset.splitFocused =
+						focused === rightTab.id ? 'true' : 'false';
+
+					const capsule = this.ui.createElement(
+						'div',
+						{
+							class: 'split-capsule',
+							'data-component': 'split-capsule',
+							'data-pair-key': `${leftTab.id}|${rightTab.id}`
+						},
+						[leftTab.tab, rightTab.tab]
+					);
+
+					fragment.appendChild(capsule);
+					consumedBySplit.add(leftTab.id);
+					consumedBySplit.add(rightTab.id);
+					if (tab.isPinned) renderedPinnedTabs += 1;
+					if (partner.isPinned) renderedPinnedTabs += 1;
+					continue;
+				}
+
+				// Non-split tab: clean up any leftover split markers.
+				delete tab.tab.dataset.splitSide;
+				delete tab.tab.dataset.splitFocused;
+
 				fragment.appendChild(tab.tab);
 				if (tab.isPinned) {
 					renderedPinnedTabs += 1;
@@ -715,6 +944,8 @@ class Tabs implements TabsInterface {
 				favicon: tab.favicon || '',
 				pinned: tab.isPinned,
 				groupId: tab.groupId,
+				splitPlacement: tab.splitPlacement,
+				splitPartnerId: tab.splitPartnerId,
 				order: index
 			};
 		});
@@ -748,18 +979,54 @@ class Tabs implements TabsInterface {
 				tabIds: []
 			}));
 
+		// Map persisted IDs to freshly created IDs so we can rewire split
+		// pair references after every tab exists.
+		const persistedToCreated = new Map<string, string>();
+
 		for (const tabCache of [...cached.tabs].sort(
 			(a: any, b: any) => a.order - b.order
 		)) {
 			const tabId = await this.createTab(tabCache.url);
 			const tabData = this.getTabById(tabId);
 			if (!tabData) continue;
+			persistedToCreated.set(tabCache.id, tabId);
 			if (tabCache.pinned) this.pinManager?.pinTab(tabData.id);
 			if (tabCache.groupId) {
 				const group = this.getGroupById(tabCache.groupId);
 				if (group)
 					this.groupManager?.addTabToGroup(tabData.id, group.id);
 			}
+		}
+
+		// Re-create split pairs after all tabs exist.
+		for (const tabCache of cached.tabs as any[]) {
+			if (!tabCache.splitPartnerId) continue;
+			const createdId = persistedToCreated.get(tabCache.id);
+			const createdPartnerId = persistedToCreated.get(
+				tabCache.splitPartnerId
+			);
+			if (!createdId || !createdPartnerId) continue;
+			const me = this.getTabById(createdId);
+			const partner = this.getTabById(createdPartnerId);
+			if (!me || !partner) continue;
+			// Only set up the pair once (skip the partner half).
+			if (me.splitPartnerId) continue;
+			me.splitPartnerId = partner.id;
+			partner.splitPartnerId = me.id;
+			this.setTabSplitPlacement(
+				me.id,
+				tabCache.splitPlacement === 'split-right'
+					? 'split-right'
+					: 'split-left'
+			);
+			this.setTabSplitPlacement(
+				partner.id,
+				me.splitPlacement === 'split-left'
+					? 'split-right'
+					: 'split-left'
+			);
+			this.focusedSplitSideByPairKey.set(me.id, me.id);
+			this.focusedSplitSideByPairKey.set(partner.id, me.id);
 		}
 
 		if (cached.activeTabId) {
@@ -831,6 +1098,11 @@ class Tabs implements TabsInterface {
 		this.verticalTabsCollapsed = !this.verticalTabsCollapsed;
 		this.applyVerticalTabsLayout();
 		return this.verticalTabsCollapsed;
+	};
+
+	initSplitLayout = () => {
+		if (!this.items.frameContainer) return;
+		this.splitLayout?.mount(this.items.frameContainer);
 	};
 
 	setupVerticalTabsToggle = () => {
