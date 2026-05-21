@@ -807,7 +807,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       let currentTheme =
-        (await settingsAPI.getItem("currentTheme")) || "catppuccin-mocha";
+        (await settingsAPI.getItem("currentTheme")) || "daydreamer";
 
       if (!themes[currentTheme]) {
         console.warn(

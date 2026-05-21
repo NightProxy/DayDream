@@ -58,7 +58,7 @@ class Themeing implements ThemeingInterface {
   settings: SettingsAPI;
   events: EventSystem;
   themes: Record<string, ThemePreset> = {};
-  currentTheme: string = "catppuccin-mocha";
+  currentTheme: string = "daydreamer";
   customMainColor: string | null = null;
   customThemeColors: Record<string, string> = {};
   selectedColorRole: string | null = null;
@@ -73,13 +73,13 @@ class Themeing implements ThemeingInterface {
 
     try {
       this.currentTheme =
-        (await this.settings.getItem("currentTheme")) || "catppuccin-mocha";
+        (await this.settings.getItem("currentTheme")) || "daydreamer";
     } catch (error) {
       console.warn(
         "Could not load currentTheme setting, using default:",
         error,
       );
-      this.currentTheme = "catppuccin-mocha";
+      this.currentTheme = "daydreamer";
     }
 
     try {
