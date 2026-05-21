@@ -466,28 +466,26 @@ export class TabLifecycle {
 			(document.getElementById(tabId) as HTMLElement);
 		if (!tabElement) return;
 
-		// Tab strip visual active state. For a split pair, the WHOLE capsule
-		// is active when either side is the activeTabId — the capsule's
-		// rendering takes care of that. Just toggle .active/.inactive here.
+		// Tab strip visual active state. Only the focused/active tab gets
+		// `.active`. In a split pair the active tab is whichever side the
+		// user is currently focused on; the partner stays `.inactive` but
+		// remains visible (it's still a tab). The capsule itself gets a
+		// `.has-active` marker so CSS can style the whole capsule.
 		const allTabs = this.tabs.items.tabBar!.querySelectorAll('.tab');
 		allTabs.forEach((tab: Element) => {
 			tab.classList.remove('active');
 			tab.classList.add('inactive');
 		});
+		this.tabs.items.tabBar!.querySelectorAll(
+			'[data-component="split-capsule"]'
+		).forEach((c: Element) => c.classList.remove('has-active'));
+
+		tabElement.classList.remove('inactive');
+		tabElement.classList.add('active');
 		const capsule = tabElement.closest(
 			'[data-component="split-capsule"]'
 		) as HTMLElement | null;
-		if (capsule) {
-			capsule
-				.querySelectorAll('.tab')
-				.forEach((t: Element) => {
-					t.classList.remove('inactive');
-					t.classList.add('active');
-				});
-		} else {
-			tabElement.classList.remove('inactive');
-			tabElement.classList.add('active');
-		}
+		if (capsule) capsule.classList.add('has-active');
 
 		// Resolve the split pair state, if any.
 		const partnerId = tabInfo.splitPartnerId;

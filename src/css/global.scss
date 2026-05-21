@@ -1187,6 +1187,46 @@ div[data-component='frame-container']
 	cursor: ew-resize;
 }
 
+// Click-catcher overlays sit on top of the non-focused split pane and
+// intercept the first click so we can swap focus before iframe content
+// sees it. Transparent — only their pointer-event capture matters.
+div[data-component='frame-container'] .split-click-catcher {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+	background: transparent;
+	cursor: pointer;
+}
+
+div[data-component='frame-container'] .split-click-catcher[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-click-catcher--left {
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container']
+	.split-click-catcher--right {
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Visual hint: faint dim on the non-focused side so the user can see
+// which pane will activate when they click.
+div[data-component='frame-container'] .split-click-catcher[data-shown='true'] {
+	background: rgba(0, 0, 0, 0.08);
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container']
+	.split-click-catcher[data-shown='true']:hover {
+	background: rgba(0, 0, 0, 0.04);
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Edge-style split-capsule tab pill: wraps two paired tabs in a
 // single rounded container. Both child .tab elements lose their
@@ -1201,6 +1241,14 @@ div[data-component='frame-container']
 	overflow: hidden;
 	max-width: 100%;
 	min-width: 0;
+	position: relative;
+}
+
+// When the capsule contains the active tab, give the whole pill a
+// subtle border highlight so the user can tell at a glance which
+// pair is the active one.
+.split-capsule.has-active {
+	border-color: var(--main-35a, rgba(169, 116, 222, 0.35));
 }
 
 .split-capsule > .tab {
@@ -1211,19 +1259,30 @@ div[data-component='frame-container']
 	position: relative;
 }
 
+// Hide the default rounded gradient background that .tab.active
+// normally paints — it doesn't fit inside the capsule. The capsule's
+// own background + the focus underline (below) replace it.
+.split-capsule > .tab.active::before {
+	display: none !important;
+}
+
 .split-capsule > .tab[data-split-side='left'] {
 	border-right: 1px solid var(--white-08, rgba(255, 255, 255, 0.08));
 }
 
-.split-capsule > .tab[data-split-focused='true']::before {
+// Focused-side underline. Use ::after so we don't collide with the
+// existing .tab.active::before rule from the tab strip styling.
+.split-capsule > .tab[data-split-focused='true']::after {
 	content: '';
 	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
+	left: 6px;
+	right: 6px;
+	bottom: 2px;
 	height: 2px;
 	background: var(--main, #a974de);
+	border-radius: 1px;
 	pointer-events: none;
+	z-index: 2;
 }
 
 div[data-component='top-bar'] {
