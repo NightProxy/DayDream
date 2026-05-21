@@ -1363,7 +1363,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   initButton("bgRemove", async () => {
-    await settingsAPI.removeItem("theme:background-image");
+    await settingsAPI.removeItem("theme:user-background-image");
     eventsAPI.emit("theme:background-change", null);
   });
 });
@@ -1377,7 +1377,7 @@ if (uploadBGInput) {
     reader.onload = async function (e) {
       var backgroundImage = e.target!.result;
       await settingsAPI.setItem(
-        "theme:background-image",
+        "theme:user-background-image",
         backgroundImage as string,
       );
       eventsAPI.emit("theme:background-change", null);

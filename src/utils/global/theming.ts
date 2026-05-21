@@ -42,6 +42,7 @@ interface ThemeingInterface {
     aliases?: string[],
   ) => void;
   applyColorRole: (roleName: string) => Promise<void>;
+  resolveBackgroundImage: () => Promise<string | null>;
   setBackgroundImage: () => Promise<void>;
   applyColorTint: (
     color: string,
@@ -329,11 +330,42 @@ class Themeing implements ThemeingInterface {
       await this.applyTheme(this.currentTheme);
     });
 
+    await this.migrateLegacyBackgroundImage();
+
     this.setBackgroundImage();
 
     this.events.addEventListener("theme:background-change", async () => {
       this.setBackgroundImage();
     });
+  }
+
+  /**
+   * Migrates pre-existing `theme:background-image` values into the new
+   * `theme:user-background-image` key. Before this change there was no
+   * distinction between a user-uploaded wallpaper and a theme preset bg,
+   * so any persisted value must be the user's own upload and should be
+   * preserved as such. Runs only when the user-override key is unset.
+   */
+  private async migrateLegacyBackgroundImage(): Promise<void> {
+    try {
+      const userOverride = await this.settings.getItem(
+        "theme:user-background-image",
+      );
+      if (userOverride) return;
+
+      const legacy = await this.settings.getItem("theme:background-image");
+      if (!legacy) return;
+
+      const themePreset = this.themes[this.currentTheme]?.["background-image"];
+      if (legacy === themePreset) return;
+
+      await this.settings.setItem("theme:user-background-image", legacy);
+      console.log(
+        "Migrated legacy theme:background-image to theme:user-background-image",
+      );
+    } catch (error) {
+      console.warn("Background image migration failed:", error);
+    }
   }
 
   async loadThemePresets() {
@@ -511,17 +543,6 @@ class Themeing implements ThemeingInterface {
       }
     }
 
-    if (theme["background-image"]) {
-      try {
-        await this.settings.setItem(
-          "theme:background-image",
-          theme["background-image"],
-        );
-      } catch (error) {
-        console.warn("Could not save theme background image:", error);
-      }
-    }
-
     await this.setBackgroundImage();
 
     console.log(`Applied theme: ${theme.name}`);
@@ -576,11 +597,43 @@ class Themeing implements ThemeingInterface {
     };
   }
 
+  /**
+   * Resolves which background image should currently be displayed.
+   * Precedence: user upload (`theme:user-background-image`) wins over the
+   * active theme's preset (`background-image` field in t.json). Returns
+   * `null` when neither is set.
+   */
+  async resolveBackgroundImage(): Promise<string | null> {
+    try {
+      const userOverride = await this.settings.getItem(
+        "theme:user-background-image",
+      );
+      if (userOverride) return userOverride;
+    } catch (error) {
+      console.warn("Could not read user background override:", error);
+    }
+
+    const themePreset = this.themes[this.currentTheme]?.["background-image"];
+    return themePreset || null;
+  }
+
   async setBackgroundImage() {
     try {
-      const backgroundImage = await this.settings.getItem(
-        "theme:background-image",
-      );
+      const backgroundImage = await this.resolveBackgroundImage();
+
+      try {
+        if (backgroundImage) {
+          await this.settings.setItem(
+            "theme:background-image",
+            backgroundImage,
+          );
+        } else {
+          await this.settings.removeItem("theme:background-image");
+        }
+      } catch (error) {
+        console.warn("Could not sync resolved background image:", error);
+      }
+
       const root = document.documentElement;
 
       if (backgroundImage) {
