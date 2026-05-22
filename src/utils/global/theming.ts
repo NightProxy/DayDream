@@ -344,29 +344,63 @@ class Themeing implements ThemeingInterface {
    * `theme:user-background-image` key. Before this change there was no
    * distinction between a user-uploaded wallpaper and a theme preset bg,
    * so any persisted value must be the user's own upload and should be
-   * preserved as such. Runs only when the user-override key is unset.
+   * preserved as such. The legacy key is then removed so settings.json
+   * does not carry two copies of large data URLs.
+   *
+   * Multiple Themeing instances can run init concurrently (page-global,
+   * universal, internal-page). A module-level guard prevents racing
+   * writes to the settings file.
    */
   private async migrateLegacyBackgroundImage(): Promise<void> {
-    try {
-      const userOverride = await this.settings.getItem(
-        "theme:user-background-image",
-      );
-      if (userOverride) return;
-
-      const legacy = await this.settings.getItem("theme:background-image");
-      if (!legacy) return;
-
-      const themePreset = this.themes[this.currentTheme]?.["background-image"];
-      if (legacy === themePreset) return;
-
-      await this.settings.setItem("theme:user-background-image", legacy);
-      console.log(
-        "Migrated legacy theme:background-image to theme:user-background-image",
-      );
-    } catch (error) {
-      console.warn("Background image migration failed:", error);
+    if (Themeing.migrationDone) return;
+    if (Themeing.migrationInFlight) {
+      await Themeing.migrationInFlight;
+      return;
     }
+
+    Themeing.migrationInFlight = (async () => {
+      try {
+        const userOverride = await this.settings.getItem(
+          "theme:user-background-image",
+        );
+        const legacy = await this.settings.getItem("theme:background-image");
+
+        if (!legacy) return;
+
+        const themePreset =
+          this.themes[this.currentTheme]?.["background-image"];
+
+        // If the legacy value matches the active theme's preset, it was
+        // never a real user upload — just drop it.
+        if (legacy === themePreset) {
+          await this.settings.removeItem("theme:background-image");
+          return;
+        }
+
+        // If user already has an override set, the legacy key is stale.
+        if (userOverride) {
+          await this.settings.removeItem("theme:background-image");
+          return;
+        }
+
+        // Real user upload from before the split — promote it.
+        await this.settings.setItem("theme:user-background-image", legacy);
+        await this.settings.removeItem("theme:background-image");
+        console.log(
+          "Migrated legacy theme:background-image to theme:user-background-image",
+        );
+      } catch (error) {
+        console.warn("Background image migration failed:", error);
+      } finally {
+        Themeing.migrationDone = true;
+      }
+    })();
+
+    await Themeing.migrationInFlight;
   }
+
+  private static migrationDone = false;
+  private static migrationInFlight: Promise<void> | null = null;
 
   async loadThemePresets() {
     try {
@@ -620,20 +654,6 @@ class Themeing implements ThemeingInterface {
   async setBackgroundImage() {
     try {
       const backgroundImage = await this.resolveBackgroundImage();
-
-      try {
-        if (backgroundImage) {
-          await this.settings.setItem(
-            "theme:background-image",
-            backgroundImage,
-          );
-        } else {
-          await this.settings.removeItem("theme:background-image");
-        }
-      } catch (error) {
-        console.warn("Could not sync resolved background image:", error);
-      }
-
       const root = document.documentElement;
 
       if (backgroundImage) {
