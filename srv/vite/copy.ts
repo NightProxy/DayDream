@@ -29,11 +29,16 @@ const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
 const obscuraPath = path.resolve("src/pkgs/Obscura/pkg");
 const swPath = path.resolve("src/core/sw/dist");
-const sjConfigPath = path.resolve("src/core/sjConfig/dist");
+const sjConfigPath = path.resolve("src/core/SJ/config/dist");
 const libcurlPath = path.dirname(
   path.resolve("node_modules/libcurl.js/libcurl.wasm"),
 );
-const sjControllerPath = path.resolve("node_modules/@mercuryworkshop/scramjet-controller/dist");
+// Local controller is built from src/core/SJ/controller/src by the
+// `npm run controller:build` step (also wired into `npm run build`).
+// Outputs land in src/core/SJ/controller/dist as api.js / sw.js /
+// inject.js — the same three artifacts the prebuilt package shipped,
+// just with our local modifications baked in.
+const sjControllerPath = path.resolve("src/core/SJ/controller/dist");
 const copyMap = {
   scramjet: {
     path: scramjetPath,
@@ -120,11 +125,7 @@ const copyMap = {
   },
   sjController: {
     path: sjControllerPath,
-    files: [
-      { name: "controller.api.js", rename: "api.js" },
-      { name: "controller.sw.js", rename: "sw.js" },
-      {name: "controller.inject.js", rename: "inject.js"},
-    ],
+    files: ["api.js", "sw.js", "inject.js"],
     dest: routePaths.scramjet,
   }
 };

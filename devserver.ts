@@ -3,9 +3,13 @@ import { stdout } from 'node:process';
 import { spawn, type ChildProcess } from 'node:child_process';
 import chalk from 'chalk';
 import { build, watch } from 'rolldown';
-import sjConfig from './src/core/sjConfig/rolldown.config.ts';
+import sjConfig from './src/core/SJ/config/rolldown.config.ts';
 import swConfig from './src/core/sw/rolldown.config.ts';
 import obscuraConfig from './src/pkgs/Obscura/rolldown.config.ts';
+import obscuraIifeConfig from './src/pkgs/Obscura/rolldown.iife.config.ts';
+import controllerApiConfig from './src/core/SJ/controller/rolldown.api.config.ts';
+import controllerSwConfig from './src/core/SJ/controller/rolldown.sw.config.ts';
+import controllerInjectConfig from './src/core/SJ/controller/rolldown.inject.config.ts';
 
 export function black() {
 	return chalk.bgHex('000001');
@@ -89,7 +93,11 @@ function watchAndRebuildBundle(name: string, config: any) {
 const bundleWatchers = [
 	watchAndRebuildBundle('SJ Config', sjConfig),
 	watchAndRebuildBundle('Service worker', swConfig),
-	watchAndRebuildBundle('Obscura', obscuraConfig)
+	watchAndRebuildBundle('Obscura', obscuraConfig),
+	watchAndRebuildBundle('Obscura (IIFE)', obscuraIifeConfig),
+	watchAndRebuildBundle('Controller (api)', controllerApiConfig),
+	watchAndRebuildBundle('Controller (sw)', controllerSwConfig),
+	watchAndRebuildBundle('Controller (inject)', controllerInjectConfig)
 ];
 
 let backendProcess: ChildProcess | null = null;

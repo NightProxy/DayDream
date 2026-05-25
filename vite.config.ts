@@ -3,6 +3,26 @@ import react from "@vitejs/plugin-react";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, writeFileSync, existsSync } from "fs";
+
+// Versions of the locally-bundled scramjet packages, read from the
+// installed package.json files at build-time. Used by the `define`
+// block below to inline `SCRAMJET_EXPECTED_VERSION` /
+// `CONTROLLER_EXPECTED_VERSION` constants referenced by
+// `src/core/SJ/utils/src/version.ts`. Same role as upstream rspack's
+// DefinePlugin; see `src/core/SJ/controller/rolldown.api.config.ts`
+// for the matching controller-side define.
+const __sjScramjetVersion: string = JSON.parse(
+  readFileSync(
+    "node_modules/@mercuryworkshop/scramjet/package.json",
+    "utf-8"
+  )
+).version;
+const __sjControllerVersion: string = JSON.parse(
+  readFileSync(
+    "node_modules/@mercuryworkshop/scramjet-controller/package.json",
+    "utf-8"
+  )
+).version;
 import { minify } from "terser";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
@@ -21,6 +41,10 @@ const HELIUM_IGNORE_RE = /[\\/]src[\\/]pkgs[\\/]Helium([\\/]|$)/;
 
 export default defineConfig({
   base: "./",
+  define: {
+    SCRAMJET_EXPECTED_VERSION: JSON.stringify(__sjScramjetVersion),
+    CONTROLLER_EXPECTED_VERSION: JSON.stringify(__sjControllerVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),

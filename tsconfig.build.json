@@ -24,7 +24,10 @@
       "@/*": ["*"],
       "@../*": ["../*"],
       "@terbiumos/tfs": ["types/terbiumos-tfs.d.ts"],
-      "@terbiumos/tfs/browser": ["types/terbiumos-tfs.d.ts"]
+      "@terbiumos/tfs/browser": ["types/terbiumos-tfs.d.ts"],
+      "@mercuryworkshop/scramjet-controller": ["core/SJ/controller/src/index.ts"],
+      "@mercuryworkshop/scramjet-utils": ["core/SJ/utils/src/index.ts"],
+      "@mercuryworkshop/rpc": ["core/SJ/rpc/index.ts"]
     }
   }
 }
