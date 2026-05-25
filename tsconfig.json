@@ -19,7 +19,10 @@
       "@pages/*": ["pages/*"],
       "@core/*": ["core/*"],
       "@/*": ["*"],
-      "@../*": ["../*"]
+      "@../*": ["../*"],
+      "@mercuryworkshop/scramjet-controller": ["core/SJ/controller/src/index.ts"],
+      "@mercuryworkshop/scramjet-utils": ["core/SJ/utils/src/index.ts"],
+      "@mercuryworkshop/rpc": ["core/SJ/rpc/index.ts"]
     },
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

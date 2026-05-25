@@ -1227,62 +1227,25 @@ div[data-component='frame-container']
 	background: rgba(0, 0, 0, 0.04);
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Edge-style split-capsule tab pill: wraps two paired tabs in a
-// single rounded container. Both child .tab elements lose their
-// own outer rounding so they sit flush.
-// ─────────────────────────────────────────────────────────────────
-.split-capsule {
+// Minimal visual connector between split-paired tabs.
+.split-pipe {
 	display: inline-flex;
-	align-items: stretch;
-	background: var(--white-05, rgba(255, 255, 255, 0.05));
-	border: 1px solid var(--white-08, rgba(255, 255, 255, 0.08));
-	border-radius: 10px;
-	overflow: hidden;
-	max-width: 100%;
-	min-width: 0;
-	position: relative;
-}
-
-// When the capsule contains the active tab, give the whole pill a
-// subtle border highlight so the user can tell at a glance which
-// pair is the active one.
-.split-capsule.has-active {
-	border-color: var(--main-35a, rgba(169, 116, 222, 0.35));
-}
-
-.split-capsule > .tab {
-	border-radius: 0 !important;
-	max-width: 50%;
-	min-width: 0;
-	flex: 1 1 auto;
-	position: relative;
-}
-
-// Hide the default rounded gradient background that .tab.active
-// normally paints — it doesn't fit inside the capsule. The capsule's
-// own background + the focus underline (below) replace it.
-.split-capsule > .tab.active::before {
-	display: none !important;
-}
-
-.split-capsule > .tab[data-split-side='left'] {
-	border-right: 1px solid var(--white-08, rgba(255, 255, 255, 0.08));
-}
-
-// Focused-side underline. Use ::after so we don't collide with the
-// existing .tab.active::before rule from the tab strip styling.
-.split-capsule > .tab[data-split-focused='true']::after {
-	content: '';
-	position: absolute;
-	left: 6px;
-	right: 6px;
-	bottom: 2px;
-	height: 2px;
-	background: var(--main, #a974de);
-	border-radius: 1px;
+	align-items: center;
+	justify-content: center;
+	align-self: center;
+	padding: 0 0.2rem;
+	color: var(--text);
+	opacity: 0.45;
+	user-select: none;
 	pointer-events: none;
-	z-index: 2;
+	vertical-align: middle;
+	line-height: 1;
+	transform: translateY(10px);
+}
+
+.split-pipe.is-active {
+	color: var(--main);
+	opacity: 0.9;
 }
 
 div[data-component='top-bar'] {

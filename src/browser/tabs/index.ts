@@ -755,17 +755,22 @@ class Tabs implements TabsInterface {
 					rightTab.tab.dataset.splitFocused =
 						focused === rightTab.id ? 'true' : 'false';
 
-					const capsule = this.ui.createElement(
+					const splitPipe = this.ui.createElement(
 						'div',
 						{
-							class: 'split-capsule',
-							'data-component': 'split-capsule',
-							'data-pair-key': `${leftTab.id}|${rightTab.id}`
+							class:
+								this.activeTabId === leftTab.id ||
+								this.activeTabId === rightTab.id
+									? 'split-pipe is-active'
+									: 'split-pipe',
+							'aria-hidden': 'true'
 						},
-						[leftTab.tab, rightTab.tab]
+						['|']
 					);
 
-					fragment.appendChild(capsule);
+					fragment.appendChild(leftTab.tab);
+					fragment.appendChild(splitPipe);
+					fragment.appendChild(rightTab.tab);
 					consumedBySplit.add(leftTab.id);
 					consumedBySplit.add(rightTab.id);
 					if (tab.isPinned) renderedPinnedTabs += 1;

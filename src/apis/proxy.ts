@@ -8,6 +8,7 @@ import LibcurlClient from '@mercuryworkshop/libcurl-transport';
 import EpoxyClient from '@mercuryworkshop/epoxy-transport';
 import PulsarClient from '@pkgs/pulsar';
 import { installEventsBridge } from '@apis/eventsBridge';
+import { installScriptInjector } from '@apis/scriptInjection';
 import {
 	buildTransport,
 	resolveTransportConfig,
@@ -145,6 +146,14 @@ class Proxy implements ProxyInterface {
 			// to proxied frames without crashing scramjet's postMessage
 			// wrapper. See `src/apis/eventsBridge.ts` for the design.
 			installEventsBridge(this.controller);
+
+			// Install the per-site script injector. This wires the
+			// `scriptInjectionRegistry` into Scramjet's per-frame
+			// `interface.getInjectScripts` so any registered entries
+			// are prepended into <head> of matched proxied documents,
+			// before the page's own scripts run. Entries are registered
+			// elsewhere (see `src/apis/scriptInjection/` for the API).
+			installScriptInjector(this.controller);
 		})();
 	}
 
