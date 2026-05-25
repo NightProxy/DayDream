@@ -3,6 +3,7 @@ import { Logger } from '@apis/logging';
 import { SettingsAPI } from '@apis/settings';
 import { HostingAPI } from '@apis/platform/hosting';
 import { NetworkAPI } from '@apis/platform/network';
+import { SearchEngineRegistry, searchImpl } from '@apis/searchEngines';
 import { basePath, resolvePath } from '@utils/basepath';
 import LibcurlClient from '@mercuryworkshop/libcurl-transport';
 import EpoxyClient from '@mercuryworkshop/epoxy-transport';
@@ -63,7 +64,6 @@ interface ProxyInterface {
 }
 class Proxy implements ProxyInterface {
 	connection!: BareMux.BareMuxConnection;
-	searchVar!: string;
 	transportVar!: string;
 	wispUrl!: string;
 	settings!: SettingsAPI;
@@ -76,6 +76,15 @@ class Proxy implements ProxyInterface {
 	epoxy!: EpoxyClient;
 	pulsar!: PulsarClient;
 	controller: any;
+	private _searchEngines?: SearchEngineRegistry;
+	get searchEngines(): SearchEngineRegistry {
+		if (this._searchEngines) return this._searchEngines;
+		const w = (typeof window !== 'undefined' ? window.searchEngines : undefined);
+		if (!w) throw new Error('SearchEngineRegistry not yet initialized on window.searchEngines');
+		return w;
+	}
+	set searchEngines(reg: SearchEngineRegistry) { this._searchEngines = reg; }
+	get searchVar(): string { return this.searchEngines.getDefault().urlTemplate; }
 	private activeTransport: string = 'libcurl';
 	// `controllerConfig` and `scramjetFlags` are assigned synchronously in
 	// the constructor before the async IIFE runs, but TS's flow analysis
@@ -97,9 +106,6 @@ class Proxy implements ProxyInterface {
 		this.scramjetFlags = flags;
 
 		this.initReady = (async () => {
-			this.searchVar =
-				(await this.settings.getItem('search')) ||
-				'https://www.duckduckgo.com/?q=%s';
 			this.transportVar =
 				(await this.settings.getItem('transports')) || 'libcurl';
 
@@ -521,27 +527,7 @@ class Proxy implements ProxyInterface {
 	}
 
 	search(input: string) {
-		input = input.trim();
-		const searchTemplate =
-			this.searchVar || 'https://www.duckduckgo.com/?q=%s';
-
-		if (input.includes('.') && input.includes(' ')) {
-			return searchTemplate.replace('%s', encodeURIComponent(input));
-		}
-
-		try {
-			return new URL(input).toString();
-		} catch (err) {
-			try {
-				const url = new URL(`http://${input}`);
-				if (url.hostname.includes('.')) {
-					return url.toString();
-				}
-				throw new Error('Invalid hostname');
-			} catch (err) {
-				return searchTemplate.replace('%s', encodeURIComponent(input));
-			}
-		}
+		return searchImpl(input, this.searchEngines);
 	}
 
 	async registerSW(swConfig: Record<any, any>) {

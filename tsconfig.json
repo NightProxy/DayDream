@@ -39,7 +39,7 @@
     "allowJs": true,
     "esModuleInterop": true,
   },
-  "include": ["src", "public/core/client.js", "global.d.ts", "pages"],
+  "include": ["src", "public/core/client.js", "global.d.ts", "pages", "tests"],
   "exclude": [
     "node_modules",
     "dist",

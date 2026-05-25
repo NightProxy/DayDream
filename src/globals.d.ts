@@ -1,6 +1,7 @@
 import type { ProxyTransport } from '@mercuryworkshop/proxy-transports';
 import type * as ScramjetGlobal from '@mercuryworkshop/scramjet';
 import type * as ScramjetControllerGlobal from '@mercuryworkshop/scramjet-controller';
+import type { SearchEngineRegistry } from '@apis/searchEngines';
 
 declare global {
 	const $scramjet: typeof ScramjetGlobal;
@@ -16,6 +17,7 @@ declare global {
 		$scramjet$wrap: Function;
 		nightmare: Nightmare;
 		settings: SettingsAPI;
+		searchEngines: SearchEngineRegistry;
 		cache: CacheAPI;
 		eventsAPI: EventSystem;
 		extensions: ExtensionsAPI;

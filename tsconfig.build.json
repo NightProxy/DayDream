@@ -9,6 +9,7 @@
     "real package at runtime via node_modules. See src/types/terbiumos-tfs.d.ts."
   ],
   "extends": "./tsconfig.json",
+  "include": ["src", "public/core/client.js", "global.d.ts", "pages"],
   "compilerOptions": {
     "paths": {
       "@browser/*": ["browser/*"],

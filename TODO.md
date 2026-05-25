@@ -30,7 +30,7 @@ For the most up-to-date information, access the public DayDreamX notion
 - [ ] Filesystem storage `High`
 - [ ] Multi-threaded SW with split-file build `Medium`
 - [ ] Better iframe client polyfill injection `Medium`
-- [ ] Protocols API improvement + dynamic search registers
+- [x] Protocols API improvement + dynamic search registers
 - [ ] Minification & obfuscation in build step
 - [ ] Envade backend (if finished upstream)
 

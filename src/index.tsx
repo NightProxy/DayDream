@@ -18,6 +18,7 @@ import { EventSystem } from '@apis/events';
 import { ProfilesAPI } from '@apis/profiles';
 import { Logger } from '@apis/logging';
 import { Proxy } from '@apis/proxy';
+import { SearchEngineRegistry } from '@apis/searchEngines';
 import { Windowing } from '@browser/windowing';
 import { DDXGlobal } from '@utils/global/index';
 import { patchDocument } from './utils/document';
@@ -85,6 +86,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}, 500);
 
 	const settingsAPI = new SettingsAPI();
+	const searchEngines = new SearchEngineRegistry(settingsAPI);
+	await searchEngines.load();
+	window.searchEngines = searchEngines;
+
+	window.addEventListener('message', (event) => {
+		if (event.data?.type === 'searchEngines-updated') {
+			void window.searchEngines.load();
+		}
+	});
+
 	const eventsAPI = new EventSystem();
 	//await cache.init();
 
