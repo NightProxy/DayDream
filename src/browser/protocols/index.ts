@@ -3,6 +3,7 @@ import { SettingsAPI } from '@apis/settings';
 import { Items } from '@browser/items';
 import { Proxy } from '@apis/proxy';
 import { resolvePath } from '@utils/basepath';
+import { BUILTIN_PROTOCOL_ROUTES } from './manifest';
 
 interface RouteEntry {
 	url: string;
@@ -46,9 +47,10 @@ class Protocols implements ProtoInterface {
 		this.swConfig = swConfig;
 		this.proxySetting = proxySetting;
 
-		this.register('ddx', 'newtab', resolvePath('internal/newtab'), false);
-		this.register('ddx', 'home', resolvePath('internal/newtab'), false);
-		this.register('ddx', '*', resolvePath('internal'), false);
+		for (const route of BUILTIN_PROTOCOL_ROUTES) {
+			const url = route.urlResolver === 'basepath' ? resolvePath(route.url) : route.url;
+			this.register(route.proto, route.path, url, route.proxy);
+		}
 
 		this.initCustomProtocols();
 	}

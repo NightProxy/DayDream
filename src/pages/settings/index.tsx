@@ -14,6 +14,7 @@ import {
   KeybindManager,
   KEYBIND_CATEGORIES,
 } from "@browser/functions/keybinds";
+import { SearchEngineRegistry, type SearchEngine } from "@apis/searchEngines";
 import { resolvePath } from "@utils/basepath";
 const settingsAPI = new SettingsAPI();
 const eventsAPI = new EventSystem();
@@ -1211,11 +1212,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await initializeSelect("proxySelect", "proxy", "sj");
   await initializeSelect("transportSelect", "transports", "libcurl");
-  await initializeSelect(
-    "searchSelect",
-    "search",
-    "https://duckduckgo.com/?q=%s",
-  );
   await initializeSelect("devtools-select", "devtools", "eruda");
 
   await initializeNewtabSettings();
@@ -1392,6 +1388,7 @@ const panicKeybindInput = document.getElementById(
 const panicKey = panicKeybindInput?.getAttribute("data-key") || "panicKeybind";
 
 const keybindManager = new KeybindManager(settingsAPI);
+const searchEngineRegistry = new SearchEngineRegistry(settingsAPI);
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (panicKeybindInput) {
@@ -1494,6 +1491,282 @@ function initializeKeybindsUI() {
         window.opener?.postMessage({ type: "keybinds-updated" }, "*");
       }
     });
+}
+
+function broadcastSearchEnginesUpdate() {
+  window.opener?.postMessage({ type: "searchEngines-updated" }, "*");
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Returns a normalized (trimmed) form on success, or an error string on failure.
+// Callers pass the trimmed values to the registry so user-visible "  Name  "
+// doesn't get persisted verbatim and silently fail downstream comparisons.
+function validateEngineForm(
+  name: string,
+  bang: string,
+  url: string,
+  excludeId: string | null,
+):
+  | { ok: true; name: string; bang: string; url: string }
+  | { ok: false; error: string } {
+  const trimmedName = name.trim();
+  const trimmedBang = bang.trim();
+  const trimmedUrl = url.trim();
+  if (!trimmedName || trimmedName.length > 64)
+    return { ok: false, error: "Name must be 1-64 characters." };
+  if (!/^[A-Za-z0-9._-]+$/.test(trimmedBang) || trimmedBang.length > 16)
+    return {
+      ok: false,
+      error: "Bang must be 1-16 chars matching [A-Za-z0-9._-].",
+    };
+  const lower = trimmedBang.toLowerCase();
+  const clash = searchEngineRegistry
+    .list()
+    .find((e) => e.bang.toLowerCase() === lower && e.id !== excludeId);
+  if (clash)
+    return {
+      ok: false,
+      error: `Bang !${trimmedBang} is already used by "${clash.name}".`,
+    };
+  const occurrences = (trimmedUrl.match(/%s/g) || []).length;
+  if (occurrences !== 1)
+    return {
+      ok: false,
+      error: 'URL template must contain "%s" exactly once.',
+    };
+  try {
+    new URL(trimmedUrl.replace("%s", "test"));
+  } catch {
+    return {
+      ok: false,
+      error: "URL template is not a valid URL after %s substitution.",
+    };
+  }
+  return { ok: true, name: trimmedName, bang: trimmedBang, url: trimmedUrl };
+}
+
+function renderSearchEnginesTable() {
+  const table = document.getElementById("search-engines-table");
+  if (!table) return;
+  const engines = searchEngineRegistry.list();
+  const defaultId = searchEngineRegistry.getDefault().id;
+
+  table.innerHTML = engines
+    .map((e) => searchEngineRowHtml(e, e.id === defaultId))
+    .join("");
+
+  // Default radio
+  table.querySelectorAll<HTMLInputElement>('input[name="se-default"]').forEach((radio) => {
+    radio.addEventListener("change", async () => {
+      if (radio.checked) {
+        await searchEngineRegistry.setDefault(radio.value);
+        broadcastSearchEnginesUpdate();
+        renderSearchEnginesTable();
+      }
+    });
+  });
+
+  // Edit buttons
+  table.querySelectorAll<HTMLButtonElement>("[data-edit-engine]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.editEngine!;
+      startEditEngine(id);
+    });
+  });
+
+  // Remove buttons
+  table.querySelectorAll<HTMLButtonElement>("[data-remove-engine]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.removeEngine!;
+      const e = searchEngineRegistry.list().find((x) => x.id === id);
+      if (!e) return;
+      if (!confirm(`Remove search engine "${e.name}"?`)) return;
+      await searchEngineRegistry.remove(id);
+      broadcastSearchEnginesUpdate();
+      renderSearchEnginesTable();
+    });
+  });
+
+  // Save buttons (visible only on edit rows — see startEditEngine)
+  table.querySelectorAll<HTMLButtonElement>("[data-save-engine]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.saveEngine!;
+      const row = btn.closest("[data-engine-row]");
+      if (!row) return;
+      const rawName = (row.querySelector('[data-field="name"]') as HTMLInputElement).value;
+      const rawBang = (row.querySelector('[data-field="bang"]') as HTMLInputElement).value;
+      const rawUrl = (row.querySelector('[data-field="url"]') as HTMLInputElement).value;
+      const errEl = row.querySelector('[data-field="error"]') as HTMLDivElement;
+      const result = validateEngineForm(rawName, rawBang, rawUrl, id);
+      if (!result.ok) {
+        errEl.textContent = result.error;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      await searchEngineRegistry.update(id, {
+        name: result.name,
+        bang: result.bang,
+        urlTemplate: result.url,
+      });
+      broadcastSearchEnginesUpdate();
+      renderSearchEnginesTable();
+    });
+  });
+
+  // Cancel buttons on edit rows
+  table.querySelectorAll<HTMLButtonElement>("[data-cancel-engine]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      renderSearchEnginesTable();
+    });
+  });
+}
+
+function searchEngineRowHtml(e: SearchEngine, isDefault: boolean): string {
+  return `
+    <div class="flex items-center gap-3 bg-[var(--bg-2)] rounded-md px-3 py-2 border border-[var(--white-10)]" data-engine-row="${escapeHtml(e.id)}">
+      <input type="radio" name="se-default" value="${escapeHtml(e.id)}" ${isDefault ? "checked" : ""}
+        class="accent-[var(--main)]" />
+      <div class="flex-1 min-w-0">
+        <div class="text-sm text-[var(--text)] truncate">
+          ${escapeHtml(e.name)}${e.builtIn ? ' <span class="text-[var(--proto)] text-xs">(default seed)</span>' : ""}
+        </div>
+        <div class="text-xs text-[var(--proto)] truncate">
+          <span class="font-mono">!${escapeHtml(e.bang)}</span> · ${escapeHtml(e.urlTemplate)}
+        </div>
+      </div>
+      <button data-edit-engine="${escapeHtml(e.id)}"
+        class="px-2 py-1 text-xs rounded bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+        Edit
+      </button>
+      <button data-remove-engine="${escapeHtml(e.id)}"
+        class="px-2 py-1 text-xs rounded bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+        Remove
+      </button>
+    </div>
+  `;
+}
+
+function searchEngineEditRowHtml(e: SearchEngine): string {
+  return `
+    <div class="bg-[var(--bg-2)] rounded-md px-3 py-2 border border-[var(--main-35a)] space-y-2" data-engine-row="${escapeHtml(e.id)}">
+      <input data-field="name" type="text" placeholder="Name" value="${escapeHtml(e.name)}"
+        class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+      <input data-field="bang" type="text" placeholder="Bang (without !)" value="${escapeHtml(e.bang)}"
+        class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+      <input data-field="url" type="text" placeholder="URL template (must contain %s)" value="${escapeHtml(e.urlTemplate)}"
+        class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+      <div data-field="error" class="hidden text-xs text-red-400"></div>
+      <div class="flex gap-2 justify-end">
+        <button data-cancel-engine="${escapeHtml(e.id)}"
+          class="px-3 py-1 text-xs rounded-md bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+          Cancel
+        </button>
+        <button data-save-engine="${escapeHtml(e.id)}"
+          class="px-3 py-1 text-xs rounded-md bg-[var(--main)] text-white hover:opacity-90 transition-opacity">
+          Save
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function startEditEngine(id: string) {
+  const e = searchEngineRegistry.list().find((x) => x.id === id);
+  if (!e) return;
+  const table = document.getElementById("search-engines-table");
+  if (!table) return;
+  const row = table.querySelector(`[data-engine-row="${CSS.escape(id)}"]`);
+  if (!row) return;
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = searchEngineEditRowHtml(e);
+  const newRow = wrapper.firstElementChild!;
+  row.replaceWith(newRow);
+
+  // Re-bind cancel and save just for this new row
+  newRow.querySelector("[data-cancel-engine]")?.addEventListener("click", () => {
+    renderSearchEnginesTable();
+  });
+  newRow.querySelector("[data-save-engine]")?.addEventListener("click", async () => {
+    const rawName = (newRow.querySelector('[data-field="name"]') as HTMLInputElement).value;
+    const rawBang = (newRow.querySelector('[data-field="bang"]') as HTMLInputElement).value;
+    const rawUrl = (newRow.querySelector('[data-field="url"]') as HTMLInputElement).value;
+    const errEl = newRow.querySelector('[data-field="error"]') as HTMLDivElement;
+    const result = validateEngineForm(rawName, rawBang, rawUrl, id);
+    if (!result.ok) {
+      errEl.textContent = result.error;
+      errEl.classList.remove("hidden");
+      return;
+    }
+    await searchEngineRegistry.update(id, {
+      name: result.name,
+      bang: result.bang,
+      urlTemplate: result.url,
+    });
+    broadcastSearchEnginesUpdate();
+    renderSearchEnginesTable();
+  });
+}
+
+function initializeSearchEnginesAddForm() {
+  const toggle = document.getElementById("search-engines-add-toggle");
+  const form = document.getElementById("search-engines-add-form");
+  const cancel = document.getElementById("search-engines-add-cancel");
+  const save = document.getElementById("search-engines-add-save");
+  const errEl = document.getElementById("search-engines-add-error") as HTMLDivElement | null;
+  const nameEl = document.getElementById("search-engines-add-name") as HTMLInputElement | null;
+  const bangEl = document.getElementById("search-engines-add-bang") as HTMLInputElement | null;
+  const urlEl = document.getElementById("search-engines-add-url") as HTMLInputElement | null;
+  if (!toggle || !form || !cancel || !save || !errEl || !nameEl || !bangEl || !urlEl) return;
+
+  toggle.addEventListener("click", () => {
+    form.classList.toggle("hidden");
+  });
+  cancel.addEventListener("click", () => {
+    form.classList.add("hidden");
+    nameEl.value = "";
+    bangEl.value = "";
+    urlEl.value = "";
+    errEl.classList.add("hidden");
+  });
+  save.addEventListener("click", async () => {
+    const result = validateEngineForm(nameEl.value, bangEl.value, urlEl.value, null);
+    if (!result.ok) {
+      errEl.textContent = result.error;
+      errEl.classList.remove("hidden");
+      return;
+    }
+    await searchEngineRegistry.add({
+      name: result.name,
+      bang: result.bang,
+      urlTemplate: result.url,
+    });
+    broadcastSearchEnginesUpdate();
+    form.classList.add("hidden");
+    nameEl.value = "";
+    bangEl.value = "";
+    urlEl.value = "";
+    errEl.classList.add("hidden");
+    renderSearchEnginesTable();
+  });
+}
+
+function initializeSearchEnginesUI() {
+  renderSearchEnginesTable();
+  initializeSearchEnginesAddForm();
+  document.getElementById("reset-search-engines")?.addEventListener("click", async () => {
+    if (!confirm("Reset all search engines to defaults? This will remove any custom engines.")) return;
+    await searchEngineRegistry.reset();
+    broadcastSearchEnginesUpdate();
+    renderSearchEnginesTable();
+  });
 }
 
 function startKeybindCapture(keybindId: string, button: HTMLButtonElement) {
@@ -1599,4 +1872,6 @@ function refreshKeybindsUI() {
 document.addEventListener("DOMContentLoaded", async () => {
   await keybindManager.loadKeybinds();
   initializeKeybindsUI();
+  await searchEngineRegistry.load();
+  initializeSearchEnginesUI();
 });
