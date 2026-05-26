@@ -474,21 +474,22 @@ export class HistoryManager {
 	}
 
 	public searchEntries(query: string): HistorySearchResult[] {
-		const lowercaseQuery = query.toLowerCase();
+		const lowercaseQuery = query.toLowerCase().trim();
+		if (!lowercaseQuery) return [];
 		const results: HistorySearchResult[] = [];
 
 		this.entries.forEach(entry => {
-			let relevanceScore = 0;
+			let contentScore = 0;
 
 			if (entry.title.toLowerCase().includes(lowercaseQuery)) {
-				relevanceScore +=
+				contentScore +=
 					entry.title.toLowerCase().indexOf(lowercaseQuery) === 0
 						? 100
 						: 50;
 			}
 
 			if (entry.url.toLowerCase().includes(lowercaseQuery)) {
-				relevanceScore +=
+				contentScore +=
 					entry.url.toLowerCase().indexOf(lowercaseQuery) === 0
 						? 75
 						: 25;
@@ -497,10 +498,15 @@ export class HistoryManager {
 			try {
 				const domain = new URL(entry.url).hostname;
 				if (domain.toLowerCase().includes(lowercaseQuery)) {
-					relevanceScore += 40;
+					contentScore += 40;
 				}
 			} catch {}
 
+			// Require a content match before applying tie-breaker bonuses.
+			// Otherwise frequently-visited entries pollute results for unrelated queries.
+			if (contentScore === 0) return;
+
+			let relevanceScore = contentScore;
 			relevanceScore += Math.min(entry.visitCount * 2, 20);
 
 			const daysSinceVisit =
@@ -510,12 +516,11 @@ export class HistoryManager {
 			else if (daysSinceVisit < 7) relevanceScore += 10;
 			else if (daysSinceVisit < 30) relevanceScore += 5;
 
-			if (relevanceScore > 0) {
-				results.push({ entry, relevanceScore });
-			}
+			results.push({ entry, relevanceScore });
 		});
 
-		return results.sort((a, b) => b.relevanceScore - a.relevanceScore);
+		results.sort((a, b) => b.relevanceScore - a.relevanceScore);
+		return results;
 	}
 
 	public getMostVisitedSites(

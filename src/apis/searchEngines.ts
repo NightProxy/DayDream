@@ -6,28 +6,31 @@ export interface SearchEngine {
 	id: string;
 	name: string;
 	bang: string;
+	at?: string;
 	urlTemplate: string;
 	builtIn: boolean;
 }
 
-interface SearchEngineRegistryReader {
+export interface SearchEngineRegistryReader {
 	findByBang(bang: string): SearchEngine | undefined;
+	findByAt(at: string): SearchEngine | undefined;
 }
 
 // Built-in seed list. Order = display order.
 export const BUILTIN_SEARCH_ENGINES: Omit<SearchEngine, 'id'>[] = [
-	{ name: 'DuckDuckGo', bang: 'ddg', urlTemplate: 'https://duckduckgo.com/?q=%s', builtIn: true },
-	{ name: 'Google', bang: 'g', urlTemplate: 'https://www.google.com/search?q=%s', builtIn: true },
-	{ name: 'Brave', bang: 'br', urlTemplate: 'https://search.brave.com/search?q=%s', builtIn: true },
-	{ name: 'Bing', bang: 'b', urlTemplate: 'https://www.bing.com/search?q=%s', builtIn: true },
-	{ name: 'Yahoo', bang: 'y', urlTemplate: 'https://search.yahoo.com/search?p=%s', builtIn: true },
-	{ name: 'YouTube', bang: 'yt', urlTemplate: 'https://www.youtube.com/results?search_query=%s', builtIn: true },
-	{ name: 'Wikipedia', bang: 'w', urlTemplate: 'https://en.wikipedia.org/w/index.php?search=%s', builtIn: true },
-	{ name: 'GitHub', bang: 'gh', urlTemplate: 'https://github.com/search?q=%s', builtIn: true },
+	{ name: 'DuckDuckGo', bang: 'ddg', at: 'ddg', urlTemplate: 'https://duckduckgo.com/?q=%s', builtIn: true },
+	{ name: 'Google', bang: 'g', at: 'google', urlTemplate: 'https://www.google.com/search?q=%s', builtIn: true },
+	{ name: 'Brave', bang: 'br', at: 'brave', urlTemplate: 'https://search.brave.com/search?q=%s', builtIn: true },
+	{ name: 'Bing', bang: 'b', at: 'bing', urlTemplate: 'https://www.bing.com/search?q=%s', builtIn: true },
+	{ name: 'Yahoo', bang: 'y', at: 'yahoo', urlTemplate: 'https://search.yahoo.com/search?p=%s', builtIn: true },
+	{ name: 'YouTube', bang: 'yt', at: 'yt', urlTemplate: 'https://www.youtube.com/results?search_query=%s', builtIn: true },
+	{ name: 'Wikipedia', bang: 'w', at: 'wiki', urlTemplate: 'https://en.wikipedia.org/w/index.php?search=%s', builtIn: true },
+	{ name: 'GitHub', bang: 'gh', at: 'gh', urlTemplate: 'https://github.com/search?q=%s', builtIn: true },
 ];
 
 const URL_PREFIXES_TO_SKIP = ['http://', 'https://', 'data:', 'javascript:'];
 const BANG_REGEX = /^\s*!([A-Za-z0-9._-]+)(?:\s+(.*))?$/;
+const AT_REGEX = /^\s*@([A-Za-z0-9._-]+)(?:\s+(.*))?$/;
 const DEFAULT_BANG = 'ddg';
 
 export function parseBang(
@@ -41,6 +44,21 @@ export function parseBang(
 	const match = input.match(BANG_REGEX);
 	if (!match) return null;
 	const engine = registry.findByBang(match[1]);
+	if (!engine) return null;
+	return { engine, query: match[2] ?? '' };
+}
+
+export function parseAtPrefix(
+	input: string,
+	registry: SearchEngineRegistryReader,
+): { engine: SearchEngine; query: string } | null {
+	if (!input) return null;
+	for (const prefix of URL_PREFIXES_TO_SKIP) {
+		if (input.startsWith(prefix)) return null;
+	}
+	const match = input.match(AT_REGEX);
+	if (!match) return null;
+	const engine = registry.findByAt(match[1]);
 	if (!engine) return null;
 	return { engine, query: match[2] ?? '' };
 }
@@ -124,7 +142,8 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 				typeof o.name === 'string' &&
 				typeof o.bang === 'string' &&
 				typeof o.urlTemplate === 'string' &&
-				typeof o.builtIn === 'boolean'
+				typeof o.builtIn === 'boolean' &&
+				(o.at === undefined || typeof o.at === 'string')
 			);
 		});
 	}
@@ -191,10 +210,21 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 		return hit ? { ...hit } : undefined;
 	}
 
+	findByAt(at: string): SearchEngine | undefined {
+		if (!at) return undefined;
+		const target = at.toLowerCase();
+		const hit = this.engines.find((e) => e.at?.toLowerCase() === target);
+		return hit ? { ...hit } : undefined;
+	}
+
 	async add(engine: Omit<SearchEngine, 'id' | 'builtIn'>): Promise<SearchEngine> {
 		this.validateTemplate(engine.urlTemplate);
-		this.validateBangUnique(engine.bang, null);
-		const created: SearchEngine = { ...engine, id: uuidv4(), builtIn: false };
+		const normBang = engine.bang ? engine.bang.trim() : '';
+		const normAt = engine.at && engine.at.trim() ? engine.at.trim() : undefined;
+		this.validateAtLeastOnePrefix(normBang, normAt);
+		if (normBang) this.validateBangUnique(normBang, null);
+		if (normAt) this.validateAtUnique(normAt, null);
+		const created: SearchEngine = { ...engine, bang: normBang, at: normAt, id: uuidv4(), builtIn: false };
 		this.engines.push(created);
 		await this.persist();
 		this.notify();
@@ -205,8 +235,20 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 		const idx = this.engines.findIndex((e) => e.id === id);
 		if (idx === -1) throw new Error(`Unknown engine id: ${id}`);
 		if (patch.urlTemplate !== undefined) this.validateTemplate(patch.urlTemplate);
-		if (patch.bang !== undefined) this.validateBangUnique(patch.bang, id);
-		this.engines[idx] = { ...this.engines[idx], ...patch };
+		// Normalize incoming patch values: trim whitespace; collapse empty `at` to undefined.
+		const normPatch: typeof patch = { ...patch };
+		if (patch.bang !== undefined) {
+			normPatch.bang = patch.bang.trim();
+		}
+		if (patch.at !== undefined) {
+			const trimmed = patch.at.trim();
+			normPatch.at = trimmed === '' ? undefined : trimmed;
+		}
+		const merged = { ...this.engines[idx], ...normPatch };
+		this.validateAtLeastOnePrefix(merged.bang, merged.at);
+		if (normPatch.bang !== undefined && normPatch.bang) this.validateBangUnique(normPatch.bang, id);
+		if (normPatch.at !== undefined && normPatch.at) this.validateAtUnique(normPatch.at, id);
+		this.engines[idx] = merged;
 		await this.persist();
 		this.notify();
 	}
@@ -256,6 +298,24 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 		);
 		if (clash) {
 			throw new Error(`A search engine with bang "!${bang}" already exists (duplicate).`);
+		}
+	}
+
+	private validateAtUnique(at: string, excludeId: string | null): void {
+		const target = at.toLowerCase();
+		const clash = this.engines.find(
+			(e) => e.at?.toLowerCase() === target && e.id !== excludeId,
+		);
+		if (clash) {
+			throw new Error(`A search engine with at "@${at}" already exists (duplicate).`);
+		}
+	}
+
+	private validateAtLeastOnePrefix(bang: string | undefined, at: string | undefined): void {
+		const hasBang = !!(bang && bang.trim());
+		const hasAt = !!(at && at.trim());
+		if (!hasBang && !hasAt) {
+			throw new Error('At least one of "bang" or "at" must be set.');
 		}
 	}
 }

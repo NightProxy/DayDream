@@ -2,6 +2,9 @@ import type { ProxyTransport } from '@mercuryworkshop/proxy-transports';
 import type * as ScramjetGlobal from '@mercuryworkshop/scramjet';
 import type * as ScramjetControllerGlobal from '@mercuryworkshop/scramjet-controller';
 import type { SearchEngineRegistry } from '@apis/searchEngines';
+import type { CommandRegistry } from '@apis/commands';
+import type { AIClient } from '@apis/ai';
+import type { Omnibox } from '@browser/omnibox';
 
 declare global {
 	const $scramjet: typeof ScramjetGlobal;
@@ -18,6 +21,9 @@ declare global {
 		nightmare: Nightmare;
 		settings: SettingsAPI;
 		searchEngines: SearchEngineRegistry;
+		commands: CommandRegistry;
+		aiClient: AIClient;
+		omnibox: Omnibox;
 		cache: CacheAPI;
 		eventsAPI: EventSystem;
 		extensions: ExtensionsAPI;
@@ -32,7 +38,6 @@ declare global {
 		windowing: Windowing;
 		functions: Functions;
 		keys: Keys;
-		searchbar: Search;
 		SWconfig: any;
 		SWSettings: any;
 		ProxySettings: string;

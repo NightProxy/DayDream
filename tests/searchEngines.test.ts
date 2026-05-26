@@ -259,4 +259,37 @@ describe('SearchEngineRegistry — mutations', () => {
 		expect(count).toBe(5);
 		off();
 	});
+
+	it('add() with at: "" stores at as undefined (normalized)', async () => {
+		const { reg, settings } = newRegistry();
+		await reg.load();
+		const created = await reg.add({ name: 'NoAt', bang: 'na', at: '', urlTemplate: 'https://example.com/?q=%s' });
+		expect(created.at).toBeUndefined();
+		const persisted = (settings._get('searchEngines') as Array<{ at?: string }>).find((e) => (e as { name: string }).name === 'NoAt');
+		expect(persisted?.at).toBeUndefined();
+	});
+
+	it('add() trims whitespace from bang and at', async () => {
+		const { reg } = newRegistry();
+		await reg.load();
+		const created = await reg.add({ name: 'Trimmed', bang: '  trm  ', at: '  trm-at  ', urlTemplate: 'https://example.com/?q=%s' });
+		expect(created.bang).toBe('trm');
+		expect(created.at).toBe('trm-at');
+	});
+
+	it('update() with at: "" clears the at field to undefined', async () => {
+		const { reg } = newRegistry();
+		await reg.load();
+		const ddg = reg.list().find((e) => e.bang === 'ddg')!;
+		expect(ddg.at).toBe('ddg');
+		await reg.update(ddg.id, { at: '' });
+		const refreshed = reg.list().find((e) => e.id === ddg.id);
+		expect(refreshed?.at).toBeUndefined();
+	});
+
+	it('findByAt("") returns undefined (does not match engines with empty at)', async () => {
+		const { reg } = newRegistry();
+		await reg.load();
+		expect(reg.findByAt('')).toBeUndefined();
+	});
 });

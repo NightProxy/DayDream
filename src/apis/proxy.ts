@@ -17,10 +17,6 @@ import {
 	type TransportKind
 } from '@core/shared/transport';
 
-// `BareMuxConnection` here is page-side state read by external callers
-// (notably src/index.tsx via `proxy.connection.getTransport()`). The
-// service worker no longer touches BareMux at all — it builds its own
-// transport directly via the shared module. See src/core/sw/index.ts.
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
 	searchVar: string;

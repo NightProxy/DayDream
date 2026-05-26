@@ -452,7 +452,9 @@
                 <div id="search-engines-add-form" class="hidden mt-3 space-y-2 bg-[var(--bg-2)] rounded-md p-3 border border-[var(--white-10)]">
                   <input id="search-engines-add-name" type="text" placeholder="Name"
                     class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
-                  <input id="search-engines-add-bang" type="text" placeholder="Bang (without !)"
+                  <input id="search-engines-add-bang" type="text" placeholder="Bang (without !) — optional"
+                    class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                  <input id="search-engines-add-at" type="text" placeholder="At key (without @) — optional"
                     class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
                   <input id="search-engines-add-url" type="text" placeholder="URL template (must contain %s)"
                     class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
@@ -467,6 +469,43 @@
                       Save
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="mb-3">
+                <h3 class="text-sm font-medium text-[var(--text)]">AI assistant</h3>
+                <p class="text-xs text-[var(--proto)] mt-1">
+                  Configure an OpenAI-compatible chat completions endpoint to use the <code class="text-[var(--text)] bg-[var(--bg-2)] px-1 rounded">?</code> prefix in the address bar.
+                </p>
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs text-[var(--proto)] block mb-1">Provider URL</label>
+                  <input id="ai-provider-url" type="url" placeholder="https://api.openai.com/v1"
+                    class="w-full rounded bg-[var(--bg-2)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                </div>
+                <div>
+                  <label class="text-xs text-[var(--proto)] block mb-1">API key</label>
+                  <input id="ai-api-key" type="password" placeholder="sk-..."
+                    class="w-full rounded bg-[var(--bg-2)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                </div>
+                <div>
+                  <label class="text-xs text-[var(--proto)] block mb-1">Model</label>
+                  <input id="ai-model" type="text" placeholder="gpt-3.5-turbo"
+                    class="w-full rounded bg-[var(--bg-2)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                </div>
+                <div class="flex items-center justify-between">
+                  <label class="text-xs text-[var(--text)]" for="ai-streaming">Streaming responses</label>
+                  <input id="ai-streaming" type="checkbox" class="accent-[var(--main)]" checked />
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="ai-test"
+                    class="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-2)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+                    Test connection
+                  </button>
+                  <div id="ai-test-result" class="text-xs"></div>
                 </div>
               </div>
             </div>
@@ -608,6 +647,18 @@
 
           <div id="keybinds-container" class="space-y-4">
             <!-- Keybind categories will be dynamically inserted here -->
+          </div>
+
+          <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur mt-6">
+            <div class="mb-3">
+              <h3 class="text-sm font-medium text-[var(--text)]">Available commands</h3>
+              <p class="text-xs text-[var(--proto)] mt-1">
+                Type <code class="text-[var(--text)] bg-[var(--bg-2)] px-1 rounded">&gt;</code> in the address bar to search and run any of these. Custom commands coming later.
+              </p>
+            </div>
+            <input id="commands-filter" type="text" placeholder="Filter commands…"
+              class="w-full rounded bg-[var(--bg-2)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+            <div id="commands-list" class="space-y-2"></div>
           </div>
         </section>
 

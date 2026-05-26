@@ -1512,45 +1512,40 @@ function escapeHtml(s: string): string {
 function validateEngineForm(
   name: string,
   bang: string,
+  at: string,
   url: string,
   excludeId: string | null,
 ):
-  | { ok: true; name: string; bang: string; url: string }
+  | { ok: true; name: string; bang: string; at: string; url: string }
   | { ok: false; error: string } {
   const trimmedName = name.trim();
   const trimmedBang = bang.trim();
+  const trimmedAt = at.trim();
   const trimmedUrl = url.trim();
-  if (!trimmedName || trimmedName.length > 64)
-    return { ok: false, error: "Name must be 1-64 characters." };
-  if (!/^[A-Za-z0-9._-]+$/.test(trimmedBang) || trimmedBang.length > 16)
-    return {
-      ok: false,
-      error: "Bang must be 1-16 chars matching [A-Za-z0-9._-].",
-    };
-  const lower = trimmedBang.toLowerCase();
-  const clash = searchEngineRegistry
-    .list()
-    .find((e) => e.bang.toLowerCase() === lower && e.id !== excludeId);
-  if (clash)
-    return {
-      ok: false,
-      error: `Bang !${trimmedBang} is already used by "${clash.name}".`,
-    };
+  if (!trimmedName || trimmedName.length > 64) return { ok: false, error: "Name must be 1-64 characters." };
+  if (!trimmedBang && !trimmedAt) return { ok: false, error: 'At least one of "bang" or "at" must be set.' };
+  if (trimmedBang) {
+    if (!/^[A-Za-z0-9._-]+$/.test(trimmedBang) || trimmedBang.length > 16)
+      return { ok: false, error: "Bang must be 1-16 chars matching [A-Za-z0-9._-]." };
+    const lowerBang = trimmedBang.toLowerCase();
+    const bangClash = searchEngineRegistry.list().find((e) => e.bang.toLowerCase() === lowerBang && e.id !== excludeId);
+    if (bangClash) return { ok: false, error: `Bang !${trimmedBang} is already used by "${bangClash.name}".` };
+  }
+  if (trimmedAt) {
+    if (!/^[A-Za-z0-9._-]+$/.test(trimmedAt) || trimmedAt.length > 16)
+      return { ok: false, error: "At must be 1-16 chars matching [A-Za-z0-9._-]." };
+    const lowerAt = trimmedAt.toLowerCase();
+    const atClash = searchEngineRegistry.list().find((e) => e.at?.toLowerCase() === lowerAt && e.id !== excludeId);
+    if (atClash) return { ok: false, error: `At @${trimmedAt} is already used by "${atClash.name}".` };
+  }
   const occurrences = (trimmedUrl.match(/%s/g) || []).length;
-  if (occurrences !== 1)
-    return {
-      ok: false,
-      error: 'URL template must contain "%s" exactly once.',
-    };
+  if (occurrences !== 1) return { ok: false, error: 'URL template must contain "%s" exactly once.' };
   try {
     new URL(trimmedUrl.replace("%s", "test"));
   } catch {
-    return {
-      ok: false,
-      error: "URL template is not a valid URL after %s substitution.",
-    };
+    return { ok: false, error: "URL template is not a valid URL after %s substitution." };
   }
-  return { ok: true, name: trimmedName, bang: trimmedBang, url: trimmedUrl };
+  return { ok: true, name: trimmedName, bang: trimmedBang, at: trimmedAt, url: trimmedUrl };
 }
 
 function renderSearchEnginesTable() {
@@ -1603,9 +1598,10 @@ function renderSearchEnginesTable() {
       if (!row) return;
       const rawName = (row.querySelector('[data-field="name"]') as HTMLInputElement).value;
       const rawBang = (row.querySelector('[data-field="bang"]') as HTMLInputElement).value;
+      const rawAt = (row.querySelector('[data-field="at"]') as HTMLInputElement).value;
       const rawUrl = (row.querySelector('[data-field="url"]') as HTMLInputElement).value;
       const errEl = row.querySelector('[data-field="error"]') as HTMLDivElement;
-      const result = validateEngineForm(rawName, rawBang, rawUrl, id);
+      const result = validateEngineForm(rawName, rawBang, rawAt, rawUrl, id);
       if (!result.ok) {
         errEl.textContent = result.error;
         errEl.classList.remove("hidden");
@@ -1614,6 +1610,7 @@ function renderSearchEnginesTable() {
       await searchEngineRegistry.update(id, {
         name: result.name,
         bang: result.bang,
+        at: result.at || undefined,
         urlTemplate: result.url,
       });
       broadcastSearchEnginesUpdate();
@@ -1630,6 +1627,10 @@ function renderSearchEnginesTable() {
 }
 
 function searchEngineRowHtml(e: SearchEngine, isDefault: boolean): string {
+  const prefixes: string[] = [];
+  if (e.bang) prefixes.push(`!${e.bang}`);
+  if (e.at) prefixes.push(`@${e.at}`);
+  const prefixDisplay = prefixes.map(escapeHtml).join(' · ');
   return `
     <div class="flex items-center gap-3 bg-[var(--bg-2)] rounded-md px-3 py-2 border border-[var(--white-10)]" data-engine-row="${escapeHtml(e.id)}">
       <input type="radio" name="se-default" value="${escapeHtml(e.id)}" ${isDefault ? "checked" : ""}
@@ -1639,7 +1640,7 @@ function searchEngineRowHtml(e: SearchEngine, isDefault: boolean): string {
           ${escapeHtml(e.name)}${e.builtIn ? ' <span class="text-[var(--proto)] text-xs">(default seed)</span>' : ""}
         </div>
         <div class="text-xs text-[var(--proto)] truncate">
-          <span class="font-mono">!${escapeHtml(e.bang)}</span> · ${escapeHtml(e.urlTemplate)}
+          <span class="font-mono">${prefixDisplay}</span> · ${escapeHtml(e.urlTemplate)}
         </div>
       </div>
       <button data-edit-engine="${escapeHtml(e.id)}"
@@ -1659,7 +1660,9 @@ function searchEngineEditRowHtml(e: SearchEngine): string {
     <div class="bg-[var(--bg-2)] rounded-md px-3 py-2 border border-[var(--main-35a)] space-y-2" data-engine-row="${escapeHtml(e.id)}">
       <input data-field="name" type="text" placeholder="Name" value="${escapeHtml(e.name)}"
         class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
-      <input data-field="bang" type="text" placeholder="Bang (without !)" value="${escapeHtml(e.bang)}"
+      <input data-field="bang" type="text" placeholder="Bang (without !) — optional" value="${escapeHtml(e.bang)}"
+        class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+      <input data-field="at" type="text" placeholder="At key (without @) — optional" value="${escapeHtml(e.at ?? '')}"
         class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
       <input data-field="url" type="text" placeholder="URL template (must contain %s)" value="${escapeHtml(e.urlTemplate)}"
         class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
@@ -1697,9 +1700,10 @@ function startEditEngine(id: string) {
   newRow.querySelector("[data-save-engine]")?.addEventListener("click", async () => {
     const rawName = (newRow.querySelector('[data-field="name"]') as HTMLInputElement).value;
     const rawBang = (newRow.querySelector('[data-field="bang"]') as HTMLInputElement).value;
+    const rawAt = (newRow.querySelector('[data-field="at"]') as HTMLInputElement).value;
     const rawUrl = (newRow.querySelector('[data-field="url"]') as HTMLInputElement).value;
     const errEl = newRow.querySelector('[data-field="error"]') as HTMLDivElement;
-    const result = validateEngineForm(rawName, rawBang, rawUrl, id);
+    const result = validateEngineForm(rawName, rawBang, rawAt, rawUrl, id);
     if (!result.ok) {
       errEl.textContent = result.error;
       errEl.classList.remove("hidden");
@@ -1708,6 +1712,7 @@ function startEditEngine(id: string) {
     await searchEngineRegistry.update(id, {
       name: result.name,
       bang: result.bang,
+      at: result.at || undefined,
       urlTemplate: result.url,
     });
     broadcastSearchEnginesUpdate();
@@ -1723,8 +1728,9 @@ function initializeSearchEnginesAddForm() {
   const errEl = document.getElementById("search-engines-add-error") as HTMLDivElement | null;
   const nameEl = document.getElementById("search-engines-add-name") as HTMLInputElement | null;
   const bangEl = document.getElementById("search-engines-add-bang") as HTMLInputElement | null;
+  const atEl = document.getElementById("search-engines-add-at") as HTMLInputElement | null;
   const urlEl = document.getElementById("search-engines-add-url") as HTMLInputElement | null;
-  if (!toggle || !form || !cancel || !save || !errEl || !nameEl || !bangEl || !urlEl) return;
+  if (!toggle || !form || !cancel || !save || !errEl || !nameEl || !bangEl || !atEl || !urlEl) return;
 
   toggle.addEventListener("click", () => {
     form.classList.toggle("hidden");
@@ -1733,11 +1739,12 @@ function initializeSearchEnginesAddForm() {
     form.classList.add("hidden");
     nameEl.value = "";
     bangEl.value = "";
+    atEl.value = "";
     urlEl.value = "";
     errEl.classList.add("hidden");
   });
   save.addEventListener("click", async () => {
-    const result = validateEngineForm(nameEl.value, bangEl.value, urlEl.value, null);
+    const result = validateEngineForm(nameEl.value, bangEl.value, atEl.value, urlEl.value, null);
     if (!result.ok) {
       errEl.textContent = result.error;
       errEl.classList.remove("hidden");
@@ -1746,12 +1753,14 @@ function initializeSearchEnginesAddForm() {
     await searchEngineRegistry.add({
       name: result.name,
       bang: result.bang,
+      at: result.at || undefined,
       urlTemplate: result.url,
     });
     broadcastSearchEnginesUpdate();
     form.classList.add("hidden");
     nameEl.value = "";
     bangEl.value = "";
+    atEl.value = "";
     urlEl.value = "";
     errEl.classList.add("hidden");
     renderSearchEnginesTable();
@@ -1767,6 +1776,121 @@ function initializeSearchEnginesUI() {
     broadcastSearchEnginesUpdate();
     renderSearchEnginesTable();
   });
+}
+
+function broadcastAIConfigUpdate() {
+  window.opener?.postMessage({ type: "ai-config-updated" }, "*");
+}
+
+async function initializeAIPanel() {
+  const urlEl = document.getElementById("ai-provider-url") as HTMLInputElement | null;
+  const keyEl = document.getElementById("ai-api-key") as HTMLInputElement | null;
+  const modelEl = document.getElementById("ai-model") as HTMLInputElement | null;
+  const streamEl = document.getElementById("ai-streaming") as HTMLInputElement | null;
+  const testBtn = document.getElementById("ai-test") as HTMLButtonElement | null;
+  const testResultEl = document.getElementById("ai-test-result") as HTMLDivElement | null;
+  if (!urlEl || !keyEl || !modelEl || !streamEl || !testBtn || !testResultEl) return;
+
+  // Load existing values
+  urlEl.value = (await settingsAPI.getItem<string>("aiProviderUrl")) ?? "";
+  keyEl.value = (await settingsAPI.getItem<string>("aiApiKey")) ?? "";
+  modelEl.value = (await settingsAPI.getItem<string>("aiModel")) ?? "";
+  const streamingStored = await settingsAPI.getItem<unknown>("aiStreaming");
+  streamEl.checked = streamingStored === undefined || streamingStored === null ? true : !!streamingStored;
+
+  const persist = async () => {
+    await settingsAPI.setItem("aiProviderUrl", urlEl.value);
+    await settingsAPI.setItem("aiApiKey", keyEl.value);
+    await settingsAPI.setItem("aiModel", modelEl.value);
+    await settingsAPI.setItem("aiStreaming", streamEl.checked);
+    broadcastAIConfigUpdate();
+  };
+
+  urlEl.addEventListener("change", persist);
+  keyEl.addEventListener("change", persist);
+  modelEl.addEventListener("change", persist);
+  streamEl.addEventListener("change", persist);
+
+  testBtn.addEventListener("click", async () => {
+    testResultEl.textContent = "Testing…";
+    testResultEl.className = "text-xs text-[var(--proto)]";
+    await persist();
+    if (!window.opener) {
+      testResultEl.textContent = "✗ Settings popup is detached — cannot test.";
+      testResultEl.className = "text-xs text-red-400";
+      return;
+    }
+    // Round-trip through the main window so the test request runs in the
+    // SW-intercepted scope (popup window can't reach most provider endpoints
+    // due to CORS).
+    const requestId = `ai-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const resultPromise = new Promise<{ ok: true } | { ok: false; error: string }>((resolve) => {
+      const onMsg = (ev: MessageEvent) => {
+        if (ev.data?.type === 'ai-test-result' && ev.data?.requestId === requestId) {
+          window.removeEventListener('message', onMsg);
+          resolve(ev.data.result);
+        }
+      };
+      window.addEventListener('message', onMsg);
+      // Timeout after 30s
+      setTimeout(() => {
+        window.removeEventListener('message', onMsg);
+        resolve({ ok: false, error: 'Test timed out (30s).' });
+      }, 30000);
+    });
+    window.opener.postMessage({ type: 'ai-test-request', requestId }, '*');
+    const result = await resultPromise;
+    if (result.ok) {
+      testResultEl.textContent = "✓ Connected";
+      testResultEl.className = "text-xs text-green-400";
+    } else {
+      testResultEl.textContent = `✗ ${result.error}`;
+      testResultEl.className = "text-xs text-red-400";
+    }
+  });
+}
+
+function initializeCommandsPanel() {
+  const listEl = document.getElementById("commands-list") as HTMLDivElement | null;
+  const filterEl = document.getElementById("commands-filter") as HTMLInputElement | null;
+  if (!listEl || !filterEl) return;
+  const w = window as unknown as { opener?: Window & { commands?: import("@apis/commands").CommandRegistry } };
+  const registry = w.opener?.commands;
+  if (!registry) {
+    listEl.innerHTML = `<div class="text-xs text-[var(--proto)]">Command registry not available (main window closed).</div>`;
+    return;
+  }
+  const render = (filter: string) => {
+    const matches = filter.trim() ? registry.find(filter, 200) : registry.list();
+    if (matches.length === 0) {
+      listEl.innerHTML = `<div class="text-xs text-[var(--proto)]">No matching commands.</div>`;
+      return;
+    }
+    const grouped: Record<string, typeof matches> = {};
+    for (const cmd of matches) {
+      if (!grouped[cmd.category]) grouped[cmd.category] = [];
+      grouped[cmd.category].push(cmd);
+    }
+    listEl.innerHTML = Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([category, cmds]) => `
+        <div class="space-y-1">
+          <div class="text-xs text-[var(--proto)] uppercase tracking-wide">${escapeHtml(category)}</div>
+          ${cmds.map((cmd) => `
+            <div class="flex items-center gap-3 bg-[var(--bg-2)] rounded-md px-3 py-2 border border-[var(--white-10)]">
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-[var(--text)] truncate">${escapeHtml(cmd.label)}</div>
+                ${cmd.shortcut ? `<div class="text-xs text-[var(--proto)] font-mono">${escapeHtml(cmd.shortcut)}</div>` : ''}
+              </div>
+              <div class="text-xs text-[var(--proto)]">${escapeHtml(cmd.source)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `)
+      .join('');
+  };
+  render("");
+  filterEl.addEventListener("input", () => render(filterEl.value));
 }
 
 function startKeybindCapture(keybindId: string, button: HTMLButtonElement) {
@@ -1874,4 +1998,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initializeKeybindsUI();
   await searchEngineRegistry.load();
   initializeSearchEnginesUI();
+  await initializeAIPanel();
+  initializeCommandsPanel();
 });
