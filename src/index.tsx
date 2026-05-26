@@ -19,6 +19,9 @@ import { ProfilesAPI } from '@apis/profiles';
 import { Logger } from '@apis/logging';
 import { Proxy } from '@apis/proxy';
 import { SearchEngineRegistry } from '@apis/searchEngines';
+import { CommandRegistry } from '@apis/commands';
+import { AIClient } from '@apis/ai';
+import { Omnibox } from '@browser/omnibox';
 import { Windowing } from '@browser/windowing';
 import { DDXGlobal } from '@utils/global/index';
 import { patchDocument } from './utils/document';
@@ -90,9 +93,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 	await searchEngines.load();
 	window.searchEngines = searchEngines;
 
+	const commands = new CommandRegistry();
+	window.commands = commands;
+	const aiClient = new AIClient(settingsAPI);
+	await aiClient.reloadConfig();
+	window.aiClient = aiClient;
+
 	window.addEventListener('message', (event) => {
 		if (event.data?.type === 'searchEngines-updated') {
 			void window.searchEngines.load();
+		}
+		if (event.data?.type === 'ai-config-updated') {
+			void window.aiClient.reloadConfig();
+		}
+		if (event.data?.type === 'commands-updated') {
+			// Reserved for future custom-commands feature; v1 has no behavior here.
+		}
+		if (event.data?.type === 'ai-test-request') {
+			// Reload config before testing, in case the popup just persisted new values.
+			const handle = async () => {
+				await window.aiClient.reloadConfig();
+				const result = await window.aiClient.test();
+				(event.source as Window | null)?.postMessage(
+					{ type: 'ai-test-result', requestId: event.data?.requestId, result },
+					{ targetOrigin: '*' }
+				);
+			};
+			void handle();
+		}
+		if (event.data?.type === 'keybinds-updated') {
+			const reseed = async () => {
+				const { KeybindManager } = await import('@browser/functions/keybinds');
+				const km = new KeybindManager(settingsAPI);
+				await km.loadKeybinds();
+				window.commands.clearBySource('keybind');
+				window.commands.seedFromKeybinds({
+					keybinds: km.getAllKeybinds(),
+					formatKeybind: (kb) => km.formatKeybind(kb),
+					tabs: window.tabs,
+					protocols: window.protocols,
+				});
+			};
+			void reseed();
 		}
 	});
 
@@ -251,6 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		searchBar!.addEventListener('keydown', async e => {
 			if (e.key === 'Enter') {
+				if ((e as any).__omniboxConsumed) return;
 				e.preventDefault();
 
 				const searchValue = searchBar!.value.trim();
@@ -307,13 +350,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 			}
 		});
 
-		/*if (searchSuggestionsEnabled) {
-			const searchbar = new Search(proxy, swConfig, proxySetting, proto);
-			if (items.addressBar) {
-      await searchbar.init(items.addressBar);
-    }
-    window.searchbar = searchbar;
-  }*/
+		// Seed the command registry now that tabs/proto are fully ready.
+		// Uses a local KeybindManager to read the user's current keybinds —
+		// the registry stores closures that don't depend on this instance's
+		// lifetime.
+		{
+			const { KeybindManager } = await import('@browser/functions/keybinds');
+			const km = new KeybindManager(settingsAPI);
+			await km.loadKeybinds();
+			commands.seedFromKeybinds({
+				keybinds: km.getAllKeybinds(),
+				formatKeybind: (kb) => km.formatKeybind(kb),
+				tabs,
+				protocols: proto,
+			});
+			commands.seedFromProtocols(proto.listRoutes(), (url) => proto.navigate(url));
+			commands.seedBuiltins({ tabs, protocols: proto });
+		}
+
+		if (items.addressBar) {
+			const omnibox = new Omnibox({
+				input: items.addressBar,
+				proxy,
+				protocols: proto,
+				tabs,
+				searchEngines,
+				commands,
+				aiClient,
+				swConfig,
+				proxySetting,
+			});
+			omnibox.attach();
+			window.omnibox = omnibox;
+		}
 
 		window.logging = loggingAPI;
 		window.profiles = profilesAPI;

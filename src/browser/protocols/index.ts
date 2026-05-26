@@ -10,6 +10,13 @@ interface RouteEntry {
 	proxy: boolean;
 }
 
+export interface ProtocolRouteSnapshot {
+	proto: string;
+	path: string;
+	url: string;
+	proxy: boolean;
+}
+
 interface ProtoInterface {
 	logging: Logger;
 	settings: SettingsAPI;
@@ -311,6 +318,16 @@ class Protocols implements ProtoInterface {
 		}
 		const proto = match[1].toLowerCase();
 		return this.routes.has(proto);
+	}
+
+	listRoutes(): ProtocolRouteSnapshot[] {
+		const out: ProtocolRouteSnapshot[] = [];
+		for (const [proto, pathMap] of this.routes.entries()) {
+			for (const [path, entry] of pathMap.entries()) {
+				out.push({ proto, path, url: entry.url, proxy: entry.proxy });
+			}
+		}
+		return out;
 	}
 }
 

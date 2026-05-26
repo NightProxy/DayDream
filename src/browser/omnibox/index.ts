@@ -1,0 +1,378 @@
+import type { Proxy } from '@apis/proxy';
+import type { Protocols } from '@browser/protocols';
+import type { Tabs } from '@browser/tabs';
+import type { SearchEngineRegistry } from '@apis/searchEngines';
+import type { CommandRegistry } from '@apis/commands';
+import type { AIClient } from '@apis/ai';
+import { Logger } from '@apis/logging';
+import { dispatch } from './dispatch';
+import type { OmniboxMode, OmniboxRow } from './types';
+
+export interface OmniboxDeps {
+	input: HTMLInputElement;
+	proxy: Proxy;
+	protocols: Protocols;
+	tabs: Tabs;
+	searchEngines: SearchEngineRegistry;
+	commands: CommandRegistry;
+	aiClient: AIClient;
+	swConfig: Record<any, any>;
+	proxySetting: string;
+}
+
+export class Omnibox {
+	private input: HTMLInputElement;
+	private deps: OmniboxDeps;
+	private dropdown: HTMLDivElement;
+	private currentMode: OmniboxMode = 'closed';
+	private currentRows: OmniboxRow[] = [];
+	private selectedRowId: string | null = null;
+	private debounceTimer: number | null = null;
+	private currentAbort: AbortController | null = null;
+	private blurTimeout: number | null = null;
+	private logger: Logger | null = null;
+
+	constructor(deps: OmniboxDeps) {
+		this.deps = deps;
+		this.input = deps.input;
+		this.dropdown = this.createDropdown();
+	}
+
+	attach(): void {
+		this.installDropdown();
+		this.input.addEventListener('focus', this.onFocus);
+		this.input.addEventListener('blur', this.onBlur);
+		this.input.addEventListener('input', this.onInput);
+		this.input.addEventListener('keydown', this.onKeyDown, { capture: true });
+	}
+
+	detach(): void {
+		this.input.removeEventListener('focus', this.onFocus);
+		this.input.removeEventListener('blur', this.onBlur);
+		this.input.removeEventListener('input', this.onInput);
+		this.input.removeEventListener('keydown', this.onKeyDown, { capture: true });
+		this.dropdown.remove();
+	}
+
+	// @ts-expect-error Phase B scaffolding — Phase C error paths will use `getLogger`.
+	private getLogger(): Logger {
+		if (!this.logger) this.logger = new Logger();
+		return this.logger;
+	}
+
+	private createDropdown(): HTMLDivElement {
+		const d = document.createElement('div');
+		d.className = 'omnibox-dropdown absolute left-0 right-0 z-50 mt-1 bg-[var(--bg-1)] rounded-xl shadow-lg border border-[var(--main-35a)] backdrop-blur-sm overflow-y-auto hidden';
+		d.style.minHeight = '25vh';
+		d.style.maxHeight = '35vh';
+		d.style.top = '100%';
+		return d;
+	}
+
+	private installDropdown(): void {
+		const parent = this.input.parentElement;
+		if (!parent) {
+			console.warn('[omnibox] address bar has no parent — cannot anchor dropdown');
+			return;
+		}
+		// The parent is `<div class="relative w-full flex-1 urlbar-ring">` — already position:relative
+		parent.appendChild(this.dropdown);
+	}
+
+	private onFocus = () => {
+		if (this.input.value.trim()) {
+			void this.handleInput();
+		}
+	};
+
+	private onBlur = () => {
+		if (this.blurTimeout) clearTimeout(this.blurTimeout);
+		this.blurTimeout = window.setTimeout(() => {
+			this.close();
+		}, 150);
+	};
+
+	private onInput = () => {
+		if (this.debounceTimer) clearTimeout(this.debounceTimer);
+		this.debounceTimer = window.setTimeout(() => {
+			void this.handleInput();
+		}, 150);
+	};
+
+	private onKeyDown = (e: KeyboardEvent) => {
+		if (this.currentMode === 'closed') return;
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			(e as any).__omniboxConsumed = true;
+			this.close();
+			return;
+		}
+		if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+			e.preventDefault();
+			this.moveSelection(1);
+			return;
+		}
+		if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+			e.preventDefault();
+			this.moveSelection(-1);
+			return;
+		}
+		if (e.key === 'Enter') {
+			if (this.selectedRowId) {
+				e.preventDefault();
+				(e as any).__omniboxConsumed = true;
+				const row = this.currentRows.find((r) => r.id === this.selectedRowId);
+				if (row) {
+					void Promise.resolve(row.onSelect()).catch((err) => {
+						console.warn('[omnibox] row select failed:', err);
+					});
+					if (!this.shouldKeepOpenAfterSelect()) this.close();
+				}
+			}
+			// If no row selected, fall through to existing legacy Enter handler.
+		}
+	};
+
+	private async handleInput(): Promise<void> {
+		const value = this.input.value;
+		const result = dispatch(value);
+		this.currentMode = result.mode;
+		this.currentRows = [];
+		this.selectedRowId = null;
+		if (result.mode === 'closed') {
+			this.close();
+			return;
+		}
+		this.open();
+		await this.render();
+	}
+
+	private async render(): Promise<void> {
+		if (this.currentMode === 'ai') {
+			const ai = await import('./modes/ai');
+			const prompt = this.payloadFor('ai');
+			if (!prompt.trim()) {
+				this.dropdown.innerHTML = ai.renderAIPromptHint();
+				this.currentRows = [];
+				return;
+			}
+			if (!this.deps.aiClient.isConfigured()) {
+				this.dropdown.innerHTML = ai.renderAINotConfigured();
+				const btn = this.dropdown.querySelector('.omnibox-ai-open-settings');
+				btn?.addEventListener('mousedown', (ev) => {
+					ev.preventDefault();
+					void this.deps.protocols.navigate('ddx://settings');
+					this.close();
+				});
+				this.currentRows = [];
+				return;
+			}
+			this.dropdown.innerHTML = ai.renderAIPromptPrimary({
+				prompt,
+				aiClient: this.deps.aiClient,
+				protocols: this.deps.protocols,
+				dropdown: this.dropdown,
+				onClose: () => this.close(),
+			});
+			this.currentRows = [{
+				id: 'ai-ask',
+				label: `Ask AI: ${prompt}`,
+				onSelect: async () => {
+					const abort = new AbortController();
+					this.currentAbort = abort;
+					await ai.startAIStream({
+						prompt,
+						aiClient: this.deps.aiClient,
+						protocols: this.deps.protocols,
+						dropdown: this.dropdown,
+						onClose: () => this.close(),
+					}, abort);
+				},
+			}];
+			this.selectedRowId = 'ai-ask';
+			return;
+		}
+		if (this.currentMode === 'command') {
+			const { renderCommandMode } = await import('./modes/commands');
+			const { sectionHtml } = await import('./ui');
+			const query = this.payloadFor('command');
+			const result = renderCommandMode({ query, commands: this.deps.commands });
+			this.currentRows = result.sections.flatMap((s) => s.rows);
+			if (!this.selectedRowId && this.currentRows.length > 0) {
+				this.selectedRowId = this.currentRows[0].id;
+			}
+			this.dropdown.innerHTML = result.sections.map((s) => sectionHtml(s, this.selectedRowId)).join('') ||
+				'<div class="px-3 py-2 text-sm text-[var(--proto)]">No matching commands</div>';
+			this.attachRowListeners();
+			return;
+		}
+		if (this.currentMode === 'engine') {
+			const { renderEngineMode } = await import('./modes/engine');
+			const { rowHtml, sectionHtml } = await import('./ui');
+			const query = this.payloadFor('engine');
+			const result = renderEngineMode({
+				query,
+				searchEngines: this.deps.searchEngines,
+				onNavigate: (url) => this.navigateActive(url),
+				onSelectEngine: (atKey) => this.selectEngine(atKey),
+			});
+			this.currentRows = [
+				...(result.primaryRow ? [result.primaryRow] : []),
+				...result.sections.flatMap((s) => s.rows),
+			];
+			if (!this.selectedRowId && this.currentRows.length > 0) {
+				this.selectedRowId = this.currentRows[0].id;
+			}
+			const primaryHtml = result.primaryRow
+				? `<div class="omnibox-primary border-b border-[var(--white-08)] py-1">${rowHtml(result.primaryRow, this.selectedRowId === result.primaryRow.id)}</div>`
+				: '';
+			const sectionsHtml = result.sections.map((s) => sectionHtml(s, this.selectedRowId)).join('');
+			this.dropdown.innerHTML = primaryHtml + sectionsHtml || '<div class="px-3 py-2 text-sm text-[var(--proto)]">No matching engines</div>';
+			this.attachRowListeners();
+			return;
+		}
+		if (this.currentMode === 'bang') {
+			const { renderBangMode } = await import('./modes/bang');
+			const { rowHtml } = await import('./ui');
+			const result = renderBangMode({
+				rawInput: this.input.value,
+				searchEngines: this.deps.searchEngines,
+				onNavigate: (url) => this.navigateActive(url),
+			});
+			if (!result.primaryRow) {
+				// Unknown bang — fall through to default-mode rendering by re-dispatching.
+				this.currentMode = 'default';
+				await this.render();
+				return;
+			}
+			this.currentRows = [result.primaryRow];
+			this.selectedRowId = result.primaryRow.id;
+			this.dropdown.innerHTML = `<div class="omnibox-primary py-1">${rowHtml(result.primaryRow, true)}</div>`;
+			this.attachRowListeners();
+			return;
+		}
+		if (this.currentMode === 'default') {
+			const ac = new AbortController();
+			this.currentAbort?.abort();
+			this.currentAbort = ac;
+			const query = this.input.value.trim().replace(/^\s+/, '');
+			const { renderDefaultMode } = await import('./modes/default');
+			const { rowHtml, sectionHtml } = await import('./ui');
+			try {
+				const result = await renderDefaultMode({
+					query,
+					searchEngines: this.deps.searchEngines,
+					tabs: this.deps.tabs,
+					history: this.deps.tabs.getHistoryManager(),
+					bookmarks: this.deps.tabs.bookmarkManager,
+					protocols: this.deps.protocols,
+					fetchSuggestions: (q, signal) => this.fetchSuggestions(q, signal),
+					signal: ac.signal,
+					onNavigate: (url) => this.navigateActive(url),
+				});
+				if (ac.signal.aborted) return;
+				this.currentRows = [result.primaryRow, ...result.sections.flatMap((s) => s.rows)];
+				if (!this.selectedRowId && this.currentRows.length > 0) {
+					this.selectedRowId = this.currentRows[0].id;
+				}
+				const sectionsHtml = result.sections.map((s) => sectionHtml(s, this.selectedRowId)).join('');
+				this.dropdown.innerHTML = `
+					<div class="omnibox-primary border-b border-[var(--white-08)] py-1">
+						${rowHtml(result.primaryRow, this.selectedRowId === result.primaryRow.id)}
+					</div>
+					${sectionsHtml}
+				`;
+				this.attachRowListeners();
+			} catch (err) {
+				console.warn('[omnibox] default render failed:', err);
+			}
+			return;
+		}
+		// Other modes (Tasks C2-C5) will populate this.dropdown.innerHTML directly.
+		this.dropdown.innerHTML = `
+			<div class="px-3 py-2 text-sm text-[var(--proto)]">Mode: ${this.currentMode} (rendering coming in Phase C)</div>
+		`;
+	}
+
+	private async fetchSuggestions(query: string, signal: AbortSignal): Promise<string[]> {
+		const { resolvePath } = await import('@utils/basepath');
+		const url = `${resolvePath('api/results/')}${encodeURIComponent(query)}`;
+		try {
+			const res = await fetch(url, { signal });
+			if (!res.ok) return [];
+			const data = await res.json();
+			if (!Array.isArray(data)) return [];
+			return data.map((item: { phrase?: string }) => item.phrase ?? '').filter(Boolean);
+		} catch (err) {
+			if ((err as DOMException).name === 'AbortError') return [];
+			console.warn('[omnibox] fetch suggestions failed:', err);
+			return [];
+		}
+	}
+
+	private navigateActive(url: string): void {
+		const iframe = document.querySelector('iframe.active') as HTMLIFrameElement | null;
+		if (!iframe) {
+			console.warn('[omnibox] no active iframe to navigate');
+			return;
+		}
+		void this.deps.proxy.redirect(this.deps.swConfig as any, this.deps.proxySetting, url, iframe);
+	}
+
+	private attachRowListeners(): void {
+		this.dropdown.querySelectorAll<HTMLDivElement>('.omnibox-row').forEach((el) => {
+			el.addEventListener('mousedown', (ev) => {
+				ev.preventDefault(); // keep input focus
+				const id = el.dataset.rowId;
+				if (!id) return;
+				const row = this.currentRows.find((r) => r.id === id);
+				if (!row) return;
+				void Promise.resolve(row.onSelect()).catch((err) => {
+					console.warn('[omnibox] row select failed:', err);
+				});
+				if (!this.shouldKeepOpenAfterSelect()) this.close();
+			});
+		});
+	}
+
+	private payloadFor(_: 'command' | 'engine' | 'bang' | 'ai'): string {
+		const result = dispatch(this.input.value);
+		return result.payload ?? '';
+	}
+
+	private selectEngine(atKey: string): void {
+		this.input.value = `@${atKey} `;
+		this.input.focus();
+		this.input.setSelectionRange(this.input.value.length, this.input.value.length);
+		void this.handleInput();
+	}
+
+	private open(): void {
+		this.dropdown.classList.remove('hidden');
+	}
+
+	private shouldKeepOpenAfterSelect(): boolean {
+		// AI mode rewrites the dropdown into a streaming response panel after
+		// the user picks the "Ask AI" row. Closing here would hide the panel.
+		return this.currentMode === 'ai';
+	}
+
+	private close(): void {
+		this.dropdown.classList.add('hidden');
+		this.currentMode = 'closed';
+		this.currentRows = [];
+		this.selectedRowId = null;
+		if (this.currentAbort) {
+			this.currentAbort.abort();
+			this.currentAbort = null;
+		}
+	}
+
+	private moveSelection(delta: number): void {
+		if (this.currentRows.length === 0) return;
+		const idx = this.currentRows.findIndex((r) => r.id === this.selectedRowId);
+		const nextIdx = idx === -1 ? (delta > 0 ? 0 : this.currentRows.length - 1) : (idx + delta + this.currentRows.length) % this.currentRows.length;
+		this.selectedRowId = this.currentRows[nextIdx].id;
+		void this.render();
+	}
+}

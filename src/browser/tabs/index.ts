@@ -189,6 +189,23 @@ class Tabs implements TabsInterface {
 
 	getTabsInOrder = () => this.tabs;
 
+	searchOpen(query: string): Array<{ tabId: string; title: string; url: string; favicon: string | null }> {
+		const q = query.trim().toLowerCase();
+		if (!q) return [];
+		return this.tabs
+			.filter((t) => {
+				const title = (t.title || '').toLowerCase();
+				const url = (t.url || '').toLowerCase();
+				return title.includes(q) || url.includes(q);
+			})
+			.map((t) => ({
+				tabId: t.id,
+				title: t.title || '(untitled)',
+				url: t.url || '',
+				favicon: t.favicon,
+			}));
+	}
+
 	getPinnedTabs = () => getPinnedTabs(this.tabs);
 
 	getUngroupedUnpinnedTabs = () => getUngroupedUnpinnedTabs(this.tabs);

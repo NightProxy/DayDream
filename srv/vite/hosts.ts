@@ -2,5 +2,6 @@ export const allowedHosts = [
 	'.trycloudflare.com',
 	'.ts.net',
 	'.devtunnels.ms',
-	'laptop'
+	'laptop',
+	'ddxdevtemp.ampscat.dev'
 ];
