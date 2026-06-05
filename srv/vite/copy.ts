@@ -103,6 +103,11 @@ const copyMap = {
     files: ["*"],
     dest: routePaths.chii,
   },
+  devtoolsFrontend: {
+    path: path.resolve("src/apis/devtools/frontend"),
+    files: ["ddx_chii_host.html", "ddx_websocket_shim.js"],
+    dest: routePaths.chii + "/front_end",
+  },
   tfs: {
     path: tfsPath,
     files: ["*"],
@@ -127,7 +132,12 @@ const copyMap = {
     path: sjControllerPath,
     files: ["api.js", "sw.js", "inject.js"],
     dest: routePaths.scramjet,
-  }
+  },
+  devtoolsAgent: {
+    path: path.resolve("src/apis/devtools/agent/dist"),
+    files: ["devtools-agent.js"],
+    dest: routePaths.scramjet,
+  },
 };
 
 function generateStaticCopyTargets(map: typeof copyMap) {

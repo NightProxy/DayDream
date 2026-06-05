@@ -41,7 +41,7 @@ declare global {
 		SWconfig: any;
 		SWSettings: any;
 		ProxySettings: string;
-		ChiiDevtoolsIframe?: HTMLIFrameElement;
+		devtools: import('@apis/devtools').DevToolsManager;
 		liveInject?: any;
 		codeInject?: any;
 		d: ShadowRoot;

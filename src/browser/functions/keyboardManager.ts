@@ -233,12 +233,13 @@ export class KeyboardManager implements KeyboardInterface {
 
   private async handleInspect(): Promise<void> {
     const settings = new SettingsAPI();
-    const devtoolsPreference = (await settings.getItem("devtools")) || "eruda";
+    const devtoolsPreference = (await settings.getItem("devtools")) || "chii";
 
     if (devtoolsPreference === "eruda") {
       await this.devTools.inspectElement();
     } else {
-      this.tabs.toggleChiiDevTools();
+      const activeTabId = (window as any).tabs?.activeTabId;
+      if (activeTabId) (window as any).devtools?.toggle(activeTabId);
     }
   }
 

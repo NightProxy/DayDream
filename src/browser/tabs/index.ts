@@ -6,7 +6,6 @@ import { SettingsAPI } from '@apis/settings';
 import { EventSystem } from '@apis/events';
 import { Proxy } from '@apis/proxy';
 import { BookmarkManager as BM } from '@apis/bookmarks';
-import { ChiiDevTools } from '@browser/functions';
 import { arrayMove } from '@dnd-kit/sortable';
 
 import type {
@@ -105,7 +104,6 @@ class Tabs implements TabsInterface {
 	nightmarePlugins?: any;
 	closeAllTabsInGroup?: (groupId: string) => Promise<void>;
 
-	private chiiInstances: Map<string, ChiiDevTools> = new Map();
 	private bookmarkModule: BookmarkManager;
 	private lifecycleModule: TabLifecycle;
 	private manipulationModule: TabManipulation;
@@ -645,19 +643,6 @@ class Tabs implements TabsInterface {
 		this.metaWatcherModule.stopMetaWatcher(tabId);
 
 	getHistoryManager = () => this.historyIntegration.getHistoryManager();
-
-	toggleChiiDevTools = () => {
-		const activeTab = this.tabs.find(tab =>
-			tab.tab.classList.contains('active')
-		);
-		if (!activeTab) return;
-		let chiiDevTools = this.chiiInstances.get(activeTab.id);
-		if (!chiiDevTools) {
-			chiiDevTools = new ChiiDevTools(activeTab, this.logger);
-			this.chiiInstances.set(activeTab.id, chiiDevTools);
-		}
-		chiiDevTools.toggleInspect();
-	};
 
 	renderTabStrip = () => {
 		const container = this.items.tabBar;

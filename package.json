@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx devserver.ts",
     "core:dev": "vite dev --host & tsx index.ts",
-    "build": "npm run obscura:bundle:iife && npm run controller:build && tsc -p tsconfig.build.json && vite build",
+    "build": "npm run obscura:bundle:iife && npm run controller:build && npm run devtools-agent:build && tsc -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "start": "tsx index.ts",
@@ -18,7 +18,8 @@
     "obscura:bundle:iife": "rolldown -c src/pkgs/Obscura/rolldown.iife.config.ts",
     "sw:build": "rolldown -c src/core/sw/rolldown.config.ts",
     "config:build": "rolldown -c src/core/SJ/config/rolldown.config.ts",
-    "controller:build": "rolldown -c src/core/SJ/controller/rolldown.api.config.ts && rolldown -c src/core/SJ/controller/rolldown.sw.config.ts && rolldown -c src/core/SJ/controller/rolldown.inject.config.ts"
+    "controller:build": "rolldown -c src/core/SJ/controller/rolldown.api.config.ts && rolldown -c src/core/SJ/controller/rolldown.sw.config.ts && rolldown -c src/core/SJ/controller/rolldown.inject.config.ts",
+    "devtools-agent:build": "rolldown -c src/apis/devtools/agent/rolldown.config.ts"
   },
   "devDependencies": {
     "@types/draggabilly": "^2.1.6",
@@ -31,6 +32,7 @@
     "@vitest/ui": "^4.1.7",
     "autoprefixer": "^10.4.21",
     "glob": "^11.0.1",
+    "happy-dom": "^20.9.0",
     "jsdom": "^29.1.1",
     "knip": "^5.64.1",
     "opentype.js": "^1.3.4",
@@ -77,6 +79,7 @@
     "basecoat-css": "^0.3.2",
     "chalk": "^5.4.1",
     "chii": "^1.15.5",
+    "chobitsu": "^1.8.6",
     "compression": "^1.8.0",
     "content-type": "^1.0.5",
     "cors": "^2.8.5",

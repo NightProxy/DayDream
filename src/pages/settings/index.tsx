@@ -1212,7 +1212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await initializeSelect("proxySelect", "proxy", "sj");
   await initializeSelect("transportSelect", "transports", "libcurl");
-  await initializeSelect("devtools-select", "devtools", "eruda");
+  await initializeSelect("devtools-select", "devtools", "chii");
 
   await initializeNewtabSettings();
   await initializeHomeSettings();

@@ -299,9 +299,37 @@ class Functions implements FuncInterface {
     await this.devTools.inspectElement();
   }
 
-  toggleChiiInspect(): void {
-    this.tabs.toggleChiiDevTools();
-  }
+  toggleChiiInspect = (): void => {
+    const w = window as any;
+    // Resolve tabId from the active iframe element rather than relying
+    // on `window.tabs.activeTabId`, which isn't reliably populated in
+    // every selection path (split tabs, restore, etc.). Every managed
+    // iframe carries `data-tab-id` (see frameManager.ts).
+    let activeTabId: string | null = w.tabs?.activeTabId ?? null;
+    if (!activeTabId) {
+      const iframe = document.querySelector(
+        'iframe.active'
+      ) as HTMLIFrameElement | null;
+      activeTabId = iframe?.getAttribute('data-tab-id') ?? null;
+    }
+    if (!activeTabId) {
+      console.warn('[devtools] toggleChiiInspect: no active tab', {
+        tabs: !!w.tabs,
+        windowTabsActiveTabId: w.tabs?.activeTabId ?? null,
+        domActiveIframe: !!document.querySelector('iframe.active'),
+      });
+      return;
+    }
+    if (!w.devtools) {
+      console.warn('[devtools] toggleChiiInspect: window.devtools is undefined');
+      return;
+    }
+    try {
+      w.devtools.toggle(activeTabId);
+    } catch (err) {
+      console.error('[devtools] toggle threw:', err);
+    }
+  };
 
   injectErudaScript(): Promise<string> {
     return this.devTools.injectErudaScript();

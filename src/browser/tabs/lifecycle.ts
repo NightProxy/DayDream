@@ -202,7 +202,7 @@ export class TabLifecycle {
 			lastInternalRoute: undefined,
 			lastAddressShown: undefined,
 			cache: undefined,
-			chiiPanel: undefined
+			devtoolsPanel: undefined
 		};
 
 		this.tabs.registerTab(tabData);
@@ -244,6 +244,7 @@ export class TabLifecycle {
 			tabInfo.iframe.id
 		);
 		this.tabs.pageClientModule?.cleanupIframe(tabInfo.iframe.id);
+		(window as any).devtools?.onTabClose(id);
 
 		try {
 			tabInfo.iframe.src = 'about:blank';
@@ -587,22 +588,8 @@ export class TabLifecycle {
 			});
 		}
 
-		// chiiPanel toggling — only for active tab in main.
-		this.tabs.getTabsInOrder().forEach(tab => {
-			if (tab.chiiPanel?.container) {
-				if (tab.id === tabId && tab.chiiPanel.isActive) {
-					tab.chiiPanel.container.style.display = 'block';
-					tab.iframe.style.height = `calc(100% - ${tab.chiiPanel.height}px)`;
-				} else {
-					tab.chiiPanel.container.style.display = 'none';
-					if (tab.id === tabId) {
-						tab.iframe.style.height = '100%';
-					}
-				}
-			} else if (tab.id === tabId) {
-				tab.iframe.style.height = '100%';
-			}
-		});
+		// Devtools panel toggling — delegate to the new manager.
+		(window as any).devtools?.onTabSelect(tabId);
 
 		const tabSelectedEvent = new CustomEvent('tabSelected', {
 			detail: {
