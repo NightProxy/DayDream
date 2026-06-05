@@ -1,7 +1,7 @@
 export { Functions } from "./functions";
 
 export { Navigation } from "./navigation";
-export { DevTools, ChiiDevTools } from "./devTools";
+export { DevTools } from "./devTools";
 export { MenuManager } from "./menuManager";
 export { ProfileManager } from "./profileManager";
 export { ModalUtilities } from "./modalUtilities";

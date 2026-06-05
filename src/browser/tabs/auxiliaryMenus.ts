@@ -538,16 +538,40 @@ export class AuxiliaryMenus {
 					{
 						icon: 'inspect',
 						label: 'Inspect Element',
-						// Devtools (chii) integration goes here.
 						disabled: !tabId,
 						onclick: () => {
-							const fns = (window as any).functions;
-							if (fns?.toggleChiiDevTools) {
-								fns.toggleChiiDevTools();
-							} else if (
-								(this.tabs as any).toggleChiiDevTools
-							) {
-								(this.tabs as any).toggleChiiDevTools();
+							// Prefer the tab the user actually right-clicked
+							// on; fall back to the active tab if that's missing.
+							const w = window as any;
+							let id: string | null = tabId ?? null;
+							if (!id) {
+								id = this.tabs.activeTabId ?? null;
+							}
+							if (!id) {
+								const iframe = document.querySelector(
+									'iframe.active'
+								) as HTMLIFrameElement | null;
+								id = iframe?.getAttribute('data-tab-id') ?? null;
+							}
+							if (!id) {
+								console.warn(
+									'[devtools] Inspect Element: no tab id available'
+								);
+								return;
+							}
+							if (!w.devtools) {
+								console.warn(
+									'[devtools] Inspect Element: window.devtools missing'
+								);
+								return;
+							}
+							try {
+								w.devtools.toggle(id);
+							} catch (err) {
+								console.error(
+									'[devtools] Inspect Element toggle threw:',
+									err
+								);
 							}
 						}
 					}

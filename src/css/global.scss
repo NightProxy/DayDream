@@ -1096,10 +1096,14 @@ div[data-component='frame-container'] {
 	--focus-ring: var(--main, #a974de);
 }
 
-// Iframes inside the frame-container are stacked, only those with
+// Tab iframes inside the frame-container are stacked; only those with
 // .active (the focused frame) or .split-visible (the non-focused half
 // of a split pair) are shown. Selecting a tab toggles these classes.
-div[data-component='frame-container'] iframe {
+//
+// Scoped to `[data-tab-id]` so the rule does NOT match nested iframes
+// like the devtools panel iframe (which lives inside the same subtree
+// and would otherwise inherit display:none).
+div[data-component='frame-container'] iframe[data-tab-id] {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -1108,8 +1112,8 @@ div[data-component='frame-container'] iframe {
 	display: none;
 }
 
-div[data-component='frame-container'] iframe.active,
-div[data-component='frame-container'] iframe.split-visible {
+div[data-component='frame-container'] iframe[data-tab-id].active,
+div[data-component='frame-container'] iframe[data-tab-id].split-visible {
 	display: block;
 }
 

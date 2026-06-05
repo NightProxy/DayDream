@@ -45,7 +45,7 @@ export interface TabData {
 	lastInternalRoute: string | undefined;
 	lastAddressShown: string | undefined;
 	cache: TabCacheEntry | undefined;
-	chiiPanel:
+	devtoolsPanel:
 		| {
 				isActive: boolean;
 				devtoolsIframe: HTMLIFrameElement | null;

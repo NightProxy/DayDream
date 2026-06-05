@@ -28,7 +28,7 @@
  *      and ensuring the message arrives intact on the proxied side.
  *
  *   2. `installEventsBridge(controller)` — tap scramjet's per-frame
- *      `frameInit.post` hook. For every newly initialised proxied frame,
+ *      `init.post` hook. For every newly initialised proxied frame,
  *      attach a host-context `message` listener on its proxied window that
  *      unwraps our payload and re-dispatches it as a `CustomEvent` on the
  *      proxied document. Proxied pages opt in by doing
@@ -103,7 +103,7 @@ export function postEventToIframe(
 
 /**
  * Receiver script installed inside every proxied window via the
- * `frameInit.post` hook. Listens for our host-tagged payloads, strips
+ * `init.post` hook. Listens for our host-tagged payloads, strips
  * the sender tag, and re-emits as a `CustomEvent` on the proxied
  * document. Proxied pages consume with `document.addEventListener`.
  *
@@ -152,7 +152,7 @@ function attachProxiedReceiver(proxiedWindow: Window): void {
  * controller is ready. Idempotent — re-invocation is a no-op.
  *
  * We accept `controller` as `any` because the scramjet-controller types
- * pin `hooks.frameInit` to scramjet's internal `TapInstance` shape;
+ * pin `hooks.init` to scramjet's internal `TapInstance` shape;
  * accessing it positionally avoids leaking that surface into our code.
  */
 let installed = false;
@@ -173,7 +173,7 @@ export function installEventsBridge(controller: any): void {
 		return;
 	}
 
-	// We need to tap frameInit.post on EVERY frame the controller creates,
+	// We need to tap init.post on EVERY frame the controller creates,
 	// including frames that pre-existed this call. The cleanest scramjet
 	// pattern is a Plugin tapping the per-frame hook from inside a
 	// controller-level callback, but the controller doesn't expose a
@@ -183,7 +183,7 @@ export function installEventsBridge(controller: any): void {
 
 	const installOnFrame = (frame: any) => {
 		try {
-			const postHook = frame?.hooks?.frameInit?.post;
+			const postHook = frame?.hooks?.init?.post;
 			if (!postHook) return;
 			const plugin = new scramjet.Plugin('ddx-events-bridge');
 			plugin.tap(postHook, (context: any) => {
@@ -192,7 +192,7 @@ export function installEventsBridge(controller: any): void {
 			});
 		} catch (error) {
 			console.warn(
-				'[eventsBridge] failed to tap frameInit on frame:',
+				'[eventsBridge] failed to tap init on frame:',
 				error
 			);
 		}

@@ -473,7 +473,7 @@ export function Render({ onReady }: RenderProps) {
 													const devtoolsPreference =
 														(await settings.getItem(
 															'devtools'
-														)) || 'eruda';
+														)) || 'chii';
 													if (
 														devtoolsPreference ===
 														'eruda'

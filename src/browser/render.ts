@@ -728,7 +728,7 @@ class Render implements renderInterface {
                                     const settings = new SettingsAPI();
                                     const devtoolsPreference =
                                       (await settings.getItem("devtools")) ||
-                                      "eruda";
+                                      "chii";
                                     if (devtoolsPreference === "eruda") {
                                       await window.functions.inspectElement();
                                     } else {

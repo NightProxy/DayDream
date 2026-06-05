@@ -35,6 +35,7 @@ import { universalTheme } from '@utils/global/universalTheme';
 import { checkNightPlusStatus } from '@apis/nightplus';
 import { initClipboardDeobfuscator } from '@utils/clipboardDeobfuscator';
 import { basePath, resolvePath } from '@utils/basepath';
+import { DevToolsManager } from '@apis/devtools';
 
 const { Controller } = $scramjetController;
 
@@ -95,6 +96,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	const commands = new CommandRegistry();
 	window.commands = commands;
+
+	const devtools = new DevToolsManager({
+		devtoolsHostUrl: resolvePath('core/i/chii/front_end/ddx_chii_host.html'),
+		getTabData: (tabId: string) => window.tabs?.getTabById(tabId),
+	});
+	window.devtools = devtools;
+
 	const aiClient = new AIClient(settingsAPI);
 	await aiClient.reloadConfig();
 	window.aiClient = aiClient;

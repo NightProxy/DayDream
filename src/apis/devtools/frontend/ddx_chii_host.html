@@ -1,0 +1,41 @@
+<!--
+ * DDX wrapper for the chii Chrome DevTools front_end.
+ *
+ * Loaded in a host-side iframe. Injects our WebSocket shim before
+ * chii_app.js so that when the front_end opens its CDP WebSocket
+ * (URL containing ?ws=ddx-bridge) we substitute a postMessage-backed
+ * fake socket. Also runs chii_app.html's Safari + requestIdleCallback
+ * polyfill loads.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>DDX DevTools</title>
+<style>
+  @media (prefers-color-scheme: dark) {
+    body { background-color: rgb(41 42 45); }
+  }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+</style>
+<meta name="referrer" content="no-referrer">
+<script src="./ddx_websocket_shim.js"></script>
+<script>
+  // Ensure the front_end sees ?ws=ddx-bridge in the URL it parses,
+  // so its CDP-socket-opening code produces a URL our shim's sentinel
+  // matches on.
+  (function () {
+    var u = new URL(location.href);
+    u.searchParams.set('ws', 'ddx-bridge');
+    history.replaceState(null, '', u.toString());
+  })();
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isSafari) {
+    document.write('<scr' + 'ipt src="./third_party/polyfill/customElement.js"></scr' + 'ipt>');
+  }
+  if (!window.requestIdleCallback) {
+    document.write('<scr' + 'ipt src="./third_party/polyfill/requestIdleCallback.js"></scr' + 'ipt>');
+  }
+</script>
+<script type="module" src="./entrypoints/chii_app/chii_app.js"></script>
+<body class="undocked" id="-blink-dev-tools">
+</html>

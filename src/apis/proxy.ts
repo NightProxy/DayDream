@@ -10,6 +10,7 @@ import EpoxyClient from '@mercuryworkshop/epoxy-transport';
 import PulsarClient from '@pkgs/pulsar';
 import { installEventsBridge } from '@apis/eventsBridge';
 import { installScriptInjector } from '@apis/scriptInjection';
+import { installDevToolsHook } from '@apis/devtools';
 import {
 	buildTransport,
 	resolveTransportConfig,
@@ -156,6 +157,13 @@ class Proxy implements ProxyInterface {
 			// before the page's own scripts run. Entries are registered
 			// elsewhere (see `src/apis/scriptInjection/` for the API).
 			installScriptInjector(this.controller);
+
+			// Install the devtools agent injector. Per-frame agent loads only
+			// for tabs that have DevTools open (manager.isEnabledForTab).
+			// Pass a getter so the manager is resolved lazily — index.tsx
+			// may construct `window.devtools` either before or after the
+			// proxy boot finishes, and the hook fires per-frame much later.
+			installDevToolsHook(this.controller, () => (window as any).devtools);
 		})();
 	}
 
