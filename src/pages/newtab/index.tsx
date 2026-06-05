@@ -166,21 +166,21 @@ class NewTabShortcuts {
 							this.ui.createElement(
 								'span',
 								{
-									class: 'text-3xl tracking-widest text-[var(--text)] -mr-1'
+									class: 'text-3xl tracking-widest text-[var(--text)] -mr-1', id: 'title-txt'
 								},
 								['DayDream']
 							),
-							this.ui.createElement(
+							/*this.ui.createElement(
 								'em',
 								{
 									class: 'text-3xl font-bold tracking-widest text-[var(--main)] -ml-1'
 								},
 								['X']
-							),
+							),*/
 							this.ui.createElement(
 								'button',
 								{
-									class: 'ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]',
+									class: 'grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]',
 									'data-tooltip': 'Share',
 									'data-side': 'right',
 									'data-align': 'center',
