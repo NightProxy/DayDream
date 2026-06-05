@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		window.profiles = profilesAPI;
 		window.globals = globalFunctions;
 		//window.renderer = render;
-		//window.functions = functions;
+		window.functions = functions;
 		window.SWconfig = swConfig;
 		window.ProxySettings = proxySetting;
 	};

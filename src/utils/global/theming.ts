@@ -21,6 +21,7 @@ interface ThemePreset {
   "accent-colors": string[];
   "color-roles"?: Record<string, string>;
   "background-image"?: string;
+  "title-rep"?: string;
   customizable?: boolean;
 }
 
@@ -544,6 +545,10 @@ class Themeing implements ThemeingInterface {
     }
     if (theme["text-color"]) {
       root.style.setProperty("--text", theme["text-color"]);
+    }
+
+    if (theme["title-rep"] && document.getElementById("title-txt")) {
+      document.getElementById("title-txt")!.textContent = theme["title-rep"];
     }
 
     if (
