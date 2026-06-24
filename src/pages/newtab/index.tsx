@@ -879,108 +879,110 @@ class NewTabShortcuts {
 			return;
 		}
 
-		const waitForNightLogin = () => {
-			return new Promise<void>((resolve, reject) => {
-				const maxWaitMs = 10_000;
-				let timeoutId: ReturnType<typeof setTimeout> | null = null;
-				let intervalId: ReturnType<typeof setTimeout> | null = null;
+		// Modal is constructed lazily on first click. night-auth's CDN
+		// bundle is ~1.2 MB; dynamic-importing it inside the click handler
+		// keeps it out of the newtab boot critical path and only pays the
+		// cost when the user actually opens the sign-in flow.
+		let nightLoginPromise: Promise<{ show: () => void } | null> | null =
+			null;
+		const ensureNightLogin = () => {
+			if (nightLoginPromise) return nightLoginPromise;
+			nightLoginPromise = (async () => {
+				try {
+					const [
+						{ default: NightLogin },
+						{ setAccessToken, dumpNightPlusData }
+					] = await Promise.all([
+						import('@nightnetwork/night-auth'),
+						import('@apis/nightplus')
+					]);
 
-				const cleanup = () => {
-					if (timeoutId !== null) {
-						clearTimeout(timeoutId);
-						timeoutId = null;
+					let plusClient: any;
+					try {
+						const plusBasePath = resolvePath('plus');
+						const fileName = 'index.mjs';
+						const mod = await import(
+							`${plusBasePath}/${fileName}`
+						);
+						const PlusClient = mod.default;
+						plusClient = new PlusClient();
+					} catch (error) {
+						console.error(
+							'Failed to load plus client module:',
+							error
+						);
+						return null;
 					}
-					if (intervalId !== null) {
-						clearTimeout(intervalId);
-						intervalId = null;
-					}
-				};
 
-				const checkLibs = () => {
-					if (
-						typeof (window as any).NightLogin !== 'undefined' &&
-						typeof (window as any).NightLoginFrame !== 'undefined'
-					) {
-						cleanup();
-						resolve();
-					} else {
-						intervalId = setTimeout(checkLibs, 50);
-					}
-				};
-
-				timeoutId = setTimeout(() => {
-					cleanup();
-					reject(
-						new Error(
-							`Night+ libraries failed to load within ${maxWaitMs}ms`
-						)
+					return new NightLogin({
+						service: 'DayDreamX',
+						theme: 'system',
+						backdropBlur: '8px',
+						API_URL: resolvePath('api/plus'),
+						// Modal references /bg.png, /nightlogo.png etc. at
+						// runtime — empty assetUrl resolves them against
+						// the served origin root, where srv/vite/copy.ts
+						// puts them.
+						assetUrl: '',
+						// night-auth 1.2.3 contract (confirmed via runtime
+						// log): the modal writes the JWT to
+						// localStorage['access_token'] itself and then
+						// fires onSuccess(undefined) as a "login complete,
+						// go read it" hook. We copy from there into DDX's
+						// canonical SettingsAPI nightplus.json store. The
+						// localStorage stash is left in place — it's the
+						// modal's IPC mechanism, not a competing store,
+						// and wiping it could break other modal flows
+						// (e.g. the "Connected successfully!" already-
+						// signed-in branch checks localStorage on open).
+						onSuccess: async () => {
+							let token: string | null = null;
+							try {
+								token = localStorage.getItem('access_token');
+							} catch {
+								/* private mode / disabled */
+							}
+							if (!token) {
+								console.error(
+									'Night+ login fired onSuccess but no access_token found in localStorage'
+								);
+								return;
+							}
+							console.log('Night+ login successful!');
+							try {
+								await setAccessToken(token);
+								const authUrl =
+									await window.parent.proxy.getAuthUrl();
+								await plusClient.authenticate(token, authUrl);
+								await dumpNightPlusData();
+							} catch (error) {
+								console.error(
+									'Error storing Night+ token:',
+									error
+								);
+								alert(
+									'Login successful, but failed to store token. Please try again.'
+								);
+							}
+						},
+						onCancel: () => {
+							console.log('Login cancelled');
+						}
+					});
+				} catch (error) {
+					console.error(
+						'Failed to load Night+ libraries:',
+						error
 					);
-				}, maxWaitMs);
-
-				checkLibs();
-			});
+					return null;
+				}
+			})();
+			return nightLoginPromise;
 		};
 
-		try {
-			await waitForNightLogin();
-			console.log('Night+ libraries loaded, initializing login');
-		} catch (error) {
-			console.error('Failed to load Night+ libraries:', error);
-			return;
-		}
-
-		const { setAccessToken, dumpNightPlusData } = await import(
-			'@apis/nightplus'
-		);
-
-		let plusClient: any;
-		try {
-			const plusBasePath = resolvePath('plus');
-			const fileName = 'index.mjs';
-			const mod = await import(`${plusBasePath}/${fileName}`);
-			const PlusClient = mod.default;
-			plusClient = new PlusClient();
-		} catch (error) {
-			console.error('Failed to load plus client module:', error);
-			return;
-		}
-
-		const NightLogin = (window as any).NightLogin;
-		const nightLogin = new NightLogin({
-			service: 'DayDreamX',
-			theme: 'system',
-			backdropBlur: '8px',
-			API_URL: resolvePath('api/plus'),
-			onSuccess: async (token: string) => {
-				console.log('Night+ login successful!');
-				console.log('Received token:', token);
-
-				try {
-					await setAccessToken(token);
-					console.log('Token stored successfully');
-
-					const authUrl = await window.parent.proxy.getAuthUrl();
-					console.log('Using auth URL:', authUrl);
-
-					await plusClient.authenticate(token, authUrl);
-					console.log('Session token obtained and stored');
-
-					await dumpNightPlusData();
-					console.log('Night+ data cached successfully');
-				} catch (error) {
-					console.error('Error storing Night+ token:', error);
-					alert(
-						'Login successful, but failed to store token. Please try again.'
-					);
-				}
-			},
-			onCancel: () => {
-				console.log('Login cancelled');
-			}
-		});
-
-		nightPlusBtn.addEventListener('click', () => {
-			nightLogin.show();
+		nightPlusBtn.addEventListener('click', async () => {
+			const nightLogin = await ensureNightLogin();
+			if (nightLogin) nightLogin.show();
 		});
 
 		console.log('Night+ button event listener attached');

@@ -61,7 +61,7 @@ const HOST_SENDER_TAG = '__ddxHostBridge';
  * The proxied window's scramjet `postMessage` wrapper unpacks any message
  * shaped this way and delivers `$scramjet$data` as the visible `event.data`.
  */
-function wrapForProxiedFrame(message: unknown): Record<string, unknown> {
+export function wrapForProxiedFrame(message: unknown): Record<string, unknown> {
 	return {
 		$scramjet$messagetype: 'window',
 		$scramjet$origin: location.origin,
@@ -440,7 +440,11 @@ export class RequestResponseChannel {
 		} catch (err) {
 			const message =
 				err instanceof Error ? err.message : String(err ?? 'unknown_error');
-			this.reply(event.source, { requestId, ok: false, error: message });
+			const code = (err as { code?: string } | null | undefined)?.code;
+			const errorPayload: Record<string, unknown> | string = code
+				? { code, message }
+				: message;
+			this.reply(event.source, { requestId, ok: false, error: errorPayload });
 		}
 	}
 

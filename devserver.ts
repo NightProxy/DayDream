@@ -10,6 +10,8 @@ import obscuraIifeConfig from './src/pkgs/Obscura/rolldown.iife.config.ts';
 import controllerApiConfig from './src/core/SJ/controller/rolldown.api.config.ts';
 import controllerSwConfig from './src/core/SJ/controller/rolldown.sw.config.ts';
 import controllerInjectConfig from './src/core/SJ/controller/rolldown.inject.config.ts';
+import nyxBridgeClientConfig from './src/apis/nyxBridge/client/rolldown.config.ts';
+import nyxBridgeAgentConfig from './src/apis/nyxBridge/agent/rolldown.config.ts';
 
 export function black() {
 	return chalk.bgHex('000001');
@@ -97,7 +99,9 @@ const bundleWatchers = [
 	watchAndRebuildBundle('Obscura (IIFE)', obscuraIifeConfig),
 	watchAndRebuildBundle('Controller (api)', controllerApiConfig),
 	watchAndRebuildBundle('Controller (sw)', controllerSwConfig),
-	watchAndRebuildBundle('Controller (inject)', controllerInjectConfig)
+	watchAndRebuildBundle('Controller (inject)', controllerInjectConfig),
+	watchAndRebuildBundle('NyxBridge client', nyxBridgeClientConfig),
+	watchAndRebuildBundle('NyxBridge agent', nyxBridgeAgentConfig),
 ];
 
 let backendProcess: ChildProcess | null = null;

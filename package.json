@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx devserver.ts",
     "core:dev": "vite dev --host & tsx index.ts",
-    "build": "npm run obscura:bundle:iife && npm run controller:build && npm run devtools-agent:build && tsc -p tsconfig.build.json && vite build",
+    "build": "npm run obscura:bundle:iife && npm run controller:build && npm run devtools-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "start": "tsx index.ts",
@@ -19,7 +19,9 @@
     "sw:build": "rolldown -c src/core/sw/rolldown.config.ts",
     "config:build": "rolldown -c src/core/SJ/config/rolldown.config.ts",
     "controller:build": "rolldown -c src/core/SJ/controller/rolldown.api.config.ts && rolldown -c src/core/SJ/controller/rolldown.sw.config.ts && rolldown -c src/core/SJ/controller/rolldown.inject.config.ts",
-    "devtools-agent:build": "rolldown -c src/apis/devtools/agent/rolldown.config.ts"
+    "devtools-agent:build": "rolldown -c src/apis/devtools/agent/rolldown.config.ts",
+    "nyx-bridge:build": "rolldown -c src/apis/nyxBridge/client/rolldown.config.ts",
+    "nyx-bridge-agent:build": "rolldown -c src/apis/nyxBridge/agent/rolldown.config.ts"
   },
   "devDependencies": {
     "@types/draggabilly": "^2.1.6",
@@ -62,11 +64,10 @@
     "@mercuryworkshop/epoxy-transport": "^3.0.1",
     "@mercuryworkshop/libcurl-transport": "^2.0.5",
     "@mercuryworkshop/proxy-transports": "^1.0.2",
-    "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/v2.0.6-alpha/mercuryworkshop-scramjet-2.0.6-alpha.tgz",
-    "@mercuryworkshop/scramjet-controller": "https://github.com/MercuryWorkshop/scramjet/releases/download/v2.0.6-alpha/mercuryworkshop-scramjet-controller-0.0.11.tgz",
+    "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/v2.0.6-alpha/mercuryworkshop-scramjet-2.0.67-alpha.2.tgz",
     "@mercuryworkshop/wisp-js": "^0.3.3",
     "@nightnetwork/bm-plusworker": "^2.1.9",
-    "@nightnetwork/night-auth": "^1.0.0",
+    "@nightnetwork/night-auth": "^1.2.3",
     "@nightnetwork/obscura": "^1.0.0",
     "@nightnetwork/plus-client": "^1.0.0",
     "@nightnetwork/reflux": "^2.2.0",

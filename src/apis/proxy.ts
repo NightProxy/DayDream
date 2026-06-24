@@ -164,6 +164,36 @@ class Proxy implements ProxyInterface {
 			// may construct `window.devtools` either before or after the
 			// proxy boot finishes, and the hook fires per-frame much later.
 			installDevToolsHook(this.controller, () => (window as any).devtools);
+
+			// Per-frame agent for NyxBridge — injects chobitsu into every non-Nyx
+			// proxied frame so CDP-backed handlers (cookies, screenshots, dialogs,
+			// input events, file uploads) work across tabs.
+			try {
+				const { installNyxBridgeHook } = await import('./nyxBridge/hookInstaller');
+				const { NYX_ORIGINS_DEFAULT } = await import('./nyxBridge/handshake');
+				installNyxBridgeHook({
+					controller: this.controller,
+					allowlist: NYX_ORIGINS_DEFAULT,
+					// Resolve the real (decoded) URL from a scramjet Frame
+					// object. Without this, the agent's nyx-origin skip
+					// check sees the scramjet-encoded URL
+					// (http://localhost:5173/assets/res/...) instead of
+					// the real NyxAI origin, so the agent ends up
+					// injected into NyxAI itself.
+					resolveRealUrl: (frame: any) => {
+						const el = frame?.element as
+							| HTMLIFrameElement
+							| undefined;
+						if (!el) return (frame?.url ?? '') as string;
+						return this.extractEncodedUrl(el) ?? '';
+					},
+					onAgentMessage: (frameId, msg, win) => {
+						(window as any).nyxBridge?._receiveAgentMessage?.(frameId, msg, win);
+					},
+				});
+			} catch (e) {
+				console.warn('[proxy] failed to install nyxBridge hook:', e);
+			}
 		})();
 	}
 
