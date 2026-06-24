@@ -1,4 +1,3 @@
-import * as BareMux from '@mercuryworkshop/bare-mux';
 import { Logger } from '@apis/logging';
 import { SettingsAPI } from '@apis/settings';
 import { HostingAPI } from '@apis/platform/hosting';
@@ -19,7 +18,6 @@ import {
 } from '@core/shared/transport';
 
 interface ProxyInterface {
-	connection: BareMux.BareMuxConnection;
 	searchVar: string;
 	transportVar: string;
 	wispUrl: string;
@@ -60,7 +58,6 @@ interface ProxyInterface {
 	controller: any;
 }
 class Proxy implements ProxyInterface {
-	connection!: BareMux.BareMuxConnection;
 	transportVar!: string;
 	wispUrl!: string;
 	settings!: SettingsAPI;
@@ -90,10 +87,6 @@ class Proxy implements ProxyInterface {
 	private controllerConfig!: SJConfig;
 	private scramjetFlags!: SJFlags;
 	constructor(Controller: any, SW: any, config: SJConfig, flags: SJFlags) {
-		this.connection = new BareMux.BareMuxConnection(
-			resolvePath('bmworker/worker.js')
-		);
-
 		this.settings = new SettingsAPI();
 		this.hosting = new HostingAPI();
 		this.network = new NetworkAPI();
@@ -497,10 +490,6 @@ class Proxy implements ProxyInterface {
 	}
 
 	private async buildTransportConfig() {
-		// Delegates to the shared module so the SW and the page agree
-		// byte-for-byte on transport construction. The `defaultWisp`
-		// provider reproduces this class's prior fallback (current
-		// `this.wispUrl` if set, else same-origin /wisp/).
 		const cfg = await resolveTransportConfig(this.settings, () => {
 			if (this.wispUrl) return this.wispUrl;
 			const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -510,9 +499,6 @@ class Proxy implements ProxyInterface {
 		const built = buildTransport(cfg);
 		this.activeTransport = built.kind;
 
-		// Reconstruct the legacy connection-options shape so existing
-		// callers (e.g. things consuming `connectionOptions`) keep
-		// working without change.
 		const connectionOptions: Record<string, unknown> = {};
 		if (cfg.wisp !== undefined) connectionOptions.wisp = cfg.wisp;
 		if (cfg.proxy !== undefined) connectionOptions.proxy = cfg.proxy;

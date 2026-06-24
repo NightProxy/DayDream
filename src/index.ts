@@ -10,8 +10,6 @@ import importsCSS from '@css/imports.scss?inline';
 import tailwindCSS from '@css/tailwind.css?inline';
 import globalCSS from '@css/global.scss?inline';
 
-import { StrictMode, Suspense } from 'react';
-import { createRoot } from 'react-dom/client';
 import { SettingsAPI } from '@apis/settings';
 import { cache } from '@apis/cache';
 import { EventSystem } from '@apis/events';
@@ -25,8 +23,7 @@ import { Omnibox } from '@browser/omnibox';
 import { Windowing } from '@browser/windowing';
 import { DDXGlobal } from '@utils/global/index';
 import { patchDocument } from './utils/document';
-//import { Render } from "@browser/render";
-import { Render } from '@components/Render';
+import { Render } from "@browser/render";
 import { Items } from '@browser/items';
 import { Protocols } from '@browser/protocols';
 import { Tabs } from '@browser/tabs';
@@ -296,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		await proxy.registerSW(swConfig[proxySetting as keyof typeof swConfig]);
 		await proxy.setTransports();
-		const transport = await proxy.connection.getTransport();
+		const transport = await proxy.getTransports().then(transports => transports.active);
 		if (transport == null) {
 			await proxy.setTransports();
 		}
@@ -403,11 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		window.ProxySettings = proxySetting;
 	};
 
-	createRoot(shadowRoot.getElementById('root')!).render(
-		<StrictMode>
-			<Suspense fallback={<div>Loading...</div>}>
-				<Render onReady={initializeSystem} />
-			</Suspense>
-		</StrictMode>
-	);
+	const root = shadowRoot.getElementById('root') as HTMLDivElement;
+	new Render(root);
+	initializeSystem();
 });
