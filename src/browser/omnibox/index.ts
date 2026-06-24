@@ -3,7 +3,6 @@ import type { Protocols } from '@browser/protocols';
 import type { Tabs } from '@browser/tabs';
 import type { SearchEngineRegistry } from '@apis/searchEngines';
 import type { CommandRegistry } from '@apis/commands';
-import type { AIClient } from '@apis/ai';
 import { Logger } from '@apis/logging';
 import { dispatch } from './dispatch';
 import type { OmniboxMode, OmniboxRow } from './types';
@@ -15,7 +14,6 @@ export interface OmniboxDeps {
 	tabs: Tabs;
 	searchEngines: SearchEngineRegistry;
 	commands: CommandRegistry;
-	aiClient: AIClient;
 	swConfig: Record<any, any>;
 	proxySetting: string;
 }
@@ -156,37 +154,17 @@ export class Omnibox {
 				this.currentRows = [];
 				return;
 			}
-			if (!this.deps.aiClient.isConfigured()) {
-				this.dropdown.innerHTML = ai.renderAINotConfigured();
-				const btn = this.dropdown.querySelector('.omnibox-ai-open-settings');
-				btn?.addEventListener('mousedown', (ev) => {
-					ev.preventDefault();
-					void this.deps.protocols.navigate('ddx://settings');
-					this.close();
-				});
-				this.currentRows = [];
-				return;
-			}
-			this.dropdown.innerHTML = ai.renderAIPromptPrimary({
-				prompt,
-				aiClient: this.deps.aiClient,
-				protocols: this.deps.protocols,
-				dropdown: this.dropdown,
-				onClose: () => this.close(),
-			});
+			// Single-row "Ask Nyx" affordance. Selecting routes through
+			// dispatchPrefillAndNavigate, which queues the prompt on
+			// the nyxBridge and navigates the active tab to ddx://ai —
+			// NyxAI consumes the prefill on handshake completion.
+			this.dropdown.innerHTML = ai.renderAskNyxPrimary(prompt);
+			this.attachRowListeners();
 			this.currentRows = [{
 				id: 'ai-ask',
-				label: `Ask AI: ${prompt}`,
-				onSelect: async () => {
-					const abort = new AbortController();
-					this.currentAbort = abort;
-					await ai.startAIStream({
-						prompt,
-						aiClient: this.deps.aiClient,
-						protocols: this.deps.protocols,
-						dropdown: this.dropdown,
-						onClose: () => this.close(),
-					}, abort);
+				label: `Ask Nyx: ${prompt}`,
+				onSelect: () => {
+					this.dispatchPrefillAndNavigate(prompt);
 				},
 			}];
 			this.selectedRowId = 'ai-ask';
@@ -317,6 +295,39 @@ export class Omnibox {
 			return;
 		}
 		void this.deps.proxy.redirect(this.deps.swConfig as any, this.deps.proxySetting, url, iframe);
+	}
+
+	/**
+	 * `?`-mode dispatch: queue the prompt on the nyxBridge for the
+	 * active iframe, then navigate it to `ddx://ai`. NyxAI's bridge
+	 * client picks up the prefill payload from the post-handshake
+	 * dispatch and starts a fresh chat.
+	 *
+	 * The iframe DOM node is the same before and after `protocols.
+	 * navigate` (only its `src` changes), so queueing against the
+	 * pre-navigation ref reliably hits the right post-handshake
+	 * callback. If `window.nyxBridge` isn't initialized for any
+	 * reason, we still navigate — NyxAI just opens cold without the
+	 * prompt prefilled.
+	 */
+	private dispatchPrefillAndNavigate(prompt: string): void {
+		const trimmed = prompt.trim();
+		if (!trimmed) return;
+		const iframe = document.querySelector('iframe.active') as HTMLIFrameElement | null;
+		const bridge = (window as { nyxBridge?: { queuePrefill?: (i: HTMLIFrameElement, p: { query: string }) => void } }).nyxBridge;
+		if (iframe && bridge?.queuePrefill) {
+			try {
+				bridge.queuePrefill(iframe, { query: trimmed });
+			} catch (e) {
+				console.warn('[omnibox] nyxBridge.queuePrefill threw:', e);
+			}
+		} else if (!iframe) {
+			console.warn('[omnibox] no active iframe for prefill');
+		} else {
+			console.warn('[omnibox] nyxBridge not available; navigating without prefill');
+		}
+		void this.deps.protocols.navigate('ddx://ai/');
+		this.close();
 	}
 
 	private attachRowListeners(): void {

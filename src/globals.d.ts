@@ -3,7 +3,6 @@ import type * as ScramjetGlobal from '@mercuryworkshop/scramjet';
 import type * as ScramjetControllerGlobal from '@mercuryworkshop/scramjet-controller';
 import type { SearchEngineRegistry } from '@apis/searchEngines';
 import type { CommandRegistry } from '@apis/commands';
-import type { AIClient } from '@apis/ai';
 import type { Omnibox } from '@browser/omnibox';
 
 declare global {
@@ -22,7 +21,6 @@ declare global {
 		settings: SettingsAPI;
 		searchEngines: SearchEngineRegistry;
 		commands: CommandRegistry;
-		aiClient: AIClient;
 		omnibox: Omnibox;
 		cache: CacheAPI;
 		eventsAPI: EventSystem;
@@ -42,6 +40,7 @@ declare global {
 		SWSettings: any;
 		ProxySettings: string;
 		devtools: import('@apis/devtools').DevToolsManager;
+		nyxBridge?: import('@apis/nyxBridge').NyxBridge;
 		liveInject?: any;
 		codeInject?: any;
 		d: ShadowRoot;

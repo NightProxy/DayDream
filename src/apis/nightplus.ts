@@ -125,6 +125,37 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
+/**
+ * Called once at boot from src/index.tsx to proactively refresh the
+ * access token using the HttpOnly refresh-token cookie. Two reasons:
+ *
+ *   1. The on-disk access token may have expired since last session;
+ *      refreshing here avoids an immediate 401 → reactive-retry on
+ *      the first Plus-gated request.
+ *
+ *   2. NyxAI loads inside ddx://ai and reads DDX's access token
+ *      through the nyxBridge auth.getPlusToken handler. If DDX hands
+ *      it an expired token the user sees a stale-auth state in NyxAI
+ *      until the next interaction. Refreshing on boot keeps the
+ *      bridge contract honest: "the token DDX gives you is fresh".
+ *
+ * No-op (returns false) if there's no stored access token at all —
+ * a brand-new user shouldn't trigger a /refresh call.
+ *
+ * Errors are swallowed: a refresh failure leaves the existing token in
+ * place so reactive retry still gets a chance.
+ */
+export async function tryRefreshOnBoot(): Promise<boolean> {
+  try {
+    const existing = await getAccessToken();
+    if (!existing) return false;
+    return await refreshAccessToken();
+  } catch (error) {
+    console.warn("[nightplus] boot-time refresh failed:", error);
+    return false;
+  }
+}
+
 export async function checkNightPlusStatus(): Promise<boolean> {
   try {
     const accessToken = await getAccessToken();

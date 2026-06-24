@@ -20,7 +20,7 @@ import { Logger } from '@apis/logging';
 import { Proxy } from '@apis/proxy';
 import { SearchEngineRegistry } from '@apis/searchEngines';
 import { CommandRegistry } from '@apis/commands';
-import { AIClient } from '@apis/ai';
+import { createNyxBridge } from '@apis/nyxBridge';
 import { Omnibox } from '@browser/omnibox';
 import { Windowing } from '@browser/windowing';
 import { DDXGlobal } from '@utils/global/index';
@@ -32,7 +32,7 @@ import { Protocols } from '@browser/protocols';
 import { Tabs } from '@browser/tabs';
 import { Functions } from '@browser/functions';
 import { universalTheme } from '@utils/global/universalTheme';
-import { checkNightPlusStatus } from '@apis/nightplus';
+import { checkNightPlusStatus, tryRefreshOnBoot } from '@apis/nightplus';
 import { initClipboardDeobfuscator } from '@utils/clipboardDeobfuscator';
 import { basePath, resolvePath } from '@utils/basepath';
 import { DevToolsManager } from '@apis/devtools';
@@ -103,31 +103,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 	});
 	window.devtools = devtools;
 
-	const aiClient = new AIClient(settingsAPI);
-	await aiClient.reloadConfig();
-	window.aiClient = aiClient;
-
 	window.addEventListener('message', (event) => {
 		if (event.data?.type === 'searchEngines-updated') {
 			void window.searchEngines.load();
 		}
-		if (event.data?.type === 'ai-config-updated') {
-			void window.aiClient.reloadConfig();
-		}
 		if (event.data?.type === 'commands-updated') {
 			// Reserved for future custom-commands feature; v1 has no behavior here.
-		}
-		if (event.data?.type === 'ai-test-request') {
-			// Reload config before testing, in case the popup just persisted new values.
-			const handle = async () => {
-				await window.aiClient.reloadConfig();
-				const result = await window.aiClient.test();
-				(event.source as Window | null)?.postMessage(
-					{ type: 'ai-test-result', requestId: event.data?.requestId, result },
-					{ targetOrigin: '*' }
-				);
-			};
-			void handle();
 		}
 		if (event.data?.type === 'keybinds-updated') {
 			const reseed = async () => {
@@ -249,6 +230,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 		window.proxy = proxy;
 		//@ts-ignore
 		window.logging = loggingAPI;
+
+		// Proactively refresh the Night+ access token on boot so any
+		// embedded app that reads through nyxBridge (NyxAI's
+		// auth.getPlusToken) gets a fresh token rather than a stale one
+		// from last session. Fire-and-forget — the refresh path swallows
+		// its own errors and reactive 401-retry remains as the safety
+		// net. We don't await before nyxBridge.init() because the bridge
+		// only needs to be wired before NyxAI's iframe loads, and
+		// refresh is just a network round-trip that can complete in the
+		// background.
+		void tryRefreshOnBoot();
+
+		// NyxAI bridge — host-side coordinator that gives ddx://ai (NyxAI)
+		// typed control over DDX tabs. Stub for now; subsequent tasks wire
+		// handshake, channel, and per-frame agent.
+		const nyxBridge = createNyxBridge({
+			tabs: window.tabs,
+			proxy: window.proxy,
+			settings: window.settings,
+		});
+		await nyxBridge.init();
+		window.nyxBridge = nyxBridge;
 
 		const startupBehavior =
 			(await settingsAPI.getItem('startupBehavior')) || 'newtab';
@@ -384,7 +387,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 				tabs,
 				searchEngines,
 				commands,
-				aiClient,
 				swConfig,
 				proxySetting,
 			});

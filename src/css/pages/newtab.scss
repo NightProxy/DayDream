@@ -52,6 +52,10 @@ body {
   fill: #ffffff;
 }
 
+.edit-shortcut-btn {
+  cursor: pointer;
+}
+
 div:has(.banner) {
   display: flex;
   flex-direction: column;

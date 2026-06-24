@@ -1778,78 +1778,6 @@ function initializeSearchEnginesUI() {
   });
 }
 
-function broadcastAIConfigUpdate() {
-  window.opener?.postMessage({ type: "ai-config-updated" }, "*");
-}
-
-async function initializeAIPanel() {
-  const urlEl = document.getElementById("ai-provider-url") as HTMLInputElement | null;
-  const keyEl = document.getElementById("ai-api-key") as HTMLInputElement | null;
-  const modelEl = document.getElementById("ai-model") as HTMLInputElement | null;
-  const streamEl = document.getElementById("ai-streaming") as HTMLInputElement | null;
-  const testBtn = document.getElementById("ai-test") as HTMLButtonElement | null;
-  const testResultEl = document.getElementById("ai-test-result") as HTMLDivElement | null;
-  if (!urlEl || !keyEl || !modelEl || !streamEl || !testBtn || !testResultEl) return;
-
-  // Load existing values
-  urlEl.value = (await settingsAPI.getItem<string>("aiProviderUrl")) ?? "";
-  keyEl.value = (await settingsAPI.getItem<string>("aiApiKey")) ?? "";
-  modelEl.value = (await settingsAPI.getItem<string>("aiModel")) ?? "";
-  const streamingStored = await settingsAPI.getItem<unknown>("aiStreaming");
-  streamEl.checked = streamingStored === undefined || streamingStored === null ? true : !!streamingStored;
-
-  const persist = async () => {
-    await settingsAPI.setItem("aiProviderUrl", urlEl.value);
-    await settingsAPI.setItem("aiApiKey", keyEl.value);
-    await settingsAPI.setItem("aiModel", modelEl.value);
-    await settingsAPI.setItem("aiStreaming", streamEl.checked);
-    broadcastAIConfigUpdate();
-  };
-
-  urlEl.addEventListener("change", persist);
-  keyEl.addEventListener("change", persist);
-  modelEl.addEventListener("change", persist);
-  streamEl.addEventListener("change", persist);
-
-  testBtn.addEventListener("click", async () => {
-    testResultEl.textContent = "Testing…";
-    testResultEl.className = "text-xs text-[var(--proto)]";
-    await persist();
-    if (!window.opener) {
-      testResultEl.textContent = "✗ Settings popup is detached — cannot test.";
-      testResultEl.className = "text-xs text-red-400";
-      return;
-    }
-    // Round-trip through the main window so the test request runs in the
-    // SW-intercepted scope (popup window can't reach most provider endpoints
-    // due to CORS).
-    const requestId = `ai-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const resultPromise = new Promise<{ ok: true } | { ok: false; error: string }>((resolve) => {
-      const onMsg = (ev: MessageEvent) => {
-        if (ev.data?.type === 'ai-test-result' && ev.data?.requestId === requestId) {
-          window.removeEventListener('message', onMsg);
-          resolve(ev.data.result);
-        }
-      };
-      window.addEventListener('message', onMsg);
-      // Timeout after 30s
-      setTimeout(() => {
-        window.removeEventListener('message', onMsg);
-        resolve({ ok: false, error: 'Test timed out (30s).' });
-      }, 30000);
-    });
-    window.opener.postMessage({ type: 'ai-test-request', requestId }, '*');
-    const result = await resultPromise;
-    if (result.ok) {
-      testResultEl.textContent = "✓ Connected";
-      testResultEl.className = "text-xs text-green-400";
-    } else {
-      testResultEl.textContent = `✗ ${result.error}`;
-      testResultEl.className = "text-xs text-red-400";
-    }
-  });
-}
-
 function initializeCommandsPanel() {
   const listEl = document.getElementById("commands-list") as HTMLDivElement | null;
   const filterEl = document.getElementById("commands-filter") as HTMLInputElement | null;
@@ -1998,6 +1926,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   initializeKeybindsUI();
   await searchEngineRegistry.load();
   initializeSearchEnginesUI();
-  await initializeAIPanel();
   initializeCommandsPanel();
 });

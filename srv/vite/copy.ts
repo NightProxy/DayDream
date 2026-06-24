@@ -1,7 +1,6 @@
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
-import { baremuxPath as bmworkerPath } from "@nightnetwork/bm-plusworker/path";
 import {tfsPath} from "@terbiumos/tfs";
 import path from "path";
 
@@ -59,25 +58,25 @@ const copyMap = {
     files: ["*"],
     dest: routePaths.reflux,
   },
+  // Background images and brand assets the NightLogin modal references
+  // at runtime as `${assetUrl}/bg.png`, `${assetUrl}/nightlogo.png`, etc.
+  // We pass `assetUrl: ""` (the default) at construction time so the modal
+  // resolves them against the served root — these copies put them there.
+  //
+  // The UMD/ESM JavaScript bundles and CSS are NO LONGER copied: night-auth
+  // 1.2.3 ships proper ESM entry points (`exports["."].import`), so DDX
+  // imports the modal directly via `import NightLogin from "@nightnetwork/
+  // night-auth"`. Vite bundles it like any other npm dep. (See
+  // src/pages/newtab/index.tsx:setupNightPlusButton.)
   auth: {
     path: authPath,
     files: [
-      "assets/nightloginflow.css",
-      "night-login-frame.umd.js",
-      "night-login.umd.js",
-      "night-login.es.js.map",
       "vite.svg",
       "nightlogo.png",
-      "nightloginflow.css",
       "bg_alt.jpeg",
       "nightplus.png",
       "nightplusheader.png",
       "nightplus_icon.png",
-      "night-login-frame.es.js",
-      "night-login.umd.js.map",
-      "night-login-frame.es.js.map",
-      "night-login-frame.umd.js.map",
-      "night-login.es.js",
       "bg.png",
       "bg_alt_2.png",
     ],
@@ -87,11 +86,6 @@ const copyMap = {
     path: plusClientPath,
     files: ["*"],
     dest: routePaths.plusClient,
-  },
-  bmworker: {
-    path: bmworkerPath,
-    files: ["*"],
-    dest: routePaths.bmworker,
   },
   eruda: {
     path: erudaPath,
@@ -136,6 +130,16 @@ const copyMap = {
   devtoolsAgent: {
     path: path.resolve("src/apis/devtools/agent/dist"),
     files: ["devtools-agent.js"],
+    dest: routePaths.scramjet,
+  },
+  nyxBridgeClient: {
+    path: path.resolve("src/apis/nyxBridge/client/dist"),
+    files: ["nyx-bridge-client.js"],
+    dest: routePaths.scramjet,
+  },
+  nyxBridgeAgent: {
+    path: path.resolve("src/apis/nyxBridge/agent/dist"),
+    files: ["nyx-bridge-agent.js"],
     dest: routePaths.scramjet,
   },
 };
