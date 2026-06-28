@@ -1,6 +1,7 @@
 import { createServer } from 'vite';
 import { stdout } from 'node:process';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { resolve as pathResolve } from 'node:path';
 import chalk from 'chalk';
 import { build, watch } from 'rolldown';
 import sjConfig from './src/core/SJ/config/rolldown.config.ts';
@@ -12,6 +13,11 @@ import controllerSwConfig from './src/core/SJ/controller/rolldown.sw.config.ts';
 import controllerInjectConfig from './src/core/SJ/controller/rolldown.inject.config.ts';
 import nyxBridgeClientConfig from './src/apis/nyxBridge/client/rolldown.config.ts';
 import nyxBridgeAgentConfig from './src/apis/nyxBridge/agent/rolldown.config.ts';
+import devtoolsAgentConfig from './src/apis/devtools/agent/rolldown.config.ts';
+import devtoolsWorkerAgentConfig from './src/apis/devtools/worker-agent/rolldown.config.ts';
+import heliumBootstrapConfig from './src/core/helium/bootstrap/rolldown.client.config.ts';
+import miniChromeConfig from './src/core/helium/content/rolldown.mini-chrome.config.ts';
+import neutronWorkerConfig from './src/core/helium/content/rolldown.neutron-worker.config.ts';
 
 export function black() {
 	return chalk.bgHex('000001');
@@ -102,7 +108,100 @@ const bundleWatchers = [
 	watchAndRebuildBundle('Controller (inject)', controllerInjectConfig),
 	watchAndRebuildBundle('NyxBridge client', nyxBridgeClientConfig),
 	watchAndRebuildBundle('NyxBridge agent', nyxBridgeAgentConfig),
+	watchAndRebuildBundle('DevTools agent', devtoolsAgentConfig),
+	watchAndRebuildBundle('DevTools worker agent', devtoolsWorkerAgentConfig),
+	watchAndRebuildBundle('Helium bootstrap', heliumBootstrapConfig),
+	watchAndRebuildBundle('Helium neutron-worker', neutronWorkerConfig),
+	watchAndRebuildBundle('Helium mini-chrome', miniChromeConfig),
 ];
+
+// ─────────────────────────────────────────────────────────────────────────
+// `file:` workspace packages (declared via `file:<path>` in package.json)
+// expose pre-built outputs through their own `exports` map — for example,
+// `neutron/package.json` points consumers at `./dist/index.js` and
+// `./dist/worker.js`, NOT at `./src/*.ts`. Rolldown's downstream watchers
+// (e.g. neutron-worker) walk THAT graph, so they only react when the
+// package's `dist/` is updated. Without a separate watcher, edits to
+// `neutron/src/*.ts` go nowhere until the package is manually rebuilt.
+//
+// Spawn a long-lived `tsc --watch` per such package so saves in
+// `<pkg>/src/` flow through to `<pkg>/dist/`, which then trips the
+// downstream rolldown watchers to rebundle their consumers.
+// ─────────────────────────────────────────────────────────────────────────
+
+interface TscWatchHandle {
+	name: string;
+	process: ChildProcess;
+}
+
+const tscWatchers: TscWatchHandle[] = [];
+
+function watchAndRebuildTscPackage(name: string, packageDir: string): void {
+	const absDir = pathResolve(packageDir);
+	const child = spawn(
+		'npx',
+		['tsc', '--watch', '--preserveWatchOutput', '-p', 'tsconfig.json'],
+		{
+			cwd: absDir,
+			env: process.env,
+			stdio: ['ignore', 'pipe', 'pipe'],
+		}
+	);
+
+	const handleLine = (raw: string) => {
+		const line = raw.trimEnd();
+		if (!line) return;
+		// tsc --watch prints structured progress lines:
+		//   "... Starting compilation in watch mode..."  (initial)
+		//   "... File change detected. Starting incremental compilation..."
+		//   "... Found 0 errors. Watching for file changes."   (success)
+		//   "... Found N errors. Watching for file changes."   (failure)
+		if (/Found 0 errors/.test(line)) {
+			console.log(chalk.green(`${name} bundle updated.`));
+			return;
+		}
+		if (/Found \d+ error/.test(line)) {
+			resetSuccessLog();
+			console.log(chalk.red(`${name} rebuild failed:`));
+			console.log(line);
+			return;
+		}
+		// File-change banner and the initial start banner — useful for
+		// signaling that a rebuild is in flight, but skip them unless we
+		// hit an error to keep the log quiet.
+	};
+
+	let stdoutBuf = '';
+	child.stdout?.on('data', chunk => {
+		stdoutBuf += chunk.toString();
+		let idx = stdoutBuf.indexOf('\n');
+		while (idx !== -1) {
+			handleLine(stdoutBuf.slice(0, idx));
+			stdoutBuf = stdoutBuf.slice(idx + 1);
+			idx = stdoutBuf.indexOf('\n');
+		}
+	});
+	child.stderr?.on('data', chunk => {
+		const text = chunk.toString().trimEnd();
+		if (text) {
+			resetSuccessLog();
+			console.log(chalk.red(`${name} (stderr):`));
+			console.log(text);
+		}
+	});
+	child.on('exit', (code, signal) => {
+		if (signal || code === null) return; // shutdown path
+		if (code !== 0) {
+			console.log(
+				chalk.red(`${name} tsc watcher exited with code ${code}.`)
+			);
+		}
+	});
+
+	tscWatchers.push({ name, process: child });
+}
+
+watchAndRebuildTscPackage('Neutron', './neutron');
 
 let backendProcess: ChildProcess | null = null;
 
@@ -163,6 +262,16 @@ async function gracefulShutdown(signal: string) {
 			await watcher.close();
 		} catch {
 			// ignore watcher close errors during shutdown
+		}
+	}
+
+	for (const { process: child } of tscWatchers) {
+		if (!child.killed) {
+			try {
+				child.kill('SIGTERM');
+			} catch {
+				// ignore tsc termination errors during shutdown
+			}
 		}
 	}
 

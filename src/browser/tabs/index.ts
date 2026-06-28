@@ -266,6 +266,9 @@ class Tabs implements TabsInterface {
 		if (!removed) return;
 		if (draggedIndex < targetIndex) targetIndex -= 1;
 		this.tabs.splice(targetIndex, 0, removed);
+		document.dispatchEvent(new CustomEvent('tabMoved', {
+			detail: { tabId: draggedTabId, fromIndex: draggedIndex, toIndex: targetIndex },
+		}));
 	};
 
 	reorderPinned = (tabId: string, toIndex: number) => {
@@ -364,6 +367,9 @@ class Tabs implements TabsInterface {
 		} else {
 			this.pinnedTabIds.delete(tabId);
 		}
+		document.dispatchEvent(new CustomEvent('tabPinChanged', {
+			detail: { tabId, pinned },
+		}));
 	};
 
 	syncTabVisualState = (tabId: string) => {

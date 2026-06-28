@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Neutron echo example</title>
+  </head>
+  <body>
+    <h1>Neutron echo example</h1>
+    <p>Open the devtools console.</p>
+    <script type="module">
+      import { Neutron } from '../../src/index.ts';
+
+      const n = new Neutron({
+        workerUrl: new URL('./worker.ts', import.meta.url),
+      });
+
+      n.on('greet', async (req) => `Hello, ${req.name}!`);
+      n.on('add', (req) => req.a + req.b);
+      n.on('oops', () => { throw new Error('intentional failure'); });
+    </script>
+  </body>
+</html>

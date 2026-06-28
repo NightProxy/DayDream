@@ -294,6 +294,13 @@ export class KeyboardManager implements KeyboardInterface {
     console.log("Ungroup tab functionality not yet implemented");
   }
 
+  /**
+   * Install a keydown listener that fires `callback` when the supplied
+   * modifier+key combination is detected. Returns a disposer that
+   * removes the listener — call it when the shortcut owner shuts down
+   * (e.g. an extension being killed) to avoid leaking listeners on the
+   * window.
+   */
   addKeyboardShortcut(
     combination: {
       alt?: boolean;
@@ -302,8 +309,8 @@ export class KeyboardManager implements KeyboardInterface {
       key: string;
     },
     callback: (event: KeyboardEvent) => void | Promise<void>,
-  ): void {
-    window.addEventListener("keydown", async (event) => {
+  ): () => void {
+    const handler = async (event: KeyboardEvent) => {
       const matches =
         (!combination.alt || event.altKey) &&
         (!combination.ctrl || event.ctrlKey) &&
@@ -313,7 +320,11 @@ export class KeyboardManager implements KeyboardInterface {
       if (matches) {
         await callback(event);
       }
-    });
+    };
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
   }
 
   async updateShortcutsFromSettings(): Promise<void> {

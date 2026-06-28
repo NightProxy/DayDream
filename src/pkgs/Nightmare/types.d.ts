@@ -15,6 +15,8 @@ interface NightmareUI {
 	sidemenu: SideMenu;
 	sidepanel: SidePanel;
 	rightclickmenu: RightClickMenu;
+	notifications: import('./notifications').NotificationManager | null;
+	permissionPrompt: import('./permissionPrompt').PermissionPrompt | null;
 	createElement(
 		tag: string,
 		attributes?: Record<string, any>,

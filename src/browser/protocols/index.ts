@@ -92,6 +92,11 @@ class Protocols implements ProtoInterface {
 		page: string,
 		customUrl?: string
 	): Promise<void> {
+		// User setting overrides any extension override. If an
+		// extension override is active and the user sets a custom
+		// newtab, the user wins (matches Chrome's "user control
+		// always" UX).
+		this.extensionOverrides.newtab = null;
 		if (page === 'custom' && customUrl) {
 			this.register('ddx', 'newtab', customUrl, true);
 		} else if (page === 'blank') {
@@ -112,6 +117,73 @@ class Protocols implements ProtoInterface {
 		} else {
 			this.register('ddx', 'home', resolvePath('internal/newtab'), false);
 		}
+	}
+
+	// --- Extension URL Overrides --------------------------------------
+	//
+	// `chrome_url_overrides.{newtab,bookmarks,history}` support. An
+	// extension can claim one of these slots; we route the matching
+	// `ddx://X` URL to the extension's served HTML instead of the
+	// default `internal/<X>` page.
+	//
+	// State here is just the "currently active override URL" per slot.
+	// The lifecycle (pending/confirm/decline/declined-list) lives in
+	// `apis/extensions/urlOverrides.ts`; we're the renderer that
+	// applies its decisions to the route table.
+	//
+	// Precedence: explicit user setting > extension override > default.
+	// `updateNewtabProtocol` clears the extension's newtab slot when
+	// the user picks a custom newtab, so the user always wins.
+
+	private extensionOverrides: { newtab: string | null; bookmarks: string | null; history: string | null } = {
+		newtab: null,
+		bookmarks: null,
+		history: null,
+	};
+
+	/**
+	 * Apply an extension-served URL to one of the override slots.
+	 * Re-registers the `ddx://<kind>` route. Idempotent.
+	 *
+	 * `url` should be `https://<extId>.ddx/<path>` — i.e. directly
+	 * pointing at HeliumExtensionPlugin-served content. We mark it
+	 * `proxy: false` because the extension serves through its own
+	 * SW plugin path, not Scramjet's web-content proxy.
+	 */
+	setExtensionOverride(kind: 'newtab' | 'bookmarks' | 'history', url: string): void {
+		this.extensionOverrides[kind] = url;
+		this.register('ddx', kind, url, false);
+	}
+
+	/**
+	 * Reset a slot back to its default `internal/<kind>` page.
+	 */
+	async clearExtensionOverride(kind: 'newtab' | 'bookmarks' | 'history'): Promise<void> {
+		this.extensionOverrides[kind] = null;
+		// Restore the default. For newtab specifically, we have to
+		// respect the user's `newtabPage` setting (custom/blank/default)
+		// which the user may have set independently.
+		if (kind === 'newtab') {
+			const page = await this.settings.getItem('newtabPage');
+			const customUrl = await this.settings.getItem('newtabCustomUrl');
+			if (page === 'custom' && customUrl) {
+				this.register('ddx', 'newtab', customUrl, true);
+			} else if (page === 'blank') {
+				this.register('ddx', 'newtab', 'about:blank', false);
+			} else {
+				this.register('ddx', 'newtab', resolvePath('internal/newtab'), false);
+			}
+			return;
+		}
+		// bookmarks and history have no settings story today — restore
+		// to the wildcard-default behavior by registering an explicit
+		// entry pointing at `internal/<kind>`.
+		this.register('ddx', kind, resolvePath(`internal/${kind}`), false);
+	}
+
+	/** Read the currently active extension override URL (or null). */
+	getExtensionOverride(kind: 'newtab' | 'bookmarks' | 'history'): string | null {
+		return this.extensionOverrides[kind];
 	}
 
 	register(proto: string, path: string, url: string, proxy: boolean): void {
@@ -279,18 +351,39 @@ class Protocols implements ProtoInterface {
 
 			if (iframe) {
 				console.log('[Protocols] Setting iframe src to:', processedUrl);
+				const navTabId =
+					iframe.getAttribute('data-tab-id') || 'unknown';
+				// Phase 'before': fire prior to mutating iframe.src so
+				// listeners that want to observe navigation intent (and
+				// potentially veto in future versions) can do so.
+				const beforeDetail = {
+					tabId: navTabId,
+					url: processedUrl,
+					phase: 'before' as const,
+					fromProtocol: true
+				};
+				window.dispatchEvent(
+					new CustomEvent('tabNavigated', { detail: beforeDetail })
+				);
+				document.dispatchEvent(
+					new CustomEvent('tabNavigated', { detail: beforeDetail })
+				);
+
 				iframe.setAttribute('src', processedUrl);
 				this.logging.createLog(`Navigated to: ${processedUrl}`);
 
+				// Phase 'committed': URL has been applied to the iframe.
+				const committedDetail = {
+					tabId: navTabId,
+					url: processedUrl,
+					phase: 'committed' as const,
+					fromProtocol: true
+				};
 				window.dispatchEvent(
-					new CustomEvent('tabNavigated', {
-						detail: {
-							tabId:
-								iframe.getAttribute('data-tab-id') || 'unknown',
-							url: processedUrl,
-							fromProtocol: true
-						}
-					})
+					new CustomEvent('tabNavigated', { detail: committedDetail })
+				);
+				document.dispatchEvent(
+					new CustomEvent('tabNavigated', { detail: committedDetail })
 				);
 			} else {
 				console.log('[Protocols] No active iframe found');

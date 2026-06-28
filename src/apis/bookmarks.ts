@@ -28,6 +28,26 @@ export interface BookmarkTreeNode {
   children: BookmarkTreeNode[];
 }
 
+/** Chrome-style change event emitted by BookmarkManager.addChangeListener. */
+export type BookmarkChangeEvent =
+  | { type: 'created'; id: string; node: BookmarkItem }
+  | {
+      type: 'removed';
+      id: string;
+      info: { parentId: string; index: number; node: BookmarkItem };
+    }
+  | { type: 'changed'; id: string; changes: { title?: string; url?: string } }
+  | {
+      type: 'moved';
+      id: string;
+      info: {
+        parentId: string;
+        index: number;
+        oldParentId: string;
+        oldIndex: number;
+      };
+    };
+
 export interface CreateBookmarkData {
   title: string;
   url: string;
@@ -70,6 +90,19 @@ export function isBookmark(item: BookmarkItem): item is Bookmark {
 }
 
 export class BookmarkManager {
+  private static instance: BookmarkManager | null = null;
+
+  /**
+   * Singleton accessor used by chrome.bookmarks handlers. All callers
+   * within the renderer should use this to avoid duplicate stores.
+   */
+  public static getInstance(config: BookmarkManagerConfig = {}): BookmarkManager {
+    if (!BookmarkManager.instance) {
+      BookmarkManager.instance = new BookmarkManager(config);
+    }
+    return BookmarkManager.instance;
+  }
+
   private storageKey: string;
   private faviconCacheKey: string;
   private store: SettingsAPI;
@@ -78,6 +111,7 @@ export class BookmarkManager {
   private folders: BookmarkFolder[] = [];
   private faviconCache: FaviconCache = {};
   private listeners: Set<() => void> = new Set();
+  private changeListeners: Set<(event: BookmarkChangeEvent) => void> = new Set();
 
   constructor(config: BookmarkManagerConfig = {}) {
     this.storageKey = config.storageKey || "bookmarks-data";
@@ -93,6 +127,23 @@ export class BookmarkManager {
 
   private notifyListeners(): void {
     this.listeners.forEach((callback) => callback());
+  }
+
+  public addChangeListener(
+    fn: (event: BookmarkChangeEvent) => void,
+  ): () => void {
+    this.changeListeners.add(fn);
+    return () => this.changeListeners.delete(fn);
+  }
+
+  private emitChange(event: BookmarkChangeEvent): void {
+    for (const fn of this.changeListeners) {
+      try {
+        fn(event);
+      } catch (e) {
+        console.error("[BookmarkManager] change listener threw:", e);
+      }
+    }
   }
 
   public async loadFromStorage(): Promise<void> {
@@ -178,6 +229,7 @@ export class BookmarkManager {
     this.bookmarks.push(bookmark);
     await this.syncIfEnabled();
     this.notifyListeners();
+    this.emitChange({ type: "created", id: bookmark.id, node: bookmark });
     return bookmark;
   }
 
@@ -200,6 +252,10 @@ export class BookmarkManager {
 
     await this.syncIfEnabled();
     this.notifyListeners();
+    const changes: { title?: string; url?: string } = {};
+    if (typeof cleanUpdates.title === "string") changes.title = cleanUpdates.title;
+    if (typeof cleanUpdates.url === "string") changes.url = cleanUpdates.url;
+    this.emitChange({ type: "changed", id, changes });
     return this.bookmarks[index];
   }
 
@@ -207,9 +263,19 @@ export class BookmarkManager {
     const index = this.bookmarks.findIndex((b) => b.id === id);
     if (index === -1) return false;
 
+    const removed = this.bookmarks[index];
     this.bookmarks.splice(index, 1);
     await this.syncIfEnabled();
     this.notifyListeners();
+    this.emitChange({
+      type: "removed",
+      id,
+      info: {
+        parentId: removed.parentId ?? "",
+        index: removed.index,
+        node: removed,
+      },
+    });
     return true;
   }
 
@@ -231,6 +297,7 @@ export class BookmarkManager {
     this.folders.push(folder);
     await this.syncIfEnabled();
     this.notifyListeners();
+    this.emitChange({ type: "created", id: folder.id, node: folder });
     return folder;
   }
 
@@ -249,6 +316,9 @@ export class BookmarkManager {
 
     await this.syncIfEnabled();
     this.notifyListeners();
+    const changes: { title?: string; url?: string } = {};
+    if (typeof updates.title === "string") changes.title = updates.title;
+    this.emitChange({ type: "changed", id, changes });
     return this.folders[index];
   }
 
@@ -280,15 +350,28 @@ export class BookmarkManager {
       }
     }
 
+    const removedFolder = this.folders[folderIndex];
     this.folders.splice(folderIndex, 1);
     await this.syncIfEnabled();
     this.notifyListeners();
+    this.emitChange({
+      type: "removed",
+      id,
+      info: {
+        parentId: removedFolder.parentId ?? "",
+        index: removedFolder.index,
+        node: removedFolder,
+      },
+    });
     return true;
   }
 
   public async moveItem(data: MoveItemData): Promise<boolean> {
     const item = this.getItemById(data.itemId);
     if (!item) return false;
+
+    const oldParentId = item.parentId ?? "";
+    const oldIndex = item.index;
 
     if (isFolder(item)) {
       const folderIndex = this.folders.findIndex((f) => f.id === data.itemId);
@@ -312,6 +395,16 @@ export class BookmarkManager {
 
     await this.syncIfEnabled();
     this.notifyListeners();
+    this.emitChange({
+      type: "moved",
+      id: data.itemId,
+      info: {
+        parentId: data.newParentId ?? "",
+        index: data.newIndex,
+        oldParentId,
+        oldIndex,
+      },
+    });
     return true;
   }
 

@@ -132,6 +132,11 @@ const copyMap = {
     files: ["devtools-agent.js"],
     dest: routePaths.scramjet,
   },
+  devtoolsWorkerAgent: {
+    path: path.resolve("src/apis/devtools/worker-agent/dist"),
+    files: ["devtools-worker-agent.js"],
+    dest: routePaths.scramjet,
+  },
   nyxBridgeClient: {
     path: path.resolve("src/apis/nyxBridge/client/dist"),
     files: ["nyx-bridge-client.js"],

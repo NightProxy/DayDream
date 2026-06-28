@@ -5,7 +5,7 @@ import type { SearchEngineRegistry } from '@apis/searchEngines';
 import type { CommandRegistry } from '@apis/commands';
 import { Logger } from '@apis/logging';
 import { dispatch } from './dispatch';
-import type { OmniboxMode, OmniboxRow } from './types';
+import type { OmniboxMode, OmniboxRow, DispatchResult } from './types';
 
 export interface OmniboxDeps {
 	input: HTMLInputElement;
@@ -29,6 +29,8 @@ export class Omnibox {
 	private currentAbort: AbortController | null = null;
 	private blurTimeout: number | null = null;
 	private logger: Logger | null = null;
+	private currentDispatch: DispatchResult | null = null;
+	private currentExtensionKeyword: string | null = null;
 
 	constructor(deps: OmniboxDeps) {
 		this.deps = deps;
@@ -134,15 +136,45 @@ export class Omnibox {
 	private async handleInput(): Promise<void> {
 		const value = this.input.value;
 		const result = dispatch(value);
+		this.currentDispatch = result;
 		this.currentMode = result.mode;
 		this.currentRows = [];
 		this.selectedRowId = null;
+		// chrome.omnibox.onInputStarted: fire once per entry into extension mode.
+		if (result.mode === 'extension' && result.extension) {
+			if (this.currentExtensionKeyword !== result.extension.keyword) {
+				this.currentExtensionKeyword = result.extension.keyword;
+				try {
+					(window as { extensions?: { fireEventOn?: (id: string, m: string, a: unknown[]) => void } }).extensions
+						?.fireEventOn?.(result.extension.extId, 'chrome.omnibox.onInputStarted', []);
+				} catch (err) {
+					console.warn('[omnibox] onInputStarted dispatch failed:', err);
+				}
+			}
+		} else if (this.currentExtensionKeyword) {
+			// User left extension mode — fire onInputCancelled on the last ext.
+			try {
+				(window as { extensions?: { fireEventOn?: (id: string, m: string, a: unknown[]) => void } }).extensions
+					?.fireEventOn?.(this.findExtIdForKeyword(this.currentExtensionKeyword) ?? '', 'chrome.omnibox.onInputCancelled', []);
+			} catch (err) {
+				console.warn('[omnibox] onInputCancelled dispatch failed:', err);
+			}
+			this.currentExtensionKeyword = null;
+		}
 		if (result.mode === 'closed') {
 			this.close();
 			return;
 		}
 		this.open();
 		await this.render();
+	}
+
+	private findExtIdForKeyword(_kw: string): string | null {
+		// We don't track the extId across dispatches separately — read
+		// from the registry. Returns null silently on miss.
+		const reg = (window as { extensions?: { omniboxRegistry?: { matchPrefix?: (i: string) => { extId: string } | null } } }).extensions?.omniboxRegistry;
+		const m = reg?.matchPrefix?.(_kw);
+		return m?.extId ?? null;
 	}
 
 	private async render(): Promise<void> {
@@ -206,6 +238,45 @@ export class Omnibox {
 				: '';
 			const sectionsHtml = result.sections.map((s) => sectionHtml(s, this.selectedRowId)).join('');
 			this.dropdown.innerHTML = primaryHtml + sectionsHtml || '<div class="px-3 py-2 text-sm text-[var(--proto)]">No matching engines</div>';
+			this.attachRowListeners();
+			return;
+		}
+		if (this.currentMode === 'extension') {
+			const ext = this.currentDispatch?.extension;
+			if (!ext) {
+				this.dropdown.innerHTML = '<div class="px-3 py-2 text-sm text-[var(--proto)]">No extension keyword</div>';
+				return;
+			}
+			const { renderExtensionMode } = await import('./modes/extension');
+			const { rowHtml } = await import('./ui');
+			const fireExtensionsEvent = (event: string, args: unknown[]) => {
+				try {
+					(window as { extensions?: { fireEventOn?: (id: string, m: string, a: unknown[]) => void } }).extensions
+						?.fireEventOn?.(ext.extId, event, args);
+				} catch (err) {
+					console.warn('[omnibox] fireEventOn failed:', err);
+				}
+			};
+			const deps: Parameters<typeof renderExtensionMode>[0] = {
+				keyword: ext.keyword,
+				rest: ext.rest,
+				extId: ext.extId,
+				fireEvent: fireExtensionsEvent,
+				onNavigate: (url) => this.navigateActive(url),
+			};
+			if (ext.defaultSuggestionDescription) deps.defaultSuggestionDescription = ext.defaultSuggestionDescription;
+			const result = renderExtensionMode(deps);
+			this.currentRows = [
+				...(result.primaryRow ? [result.primaryRow] : []),
+				...result.sections.flatMap((s) => s.rows),
+			];
+			if (!this.selectedRowId && this.currentRows.length > 0) {
+				this.selectedRowId = this.currentRows[0]?.id ?? null;
+			}
+			const primary = result.primaryRow
+				? `<div class="omnibox-primary py-1">${rowHtml(result.primaryRow, this.selectedRowId === result.primaryRow.id)}</div>`
+				: '<div class="px-3 py-2 text-sm text-[var(--proto)]">Waiting for extension...</div>';
+			this.dropdown.innerHTML = primary;
 			this.attachRowListeners();
 			return;
 		}

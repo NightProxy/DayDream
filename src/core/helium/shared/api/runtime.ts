@@ -1,0 +1,281 @@
+import type { ExtensionContext } from '../../extfs/types';
+import type { ChromeManifest, FirefoxManifest } from '../unpack/types';
+import { ChromeEvent } from '../ChromeEvent';
+
+/**
+ * `chrome.runtime` stub (overridden at runtime by `installRpcBindings`
+ * once the iframe finishes its host handshake).
+ *
+ * IMPORTANT — pre-handshake call safety:
+ *
+ * Extensions routinely call `chrome.runtime.setUninstallURL`,
+ * `getPlatformInfo`, etc. at TOP LEVEL of their BG script — i.e.
+ * before the host's `__helium_handshake_receive__` runs and
+ * `installRpcBindings` overlays these methods with real RPC-aware
+ * implementations. If those pre-handshake calls THROW, the extension's
+ * init never completes (Privacy Badger crashes here today, for one).
+ *
+ * So: methods whose Chrome contract returns void / Promise<void> /
+ * an empty-ish payload (and that real extensions call fire-and-forget)
+ * are NO-OPS in the stub. Methods that genuinely need a host round-trip
+ * (sendMessage, connect, requestUpdateCheck, ...) still throw at the
+ * stub level — but those are also listed in RPC_BINDINGS, so they get
+ * overlaid after handshake and the throw never reaches user code
+ * UNLESS the extension calls them before handshake, in which case
+ * throwing is the honest answer.
+ *
+ * The classification follows Chrome's official return-type contract.
+ */
+export class ChromeRuntimeBase {
+  protected readonly ctx: ExtensionContext;
+  public readonly id: string;
+  public readonly dynamicId: string;
+
+  constructor(ctx: ExtensionContext) {
+    this.ctx = ctx;
+    this.id = ctx.id;
+    this.dynamicId = crypto.randomUUID();
+  }
+
+  public readonly onRestartRequired: ChromeEvent = new ChromeEvent();
+  public readonly onMessageExternal: ChromeEvent = new ChromeEvent();
+  public readonly onMessage: ChromeEvent = new ChromeEvent();
+  public readonly onConnectNative: ChromeEvent = new ChromeEvent();
+  public readonly onConnectExternal: ChromeEvent = new ChromeEvent();
+  public readonly onConnect: ChromeEvent = new ChromeEvent();
+  public readonly onBrowserUpdateAvailable: ChromeEvent = new ChromeEvent();
+  public readonly onUpdateAvailable: ChromeEvent = new ChromeEvent();
+  public readonly onSuspendCanceled: ChromeEvent = new ChromeEvent();
+  public readonly onSuspend: ChromeEvent = new ChromeEvent();
+  public readonly onInstalled: ChromeEvent = new ChromeEvent();
+  public readonly onStartup: ChromeEvent = new ChromeEvent();
+
+  // --- MUST-IMPLEMENT (kept throwing in stub; overlaid post-handshake) ---
+  //
+  // These methods cannot return a sensible default without a real
+  // backend connection. They are in RPC_BINDINGS and get overlaid by
+  // `installRpcBindings()` after the handshake. Pre-handshake calls
+  // will still throw — but Chrome would also reject those, so the
+  // throw is contractually fine.
+
+  /**
+   * BG-initiated `chrome.runtime.connect`. NOT YET FULLY WIRED to a
+   * BG→{BG,CS} port-routing host handler — currently returns a
+   * stub Port that immediately fires `onDisconnect`. This is
+   * strictly less-broken than the previous "throws" behavior:
+   * extensions that defensively listen for `port.onDisconnect`
+   * will gracefully fall back to their non-port code path
+   * (chrome.runtime.sendMessage etc.).
+   *
+   * The real fix requires a new wire protocol + PortRouter method
+   * + per-target dispatch. Tracked as a follow-up.
+   */
+  connect(...args: any[]): any {
+    const name = (() => {
+      // Two call signatures: connect(connectInfo) or connect(extensionId, connectInfo)
+      const last = args[args.length - 1];
+      if (last && typeof last === 'object' && 'name' in last) {
+        return String((last as { name?: unknown }).name ?? '');
+      }
+      return '';
+    })();
+    return makeDeadPort(name);
+  }
+  connectNative(..._args: any[]): any {
+    throw new Error('chrome.runtime.connectNative is not implemented');
+  }
+  sendMessage(..._args: any[]): any {
+    throw new Error('chrome.runtime.sendMessage is not implemented');
+  }
+
+  // --- ALREADY-IMPLEMENTED (real impls; no stub) ---
+  getManifest(): ChromeManifest | FirefoxManifest {
+    return this.ctx.manifest;
+  }
+  getURL(path: string): string {
+    const rel = path.replace(/^\/+/, '');
+    return `https://${this.ctx.origin}/${rel}`;
+  }
+
+  // --- NO-OP-EMPTY (return a sensible default for fire-and-forget callers) ---
+  //
+  // Pre-handshake: returns synthesized data so extensions can branch
+  // on it without crashing. Post-handshake: RPC_BINDINGS overlay
+  // forwards the call to the host's real handler.
+  getPlatformInfo(...args: any[]): any {
+    // Best-effort detection from navigator. Most extensions just
+    // need to know "is this linux/mac/win" for asset selection.
+    const ua = (typeof navigator !== 'undefined' ? navigator.userAgent : '') || '';
+    let os: string = 'linux';
+    if (/Windows/.test(ua)) os = 'win';
+    else if (/Mac/.test(ua)) os = 'mac';
+    else if (/Linux/.test(ua)) os = 'linux';
+    else if (/CrOS/.test(ua)) os = 'cros';
+    else if (/Android/.test(ua)) os = 'android';
+    const info = { os, arch: 'x86-64', nacl_arch: 'x86-64' };
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb(info); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(info);
+  }
+  requestUpdateCheck(...args: any[]): any {
+    // Chrome contract: resolves with `{status, version?}`. Tell every
+    // caller "no update" — Helium doesn't have a Chrome-Web-Store
+    // update channel, so this is the honest answer.
+    const result = { status: 'no_update' };
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb(result); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(result);
+  }
+  sendNativeMessage(...args: any[]): any {
+    // Native messaging isn't implementable in a browser-in-browser.
+    // Resolve with undefined and let extensions handle the "no
+    // response" path via runtime.lastError checks. Some support
+    // password managers that gracefully fall back to non-native.
+    const cb = typeof args[2] === 'function' ? args[2] : null;
+    if (cb) { try { cb(undefined); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(undefined);
+  }
+
+  // --- NO-OP-RESOLVED-PROMISE (void Chrome contract; safe to silently succeed) ---
+  //
+  // These are pure side-effect APIs. The caller never reads a return.
+  // Pre-handshake: ignored locally. Post-handshake: RPC overlay (where
+  // present) forwards to the host so the side effect can actually
+  // happen.
+  openOptionsPage(...args: any[]): any {
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
+  }
+  reload(..._args: any[]): any {
+    // No callback in Chrome; just void. Post-handshake the RPC overlay
+    // calls `extensionManager.respawn(extId)`.
+    return undefined;
+  }
+  setUninstallURL(...args: any[]): any {
+    // Chrome's contract: `Promise<void>` (MV3) or callback with zero args
+    // (MV2). Real extensions (Privacy Badger, uBlock, LastPass, Honey,
+    // Bitwarden) call this at top-level BG init and discard the return.
+    // Throwing here breaks their entire init — replacing it with a
+    // no-op is exactly what they expect.
+    const cb = typeof args[1] === 'function' ? args[1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
+  }
+
+  // --- KEEP-THROWING (rarely called; loud-fail is better than silent) ---
+  restart(..._args: any[]): any {
+    throw new Error('chrome.runtime.restart is not implemented');
+  }
+  restartAfterDelay(..._args: any[]): any {
+    throw new Error('chrome.runtime.restartAfterDelay is not implemented');
+  }
+
+  static readonly ContextType = {
+    BACKGROUND: "BACKGROUND",
+    DEVELOPER_TOOLS: "DEVELOPER_TOOLS",
+    OFFSCREEN_DOCUMENT: "OFFSCREEN_DOCUMENT",
+    POPUP: "POPUP",
+    SIDE_PANEL: "SIDE_PANEL",
+    TAB: "TAB",
+  } as const;
+
+  static readonly OnInstalledReason = {
+    CHROME_UPDATE: "chrome_update",
+    INSTALL: "install",
+    SHARED_MODULE_UPDATE: "shared_module_update",
+    UPDATE: "update",
+  } as const;
+
+  static readonly OnRestartRequiredReason = {
+    APP_UPDATE: "app_update",
+    OS_UPDATE: "os_update",
+    PERIODIC: "periodic",
+  } as const;
+
+  static readonly PlatformArch = {
+    ARM: "arm",
+    ARM64: "arm64",
+    MIPS: "mips",
+    MIPS64: "mips64",
+    RISCV64: "riscv64",
+    X86_32: "x86-32",
+    X86_64: "x86-64",
+  } as const;
+
+  static readonly PlatformNaclArch = {
+    ARM: "arm",
+    MIPS: "mips",
+    MIPS64: "mips64",
+    X86_32: "x86-32",
+    X86_64: "x86-64",
+  } as const;
+
+  static readonly PlatformOs = {
+    ANDROID: "android",
+    CROS: "cros",
+    LINUX: "linux",
+    MAC: "mac",
+    OPENBSD: "openbsd",
+    WIN: "win",
+  } as const;
+
+  static readonly RequestUpdateCheckStatus = {
+    NO_UPDATE: "no_update",
+    THROTTLED: "throttled",
+    UPDATE_AVAILABLE: "update_available",
+  } as const;
+}
+
+/**
+ * Construct a stub Port object whose `onDisconnect` listeners fire
+ * on the next microtask. Used as a placeholder return value for
+ * unwired chrome.*.connect surfaces (chrome.runtime.connect from
+ * BG, chrome.tabs.connect, chrome.extension.connect MV2). Better
+ * than throwing because:
+ *   - extensions that listen for onDisconnect handle it gracefully
+ *   - extensions that defensively branch on `port` truthiness
+ *     still proceed (the port object exists, just dies fast)
+ *
+ * The shape matches chrome.runtime.Port enough that defensive code
+ * paths see a real-looking object: `name`, `sender`, `onMessage`,
+ * `onDisconnect`, `postMessage(noop)`, `disconnect(noop)`.
+ */
+function makeDeadPort(name: string): {
+  name: string;
+  sender: undefined;
+  onMessage: { addListener(): void; removeListener(): void; hasListener(): boolean };
+  onDisconnect: { addListener(fn: (port: unknown) => void): void; removeListener(): void; hasListener(): boolean };
+  postMessage: (msg: unknown) => void;
+  disconnect: () => void;
+} {
+  const disconnectListeners: Array<(port: unknown) => void> = [];
+  const port = {
+    name,
+    sender: undefined,
+    onMessage: {
+      addListener: (): void => { /* never fires */ },
+      removeListener: (): void => { /* no-op */ },
+      hasListener: (): boolean => false,
+    },
+    onDisconnect: {
+      addListener: (fn: (port: unknown) => void): void => {
+        disconnectListeners.push(fn);
+      },
+      removeListener: (): void => { /* no-op */ },
+      hasListener: (): boolean => disconnectListeners.length > 0,
+    },
+    postMessage: (_msg: unknown): void => { /* dropped */ },
+    disconnect: (): void => { /* already dead */ },
+  };
+  // Fire onDisconnect on next microtask so listeners attached in the
+  // same sync block as connect() observe the disconnect.
+  queueMicrotask(() => {
+    for (const fn of disconnectListeners) {
+      try { fn(port); } catch (err) {
+        console.warn('[helium/runtime.connect] onDisconnect listener threw:', err);
+      }
+    }
+  });
+  return port;
+}

@@ -33,6 +33,53 @@ function getTabIdFromFrame(frame: any): string | null {
 	return tabId || null;
 }
 
+/**
+ * Decide whether to inject the per-frame devtools agent based on the
+ * iframe element this scramjet frame is mounted in. Returns:
+ *   - 'tab' if the iframe is a normal browser tab AND its tabId is
+ *     currently enabled in the tab DevToolsManager,
+ *   - 'extension' if the iframe is an extension/popup/devtools_page
+ *     iframe AND its target has been marked wanted by the
+ *     ExtensionDevToolsManager,
+ *   - null otherwise (skip injection).
+ *
+ * The two cases inject the SAME agent bundle and produce the same
+ * frame-ready protocol — only the consumer differs (DevToolsSession
+ * for tabs, ExtensionIframeDevToolsSession for extensions). Both
+ * receive messages via the same Scramjet envelope decoder, gated on
+ * `ev.source` being a window they registered.
+ */
+function getInjectableTargetClass(frame: any): 'tab' | 'extension' | null {
+	const el = frame?.element as HTMLElement | undefined;
+	if (!el) return null;
+
+	const tabId = el.getAttribute('data-tab-id');
+	if (tabId) {
+		const w = window as { devtools?: { isEnabledForTab(id: string): boolean } };
+		if (w.devtools?.isEnabledForTab(tabId)) return 'tab';
+		return null;
+	}
+
+	// Extension-flavoured iframes: bg page, popup, devtools_page.
+	// Options pages don't have a host yet — when they do, they should
+	// carry data-helium-options-ext-id or similar and be added here.
+	const isExtIframe =
+		el.hasAttribute('data-helium-ext-id') ||
+		el.hasAttribute('data-helium-popup-ext-id') ||
+		el.hasAttribute('data-helium-devtools-page');
+	if (!isExtIframe) return null;
+	const w = window as {
+		extDevtools?: {
+			targetRegistry: { isIframeWanted(el: HTMLIFrameElement): boolean };
+		};
+	};
+	if (!w.extDevtools) return null;
+	if (!w.extDevtools.targetRegistry.isIframeWanted(el as HTMLIFrameElement)) {
+		return null;
+	}
+	return 'extension';
+}
+
 let agentSourcePromise: Promise<string> | null = null;
 function loadAgentSource(
 	hostOrigin: string,
@@ -161,20 +208,34 @@ export function installDevToolsHook(
 			if (!postHook) return;
 			const plugin = new scramjet.Plugin('ddx-devtools');
 			plugin.tap(postHook, (context: any) => {
-				const tabId = getTabIdFromFrame(frame);
-				if (!tabId) return;
-				const manager = resolveManager();
-				if (!manager) return;
-				if (!manager.isEnabledForTab(tabId)) return;
+				const klass = getInjectableTargetClass(frame);
+				if (klass === null) return;
 				const win = context?.window as Window | undefined;
 				if (!win) return;
+				if (klass === 'tab') {
+					const tabId = getTabIdFromFrame(frame);
+					if (!tabId) return;
+					const manager = resolveManager();
+					if (!manager) return;
+					console.log(
+						'[ddx-devtools] init.post fired for tab',
+						tabId,
+						'isTopLevel=',
+						context?.isTopLevel,
+					);
+					manager.registerProxiedWindow(tabId, win);
+					injectAgentScript(win, hostOrigin, basePath);
+					return;
+				}
+				// extension iframe — the per-target session listens for
+				// agent messages on its own. No per-tab registration; the
+				// ExtensionIframeDevToolsSession does its own filtering on
+				// ev.source against its target iframe's contentWindow.
 				console.log(
-					'[ddx-devtools] init.post fired for tab',
-					tabId,
+					'[ddx-devtools] init.post fired for extension iframe',
 					'isTopLevel=',
-					context?.isTopLevel
+					context?.isTopLevel,
 				);
-				manager.registerProxiedWindow(tabId, win);
 				injectAgentScript(win, hostOrigin, basePath);
 			});
 		} catch (err) {

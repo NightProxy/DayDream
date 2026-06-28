@@ -8,6 +8,11 @@
  */
 
 export { DevToolsManager } from './manager';
+export { DevToolsSession } from './session';
 export { installDevToolsHook } from './hookInstaller';
 export type { DevtoolsMessage } from './types';
-export type { PanelHandle } from './panel';
+export type {
+	AddPanelOpts,
+	PanelEntry,
+	PanelHandle,
+} from './panel';

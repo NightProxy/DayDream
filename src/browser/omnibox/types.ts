@@ -1,8 +1,15 @@
-export type OmniboxMode = 'closed' | 'default' | 'command' | 'engine' | 'bang' | 'ai';
+export type OmniboxMode = 'closed' | 'default' | 'command' | 'engine' | 'bang' | 'ai' | 'extension';
 
 export interface DispatchResult {
 	mode: OmniboxMode;
 	payload?: string;
+	// When mode === 'extension', this holds the extension match info.
+	extension?: {
+		extId: string;
+		keyword: string;
+		rest: string;
+		defaultSuggestionDescription?: string;
+	};
 }
 
 export interface OmniboxRow {

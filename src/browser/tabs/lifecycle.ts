@@ -2,12 +2,121 @@ import { createIcons, icons } from 'lucide';
 import type { TabsInterface, TabData } from './types';
 import { decodeProxiedUrl } from './urlDecoder';
 
+interface UrlOverridesLike {
+	getActiveExtId: (kind: 'newtab' | 'bookmarks' | 'history') => string | null;
+}
+
+interface ExtMgrLike {
+	createExtensionPlugin: (extId: string, opts?: { enforceHostPolicy?: boolean }) => unknown;
+	wireAuxiliaryViewChannel?: (
+		ctx: unknown,
+		iframe: HTMLIFrameElement,
+		opts?: { isBackground: boolean },
+	) => unknown;
+	getRunningContext?: (extId: string) => { ctx: unknown; iframe: HTMLIFrameElement } | undefined;
+}
+
+// Per-tab channel store: keep a reference so the auxiliary channel
+// for an extension-newtab tab can be closed when the tab closes.
+const extensionTabChannels = new Map<string, { close: () => void }>();
+
 export class TabLifecycle {
 	private tabs: TabsInterface;
 	scramFrame: any;
 
 	constructor(tabs: TabsInterface) {
 		this.tabs = tabs;
+	}
+
+	/**
+	 * If `url` is one of the `chrome_url_overrides` slot URLs
+	 * (`ddx://newtab`, `ddx://bookmarks`, `ddx://history`) AND an
+	 * extension currently owns that slot, return the owning extId
+	 * and the absolute `https://<extId>.ddx/<path>` URL to navigate
+	 * to. Otherwise null.
+	 *
+	 * Reads from the host-side `ExtensionUrlOverrides` coordinator
+	 * (exposed at `window.extensionUrlOverrides`).
+	 */
+	private async resolveExtensionOverride(
+		url: string,
+	): Promise<{ extId: string; url: string } | null> {
+		const overrides = (window as { extensionUrlOverrides?: UrlOverridesLike }).extensionUrlOverrides;
+		if (!overrides) return null;
+
+		// Strip protocol + trailing slash for a quick path check.
+		// Accept both `ddx://newtab` and `ddx://newtab/`.
+		const m = url.match(/^ddx:\/\/([a-z]+)\/*$/i);
+		if (!m) return null;
+		const kind = m[1].toLowerCase();
+		if (kind !== 'newtab' && kind !== 'bookmarks' && kind !== 'history') {
+			return null;
+		}
+		const extId = overrides.getActiveExtId(kind);
+		if (!extId) return null;
+
+		// Look up the manifest's chrome_url_overrides path for this
+		// kind. The extension manager has the manifest in memory; the
+		// extension page does the same lookup.
+		const mgr = (window as { extensions?: { getManifest?: (id: string) => unknown } }).extensions;
+		const manifest = mgr?.getManifest?.(extId) as { chrome_url_overrides?: Record<string, string> } | null;
+		const overridePath = manifest?.chrome_url_overrides?.[kind];
+		if (typeof overridePath !== 'string' || overridePath.length === 0) return null;
+
+		const path = overridePath.replace(/^\/+/, '');
+		return { extId, url: `https://${extId}.ddx/${path}` };
+	}
+
+	/**
+	 * Construct a fresh HeliumExtensionPlugin for the given extId,
+	 * configured for use in a regular tab (not a hidden extension
+	 * iframe).
+	 *
+	 * `enforceHostPolicy: false` is important: when the user types
+	 * a new URL in the address bar of an extension-newtab tab, that
+	 * navigation goes through this plugin's request hook. The default
+	 * policy would 403 any URL not in the extension's
+	 * `host_permissions`, breaking the user's ability to leave the
+	 * newtab. The plugin only synthesizes responses for the
+	 * extension's `<extId>.ddx` host anyway; everything else falls
+	 * through naturally when policy is off.
+	 */
+	private getExtensionPlugin(extId: string): unknown | null {
+		const mgr = (window as { extensions?: ExtMgrLike }).extensions;
+		if (!mgr?.createExtensionPlugin) return null;
+		try { return mgr.createExtensionPlugin(extId, { enforceHostPolicy: false }); }
+		catch (err) {
+			console.warn('[TabLifecycle] createExtensionPlugin failed:', err);
+			return null;
+		}
+	}
+
+	/**
+	 * Wire the auxiliary channel so the extension-newtab page gets
+	 * full chrome.* RPC functionality. Same recipe as popupHost +
+	 * offscreen. Stores the channel keyed by tabId so `closeTabById`
+	 * can close it cleanly.
+	 */
+	private wireExtensionChannel(
+		extId: string,
+		iframe: HTMLIFrameElement,
+		tabId: string,
+	): void {
+		const mgr = (window as { extensions?: ExtMgrLike }).extensions;
+		if (!mgr?.wireAuxiliaryViewChannel || !mgr.getRunningContext) {
+			console.warn('[TabLifecycle] extension manager API not ready; chrome.* RPCs will hang in this tab');
+			return;
+		}
+		const running = mgr.getRunningContext(extId);
+		if (!running) return;
+		try {
+			const channel = mgr.wireAuxiliaryViewChannel(running.ctx, iframe, { isBackground: false }) as { close: () => void };
+			if (channel && typeof channel.close === 'function') {
+				extensionTabChannels.set(tabId, channel);
+			}
+		} catch (err) {
+			console.warn('[TabLifecycle] wireAuxiliaryViewChannel failed:', err);
+		}
 	}
 
 	createTab = async (url: string = 'ddx://newtab') => {
@@ -22,12 +131,42 @@ export class TabLifecycle {
 
 		const id = `tab-${this.tabs.tabCount}`;
 
+		// Detect `chrome_url_overrides` claims. If the requested URL
+		// is one of the override slots (ddx://newtab, ddx://bookmarks,
+		// ddx://history) AND an extension currently owns that slot,
+		// the tab's frame needs the extension's HeliumExtensionPlugin
+		// attached at construction. Without it the fake `<extId>.ddx`
+		// origin hits the browser's DNS resolver (since there's no
+		// per-frame plugin to intercept the fetch) → ERR_NAME_NOT_RESOLVED.
+		//
+		// We attach the plugin AND wire the auxiliary channel so the
+		// override page has full `chrome.*` RPC functionality
+		// (matches what Chrome's newtab override gets).
+		const overrideInfo = await this.resolveExtensionOverride(url);
+		const plugins: unknown[] = [];
+		let overrideExtId: string | null = null;
+		let overrideAbsoluteUrl: string | null = null;
+		if (overrideInfo) {
+			overrideExtId = overrideInfo.extId;
+			overrideAbsoluteUrl = overrideInfo.url;
+			const plugin = this.getExtensionPlugin(overrideInfo.extId);
+			if (plugin) plugins.push(plugin);
+		}
+
 		const managedFrame = await this.tabs.frameManager!.createManagedFrame(
 			id,
-			url,
-			'main'
+			overrideAbsoluteUrl ?? url,
+			'main',
+			plugins.length > 0 ? { plugins } : undefined,
 		);
 		const iframe = managedFrame.iframe;
+
+		// For extension-newtab tabs: wire the auxiliary channel so the
+		// page gets a real MessagePort for chrome.* RPCs. Matches the
+		// popup/offscreen recipe.
+		if (overrideExtId && plugins.length > 0) {
+			this.wireExtensionChannel(overrideExtId, iframe, id);
+		}
 
 		console.log(
 			'[TabLifecycle] Created iframe:',
@@ -206,6 +345,9 @@ export class TabLifecycle {
 		};
 
 		this.tabs.registerTab(tabData);
+		document.dispatchEvent(new CustomEvent('tabCreated', {
+			detail: { tabId: id, url, title: tabTitle, iframe, tabElement: tab },
+		}));
 		this.tabs.syncTabVisualState(id);
 		this.tabs.renderTabStrip();
 
@@ -262,6 +404,17 @@ export class TabLifecycle {
 		console.log(
 			'[TabLifecycle] Removed tab and iframe DOM elements via frame manager'
 		);
+
+		// Close any auxiliary channel wired for an extension-newtab
+		// override in this tab. Without this the host port leaks and
+		// pending RPCs stay dangling until GC.
+		const extChannel = extensionTabChannels.get(id);
+		if (extChannel) {
+			try { extChannel.close(); } catch (err) {
+				console.warn('[TabLifecycle] extension channel close threw:', err);
+			}
+			extensionTabChannels.delete(id);
+		}
 
 		this.tabs.removeTab(id);
 		this.tabs.renderTabStrip();
