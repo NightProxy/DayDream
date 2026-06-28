@@ -19,6 +19,7 @@ import { Proxy } from '@apis/proxy';
 import { SearchEngineRegistry } from '@apis/searchEngines';
 import { CommandRegistry } from '@apis/commands';
 import { createNyxBridge } from '@apis/nyxBridge';
+import { ExtensionManager } from '@apis/extensions';
 import { Omnibox } from '@browser/omnibox';
 import { Windowing } from '@browser/windowing';
 import { DDXGlobal } from '@utils/global/index';
@@ -33,6 +34,7 @@ import { checkNightPlusStatus, tryRefreshOnBoot } from '@apis/nightplus';
 import { initClipboardDeobfuscator } from '@utils/clipboardDeobfuscator';
 import { basePath, resolvePath } from '@utils/basepath';
 import { DevToolsManager } from '@apis/devtools';
+import { ExtensionDevToolsManager } from '@apis/devtools/extensionManager';
 
 const { Controller } = $scramjetController;
 
@@ -99,6 +101,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 		getTabData: (tabId: string) => window.tabs?.getTabById(tabId),
 	});
 	window.devtools = devtools;
+
+	const extDevtools = new ExtensionDevToolsManager({
+		devtoolsHostUrl: resolvePath('core/i/chii/front_end/ddx_chii_host.html'),
+		workerAgentUrl: resolvePath('assets/devtools-worker-agent.js'),
+	});
+	(window as { extDevtools?: ExtensionDevToolsManager }).extDevtools = extDevtools;
 
 	window.addEventListener('message', (event) => {
 		if (event.data?.type === 'searchEngines-updated') {
@@ -249,6 +257,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 		});
 		await nyxBridge.init();
 		window.nyxBridge = nyxBridge;
+
+		// Helium extension manager. Hydrates from /extensions/_index.json
+		// (in TFS), spawns each enabled extension's hidden iframe,
+		// registers per-extension RPC handlers for chrome.* methods.
+		// Reuses NyxBridge's HandlerContext for browser-control
+		// delegation (tabs, future cookies/bookmarks/etc.).
+		const extensionManager = new ExtensionManager(
+			window.proxy,
+			nyxBridge.getHandlerContext(),
+		);
+
+		// `chrome_url_overrides` coordinator. Wired BEFORE
+		// extensionManager.init() so any auto-spawn-time install hooks
+		// (currently none — hooks only fire on user-initiated install,
+		// but defensive) see the coordinator. After init(), we replay
+		// any persisted active overrides into the Protocols layer so
+		// the user's previously-confirmed newtab/bookmarks/history
+		// overrides survive restarts.
+		const { ExtensionUrlOverrides } = await import('@apis/extensions/urlOverrides');
+		const urlOverrides = new ExtensionUrlOverrides(proto);
+		extensionManager.setUrlOverrides(urlOverrides);
+
+		await extensionManager.init();
+		(window as any).extensions = extensionManager;
+		(window as any).extensionUrlOverrides = urlOverrides;
+
+		// Replay persisted active overrides now that extensions are
+		// spawned (so `getManifest(extId)` can resolve).
+		await urlOverrides.applyAll((extId) => extensionManager.getManifest(extId));
 
 		const startupBehavior =
 			(await settingsAPI.getItem('startupBehavior')) || 'newtab';

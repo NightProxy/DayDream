@@ -1,0 +1,46 @@
+{
+  "name": "neutron",
+  "version": "0.1.0",
+  "description": "Synchronous-over-asynchronous IPC for Web Workers via SharedArrayBuffer + Atomics",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "default": "./dist/worker.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^2.0.0",
+    "playwright": "^1.48.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "keywords": [
+    "ipc",
+    "rpc",
+    "sharedarraybuffer",
+    "atomics",
+    "web-worker",
+    "sync",
+    "synchronous"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

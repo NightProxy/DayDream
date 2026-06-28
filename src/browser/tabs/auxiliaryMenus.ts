@@ -29,6 +29,13 @@
 
 import type { TabsInterface } from './types';
 import { decodeIframeUrl } from './urlDecoder';
+import { injectExtensionMenus, type ContextMenuClickInfo } from '@core/helium/host/contextMenus';
+
+interface ExtManagerLike {
+	contextMenusRegistry?: import('@core/helium/host/contextMenus').ContextMenuRegistry;
+	fireEventOn?: (extId: string, method: string, args: unknown[]) => void;
+	grantActiveTab?: (extId: string, tabId: number) => void;
+}
 
 interface MenuItemSpec {
 	icon: string;
@@ -131,6 +138,31 @@ export class AuxiliaryMenus {
 		);
 	}
 
+	private appendExtensionMenusTo(
+		menuEl: HTMLElement,
+		contextType: 'page' | 'browser_action' | 'link' | 'tab',
+		info: { pageUrl?: string; linkUrl?: string },
+		tab: unknown,
+		tabIdNum: number | undefined,
+	): void {
+		const extMgr = (window as { extensions?: ExtManagerLike }).extensions;
+		const registry = extMgr?.contextMenusRegistry;
+		if (!registry) return;
+		const fireOnClicked = (extId: string, click: ContextMenuClickInfo, tabArg?: unknown) => {
+			extMgr?.fireEventOn?.(extId, 'chrome.contextMenus.onClicked', [click, tabArg]);
+		};
+		const items: HTMLElement[] = [];
+		const deps: Parameters<typeof injectExtensionMenus>[5] = {
+			registry,
+			fireOnClicked,
+			createElement: (tag, attrs, children) =>
+				this.tabs.ui.createElement(tag, attrs ?? {}, (children ?? []) as (string | HTMLElement)[]),
+		};
+		if (extMgr?.grantActiveTab) deps.grantActiveTab = extMgr.grantActiveTab.bind(extMgr);
+		injectExtensionMenus(items, contextType, info, tab, tabIdNum, deps);
+		for (const el of items) menuEl.appendChild(el);
+	}
+
 	/* ---------- (1) Tab strip background ---------- */
 
 	private getActiveTabId(): string | null {
@@ -216,7 +248,14 @@ export class AuxiliaryMenus {
 			]
 		});
 
-		return this.buildMenu(sections);
+		const menu = this.buildMenu(sections);
+		// Extension contextMenus injection (browser_action context).
+		try {
+			this.appendExtensionMenusTo(menu, 'browser_action', {}, undefined, undefined);
+		} catch (err) {
+			console.warn('[AuxiliaryMenus] extension injection (tabStrip) failed:', err);
+		}
+		return menu;
 	}
 
 	/* ---------- (2) Back / Forward / Reload buttons ---------- */
@@ -583,6 +622,29 @@ export class AuxiliaryMenus {
 		if (hasUrl) {
 			menu.appendChild(this.buildSeparator());
 			menu.appendChild(this.buildLabel(decodedUrl));
+		}
+		// Extension contextMenus injection (page context).
+		try {
+			let tabIdNum: number | undefined;
+			let tabInfo: unknown = undefined;
+			const w = window as { nyx?: { tabResolver?: { toNum?: (id: string) => number; info?: (n: number) => unknown } } };
+			if (tabId && w.nyx?.tabResolver?.toNum) {
+				try {
+					tabIdNum = w.nyx.tabResolver.toNum(tabId);
+					if (tabIdNum !== undefined && w.nyx.tabResolver.info) {
+						tabInfo = w.nyx.tabResolver.info(tabIdNum);
+					}
+				} catch { /* ignore */ }
+			}
+			this.appendExtensionMenusTo(
+				menu,
+				'page',
+				hasUrl ? { pageUrl: decodedUrl } : {},
+				tabInfo,
+				tabIdNum,
+			);
+		} catch (err) {
+			console.warn('[AuxiliaryMenus] extension injection (pageBg) failed:', err);
 		}
 		return menu;
 	}

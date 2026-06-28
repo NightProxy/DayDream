@@ -8,12 +8,17 @@ const __sjScramjetVersion: string = JSON.parse(
     "utf-8"
   )
 ).version;
-const __sjControllerVersion: string = JSON.parse(
-  readFileSync(
-    "node_modules/@mercuryworkshop/scramjet-controller/package.json",
-    "utf-8"
-  )
-).version;
+// The local controller (src/core/SJ/controller/) is not published; its
+// version is hardcoded in src/core/SJ/controller/src/version.ts. If the
+// upstream npm package happens to be installed, we read from there for
+// `CONTROLLER_EXPECTED_VERSION` (consumed only by utils/, which is not
+// currently imported by app code). Otherwise we fall back to "0.0.0",
+// which is fine because the consumer is dead code.
+const __sjControllerVersion: string = (() => {
+  const p = "node_modules/@mercuryworkshop/scramjet-controller/package.json";
+  if (!existsSync(p)) return "0.0.0";
+  return JSON.parse(readFileSync(p, "utf-8")).version;
+})();
 import { minify } from "terser";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
@@ -26,9 +31,6 @@ import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
 import { svgWrapperPlugin } from "./srv/vite/svg";
-
-// Matches anything under src/pkgs/Helium (any depth, any separator).
-const HELIUM_IGNORE_RE = /[\\/]src[\\/]pkgs[\\/]Helium([\\/]|$)/;
 
 export default defineConfig({
   base: "./",
@@ -44,29 +46,6 @@ export default defineConfig({
     ViteMinifyPlugin(minifyConfig),
     //vitePluginBundleObfuscator(obfuscationConfig as any),
     svgWrapperPlugin(),
-    {
-      // TODO: remove once Helium is wired into the app build.
-      // For now, short-circuit any import that points at src/pkgs/Helium so
-      // Vite never traverses into it (it has its own package.json/node_modules
-      // and is not yet meant to be part of this Vite build).
-      name: "ignore-helium",
-      enforce: "pre",
-      resolveId(source, importer) {
-        if (HELIUM_IGNORE_RE.test(source)) {
-          return { id: "\0helium-ignored", moduleSideEffects: false };
-        }
-        if (importer && HELIUM_IGNORE_RE.test(importer)) {
-          return { id: "\0helium-ignored", moduleSideEffects: false };
-        }
-        return null;
-      },
-      load(id) {
-        if (id === "\0helium-ignored") {
-          return "export default {};";
-        }
-        return null;
-      },
-    },
     {
       name: "strip-console-and-debugger",
       enforce: "post",
@@ -157,6 +136,15 @@ export default defineConfig({
   },
   server: {
     allowedHosts: allowedHosts,
+    // Cross-origin isolation: required for SharedArrayBuffer + Atomics
+    // (Scramjet, Neutron content-script isolation, helium ISOLATED world).
+    // Production (Fastify + @fastify/helmet) already sets these; dev must
+    // do it explicitly or content scripts fall back to pseudo-iso with a
+    // console warning at boot.
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
     watch: {
       ignored: [
         "**/concepting/**",

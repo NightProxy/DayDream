@@ -165,6 +165,31 @@ export class NyxBridge {
 		console.log('[nyxBridge] initialized, protocol', PROTOCOL_VERSION);
 	}
 
+	/**
+	 * Returns the internal HandlerContext used by NyxBridge's own
+	 * dispatch. Helium's ExtensionManager consumes the same context to
+	 * delegate chrome.tabs.* and other browser-control methods to the
+	 * NyxBridge handler ecosystem.
+	 *
+	 * Throws if called before init().
+	 */
+	public getHandlerContext(): import('./handlers').HandlerContext {
+		if (!this.initialized) {
+			throw new Error(
+				'[nyxBridge] getHandlerContext called before init()',
+			);
+		}
+		return {
+			tabResolver: this.tabResolver,
+			handleStore: this.handleStore,
+			cdp: this.cdp,
+			proxy: this.deps.proxy,
+			tabs: this.deps.tabs,
+			protocols: (window as any).protocols ?? null,
+			settings: this.deps.settings,
+		};
+	}
+
 	private decodeIframeUrl(iframe: HTMLIFrameElement): string {
 		const proxy = this.deps.proxy as any;
 		if (proxy && typeof proxy.extractEncodedUrl === 'function') {

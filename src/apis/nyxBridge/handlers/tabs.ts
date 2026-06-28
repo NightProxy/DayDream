@@ -2,7 +2,8 @@
 
 import { register } from './index';
 import { DDXError } from '../types';
-import type { TabId } from '../api';
+import type { TabId, TabInfo } from '../api';
+import { hashGroupId, getDdxGroupId } from '../tabResolver-helpers';
 
 register('tabs.query', async (ctx, args: { active?: boolean; url?: string | string[]; title?: string } | undefined) => {
 	const all = ctx.tabResolver.all();
@@ -125,6 +126,128 @@ register('tabs.sendMessage', async (ctx, args: [TabId, unknown, { frameId?: numb
 		return undefined;
 	} catch (e: any) {
 		throw new DDXError('cdp_error', e?.message ?? String(e));
+	}
+});
+
+// Inline shape of the subset of the browser `Tabs` API we touch in
+// this file. Tabs lives in src/browser/tabs/index.ts and is bound
+// here as ctx.tabs (typed `unknown` to avoid pulling in the full
+// browser shell). Methods are typed precisely so call-site mistakes
+// (wrong arity / wrong argument types) get caught by tsc. groupManager
+// is optional on the live Tabs instance (see src/browser/tabs/index.ts:99)
+// because it is constructed lazily; we mirror that optionality here.
+interface TabsApi {
+	moveTabInOrder: (
+		draggedTabId: string,
+		targetTabId: string,
+		placeAfter?: boolean,
+	) => void;
+	getTabsInOrder: () => Array<{ id: string }>;
+	groupManager?: {
+		addTabToGroup: (tabId: string, groupId: string, targetIndex?: number) => boolean;
+		createGroupWithTab: (tabId: string) => string | null;
+		removeTabFromGroup: (tabId: string, toUngroupedIndex?: number) => boolean;
+	};
+	hardReloadTab?: (id: string) => void;
+}
+
+register('tabs.move', async (ctx, args: { tabIds: TabId | TabId[]; properties: { windowId?: number; index: number } }) => {
+	if (args.properties.windowId !== undefined && args.properties.windowId !== 1 && args.properties.windowId !== -2 /* WINDOW_ID_CURRENT */) {
+		throw new DDXError('not_supported', 'DDX is single-window; windowId must be 1');
+	}
+	const ids = Array.isArray(args.tabIds) ? args.tabIds : [args.tabIds];
+	const results: TabInfo[] = [];
+	const tabs = ctx.tabs as TabsApi;
+	for (let i = 0; i < ids.length; i++) {
+		const id = ids[i];
+		if (id === undefined) continue;
+		const ddxId = ctx.tabResolver.toDdxId(id);
+		if (!ddxId) continue;
+		// Tabs.moveTabInOrder takes a TARGET tab id, not an absolute
+		// index. Translate the requested numeric index (chrome-API
+		// shape) into the id of the tab currently at that position;
+		// when the index lies beyond the end, anchor on the last tab
+		// and ask Tabs to place AFTER it.
+		const order = tabs.getTabsInOrder();
+		const wantedIdx = args.properties.index + i;
+		const lastIdx = order.length - 1;
+		let placeAfter = false;
+		let targetIdx = wantedIdx;
+		if (wantedIdx > lastIdx) {
+			targetIdx = lastIdx;
+			placeAfter = true;
+		} else if (wantedIdx < 0) {
+			targetIdx = 0;
+		}
+		const targetTab = order[targetIdx];
+		if (targetTab && targetTab.id !== ddxId) {
+			tabs.moveTabInOrder(ddxId, targetTab.id, placeAfter);
+		}
+		results.push(ctx.tabResolver.info(id));
+	}
+	return Array.isArray(args.tabIds) ? results : (results[0] ?? null);
+});
+
+register('tabs.group', async (ctx, args: { tabIds: TabId | TabId[]; groupId?: number; createProperties?: { windowId?: number } }) => {
+	const ids = Array.isArray(args.tabIds) ? args.tabIds : [args.tabIds];
+	const tabs = ctx.tabs as TabsApi;
+	const gm = tabs.groupManager;
+	if (!gm) {
+		// groupManager is lazily constructed in the live browser shell.
+		// If it isn't present, tab grouping isn't available — return
+		// the Chrome "no group" sentinel id rather than throw.
+		return -1;
+	}
+	let ddxGroupId: string;
+	if (args.groupId !== undefined) {
+		const existing = getDdxGroupId(args.groupId);
+		if (!existing) throw new DDXError('invalid_argument', `group ${args.groupId} not found`);
+		ddxGroupId = existing;
+		for (const n of ids) {
+			if (n === undefined) continue;
+			const ddxId = ctx.tabResolver.toDdxId(n);
+			if (ddxId) gm.addTabToGroup(ddxId, ddxGroupId);
+		}
+	} else {
+		const first = ids[0];
+		if (first === undefined) throw new DDXError('invalid_argument', 'tabs.group requires at least one tabId');
+		const firstDdx = ctx.tabResolver.toDdxId(first);
+		if (!firstDdx) throw new DDXError('tab_not_found', 'first tabId invalid');
+		const created = gm.createGroupWithTab(firstDdx);
+		if (!created) return -1;
+		ddxGroupId = created;
+		for (let i = 1; i < ids.length; i++) {
+			const n = ids[i];
+			if (n === undefined) continue;
+			const ddxId = ctx.tabResolver.toDdxId(n);
+			if (ddxId) gm.addTabToGroup(ddxId, ddxGroupId);
+		}
+	}
+	return hashGroupId(ddxGroupId);
+});
+
+register('tabs.ungroup', async (ctx, args: TabId | TabId[]) => {
+	const ids = Array.isArray(args) ? args : [args];
+	const tabs = ctx.tabs as TabsApi;
+	const gm = tabs.groupManager;
+	if (!gm) return;
+	for (const n of ids) {
+		if (n === undefined) continue;
+		const ddxId = ctx.tabResolver.toDdxId(n);
+		if (ddxId) gm.removeTabFromGroup(ddxId);
+	}
+});
+
+register('tabs.hardReload', async (ctx, args: { tabId?: TabId } | undefined) => {
+	const n = args?.tabId ?? ctx.tabResolver.getCurrentNum();
+	if (n === undefined) throw new DDXError('tab_not_found', 'no active tab');
+	const tabs = ctx.tabs as TabsApi;
+	const ddxId = ctx.tabResolver.toDdxId(n);
+	if (ddxId && typeof tabs.hardReloadTab === 'function') {
+		tabs.hardReloadTab(ddxId);
+	} else {
+		const iframe = ctx.tabResolver.resolveIframe(n);
+		try { (iframe.contentWindow as Window | null)?.location.reload(); } catch { /* ignore */ }
 	}
 });
 

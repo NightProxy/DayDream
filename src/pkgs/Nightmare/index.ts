@@ -4,6 +4,8 @@ import { AlertToast } from './alert';
 import { SideMenu } from './sideMenu';
 import { SidePanel } from './sidePanel';
 import { RightClickMenu } from './rightClickMenu';
+import { NotificationManager } from './notifications';
+import { PermissionPrompt } from './permissionPrompt';
 import { createIcons, icons } from 'lucide';
 
 class Nightmare implements NightmareUI {
@@ -13,6 +15,8 @@ class Nightmare implements NightmareUI {
 	sidemenu: SideMenu | null = null;
 	sidepanel: SidePanel | null = null;
 	rightclickmenu: RightClickMenu | null = null;
+	notifications: NotificationManager | null = null;
+	permissionPrompt: PermissionPrompt | null = null;
 	np: NPInterface | null = null; //polyfill for old Nightmare plugins
 
 	constructor() {
@@ -26,6 +30,8 @@ class Nightmare implements NightmareUI {
 		this.sidemenu = new SideMenu(this);
 		this.sidepanel = new SidePanel(this);
 		this.rightclickmenu = new RightClickMenu(this);
+		this.notifications = new NotificationManager(this);
+		this.permissionPrompt = new PermissionPrompt();
 		this.np = {
 			sidemenu: this.sidemenu,
 			sidepanel: this.sidepanel,

@@ -190,9 +190,22 @@ class Proxy implements ProxyInterface {
 		})();
 	}
 
-	async createFrame(element?: HTMLIFrameElement): Promise<any> {
+	async createFrame(
+		element?: HTMLIFrameElement,
+		options?: { plugins?: any[] },
+	): Promise<any> {
 		await this.initReady;
-		return this.controller.createFrame(element);
+		return this.controller.createFrame(element, options);
+	}
+
+	/**
+	 * Returns the Scramjet controller's cookieJar object, if available.
+	 * Used by chrome.cookies.* host handlers. The exact shape is
+	 * controller-internal; consumers should treat it as opaque and rely
+	 * on the CookieAccessor abstraction in @apis/data/cookies.
+	 */
+	public getCookieJar(): unknown {
+		return (this.controller as any)?.cookieJar ?? null;
 	}
 
 	/**

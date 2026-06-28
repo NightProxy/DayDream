@@ -26,6 +26,15 @@ export class CdpMultiplexer {
 	// if the request was sessionless (top-level connection). Used so
 	// responses are stamped with sessionId only when DT expects one.
 	private pendingRequests = new Map<string, Map<number, string | null>>();
+	// Host-originated requests issued via `request()`. Keyed by the
+	// internally-allocated id; mapped to a pending Promise resolver.
+	// These ids do not collide with DT-side ids because they're drawn
+	// from a separate, large negative range.
+	private hostRequests = new Map<
+		number,
+		{ resolve: (result: unknown) => void; reject: (err: Error) => void }
+	>();
+	private nextHostRequestId = -1_000_000;
 
 	constructor(opts: MuxOpts) {
 		this.postToDevTools = opts.postToDevTools;
@@ -71,10 +80,18 @@ export class CdpMultiplexer {
 		}
 		this.emitEvent('Target.targetDestroyed', { targetId: frameId });
 		this.frames.delete(frameId);
-		if (this.topLevelFrameId === frameId) {
+		const wasTopLevel = this.topLevelFrameId === frameId;
+		if (wasTopLevel) {
 			this.topLevelFrameId =
 				[...this.frames.values()].find((f) => f.parentFrameId === null)
 					?.frameId ?? null;
+			// All in-flight host requests targeted the top-level frame
+			// that just went away. Reject them so callers don't hang.
+			if (this.hostRequests.size > 0) {
+				const err = new Error('CdpMultiplexer.request: top-level frame detached before response');
+				for (const [, p] of this.hostRequests) p.reject(err);
+				this.hostRequests.clear();
+			}
 		}
 	}
 
@@ -148,6 +165,21 @@ export class CdpMultiplexer {
 		// receive sessionless responses so DT's top-level dispatcher
 		// matches them to the correct pending invocation.
 		if (typeof msg?.id === 'number') {
+			// Host-originated requests: resolve the in-flight Promise
+			// and DO NOT forward to DT. Host ids live in a separate
+			// negative range so they never collide with DT ids.
+			const hostPending = this.hostRequests.get(msg.id);
+			if (hostPending) {
+				this.hostRequests.delete(msg.id);
+				if (msg.error) {
+					hostPending.reject(
+						new Error(msg.error?.message ?? 'CDP error'),
+					);
+				} else {
+					hostPending.resolve(msg.result);
+				}
+				return;
+			}
 			const origin = this.takePending(frameId, msg.id);
 			if (origin) {
 				this.postToDevTools(JSON.stringify({ ...msg, sessionId: origin }));
@@ -166,6 +198,59 @@ export class CdpMultiplexer {
 		} else {
 			this.postToDevTools(cdpJson);
 		}
+	}
+
+	/**
+	 * Issue a CDP method against the top-level frame and resolve with
+	 * the response result (or reject on error / timeout). Used by host
+	 * code (e.g. chrome.devtools.inspectedWindow.eval) that needs to
+	 * speak CDP without going through the devtools front-end pipeline.
+	 *
+	 * Request ids are drawn from a private negative range to avoid
+	 * collisions with DT-originated ids. The response short-circuits
+	 * `receiveFromFrame` and never reaches `postToDevTools`.
+	 *
+	 * Throws synchronously if no top-level frame is attached.
+	 */
+	request<T = unknown>(
+		method: string,
+		params: Record<string, unknown> = {},
+		opts: { timeoutMs?: number } = {},
+	): Promise<T> {
+		const frameId = this.topLevelFrameId;
+		if (!frameId) {
+			return Promise.reject(new Error('CdpMultiplexer.request: no top-level frame attached'));
+		}
+		const rec = this.frames.get(frameId);
+		if (!rec) {
+			return Promise.reject(new Error('CdpMultiplexer.request: top-level frame record missing'));
+		}
+		const id = this.nextHostRequestId--;
+		const timeoutMs = opts.timeoutMs ?? 5000;
+		return new Promise<T>((resolve, reject) => {
+			const timer = setTimeout(() => {
+				if (!this.hostRequests.has(id)) return;
+				this.hostRequests.delete(id);
+				reject(new Error(`CdpMultiplexer.request: ${method} timed out after ${timeoutMs}ms`));
+			}, timeoutMs);
+			this.hostRequests.set(id, {
+				resolve: (result) => {
+					clearTimeout(timer);
+					resolve(result as T);
+				},
+				reject: (err) => {
+					clearTimeout(timer);
+					reject(err);
+				},
+			});
+			try {
+				rec.postToFrame(JSON.stringify({ id, method, params }));
+			} catch (err) {
+				clearTimeout(timer);
+				this.hostRequests.delete(id);
+				reject(err instanceof Error ? err : new Error(String(err)));
+			}
+		});
 	}
 
 	private recordPending(

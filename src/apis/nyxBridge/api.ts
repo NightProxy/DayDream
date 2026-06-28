@@ -31,6 +31,10 @@ export interface TabInfo {
 	pinned: boolean;
 	highlighted: boolean;
 	discarded: boolean;
+	windowId: number;
+	groupId: number;
+	openerTabId?: number;
+	incognito: boolean;
 }
 
 export interface PageSnapshot {
@@ -91,7 +95,7 @@ export interface ChromeEventLike<F extends (...args: any[]) => void> {
 }
 
 // Supporting types referenced from the namespaces below. These mirror
-// their Chrome counterparts (see src/pkgs/Helium/packages/mv3/src/api/*
+// their Chrome counterparts (see src/core/helium/mv3/api/*
 // for the full Chrome shapes — we keep only the fields v1 actually uses).
 
 export interface RegisteredContentScript {
@@ -414,6 +418,7 @@ export const METHOD_REGISTRY = [
 	'tabs.query', 'tabs.get', 'tabs.getCurrent', 'tabs.create', 'tabs.update',
 	'tabs.remove', 'tabs.duplicate', 'tabs.reload', 'tabs.goBack', 'tabs.goForward',
 	'tabs.captureVisibleTab', 'tabs.sendMessage',
+	'tabs.move', 'tabs.group', 'tabs.ungroup', 'tabs.hardReload',
 	// scripting
 	'scripting.executeScript', 'scripting.insertCSS', 'scripting.removeCSS',
 	'scripting.registerContentScripts', 'scripting.unregisterContentScripts',

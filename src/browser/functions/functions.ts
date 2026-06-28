@@ -128,6 +128,10 @@ class Functions implements FuncInterface {
       this.profileManager.profilesMenu(this.items.profilesButton);
     }
 
+    if (this.items.extensionsButton) {
+      this.menuManager.extensionsMenu(this.items.extensionsButton);
+    }
+
     await this.keyboardManager.init();
 
     this.setupAutoSave();

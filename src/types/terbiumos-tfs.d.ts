@@ -24,7 +24,24 @@ type TFS_ReadFileBinaryCb = (
   err: Error | null,
   data: Uint8Array | ArrayBuffer,
 ) => void;
+// Used when the encoding arg is omitted — TFS returns either bytes or
+// a string depending on the file's extension (its built-in
+// binaryExts list). Our consumers should always pass an explicit
+// encoding to avoid this; if they don't, callbacks must handle both.
+type TFS_ReadFileAnyCb = (
+  err: Error | null,
+  data: string | Uint8Array | ArrayBuffer,
+) => void;
 type TFS_ExistsCb = (exists: boolean) => void;
+
+// Stat shape — minimal projection of what we actually consume.
+interface TFS_Stats {
+  type: "FILE" | "DIRECTORY" | "SYMLINK";
+  size: number;
+  isDirectory: () => boolean;
+  isFile: () => boolean;
+}
+type TFS_StatCb = (err: Error | null, stats?: TFS_Stats | null) => void;
 
 /**
  * Subset of TFS's internal FS class that our code actually calls. Mirrors
@@ -36,14 +53,29 @@ export declare class FS {
   exists(path: string, cb: TFS_ExistsCb): void;
   mkdir(path: string, cb: TFS_ErrCb): void;
 
-  readFile(path: string, cb: TFS_ReadFileBinaryCb): void;
+  stat(path: string, cb: TFS_StatCb): void;
+
+  // No-encoding form: data could be either text or binary depending on
+  // TFS' auto-detection. Callers should prefer the explicit overloads.
+  readFile(path: string, cb: TFS_ReadFileAnyCb): void;
   readFile(path: string, encoding: "utf8", cb: TFS_ReadFileTextCb): void;
+  readFile(
+    path: string,
+    encoding: "arraybuffer" | "blob" | "base64",
+    cb: TFS_ReadFileBinaryCb,
+  ): void;
 
   writeFile(path: string, data: string | Uint8Array, cb: TFS_ErrCb): void;
   writeFile(
     path: string,
     data: string,
     encoding: "utf8",
+    cb: TFS_ErrCb,
+  ): void;
+  writeFile(
+    path: string,
+    data: Uint8Array | ArrayBuffer,
+    encoding: "arraybuffer" | "blob" | "base64",
     cb: TFS_ErrCb,
   ): void;
 
@@ -66,6 +98,13 @@ export declare class FS {
     path: string,
     cb: (err: Error | null, files: string[]) => void,
   ): void;
+
+  rmdir(
+    path: string,
+    options: { recursive?: boolean },
+    cb: TFS_ErrCb,
+  ): void;
+  rmdir(path: string, cb: TFS_ErrCb): void;
 }
 
 /** Instance type of FS — matches the alias exported by the real package. */

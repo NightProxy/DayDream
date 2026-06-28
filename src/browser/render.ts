@@ -159,12 +159,15 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    // Wired in src/browser/functions/functions.ts via
+                    // MenuManager.extensionsMenu(button) — opens the
+                    // Edge-style dropdown listing installed extensions
+                    // with pin/⋯ + "Manage extensions" button at the
+                    // top.
+                    "data-component": "extensions",
                     "data-tooltip": "Extensions",
                     "data-side": "right",
                     "data-align": "center",
-                    onclick: async () => {
-                      await window.tabs.createTab("ddx://extensions/");
-                    },
                   },
                   [
                     this.ui.createElement(

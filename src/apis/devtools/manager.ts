@@ -36,9 +36,11 @@ export class DevToolsManager {
 			const visible = tab?.devtoolsPanel?.isActive === true;
 			if (visible) {
 				existing.hide();
+				this.dispatchLifecycle('helium:devtools-closed', tabId);
 				console.log('[ddx-devtools] hid existing session for', tabId);
 			} else {
 				existing.show();
+				this.dispatchLifecycle('helium:devtools-opened', tabId);
 				console.log('[ddx-devtools] showed existing session for', tabId);
 			}
 			return;
@@ -57,6 +59,7 @@ export class DevToolsManager {
 			},
 		});
 		this.sessions.set(tabId, session);
+		this.dispatchLifecycle('helium:devtools-opened', tabId);
 		console.log(
 			'[ddx-devtools] session created for',
 			tabId,
@@ -66,6 +69,17 @@ export class DevToolsManager {
 			tab.iframe.contentWindow?.location.reload();
 		} catch (err) {
 			console.warn('[ddx-devtools] iframe reload failed:', err);
+		}
+	}
+
+	private dispatchLifecycle(
+		name: 'helium:devtools-opened' | 'helium:devtools-closed',
+		tabId: string,
+	): void {
+		try {
+			document.dispatchEvent(new CustomEvent(name, { detail: { tabId } }));
+		} catch (err) {
+			console.warn('[ddx-devtools] lifecycle dispatch failed:', name, err);
 		}
 	}
 
@@ -93,5 +107,38 @@ export class DevToolsManager {
 		if (!session) return;
 		session.destroy();
 		this.sessions.delete(tabId);
+		this.dispatchLifecycle('helium:devtools-closed', tabId);
+	}
+
+	/**
+	 * Returns the active session for a tab, or undefined if devtools
+	 * is not open for that tab. Used by chrome.devtools.* host handlers
+	 * to attach extension panels / route inspectedWindow.eval.
+	 */
+	getSession(tabId: string): DevToolsSession | undefined {
+		return this.sessions.get(tabId);
+	}
+
+	/** Snapshot of all open sessions (used to spawn devtools_page iframes). */
+	listSessions(): DevToolsSession[] {
+		return Array.from(this.sessions.values());
+	}
+
+	/**
+	 * Remove every extension panel registered for `extId` across all
+	 * open sessions. Called by ExtensionManager on extension kill.
+	 */
+	removeExtensionPanelsAll(extId: string): void {
+		for (const s of this.sessions.values()) {
+			try {
+				s.removeExtensionPanels(extId);
+			} catch (err) {
+				console.warn(
+					'[ddx-devtools] removeExtensionPanels failed for',
+					extId,
+					err,
+				);
+			}
+		}
 	}
 }

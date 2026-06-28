@@ -1,10 +1,41 @@
 import type { TabsInterface } from './types';
+import { injectExtensionMenus, type ContextMenuClickInfo } from '@core/helium/host/contextMenus';
+
+// Minimal shape of the host ExtensionManager surface we use for injection.
+interface ExtManagerLike {
+	contextMenusRegistry?: import('@core/helium/host/contextMenus').ContextMenuRegistry;
+	fireEventOn?: (extId: string, method: string, args: unknown[]) => void;
+	grantActiveTab?: (extId: string, tabId: number) => void;
+}
 
 export class TabContextMenu {
 	private tabs: TabsInterface;
 
 	constructor(tabs: TabsInterface) {
 		this.tabs = tabs;
+	}
+
+	private injectExtensionMenusInto(
+		menuItems: HTMLElement[],
+		contextType: 'tab' | 'page' | 'browser_action' | 'link',
+		info: { pageUrl?: string; linkUrl?: string },
+		tab: unknown,
+		tabIdNum: number | undefined,
+	): void {
+		const extMgr = (window as { extensions?: ExtManagerLike }).extensions;
+		const registry = extMgr?.contextMenusRegistry;
+		if (!registry) return;
+		const fireOnClicked = (extId: string, click: ContextMenuClickInfo, tabArg?: unknown) => {
+			extMgr?.fireEventOn?.(extId, 'chrome.contextMenus.onClicked', [click, tabArg]);
+		};
+		const deps: Parameters<typeof injectExtensionMenus>[5] = {
+			registry,
+			fireOnClicked,
+			createElement: (tag, attrs, children) =>
+				this.tabs.ui.createElement(tag, attrs ?? {}, (children ?? []) as (string | HTMLElement)[]),
+		};
+		if (extMgr?.grantActiveTab) deps.grantActiveTab = extMgr.grantActiveTab.bind(extMgr);
+		injectExtensionMenus(menuItems, contextType, info, tab, tabIdNum, deps);
 	}
 
 	/**
@@ -912,6 +943,30 @@ export class TabContextMenu {
 				]
 			)
 		);
+
+		// Extension contextMenus injection (tab context).
+		try {
+			let tabIdNum: number | undefined;
+			const w = window as { nyx?: { tabResolver?: { toNum?: (id: string) => number; info?: (n: number) => unknown } } };
+			let tabInfo: unknown = undefined;
+			if (w.nyx?.tabResolver?.toNum) {
+				try {
+					tabIdNum = w.nyx.tabResolver.toNum(tabId);
+					if (tabIdNum !== undefined && w.nyx.tabResolver.info) {
+						tabInfo = w.nyx.tabResolver.info(tabIdNum);
+					}
+				} catch { /* ignore */ }
+			}
+			this.injectExtensionMenusInto(
+				menuItems,
+				'tab',
+				tab.url ? { pageUrl: tab.url } : {},
+				tabInfo,
+				tabIdNum,
+			);
+		} catch (err) {
+			console.warn('[tab-context-menu] extension injection failed:', err);
+		}
 
 		const menu = this.tabs.ui.createElement(
 			'div',

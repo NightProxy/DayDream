@@ -42,15 +42,14 @@ export class Navigation implements NavigationInterface {
         // directly; this is the only place that knows it happened.
         (window as any).tabs?.navStack?.notifyBackward?.(tabId);
 
-        window.dispatchEvent(
-          new CustomEvent("tabNavigated", {
-            detail: {
-              tabId,
-              action: "back",
-              fromNavigation: true,
-            },
-          }),
-        );
+        const detail = {
+          tabId,
+          action: "back",
+          phase: "committed" as const,
+          fromNavigation: true,
+        };
+        window.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
+        document.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
       } catch (error) {
         console.warn("Could not navigate back:", error);
       }
@@ -68,15 +67,14 @@ export class Navigation implements NavigationInterface {
         const tabId = iframe.getAttribute("data-tab-id") || "unknown";
         (window as any).tabs?.navStack?.notifyForward?.(tabId);
 
-        window.dispatchEvent(
-          new CustomEvent("tabNavigated", {
-            detail: {
-              tabId,
-              action: "forward",
-              fromNavigation: true,
-            },
-          }),
-        );
+        const detail = {
+          tabId,
+          action: "forward",
+          phase: "committed" as const,
+          fromNavigation: true,
+        };
+        window.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
+        document.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
       } catch (error) {
         console.warn("Could not navigate forward:", error);
       }
@@ -91,15 +89,14 @@ export class Navigation implements NavigationInterface {
       try {
         iframe.contentWindow.location.reload();
 
-        window.dispatchEvent(
-          new CustomEvent("tabNavigated", {
-            detail: {
-              tabId: iframe.getAttribute("data-tab-id") || "unknown",
-              action: "refresh",
-              fromNavigation: true,
-            },
-          }),
-        );
+        const detail = {
+          tabId: iframe.getAttribute("data-tab-id") || "unknown",
+          action: "refresh",
+          phase: "committed" as const,
+          fromNavigation: true,
+        };
+        window.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
+        document.dispatchEvent(new CustomEvent("tabNavigated", { detail }));
       } catch (error) {
         console.warn("Could not refresh:", error);
       }

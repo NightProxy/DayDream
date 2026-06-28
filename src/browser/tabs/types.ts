@@ -165,7 +165,8 @@ export interface TabsInterface {
 		createManagedFrame: (
 			tabId: string,
 			url: string,
-			placement?: TabSplitPlacement
+			placement?: TabSplitPlacement,
+			opts?: { plugins?: unknown[] }
 		) => Promise<{
 			iframe: HTMLIFrameElement;
 			frameId: string;

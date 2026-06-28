@@ -26,6 +26,12 @@ import {
 	shouldRestoreRequest
 } from '@core/sw/req';
 import { WispManager } from '@core/sw/wisp';
+import {
+	applySwDnrUpdate,
+	evaluateSwLevelRules,
+	SW_DNR_UPDATE_MESSAGE_TYPE,
+	type SwDnrUpdateMessage,
+} from '@core/helium/host/webRequest/sw-hook';
 
 if (navigator.userAgent.includes('Firefox')) {
 	Object.defineProperty(globalThis, 'crossOriginIsolated', {
@@ -242,6 +248,17 @@ class DDXWorker {
 
 		await this.wispManager.ensureWisp();
 
+		// Helium SW-level webRequest/DNR fallback (Task 30). Main-page
+		// pushes DNR rules to us; we evaluate locally per request. If
+		// any rule yields block/redirect, short-circuit. Otherwise fall
+		// through to the existing flow.
+		try {
+			const swResult = await evaluateSwLevelRules(event);
+			if (swResult) return swResult;
+		} catch (err) {
+			console.warn('[DDXWorker] evaluateSwLevelRules failed:', err);
+		}
+
 		if (isCfRequest(event.request.url, this.cfBlockPatterns)) {
 			return new Response(null, { status: 204 });
 		}
@@ -344,6 +361,13 @@ swSelf.addEventListener('message', (event: MessageEventLike) => {
 	if (!data?.type) return;
 
 	switch (data.type) {
+		case SW_DNR_UPDATE_MESSAGE_TYPE:
+			try {
+				applySwDnrUpdate(data as SwDnrUpdateMessage);
+			} catch (err) {
+				console.warn('[DDXWorker] applySwDnrUpdate failed:', err);
+			}
+			break;
 		default:
 			console.log('[DDXWorker] Unknown message type:', data.type);
 			break;

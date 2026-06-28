@@ -1,5 +1,12 @@
 import type { TabsInterface } from './types';
 import { decodeProxiedUrl } from './urlDecoder';
+import { injectExtensionMenus, type ContextMenuClickInfo } from '@core/helium/host/contextMenus';
+
+interface ExtManagerLike {
+	contextMenusRegistry?: import('@core/helium/host/contextMenus').ContextMenuRegistry;
+	fireEventOn?: (extId: string, method: string, args: unknown[]) => void;
+	grantActiveTab?: (extId: string, tabId: number) => void;
+}
 
 export class TabPageClient {
 	private tabs: TabsInterface;
@@ -28,6 +35,7 @@ export class TabPageClient {
 		this.setupPageBackgroundContextBridge(iframe);
 		this.setupErrorPageRedirect(iframe);
 		this.setupNavigationTracking(iframe);
+		this.setupPhaseEvents(iframe);
 		this.setupKeyboardHandler(iframe);
 	};
 
@@ -375,6 +383,29 @@ export class TabPageClient {
 			]
 		);
 
+		// Extension contextMenus injection (link context).
+		try {
+			const extMgr = (window as { extensions?: ExtManagerLike }).extensions;
+			const registry = extMgr?.contextMenusRegistry;
+			if (registry) {
+				const items: HTMLElement[] = [];
+				const fireOnClicked = (extId: string, click: ContextMenuClickInfo, tabArg?: unknown) => {
+					extMgr?.fireEventOn?.(extId, 'chrome.contextMenus.onClicked', [click, tabArg]);
+				};
+				const deps: Parameters<typeof injectExtensionMenus>[5] = {
+					registry,
+					fireOnClicked,
+					createElement: (tag, attrs, children) =>
+						this.tabs.ui.createElement(tag, attrs ?? {}, (children ?? []) as (string | HTMLElement)[]),
+				};
+				if (extMgr?.grantActiveTab) deps.grantActiveTab = extMgr.grantActiveTab.bind(extMgr);
+				injectExtensionMenus(items, 'link', { linkUrl: href }, undefined, undefined, deps);
+				for (const el of items) menu.appendChild(el);
+			}
+		} catch (err) {
+			console.warn('[pageClient] link extension menu injection failed:', err);
+		}
+
 		const tempAnchor = this.tabs.ui.createElement('div', {
 			style: `position:fixed;left:${event.pageX}px;top:${event.pageY}px;width:1px;height:1px;opacity:0;pointer-events:none;`
 		});
@@ -541,16 +572,112 @@ export class TabPageClient {
 	}
 
 	private handleUrlChange(iframe: HTMLIFrameElement): void {
+		const tabId = iframe.id.replace('iframe-', 'tab-');
 		const iframeLoadedEvent = new CustomEvent('iframeLoaded', {
 			detail: {
-				tabId: iframe.id.replace('iframe-', 'tab-'),
+				tabId,
 				iframe,
-				tabElement: document.getElementById(
-					iframe.id.replace('iframe-', 'tab-')
-				)
+				tabElement: document.getElementById(tabId)
 			}
 		});
 		document.dispatchEvent(iframeLoadedEvent);
+
+		// Phase 'committed' for in-page URL changes (link clicks,
+		// history.pushState). The protocols.navigate() path fires its
+		// own 'committed' event; this catches everything else.
+		let href: string | undefined;
+		try {
+			href = iframe.contentWindow?.location?.href ?? undefined;
+		} catch {
+			href = undefined;
+		}
+		const detail = {
+			tabId,
+			url: href,
+			phase: 'committed' as const,
+			fromUrlChange: true
+		};
+		window.dispatchEvent(new CustomEvent('tabNavigated', { detail }));
+		document.dispatchEvent(new CustomEvent('tabNavigated', { detail }));
+	}
+
+	/**
+	 * Wires `DOMContentLoaded` + `load` listeners on the iframe's
+	 * contentWindow so we can dispatch `tabNavigated` with phases
+	 * `'dom-content-loaded'` and `'completed'`. These phases match
+	 * chrome.webNavigation.onDOMContentLoaded / onCompleted semantics.
+	 *
+	 * Note: Scramjet proxies the iframe's window/document. The native
+	 * iframe `load` event on the iframe element (registered separately
+	 * below) always fires regardless of proxy state and acts as the
+	 * "completed" fallback. DOMContentLoaded fired from inside the
+	 * Scramjet-proxied contentWindow is best-effort — it may fire
+	 * late, fire after `load`, or not fire at all for some proxied
+	 * pages. Consumers should treat the absence of a dom-content-loaded
+	 * event as "not observed" and rely on `completed` as the
+	 * authoritative end-of-navigation signal.
+	 */
+	private setupPhaseEvents(iframe: HTMLIFrameElement): void {
+		const tabId = iframe.id.replace('iframe-', 'tab-');
+		// Bind once-per-iframe handlers. The iframe is recreated when a
+		// tab is closed so re-firing on subsequent navigations is fine.
+		// Documented best-effort: DOMContentLoaded inside the Scramjet
+		// proxy may fire late or not at all. The iframe.load fallback
+		// (registered below) reliably covers the 'completed' phase.
+		let domFired = false;
+		let loadFired = false;
+
+		const fire = (phase: 'dom-content-loaded' | 'completed') => {
+			let url: string | undefined;
+			try {
+				url = iframe.contentWindow?.location?.href ?? undefined;
+			} catch {
+				url = undefined;
+			}
+			const detail = { tabId, url, phase, fromPageLoad: true };
+			window.dispatchEvent(new CustomEvent('tabNavigated', { detail }));
+			document.dispatchEvent(new CustomEvent('tabNavigated', { detail }));
+		};
+
+		try {
+			const win = iframe.contentWindow;
+			if (win) {
+				win.addEventListener(
+					'DOMContentLoaded',
+					() => {
+						if (domFired) return;
+						domFired = true;
+						fire('dom-content-loaded');
+					},
+					{ once: false }
+				);
+				win.addEventListener(
+					'load',
+					() => {
+						if (loadFired) return;
+						loadFired = true;
+						fire('completed');
+					},
+					{ once: false }
+				);
+			}
+		} catch {
+			// proxied window may not support addEventListener; fall back below
+		}
+
+		// Iframe-level fallback: when contentWindow events don't reach
+		// us (Scramjet proxy, cross-origin, etc.), the iframe's own load
+		// event still fires when the page finishes loading.
+		iframe.addEventListener('load', () => {
+			if (!domFired) {
+				domFired = true;
+				fire('dom-content-loaded');
+			}
+			if (!loadFired) {
+				loadFired = true;
+				fire('completed');
+			}
+		});
 	}
 
 	private setupErrorPageRedirect(iframe: HTMLIFrameElement): void {

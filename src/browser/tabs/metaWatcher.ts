@@ -89,6 +89,9 @@ export class TabMetaWatcher {
 					titleEl.setAttribute('title', pageTitle);
 				}
 				this.tabs.updateTabMetadata(tabId, { title: pageTitle });
+				document.dispatchEvent(new CustomEvent('tabMetaChanged', {
+					detail: { tabId, changes: { title: pageTitle } },
+				}));
 			}
 		} catch (e) {
 			console.warn('Could not update title:', e);
@@ -102,6 +105,9 @@ export class TabMetaWatcher {
 			: null;
 		if (decodedFromIframe) currentUrl = decodedFromIframe;
 		this.tabs.updateTabMetadata(tabId, { url: currentUrl });
+		document.dispatchEvent(new CustomEvent('tabMetaChanged', {
+			detail: { tabId, changes: { url: currentUrl } },
+		}));
 
 		try {
 			if (locHref && tabEl.classList.contains('active')) {
@@ -139,6 +145,9 @@ export class TabMetaWatcher {
 				this.tabs.updateTabMetadata(tabId, {
 					favicon: faviconUrl || null
 				});
+				document.dispatchEvent(new CustomEvent('tabMetaChanged', {
+					detail: { tabId, changes: { favicon: faviconUrl || null } },
+				}));
 				this.tabs.setTabCache(tabId, {
 					title: pageTitle,
 					favicon: faviconUrl || null,

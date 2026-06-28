@@ -414,6 +414,7 @@
     "description": "A moody forest-green theme inspired by misty seascapes",
     "background-color": "rgba(13, 20, 16, 1)",
     "background-image": "/res/t/tb.png",
+    "title-rep": "Terbium Browser",
     "hover-background-color": "rgba(50, 174, 98, 0.13)",
     "input-background-color": "rgba(18, 26, 22, 1)",
     "tab-bg-color": "rgba(28, 40, 33, 1)",

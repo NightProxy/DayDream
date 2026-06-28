@@ -4,7 +4,13 @@
 
 import { CdpMultiplexer } from './multiplexer';
 import { decodeEnvelope, DEVTOOLS_HOST_TAG } from './frameTransport';
-import { mountPanel, unmountPanel, type PanelHandle } from './panel';
+import {
+	mountPanel,
+	unmountPanel,
+	type AddPanelOpts,
+	type PanelEntry,
+	type PanelHandle,
+} from './panel';
 import type { DevtoolsBridgeMessage, DevtoolsMessage } from './types';
 
 interface TabLike {
@@ -47,6 +53,11 @@ export class DevToolsSession {
 	private destroyed = false;
 	private hostMessageListener: (ev: MessageEvent) => void;
 
+	// Per-extension panel registry. Tracks which PanelEntry rows in
+	// `panel.panels` were added by which extension, so we can clean
+	// up on extension kill / session destroy.
+	private extensionPanels = new Map<string, Set<number>>();
+
 	constructor(opts: SessionOpts) {
 		this.tabId = opts.tabId;
 		this.tabData = opts.tabData;
@@ -59,6 +70,38 @@ export class DevToolsSession {
 
 		this.hostMessageListener = (ev) => this.onHostMessage(ev);
 		window.addEventListener('message', this.hostMessageListener);
+	}
+
+	/**
+	 * Add an extension panel to this session's PanelHandle. Returns
+	 * the resulting PanelEntry (caller reads .id for the chrome
+	 * devtools panelId).
+	 */
+	addExtensionPanel(opts: AddPanelOpts): PanelEntry {
+		const entry = this.panel.addPanel(opts);
+		let set = this.extensionPanels.get(opts.extId);
+		if (!set) {
+			set = new Set();
+			this.extensionPanels.set(opts.extId, set);
+		}
+		set.add(entry.id);
+		return entry;
+	}
+
+	/** Remove every extension panel registered for `extId`. */
+	removeExtensionPanels(extId: string): void {
+		this.panel.removePanelsByExtId(extId);
+		this.extensionPanels.delete(extId);
+	}
+
+	/** Public access for the host devtools handlers. */
+	getPanel(): PanelHandle {
+		return this.panel;
+	}
+
+	/** Public access to the multiplexer for inspectedWindow.eval routing. */
+	getMultiplexer(): CdpMultiplexer {
+		return this.multiplexer;
 	}
 
 	show(): void {
@@ -81,6 +124,8 @@ export class DevToolsSession {
 		} catch {
 			// ignore
 		}
+		// Drop all per-extension panel records before tearing down the DOM.
+		this.extensionPanels.clear();
 		unmountPanel(this.tabData);
 		this.windowsByFrameId.clear();
 		this.attachedWindows.clear();

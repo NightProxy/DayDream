@@ -51,6 +51,11 @@ export interface HistoryStats {
 
 export type HistoryFilter = 'today' | 'yesterday' | 'week' | 'month' | 'all';
 
+/** Chrome-style change event emitted by HistoryManager.addChangeListener. */
+export type HistoryChangeEvent =
+	| { type: 'visited'; item: HistoryEntry }
+	| { type: 'removed'; info: { allHistory: boolean; urls?: string[] } };
+
 export class HistoryManager {
 	private static instance: HistoryManager | null = null;
 
@@ -100,6 +105,8 @@ export class HistoryManager {
 			sessionStorage.getItem('historySessionId') || '';
 	}
 
+	private changeListeners: Set<(event: HistoryChangeEvent) => void> = new Set();
+
 	public addListener(callback: () => void): () => void {
 		this.listeners.add(callback);
 		return () => this.listeners.delete(callback);
@@ -107,6 +114,23 @@ export class HistoryManager {
 
 	private notifyListeners(): void {
 		this.listeners.forEach(callback => callback());
+	}
+
+	public addChangeListener(
+		fn: (event: HistoryChangeEvent) => void
+	): () => void {
+		this.changeListeners.add(fn);
+		return () => this.changeListeners.delete(fn);
+	}
+
+	private emitChange(event: HistoryChangeEvent): void {
+		for (const fn of this.changeListeners) {
+			try {
+				fn(event);
+			} catch (err) {
+				console.error('[HistoryManager] change listener threw:', err);
+			}
+		}
 	}
 
 	private ensureSessionInitialized(): void {
@@ -279,6 +303,7 @@ export class HistoryManager {
 
 			await this.syncIfEnabled();
 			this.notifyListeners();
+			this.emitChange({ type: 'visited', item: existingEntry });
 			return existingEntry;
 		}
 
@@ -312,6 +337,7 @@ export class HistoryManager {
 
 		await this.syncIfEnabled();
 		this.notifyListeners();
+		this.emitChange({ type: 'visited', item: entry });
 		return entry;
 	}
 
@@ -364,18 +390,28 @@ export class HistoryManager {
 		const index = this.entries.findIndex(entry => entry.id === id);
 		if (index === -1) return false;
 
+		const removed = this.entries[index];
 		this.entries.splice(index, 1);
 		await this.syncIfEnabled();
 		this.notifyListeners();
+		this.emitChange({
+			type: 'removed',
+			info: { allHistory: false, urls: [removed.url] }
+		});
 		return true;
 	}
 
 	public async deleteEntriesByDomain(domain: string): Promise<number> {
 		const initialLength = this.entries.length;
+		const removedUrls: string[] = [];
 		this.entries = this.entries.filter(entry => {
 			try {
 				const entryDomain = new URL(entry.url).hostname;
-				return entryDomain !== domain;
+				if (entryDomain === domain) {
+					removedUrls.push(entry.url);
+					return false;
+				}
+				return true;
 			} catch {
 				return true;
 			}
@@ -385,6 +421,10 @@ export class HistoryManager {
 		if (deletedCount > 0) {
 			await this.syncIfEnabled();
 			this.notifyListeners();
+			this.emitChange({
+				type: 'removed',
+				info: { allHistory: false, urls: removedUrls }
+			});
 		}
 		return deletedCount;
 	}
@@ -396,14 +436,23 @@ export class HistoryManager {
 		nextDate.setDate(nextDate.getDate() + 1);
 
 		const initialLength = this.entries.length;
+		const removedUrls: string[] = [];
 		this.entries = this.entries.filter(entry => {
-			return entry.visitedAt < targetDate || entry.visitedAt >= nextDate;
+			if (entry.visitedAt < targetDate || entry.visitedAt >= nextDate) {
+				return true;
+			}
+			removedUrls.push(entry.url);
+			return false;
 		});
 
 		const deletedCount = initialLength - this.entries.length;
 		if (deletedCount > 0) {
 			await this.syncIfEnabled();
 			this.notifyListeners();
+			this.emitChange({
+				type: 'removed',
+				info: { allHistory: false, urls: removedUrls }
+			});
 		}
 		return deletedCount;
 	}
@@ -590,6 +639,7 @@ export class HistoryManager {
 		this.visitStartTimes.clear();
 		await this.syncIfEnabled();
 		this.notifyListeners();
+		this.emitChange({ type: 'removed', info: { allHistory: true } });
 	}
 
 	public async clearByTimeRange(
@@ -599,14 +649,21 @@ export class HistoryManager {
 		const initialLength = this.entries.length;
 		const end = endDate || new Date();
 
+		const removedUrls: string[] = [];
 		this.entries = this.entries.filter(entry => {
-			return entry.visitedAt < startDate || entry.visitedAt > end;
+			if (entry.visitedAt < startDate || entry.visitedAt > end) return true;
+			removedUrls.push(entry.url);
+			return false;
 		});
 
 		const deletedCount = initialLength - this.entries.length;
 		if (deletedCount > 0) {
 			await this.syncIfEnabled();
 			this.notifyListeners();
+			this.emitChange({
+				type: 'removed',
+				info: { allHistory: false, urls: removedUrls }
+			});
 		}
 		return deletedCount;
 	}
