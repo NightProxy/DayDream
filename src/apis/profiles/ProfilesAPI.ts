@@ -2,7 +2,22 @@ import { ProfileManager } from "./profileManager";
 import { StateManager } from "./stateManager";
 import { ExportManager } from "./exportManager";
 import type { ProfileData, ProfileExport, DatabaseExport, ProfileAppearance } from "./types";
-import { getAllIDBData, setIDBDataLegacy } from "./storage/indexedDB";
+import {
+  getAllIDBData,
+  setIDBDataLegacy,
+  setIDBData,
+  clearAllIDB,
+} from "./storage/indexedDB";
+import {
+  getAllCookies,
+  setCookies,
+  clearAllCookies,
+} from "./storage/cookies";
+import {
+  getAllLocalStorage,
+  setLocalStorage,
+  clearAllLocalStorage,
+} from "./storage/localStorage";
 
 class ProfilesAPI {
   private currentProfile: string | null;
@@ -255,47 +270,38 @@ class ProfilesAPI {
   }
 
   async getAllCookies(): Promise<Record<string, string>> {
-    const { getAllCookies } = await import("./storage/cookies");
     return await getAllCookies();
   }
 
   async setCookies(cookies: Record<string, string>): Promise<void> {
-    const { setCookies } = await import("./storage/cookies");
     return await setCookies(cookies);
   }
 
   async clearAllCookies(): Promise<void> {
-    const { clearAllCookies } = await import("./storage/cookies");
     return await clearAllCookies();
   }
 
   async getAllLocalStorage(): Promise<Record<string, string>> {
-    const { getAllLocalStorage } = await import("./storage/localStorage");
     return await getAllLocalStorage();
   }
 
   async setLocalStorage(data: Record<string, string>): Promise<void> {
-    const { setLocalStorage } = await import("./storage/localStorage");
     return await setLocalStorage(data);
   }
 
   async clearAllLocalStorage(): Promise<void> {
-    const { clearAllLocalStorage } = await import("./storage/localStorage");
     return await clearAllLocalStorage();
   }
 
   async getAllIDBData(): Promise<DatabaseExport[]> {
-    const { getAllIDBData } = await import("./storage/indexedDB");
     return await getAllIDBData();
   }
 
   async setIDBData(databases: DatabaseExport[]): Promise<void> {
-    const { setIDBData } = await import("./storage/indexedDB");
     return await setIDBData(databases);
   }
 
   async clearAllIDB(): Promise<void> {
-    const { clearAllIDB } = await import("./storage/indexedDB");
     return await clearAllIDB();
   }
 }
