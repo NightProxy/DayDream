@@ -1,634 +1,877 @@
-select[data-component="dropdown"] {
-  background-color: var(--bg-2);
+// New DDX Settings stylesheet.
+// Rail + main column + sticky search + section cards.
+// All colors come from --bg-1/--bg-2/--main/--white-08/--proto tokens.
+
+// Theme-preset card styles (the rich preview with color bars + mock UI lines
+// + accent palette buttons) live in components/theme-preset.scss. The old
+// settings page pulled them in via imports.scss, but the new page only loads
+// internal.scss + this file — so import them here. Without this, themeManager
+// generates the markup but it renders as a bare button with only the name.
+@use "../components/theme-preset";
+
+.settings-shell {
+  display: grid;
+  grid-template-columns: 256px 1fr;
+  min-height: 100vh;
+  background: var(--bg-2);
   color: var(--text);
-  border: 1px solid var(--white-10);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
-select[data-component="dropdown"]:hover {
-  border-color: var(--white-20);
+.settings-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  padding: 24px 16px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--white-08);
+  overflow-y: auto;
+  z-index: 10;
+
+  .rail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 0 12px 16px;
+  }
+
+  .rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rail-divider {
+    border: none;
+    border-top: 1px solid var(--white-08);
+    margin: 12px 0;
+  }
+
+  .rail-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover { background: var(--white-05); }
+
+    &.active {
+      background: var(--main-20a);
+      color: var(--main);
+    }
+
+    .rail-icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .rail-ext-icon { width: 14px; height: 14px; margin-left: auto; opacity: 0.5; }
+
+    &.dim { opacity: 0.35; pointer-events: none; }
+  }
 }
 
-select[data-component="dropdown"]:focus {
-  outline: none;
-  border-color: var(--main);
-  box-shadow: 0 0 0 3px var(--main-20a);
-}
-
-select[data-component="dropdown"] option {
-  background-color: var(--bg-2);
-  color: var(--text);
-  padding: 8px;
-}
-
-input[data-component="switch"] + div {
-  background-color: var(--white-10);
-  transition: all 0.3s ease;
-}
-
-input[data-component="switch"]:checked + div {
-  background-color: var(--main);
-}
-
-input[data-component="switch"]:focus + div {
-  box-shadow: 0 0 0 4px var(--main-20a);
-}
-
-input[data-component="switch"] + div::after {
-  background-color: white;
-  border: 1px solid var(--white-20);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-input[data-component="switch"]:checked + div::after {
-  border-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-button[data-component="button"] {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
-  border: 1px solid transparent;
-}
-
-button[data-component="button"]:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--main-20a);
-}
-
-.bg-\[var\(--main\)\] {
-  background-color: var(--main) !important;
-}
-
-.bg-\[var\(--main\)\]:hover {
-  background-color: color-mix(in srgb, var(--main) 90%, black) !important;
-}
-
-.bg-\[var\(--white-10\)\] {
-  background-color: var(--white-10) !important;
-}
-
-.bg-\[var\(--white-10\)\]:hover {
-  background-color: var(--white-20) !important;
-}
-
-.focus\:ring-\[var\(--main\)\]:focus {
-  --tw-ring-color: var(--main) !important;
-}
-
-.focus\:ring-\[var\(--main-20a\)\]:focus {
-  --tw-ring-color: var(--main-20a) !important;
-}
-
-html,
-body {
-  height: 100%;
-  overflow: hidden;
-}
-
-body {
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-main {
-  height: 100vh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  flex: 1 !important;
-}
-
-main::-webkit-scrollbar {
-  width: 4px;
-}
-
-main::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-main::-webkit-scrollbar-thumb {
-  background: var(--main);
-  border-radius: 3px;
-  opacity: 0.5;
-}
-
-main::-webkit-scrollbar-thumb:hover {
-  opacity: 0.8;
-}
-
-main {
-  scrollbar-width: thin;
-  scrollbar-color: var(--main) transparent;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-aside {
-  height: 100vh !important;
-  overflow: visible !important;
-}
-
-.space-y-12 {
-  min-height: 100%;
-}
-
-.settings-child {
-  margin-left: 30px;
-}
-.settings-item-one {
-  margin-left: 10px !important;
-  margin-bottom: 10px;
-  margin-top: 5px;
-}
-.about-hover {
-  pointer-events: auto;
-  cursor: pointer;
-  display: inline-block;
-  transition: all 0.2s ease;
-  border: 2px solid transparent !important;
-  padding: 5px;
-  color: var(--faded-main-color) !important;
-  border-radius: 9999px;
-  text-decoration: none;
-}
-
-.about-hover:hover {
-  border: var(--main-color) 2px solid !important;
-  border-radius: 9999px;
-  transition: all 0.2s ease;
-  color: var(--main-color) !important;
-  padding: 5px;
-  text-decoration: none;
-}
-
-.about-hover:active {
-  border: var(--main-color) 2px solid !important;
-  border-radius: 9999px;
-  background-color: var(--main-color) !important;
-  color: var(--background-color) !important;
-  transition: all 0.2s ease;
-  padding: 5px;
-}
-
-.a {
-  transition: all 0.2s ease;
-  border: 0px;
-  color: var(--faded-main-color);
-  border-radius: 9999px;
-}
-.a:hover {
-  border: var(--main-color) 2px solid;
-  border-radius: 9999px;
-  transition: all 0.2s ease;
-  color: var(--faded-main-color);
-  padding: 5px;
-}
-.a:active {
-  border: var(--main-color) 2px solid;
-  border-radius: 9999px;
-  background-color: var(--main-color);
-  color: var(--input-background-color);
-  transition: all 0.2s ease;
-  padding: 5px;
-}
-.dropdown {
-  user-select: none;
-  position: relative;
-  display: inline-block;
-  background: none;
-  width: 150px;
-}
-
-.dropdown-button {
-  border: none;
-  padding: 10px 10px;
-  text-align: left;
-  font-size: 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--main-color);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.dropdown-button:focus {
-  outline: 2px solid var(--main-color);
-}
-
-.dropdown-button span.material-symbols-outlined {
-  background-color: none;
-  transition: transform 0.3s;
-  cursor: pointer;
-  position: relative !important;
-}
-
-.dropdown-button.active span.material-symbols-outlined {
-  transform: rotate(180deg);
-  background-color: none;
-  cursor: pointer;
-}
-
-.dropdown-options {
-  margin-top: 6px;
-  position: absolute;
-  background-color: var(--utility-background-color);
-  border-radius: 4px;
-  width: 100%;
-  z-index: 999999;
-  display: none;
-  padding: 0;
-  border-radius: 8px;
-  list-style-type: none;
-  backdrop-filter: blur(50px);
-  overflow: visible;
-}
-
-.dropdown-button.active + .dropdown-options {
-  display: block;
-}
-
-.dropdown-options li:nth-last-child(1) {
-  border-bottom-right-radius: 8px;
-  border-bottom-left-radius: 8px;
-  border-top-right-radius: 0px;
-  border-top-left-radius: 0px;
-}
-.dropdown-options li:nth-child(1) {
-  border-bottom-right-radius: 0px;
-  border-bottom-left-radius: 0px;
-  border-top-right-radius: 8px;
-  border-top-left-radius: 8px;
-}
-.dropdown-options li {
-  border-radius: 0;
-  transition: all 0.2s ease;
-  list-style-type: none;
-  width: 100%;
-  backdrop-filter: blur(50px);
-  position: relative;
-}
-
-.dropdown-options li:hover {
-  background-color: var(--faded-main-color);
-}
-
-.dropdown-options li a {
-  text-decoration: none;
-  width: 100%;
-  padding: 10px 21px 10px 0px;
-  max-width: 93.5%;
-  margin-left: 20px;
-  display: flex;
-}
-
-.dropdown-options li a img {
-  display: block;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  align-content: center;
-  margin-right: 3px;
-}
-
-.dropdown-options li:hover {
-  color: var(--hover-text-color);
-  background-color: var(--faded-main-color);
-  cursor: pointer;
-}
-
-.dropdown-options li:active {
-  color: var(--main-color);
-}
-
-.sideSnav {
-  list-style-type: none;
-  position: fixed;
-  width: 250px;
-  user-select: none;
+.settings-main {
   display: flex;
   flex-direction: column;
-  align-content: center;
-  flex-wrap: wrap;
-  border-radius: 15px;
-  transition: all 0.2s ease;
-  padding: 10px 0px;
+  min-height: 100vh;
 }
 
-.sideSnav li {
-  margin-top: 7.5px;
-  margin-bottom: 7.5px;
-  cursor: pointer;
+.settings-search-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-2);
+  padding: 16px 32px 12px;
+
+  .search-input-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 48px;
+    padding: 0 16px;
+    background: var(--bg-1);
+    border-radius: 24px;
+    border: 1px solid var(--white-08);
+    transition: border-color 0.12s, box-shadow 0.12s;
+
+    &:focus-within {
+      border-color: var(--main);
+      box-shadow: 0 0 0 3px var(--main-20a);
+    }
+
+    .search-icon { width: 18px; height: 18px; color: var(--proto); flex-shrink: 0; }
+
+    input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+  }
+}
+
+.settings-content {
+  flex: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.settings-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  color: var(--proto);
+
+  .empty-icon { width: 48px; height: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .empty-sub { font-size: 13px; }
+}
+
+.search-match {
+  box-shadow: inset 0 0 0 1px var(--main);
+}
+
+.search-hide { display: none !important; }
+
+@media (max-width: 1024px) {
+  .settings-shell { grid-template-columns: 64px 1fr; }
+  .settings-rail {
+    padding: 16px 8px;
+    .rail-title, .rail-item span { display: none; }
+    .rail-divider { margin: 8px 0; }
+    .rail-item { justify-content: center; padding: 10px; }
+  }
+}
+
+.settings-section { margin-bottom: 32px; }
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 24px 0 12px;
+}
+.settings-section-title:first-child { margin-top: 0; }
+.settings-subheader {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--proto);
+  margin: 20px 0 8px;
+}
+
+.settings-row {
   display: flex;
   align-items: center;
-  gap: 5px;
-  border-bottom: 0px;
-  transition: all 0.2s ease;
-}
-
-.sideSnav li:active {
-  color: var(--active-outline-clr);
-  position: relative;
-}
-
-.sideSnav li:active:before {
-  content: "";
-  position: absolute;
-  left: -18px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 35px;
-}
-
-.sideSnav a {
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text);
   text-decoration: none;
-  color: var(--main-color);
-  font-size: 16px;
-  display: block;
-  transition: all 0.2s ease;
-  border-bottom: transparent solid 0px;
-}
-.sideSnav a:hover {
-  transition: all 0.2s ease;
-  border-bottom: var(--main-color) 1px solid;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover { background: var(--white-05); }
+  &.no-hover { cursor: default; &:hover { background: var(--bg-1); } }
+
+  .row-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-70); }
+  .row-stack { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .row-label { font-weight: 500; }
+  .row-sub { font-size: 12px; color: var(--proto); margin-top: 2px; }
+
+  .row-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .row-chevron { width: 18px; height: 18px; color: var(--proto); }
+
+  .row-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--main-20a);
+    color: var(--main);
+  }
+  .row-pill.muted { background: var(--white-08); color: var(--text-70); }
 }
 
-.sideSnav h1 {
-  margin-top: 0px;
+.settings-button {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  background: var(--main);
+  color: var(--bg-2);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  &:hover { filter: brightness(1.1); }
+  &.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--white-08);
+    &:hover { background: var(--white-05); }
+  }
+  &.danger { background: var(--error); color: var(--bg-2); }
 }
 
-.scontent {
-  display: block;
-  width: 95%;
-  background-color: var(--dark-translucent-bg);
-  border-radius: 15px;
-  float: left;
-  text-align: left;
-  margin-top: 0px;
-  padding-left: 20px;
+.settings-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--black-80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: settings-modal-fade 0.15s ease-out;
+}
+@keyframes settings-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.settings-modal {
+  background: var(--bg-1);
+  border: 1px solid var(--main);
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px var(--main-20a), 0 12px 40px rgba(0,0,0,0.5);
+  max-width: 480px;
+  width: calc(100% - 48px);
+  padding: 24px;
+  color: var(--text);
+  font-family: inherit;
+
+  .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .modal-desc { font-size: 13px; color: var(--proto); margin-bottom: 18px; line-height: 1.5; }
+  .modal-body { margin-bottom: 20px; }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  // .modal-input intentionally lives at top-level (below this block).
+  // Several non-modal callers reuse the class for general-purpose inputs
+  // (e.g. the Home page URL input in Appearance, which is placed inside a
+  // settings-row, not inside .settings-modal). Keeping the rule scoped to
+  // `.settings-modal .modal-input` left those callers with browser-default
+  // form styling — opaque black background, no theme integration.
+  .modal-error {
+    color: var(--error);
+    font-size: 12px;
+    margin-top: 6px;
+    min-height: 16px;
+  }
+}
+
+// Top-level .modal-input — applies everywhere, not just inside modals.
+// Originally this rule was nested inside `.settings-modal` and only
+// applied inside dialogs; non-modal callers (e.g. the Home page URL
+// input in Appearance) fell back to browser-default form styling, which
+// renders an opaque black input ignoring the theme. Promoting to the
+// top level makes the class self-sufficient.
+//
+// Glass treatment is layered on top by the .has-background-image rule
+// further down — var(--bg-1) is redefined to a translucent color-mix
+// when a wallpaper is active, so this input inherits the frosted look
+// without an extra selector.
+.modal-input {
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+
+  &::placeholder { color: var(--proto); }
+
+  &:focus {
+    border-color: var(--main);
+    box-shadow: 0 0 0 3px var(--main-20a);
+  }
+}
+
+// Inside modals, the modal panel itself is var(--bg-1) — its child inputs
+// should be one step darker (var(--bg-2)) for visual separation, and
+// stretch the full panel width. This scoped override only adjusts those
+// two properties; everything else inherits from the top-level rule above.
+.settings-modal .modal-input {
+  width: 100%;
+  background: var(--bg-2);
+}
+
+.settings-subpage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  .subpage-back {
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    &:hover { background: var(--white-05); }
+    i { width: 20px; height: 20px; }
+  }
+  .subpage-breadcrumb {
+    font-size: 14px;
+    color: var(--proto);
+    .here { color: var(--text); font-weight: 600; }
+  }
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  margin-bottom: 16px;
+
+  .hero-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .hero-name { font-size: 20px; font-weight: 600; color: var(--text); }
+  .hero-stats { font-size: 13px; color: var(--proto); margin-top: 2px; }
+  .hero-actions { display: flex; gap: 8px; }
+}
+
+.profile-switcher-pop {
+  position: absolute;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  padding: 6px;
+  min-width: 220px;
+  z-index: 50;
+
+  .switcher-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    &:hover { background: var(--white-05); }
+    &.danger { color: var(--error); }
+    &.disabled { opacity: 0.4; pointer-events: none; }
+    i { width: 16px; height: 16px; flex-shrink: 0; }
+  }
+}
+
+.profile-add-row { color: var(--main); .row-label { color: var(--main); } }
+.profile-row-avatar { display: flex; align-items: center; gap: 12px; flex: 1; }
+.subpage-stack > * + * { margin-top: 16px; }
+
+.placeholder-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  .placeholder-icon { width: 32px; height: 32px; color: var(--proto); flex-shrink: 0; }
+  .placeholder-text { display: flex; flex-direction: column; gap: 4px; }
+  .placeholder-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .placeholder-sub { font-size: 13px; color: var(--proto); }
+}
+
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  .about-logo {
+    width: 56px; height: 56px;
+    background: var(--main);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg-2);
+    i { width: 32px; height: 32px; }
+  }
+  .about-name { font-size: 24px; font-weight: 600; }
+}
+.about-card {
+  padding: 16px 20px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.6;
+  a { color: var(--main); text-decoration: underline; }
+  strong { display: block; margin-bottom: 6px; font-weight: 600; }
+}
+.faq-item {
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  summary {
+    padding: 14px 18px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text);
+    list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+    &::-webkit-details-marker { display: none; }
+    &::after { content: "›"; transform: rotate(90deg); transition: transform 0.15s; color: var(--proto); }
+  }
+  &[open] summary::after { transform: rotate(270deg); }
+  .faq-answer { padding: 0 18px 16px; color: var(--proto); font-size: 13px; line-height: 1.5; }
+}
+
+.settings-radio-group { display: flex; flex-direction: column; gap: 8px; }
+.settings-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  &:hover { background: var(--white-05); }
+  &.selected { border-color: var(--main); box-shadow: 0 0 0 2px var(--main-20a); }
+  input[type="radio"] {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 2px solid var(--white-20);
+    border-radius: 50%;
+    margin: 0;
+    background: var(--bg-2);
+    &:checked {
+      border-color: var(--main);
+      box-shadow: inset 0 0 0 3px var(--main);
+    }
+  }
+  .radio-stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .radio-label { font-weight: 500; color: var(--text); }
+}
+.startup-custom-input {
+  margin-top: 8px;
+  padding-left: 32px;
+  input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-1);
+    border: 1px solid var(--white-08);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    &:focus { border-color: var(--main); box-shadow: 0 0 0 3px var(--main-20a); }
+  }
+}
+
+.privacy-checkbox-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.privacy-checkbox-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  &:hover { background: var(--white-05); }
+  input[type="checkbox"] {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 2px solid var(--white-20);
+    border-radius: 4px;
+    background: var(--bg-2);
+    cursor: pointer;
+    &:checked {
+      background: var(--main);
+      border-color: var(--main);
+      &::after { content: "✓"; color: var(--bg-2); display: block; text-align: center; line-height: 12px; font-weight: 700; }
+    }
+  }
+}
+.privacy-time-range {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  margin: 8px 0 16px;
+}
+
+/* Site permissions UI (moved from settingsOld.scss — old page used tailwind inline,
+   these are fresh DDX-styled equivalents) */
+.sp-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  #sp-search {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg-1);
+    border: 1px solid var(--white-08);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    &:focus { border-color: var(--main); box-shadow: 0 0 0 3px var(--main-20a); }
+  }
+}
+.sp-site-card {
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  .sp-site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    strong { color: var(--text); font-weight: 600; font-size: 14px; }
+  }
+  .sp-grants {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    .sp-grant {
+      font-size: 13px;
+      color: var(--proto);
+      padding: 4px 0;
+    }
+  }
+}
+
+.ddx-switch {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  input[data-component="switch"] {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+  }
+
+  .ddx-switch-track {
+    position: relative;
+    display: block;
+    width: 2.75rem;
+    height: 1.5rem;
+    background-color: var(--white-10);
+    border-radius: 9999px;
+    transition: background-color 150ms ease;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 1.25rem;
+      height: 1.25rem;
+      background-color: #ffffff;
+      border: 1px solid rgba(209, 213, 219, 1);
+      border-radius: 9999px;
+      transition: transform 150ms ease, border-color 150ms ease;
+    }
+  }
+
+  input:checked + .ddx-switch-track {
+    background-color: var(--main);
+    &::after {
+      transform: translateX(1.25rem);
+      border-color: #ffffff;
+    }
+  }
+
+  input:focus-visible + .ddx-switch-track {
+    box-shadow: 0 0 0 4px var(--main-20a);
+  }
+
+  &.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+.ddx-inline-notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--white-08);
+  border-left: 3px solid var(--main);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  animation: ddx-notice-slide 200ms ease;
+
+  &.is-error {
+    border-left-color: var(--error);
+  }
+}
+
+@keyframes ddx-notice-slide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ddx-status-card {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: var(--white-05);
+  border-radius: 12px;
+  margin-bottom: 16px;
+
+  &.is-locked {
+    background: linear-gradient(135deg, var(--white-05), var(--main-20a));
+  }
+
+  .ddx-status-card-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--main-20a);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--main);
+  }
+
+  .ddx-status-card-body {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .ddx-status-card-title {
+    font-size: 16px; font-weight: 600;
+    color: var(--text);
+  }
+
+  .ddx-status-card-meta {
+    font-size: 13px;
+    color: var(--text-70);
+  }
+
+  .ddx-status-card-actions {
+    display: flex; gap: 8px;
+    margin-top: 8px;
+  }
+}
+
+.ddx-locked-card {
+  padding: 16px;
+  background: var(--white-05);
+  border-radius: 10px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+
+  .ddx-locked-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0;
+    color: var(--text-70);
+    font-size: 14px;
+
+    &::before {
+      content: "🔒";
+      flex-shrink: 0;
+    }
+  }
+}
+
+.ddx-loading-skeleton {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-70);
+  font-size: 14px;
+  animation: ddx-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ddx-skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.ddx-host-unavailable {
+  padding: 24px;
+  background: var(--white-05);
+  border-radius: 12px;
+  border-left: 3px solid var(--error);
+  display: flex; flex-direction: column; gap: 12px;
+
+  .ddx-host-unavailable-title { font-weight: 600; color: var(--text); }
+  .ddx-host-unavailable-detail { font-size: 13px; color: var(--text-70); }
+  .ddx-host-unavailable-retry {
+    align-self: flex-start;
+    padding: 6px 12px;
+    background: var(--main);
+    color: white;
+    border: none; border-radius: 6px;
+    cursor: pointer;
+  }
+}
+
+.ddx-row-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--main-20a);
+  color: var(--main);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.settings-row.has-error {
+  border-color: var(--error);
+
+  .row-label { color: var(--error); }
+  .row-error {
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 4px;
+  }
+}
+
+.ddx-switcher-header {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-70);
   pointer-events: none;
 }
 
-.scontent h1 {
-  font-size: 25px;
-  font-weight: 500;
+/* ─────────────────────────────────────────────────────────────────────────
+   Appearance / Theme subpage (inherited from settingsOld)
+   ───────────────────────────────────────────────────────────────────────── */
+
+.appearance-card {
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  padding: 20px;
 }
 
-.scontent h2 {
-  font-size: 20px;
-  font-weight: 300;
-}
-.scontent h3 {
-  margin-left: 10px;
+.appearance-card-title {
   font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 16px;
 }
-.scontent h5 {
-  font-size: 14px;
-  margin-left: 30px;
-  margin-top: 5px;
-  margin-bottom: 10px;
+
+.appearance-card-subheading {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0 0 12px;
 }
-.scontent p {
+
+.appearance-card-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--white-08);
+}
+
+.appearance-palette-heading {
   font-size: 12px;
-
-  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-70);
+  margin: 0 0 8px;
 }
 
-.scontent ul {
-  list-style-type: none;
-  margin-left: -20px;
+.theme-preset-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .theme-preset-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 880px) {
+  .theme-preset-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-.scontent li {
-  line-height: 24px;
-  font-size: 14px;
-}
-
-.scontent hr {
-  border: 0;
-  height: 1px;
-  background: var(--hr);
-  opacity: 0.4;
-  margin-top: 25px;
-  margin-bottom: 40px;
-}
-
-hr {
-  border: none;
-  height: 1px;
-  background: var(--main);
-  width: 75%;
-}
-
-.scontent::-webkit-scrollbar {
-  width: 8px;
-}
-
-.scontent::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 30px;
-}
-
-.scontent::-webkit-scrollbar-thumb {
-  background: var(--nav-bg);
-  border-radius: 30px;
-}
-
-.scontent * {
-  text-align: left;
-}
-
-h3 .about-hover:hover {
-  color: var(--active-outline-clr);
-}
-
-.scrollDiv {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 5px;
-  width: calc(100% - 250px);
-  height: 100vh;
-  position: fixed;
-  right: 0;
-  overflow-y: auto;
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-}
-
-.section-horiz {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  pointer-events: auto;
-}
-
-.section-vert {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  pointer-events: auto;
-}
-
-input[type="text"] {
-  font-size: 14px;
-  padding: 5px 10px;
-  outline: none;
-  border: none;
-  background: transparent;
-  color: var(--text-color);
-  border-radius: 9999px;
-  transition: 0.2s ease;
-  font-family: "Plus Jakarta Sans";
-  border: var(--border-color) 1px solid;
-}
-input[type="text"]:hover {
-  background: var(--input-hover-background-color);
-  color: var(--hover-text-color);
-}
-
-input[type="text"]:focus {
-  background: var(--input-background-color);
-  color: var(--active-text-color);
-  border-color: var(--active-border-color);
-}
-
-input[type="text"]::placeholder {
-  color: var(--text-color);
-  font-family: "Plus Jakarta Sans";
-}
-
-.bgPreview {
-  display: block;
-  width: 250px;
-  height: auto;
-  border-radius: 8px;
-}
-
-.bg-list {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px;
-}
-
-.switch {
-  position: relative;
-  height: 1.5rem;
-  width: 3rem;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  border-radius: 9999px;
-  background-color: rgba(100, 116, 139, 0.377);
-  transition: all 0.3s ease;
-}
-
-.switch:checked {
-  background-color: var(--main-color);
-}
-
-.switch::before {
-  position: absolute;
-  content: "";
-  left: calc(1.5rem - 1.6rem);
-  top: calc(1.5rem - 1.6rem);
-  display: block;
-  height: 1.6rem;
-  width: 1.6rem;
-  cursor: pointer;
-  border: 1px solid rgba(100, 116, 139, 0.527);
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 3px 10px rgba(100, 116, 139, 0.327);
-  transition: all 0.2s ease;
-}
-
-.switch:checked:before {
-  transform: translateX(100%);
-  border-color: var(--faded-main-color);
-}
-
-aside[aside="settings"] > * > button:not(#aside-close) {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background-color: var(--utility-background-color);
-  color: var(--text-color);
-  font-family: Plus Jakarta Sans;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-aside[aside="settings"] > * > button:not(#aside-close):hover {
-  transition: all 0.2s ease;
-  cursor: pointer;
-  background-color: var(--hover-background-color);
-  color: var(--hover-text-color);
-}
-
+/* Color-target tabs (Accent / Background / Panel / Text / Border) */
 .color-target-tabs {
   display: flex;
-  gap: 0.375rem;
+  gap: 6px;
   flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .color-target-tab {
-  font-size: 0.6875rem;
+  font-size: 11px;
   font-weight: 600;
-  font-family: "Plus Jakarta Sans", sans-serif;
-  padding: 0.3125rem 0.75rem;
+  font-family: inherit;
+  padding: 5px 12px;
   border-radius: 9999px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--white-10);
   background: transparent;
-  color: var(--text-color);
+  color: var(--text);
   cursor: pointer;
   transition: all 0.15s ease;
   opacity: 0.7;
 }
-
 .color-target-tab:hover {
   opacity: 1;
-  border-color: var(--hover-text-color);
+  border-color: var(--white-20);
 }
-
 .color-target-tab.active {
   opacity: 1;
   background: var(--main);
   border-color: var(--main);
-  color: #fff;
+  color: var(--bg-2);
 }
 
+/* iro picker + right-side inputs */
 .customize-colors-row {
   display: flex;
-  gap: 1rem;
+  gap: 20px;
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .customize-colors-row > .colorPicker {
@@ -637,31 +880,302 @@ aside[aside="settings"] > * > button:not(#aside-close):hover {
 
 .customize-colors-right {
   flex: 1;
-  min-width: 0;
+  min-width: 220px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .color-inputs {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .color-inputs > input {
   flex: 1;
   min-width: 0;
-  font-size: 0.75rem;
-  padding: 0.375rem 0.625rem;
+  font-size: 12px;
+  padding: 6px 10px;
   outline: none;
-  background: transparent;
-  color: var(--text-color);
-  border-radius: 0.5rem;
+  background: var(--bg-2);
+  color: var(--text);
+  border-radius: 8px;
   transition: 0.2s ease;
-  font-family: "Plus Jakarta Sans";
-  border: var(--border-color) 1px solid;
+  font-family: inherit;
+  border: 1px solid var(--white-08);
 }
-
 .color-inputs > input:focus {
   border-color: var(--main);
+  box-shadow: 0 0 0 3px var(--main-20a);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Night+ status-card icon sizing — constrain lucide SVG inside 48x48 frame
+   ───────────────────────────────────────────────────────────────────────── */
+.ddx-status-card .ddx-status-card-icon {
+  width: 48px;
+  height: 48px;
+
+  i,
+  svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+}
+
+/* Night+ locked-card rows use a lucide lock icon instead of an emoji */
+.ddx-locked-card .ddx-locked-row {
+  &::before { content: none; }
+
+  .ddx-locked-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-70);
+
+    svg, i { width: 16px; height: 16px; display: block; }
+  }
+}
+
+/* Night+ "Features unlocked" list — lucide check icons replace ✓ */
+.ddx-features-list {
+  padding: 16px;
+  background: var(--white-05);
+  border-radius: 10px;
+  margin-bottom: 16px;
+
+  .ddx-features-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 10px;
+  }
+
+  .ddx-feature-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    color: var(--text-70);
+    font-size: 14px;
+
+    .ddx-feature-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--main);
+
+      svg, i { width: 16px; height: 16px; display: block; }
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Appearance / Background subpage hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   Why this is over-constrained:
+   The hero used to live entirely on inline styles, and a re-entrancy bug in
+   the draw routine could let multiple appends pile up before a clear.
+   That manifested as N (thumb + info) pairs side-by-side, because the hero
+   itself is `display: flex` with no wrap. The JS fix prevents the pile-up,
+   but we also harden the layout here so any future regression degrades to
+   "tall + ugly" rather than "stretching off-screen":
+
+   - `width: 100%` and `box-sizing: border-box` keep the hero inside its
+     parent (`.subpage-stack`) regardless of children.
+   - `flex-wrap: wrap` means surprise extra children wrap to a new row.
+   - `min-width: 0` on `.bg-hero-info` allows the column to shrink without
+     forcing horizontal overflow when text is long.
+   ─────────────────────────────────────────────────────────────────────── */
+.settings-bg-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-1);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  position: relative;
+
+  .bg-hero-thumb {
+    width: 180px;
+    height: 108px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid var(--white-10);
+    background-color: var(--bg-2);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-70);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .bg-hero-info {
+    flex: 1 1 240px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .bg-hero-status-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .bg-hero-status-sub {
+    font-size: 13px;
+    color: var(--text-70);
+    margin-top: 2px;
+  }
+
+  .bg-hero-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .settings-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Glassy / translucent treatment when a background image is active.
+
+   `.has-background-image` is added to <html> by InternalPageTheme whenever the
+   user has set a custom background image (mirrored from the parent window in
+   src/pages/shared/themeInit.ts). The body itself becomes transparent and a
+   ::before layer in internal.scss paints a dimmed solid behind the image so
+   text stays readable.
+
+   Internal.scss already handles `.settings-row`, `.ddx-status-card`,
+   `.ddx-locked-card` (plus Tailwind attribute selectors used by the old page).
+   But the new page has additional containers (`.appearance-card`,
+   `.settings-bg-hero`, the rail, the sticky search bar, etc.) that default to
+   opaque var(--bg-1)/var(--bg-2) and would block the wallpaper entirely.
+
+   This block applies the same color-mix + backdrop-filter treatment to every
+   surface the new page paints opaque. Mirrors the old settings page exactly
+   (which got it for free via internal.scss attribute selectors on Tailwind
+   utility classes).
+   ──────────────────────────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────────────────────
+   Background-image glass treatment — the right way.
+
+   The new page is written with raw CSS tokens: `background: var(--bg-1)` and
+   `background: var(--bg-2)` directly in selector rules (~28 occurrences in
+   this file alone). These tokens resolve to fully opaque colors set by
+   Themeing.applyTheme() at theming.ts:567-570 (--bg-2 = theme background,
+   --bg-1 = theme input-background). When a wallpaper is active, every one
+   of those rules paints an opaque rectangle over it.
+
+   internal.scss tries to solve this for the OLD page by intercepting
+   Tailwind attribute selectors like `[class*="bg-[var(--bg-1)]"]` — that
+   matches markup like `<div class="bg-[var(--bg-1)] ...">` (Tailwind
+   arbitrary-value utility). But the new page DOESN'T use Tailwind; it
+   uses semantic class names with `background: var(--bg-1)` in SCSS. So the
+   attribute-selector trick never fires.
+
+   Per-selector !important overrides would mean maintaining a list that has
+   to be kept in sync with every new section forever. Instead, redefine the
+   raw `--bg-1` and `--bg-2` tokens themselves as translucent color-mixed
+   versions of their opaque source values when `.has-background-image` is on.
+
+   Result: every existing `background: var(--bg-1)` rule across the entire
+   page becomes glassy automatically. Zero per-selector maintenance.
+
+   Source colors come from Themeing's theme record:
+     --background-color       (opaque, what --bg-2 was set to)
+     --input-background-color (opaque, what --bg-1 was set to)
+
+   These are set as siblings to --bg-1/--bg-2 by applyTheme() at
+   theming.ts:558-571 so we can color-mix the original opaque value into
+   transparency without re-reading the now-translucent token.
+   ──────────────────────────────────────────────────────────────────────── */
+.has-background-image {
+
+  /* Redefine the tokens. Every `background: var(--bg-N)` in this file
+     inherits this automatically — no selector list, no !important spam. */
+  --bg-2: #{"color-mix(in srgb, var(--background-color) 70%, transparent)"};
+  --bg-1: #{"color-mix(in srgb, var(--input-background-color) 75%, transparent)"};
+
+  /* Body bg-color is inline-set by applyTheme() (theming.ts:559) — beats
+     CSS without !important. Force transparent so the wallpaper paints
+     directly on body without an opaque layer in front. */
+  body {
+    background-color: transparent !important;
+    /* setBackgroundImage() inline-sets `background-attachment: fixed`, but
+       Chromium notoriously fails to paint fixed backgrounds inside iframes,
+       leaving the bg color showing instead. Override to `scroll` so the
+       wallpaper actually renders. */
+    background-attachment: scroll !important;
+  }
+
+  /* Shell, rail, and search bar must be fully transparent — no glass, no
+     tint — so the wallpaper shows through completely. Cards in the content
+     column still get the glassy translucent treatment via --bg-1/--bg-2,
+     but the page-frame elements should not occlude the image at all.
+
+     This overrides the token-redefinition above for these three surfaces
+     specifically (since they're written as `background: var(--bg-2)` in
+     SCSS and would otherwise pick up the 70%-translucent token). */
+  .settings-shell,
+  .settings-rail,
+  .settings-search-bar {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Add the frosted blur to surfaces that previously painted --bg-1 or
+     --bg-2. Backdrop-filter can't be applied via a custom property, so
+     it still needs a selector list — but this is purely visual polish on
+     top of the now-translucent tokens, not a load-bearing fix.
+
+     Note: rail and search bar are intentionally excluded (set fully
+     transparent above) so the wallpaper shows through unobstructed. */
+  .settings-row,
+  .appearance-card,
+  .settings-bg-hero,
+  .bg-hero-thumb,
+  .settings-radio-row,
+  .startup-custom-input input,
+  .privacy-checkbox-row,
+  .privacy-time-range,
+  .ddx-engine-table,
+  .ddx-status-card,
+  .ddx-locked-card,
+  .ddx-feature-row,
+  .ddx-row-pill,
+  .row-pill,
+  .settings-modal,
+  .modal-input,
+  .profile-hero,
+  .profile-switcher-pop,
+  .placeholder-card,
+  .about-hero,
+  .about-card,
+  .faq-item,
+  #sp-search,
+  .sp-site-card,
+  .color-inputs > input,
+  .color-target-tab,
+  .theme-preset-button,
+  .accent-color-button {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+

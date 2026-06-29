@@ -48,6 +48,20 @@ export class ThemeManager {
         `Successfully loaded ${validThemeCount} themes:`,
         Object.keys(validatedThemes),
       );
+
+      // Merge presets contributed by installed Chrome theme extensions.
+      // Same lazy-import pattern as `Themeing.loadThemePresets()` so the
+      // adapter (and SettingsAPI) stays off the cold-boot path. Failures
+      // are non-fatal — base themes already returned successfully.
+      try {
+        const { chromeThemeAdapter } = await import("../apis/extensions/chromeThemes");
+        const extThemes = await chromeThemeAdapter.listExtensionThemes();
+        for (const e of extThemes) {
+          (this.themes as any)[e.id] = e.preset;
+        }
+      } catch (err) {
+        console.warn("[themeManager] extension theme merge failed:", err);
+      }
       return this.themes;
     } catch (error) {
       console.error("Failed to load themes:", error);

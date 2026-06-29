@@ -1,0 +1,917 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings</title>
+  <script>
+    self.__ddxBase = (function () {
+      var p = location.pathname;
+      var i = p.indexOf("/internal/");
+      if (i !== -1) return p.substring(0, i + 1);
+      return new URL("./", location.href).pathname;
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="../../res/logo.png" />
+  <meta property="og:image" content="../../res/logo.png" />
+  <link rel="preload" href="/src/css/pages/settingsOld.scss" as="style" onload="this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet" href="/src/css/pages/settingsOld.scss" />
+  </noscript>
+  <link rel="stylesheet" href="/src/css/internal.scss" />
+
+  <script type="module" src="/src/pages/settingsOld/index.tsx" defer></script>
+</head>
+
+<body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+  <div class="min-h-screen w-full">
+    <button id="aside-toggle"
+      class="fixed top-4 left-4 overflow-visible 2xl:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text)]/80 bg-[var(--bg-2)] ring-1 ring-[var(--white-10)] hover:bg-[var(--white-05)]"
+      aria-label="Toggle menu">
+      <i data-lucide="menu" class="!h-6 !w-6 z-[99999]"></i>
+    </button>
+    <aside id="aside" aside="settings"
+      class="fixed backdrop-blur top-0 left-0 h-screen w-64 bg-[var(--bg-1)] border-r border-[var(--white-08)] p-6 overflow-y-auto z-40 transition-transform duration-300 -translate-x-full 2xl:translate-x-0">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-[var(--main)] mb-1">Settings</h1>
+          <p class="text-sm text-[var(--proto)]">Configure DayDreamX</p>
+        </div>
+        <button id="aside-close"
+          class="2xl:hidden z-[9999] inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+          aria-label="Close menu">
+          <i data-lucide="x" class="h-5 w-5 z-[99999]"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-2">
+        <a href="#Privacy"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="privacy">
+          <i data-lucide="shield" class="h-4 w-4"></i>
+          <span>Privacy & Cloaking</span>
+        </a>
+        <a href="#Appearance"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="appearance">
+          <i data-lucide="palette" class="h-4 w-4"></i>
+          <span>Appearance</span>
+        </a>
+        <a href="#Search"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="search">
+          <i data-lucide="search" class="h-4 w-4"></i>
+          <span>Search & Navigation</span>
+        </a>
+        <a href="#Keybinds"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="keybinds">
+          <i data-lucide="keyboard" class="h-4 w-4"></i>
+          <span>Keyboard Shortcuts</span>
+        </a>
+        <a href="#Advanced"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="advanced">
+          <i data-lucide="settings" class="h-4 w-4"></i>
+          <span>Advanced</span>
+        </a>
+        <a href="#SitePermissions"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors z-60 pointer-events-auto relative"
+          data-id="sitepermissions">
+          <i data-lucide="shield-check" class="h-4 w-4"></i>
+          <span>Site Permissions</span>
+        </a>
+
+        <hr class="border-[var(--white-08)] my-4" />
+
+        <a href="#About"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+          data-id="about">
+          <i data-lucide="info" class="h-4 w-4"></i>
+          <span>About & Statistics</span>
+        </a>
+        <a href="#FAQ"
+          class="settingItem flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--white-05)] transition-colors"
+          data-id="faq">
+          <i data-lucide="help-circle" class="h-4 w-4"></i>
+          <span>FAQ</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 h-screen overflow-y-auto">
+      <div class="p-8 max-w-4xl space-y-12 mx-auto">
+        <section id="Privacy" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              Privacy & Cloaking
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Control your privacy and how DDX appears to others
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-medium text-[var(--text)]">
+                  URL Cloak
+                </h3>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-[var(--proto)]">Auto</span>
+                  <label class="relative inline-flex cursor-pointer">
+                    <input id="autoCloakSwitch" data-component="switch" type="checkbox" data-setting="autoCloak"
+                      class="sr-only peer" />
+                    <div
+                      class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]">
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Disguise the page URL. Enable auto to cloak on every page
+                load.
+              </p>
+              <select id="URL-cloakSelect" data-component="dropdown" data-setting="URL_Cloak"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="a:b">About:Blank</option>
+                <option value="blob">Blob</option>
+              </select>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Tab Cloaking
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Change your tab's title and favicon to disguise your browsing
+              </p>
+              <select id="tabCloakSelect" data-component="dropdown" data-setting="tabCloak"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"></select>
+
+              <div id="customTabCloakOptions" class="mt-4 space-y-3 hidden">
+                <div>
+                  <label class="block text-xs font-medium text-[var(--text)] mb-1">
+                    Custom Title
+                  </label>
+                  <input type="text" id="customTabTitle" data-setting="customTabTitle"
+                    placeholder="Enter custom tab title"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[var(--text)] mb-1">
+                    Custom Favicon
+                  </label>
+                  <div class="flex gap-2">
+                    <input type="text" id="customTabFavicon" data-setting="customTabFavicon"
+                      placeholder="Enter favicon URL or upload image"
+                      class="flex-1 rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                    <input type="file" id="faviconUpload" accept="image/*" class="hidden" />
+                    <button id="uploadFaviconBtn" data-component="button"
+                      class="px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
+                      Upload
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 pt-2">
+                  <div class="flex items-center gap-2">
+                    <div id="faviconPreview"
+                      class="w-8 h-8 rounded border border-[var(--white-10)] bg-[var(--bg-2)] flex items-center justify-center overflow-hidden">
+                      <img id="faviconPreviewImg" class="w-full h-full object-contain hidden" />
+                      <span class="text-xs text-[var(--text)]/40">Preview</span>
+                    </div>
+                    <span id="titlePreview" class="text-sm text-[var(--text)]"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-medium text-[var(--text)]">
+                    Anti-Tab Close
+                  </h3>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Prevent tabs from closing accidentally with beforeunload
+                    warning
+                  </p>
+                </div>
+                <label class="relative inline-flex cursor-pointer">
+                  <input id="disableTabCloseSwitch" data-component="switch" type="checkbox" data-setting="disableTabClose"
+                    class="sr-only peer" />
+                  <div
+                    class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]">
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-medium text-[var(--text)]">
+                  Panic Key
+                </h3>
+                <p class="text-xs text-[var(--proto)] mt-1">
+                  Set a keybind to quickly redirect to a safe page
+                </p>
+              </div>
+              <p class="text-sm text-[var(--proto)]">
+                <input type="text" id="panicKeybind" data-setting="panicKeybind"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="No Keybind Set" />
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="Appearance" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              Appearance
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Customize the look and feel of DDX
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-lg font-medium text-[var(--text)] mb-4">
+                Theme Presets
+              </h3>
+
+              <div class="space-y-6">
+                <div>
+                  <h4 class="text-sm font-medium text-[var(--text)] mb-3">
+                    Choose a Theme
+                  </h4>
+                  <div id="themePresetGrid" class="grid grid-cols-2 gap-3"></div>
+                </div>
+
+                <div id="customColorSection" class="border-t border-[var(--white-08)] pt-6">
+                  <h4 class="text-sm font-medium text-[var(--text)] mb-4">
+                    Customize Colors
+                  </h4>
+
+                  <div class="space-y-4">
+                    <div id="colorTargetTabs" class="color-target-tabs">
+                      <button class="color-target-tab active" data-target="accent">
+                        Accent
+                      </button>
+                      <button class="color-target-tab" data-target="background">
+                        Background
+                      </button>
+                      <button class="color-target-tab" data-target="panel">
+                        Panel
+                      </button>
+                      <button class="color-target-tab" data-target="text">
+                        Text
+                      </button>
+                      <button class="color-target-tab" data-target="border">
+                        Border
+                      </button>
+                    </div>
+                    <div class="customize-colors-row">
+                      <div class="colorPicker"></div>
+                      <div class="customize-colors-right">
+                        <div id="accentColorPalette">
+                          <h5 class="text-xs font-medium text-[var(--text)] mb-2">
+                            Accents
+                          </h5>
+                          <div id="accentColorGrid" class="accent-color-grid"></div>
+                        </div>
+                        <div class="color-inputs">
+                          <input id="hexInput" />
+                          <input id="rgbString" />
+                          <input id="hslString" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="border-t border-[var(--white-08)] pt-6">
+                  <div>
+                    <h5 class="text-xs font-medium text-[var(--text)] mb-3">
+                      Background
+                    </h5>
+                    <div class="flex gap-3">
+                      <button id="bgUpload" data-component="button"
+                        class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
+                        Upload
+                      </button>
+                      <button id="bgRemove" data-component="button"
+                        class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
+                        Remove
+                      </button>
+                    </div>
+                    <div class="bg-list mt-3" id="bgList"></div>
+                    <input type="file" id="bgInput" style="display: none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                New Tab Page
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Choose what appears when you open a new tab
+              </p>
+              <select id="newtabSelect" data-component="dropdown" data-setting="newtabPage"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="default">Default New Tab</option>
+                <option value="blank">Blank Page</option>
+                <option value="custom">Custom URL</option>
+              </select>
+              <div id="newtabCustomInput" class="hidden mt-3">
+                <input type="text" id="newtabCustomUrl" data-setting="newtabCustomUrl"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="https://example.com" />
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Home Page
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Set a custom home page URL (ddx://home/)
+              </p>
+              <select id="homeSelect" data-component="dropdown" data-setting="homeUrl"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="default">Default (New Tab)</option>
+                <option value="custom">Custom URL</option>
+              </select>
+              <div id="homeCustomInput" class="hidden mt-3">
+                <input type="text" id="homeCustomUrl" data-setting="homeCustomUrl"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="https://example.com" />
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-medium text-[var(--text)]">
+                    Show Shortcuts on New Tab
+                  </h3>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Display quick access shortcuts on the new tab page
+                  </p>
+                </div>
+                <label class="relative inline-flex cursor-pointer">
+                  <input id="newtabShortcutsToggle" data-component="switch" type="checkbox"
+                    data-setting="newtabShowShortcuts" class="sr-only peer" />
+                  <div
+                    class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]">
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="Search" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              Search & Navigation
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Configure proxy backend, search engines, and navigation options
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                On Startup
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Choose what happens when you start DDX
+              </p>
+              <select id="startupSelect" data-component="dropdown" data-setting="startupBehavior"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="restore">Restore Previous Tabs</option>
+                <option value="newtab">Open New Tab</option>
+                <option value="custom">Open Custom URL</option>
+              </select>
+              <div id="startupCustomInput" class="hidden mt-3">
+                <input type="text" id="startupCustomUrl" data-setting="startupCustomUrl"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="https://example.com" />
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Backend
+              </h3>
+              <select id="proxySelect" data-component="dropdown" data-setting="proxy"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="auto">Automatic</option>
+                <option value="sj">Scramjet</option>
+                <!--<option value="uv">Ultraviolet</option>-->
+              </select>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Transport
+              </h3>
+              <select id="transportSelect" data-component="dropdown" data-setting="transports"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="libcurl">LibCurl</option>
+                <option value="epoxy">Epoxy</option>
+                <option value="pulsar">Pulsar (WebRTC)</option>
+              </select>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="text-sm font-medium text-[var(--text)]">Search engines</h3>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Set your default and add custom engines. Use <code class="text-[var(--text)] bg-[var(--bg-2)] px-1 rounded">!bang</code> in the address bar to invoke a specific engine.
+                  </p>
+                </div>
+                <button id="reset-search-engines"
+                  class="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-2)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+                  Reset to defaults
+                </button>
+              </div>
+
+              <div id="search-engines-table" class="space-y-2">
+                <!-- Rows are injected by src/pages/settings/index.tsx -->
+              </div>
+
+              <div id="search-engines-add-row" class="mt-3">
+                <button id="search-engines-add-toggle"
+                  class="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-2)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+                  + Add search engine
+                </button>
+                <div id="search-engines-add-form" class="hidden mt-3 space-y-2 bg-[var(--bg-2)] rounded-md p-3 border border-[var(--white-10)]">
+                  <input id="search-engines-add-name" type="text" placeholder="Name"
+                    class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                  <input id="search-engines-add-bang" type="text" placeholder="Bang (without !) — optional"
+                    class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                  <input id="search-engines-add-at" type="text" placeholder="At key (without @) — optional"
+                    class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                  <input id="search-engines-add-url" type="text" placeholder="URL template (must contain %s)"
+                    class="w-full rounded bg-[var(--bg-1)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+                  <div id="search-engines-add-error" class="hidden text-xs text-red-400"></div>
+                  <div class="flex gap-2 justify-end">
+                    <button id="search-engines-add-cancel"
+                      class="px-3 py-1 text-xs rounded-md bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+                      Cancel
+                    </button>
+                    <button id="search-engines-add-save"
+                      class="px-3 py-1 text-xs rounded-md bg-[var(--main)] text-white hover:opacity-90 transition-opacity">
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-medium text-[var(--text)]">
+                    Search Suggestions
+                  </h3>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Show search suggestions as you type in the address bar
+                  </p>
+                </div>
+                <label class="relative inline-flex cursor-pointer">
+                  <input id="searchSuggestionsToggle" data-component="switch" type="checkbox"
+                    data-setting="searchSuggestions" class="sr-only peer" />
+                  <div
+                    class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)]">
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div id="wispDiv" class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                WISP Server
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Select a WISP proxy server. Premium servers (Night+ only)
+                offer better performance and reliability.
+              </p>
+              <div class="space-y-3">
+                <select id="wispSelect" data-component="dropdown" data-setting="wisp"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                  <option value="auto">Automatic (Default)</option>
+                  <!-- Free servers will be populated here -->
+                  <!-- Premium servers will be dynamically added for Night+ users -->
+                </select>
+                <div id="wispCustomInput" class="hidden space-y-3">
+                  <input type="text" id="wispCustomSetting" data-setting="wisp"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="wss://example.com/wisp/" />
+                  <div class="flex gap-3">
+                    <button id="saveWispSetting" data-component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
+                      Save Custom
+                    </button>
+                    <button id="cancelWispCustom" data-component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <button id="useCustomWisp" data-component="button"
+                    class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
+                    Use Custom WISP Server
+                  </button>
+                  <button id="generateWisp" data-component="button"
+                    class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
+                    Generate New Server
+                  </button>
+                </div>
+                <div id="nightPlusWispNotice"
+                  class="hidden p-3 bg-[var(--main-20a)] border border-[var(--main-35a)] rounded-lg">
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="crown" class="h-4 w-4 text-[var(--main)] mt-0.5 flex-shrink-0"></i>
+                    <div class="text-xs text-[var(--text)]">
+                      <strong class="text-[var(--main)]">Night+ Premium Servers Available</strong>
+                      <p class="mt-1">
+                        Upgrade to Night+ to access high-performance premium
+                        WISP servers with better speed and reliability.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!--<div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Premium Proxy Routing
+                <span class="ml-2 px-2 py-0.5 bg-[var(--main-20a)] text-[var(--main)] text-xs rounded-full">Night+
+                  Only</span>
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Advanced proxy routing and configuration options. Requires an
+                active Night+ subscription.
+              </p>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs text-[var(--proto)] mt-1">
+                    Enable advanced proxy routing features
+                  </p>
+                </div>
+                <label class="relative inline-flex cursor-pointer">
+                  <input id="proxyRoutingToggle" data-component="switch" type="checkbox" data-setting="premiumProxyRouting"
+                    disabled class="sr-only peer disabled:opacity-50" />
+                  <div
+                    class="relative w-11 h-6 bg-[var(--white-10)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--main-20a)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--main)] peer-disabled:opacity-50">
+                  </div>
+                </label>
+              </div>
+              <div id="proxyRoutingNotice"
+                class="mt-3 p-3 bg-[var(--main-20a)] border border-[var(--main-35a)] rounded-lg">
+                <div class="flex items-start gap-2">
+                  <i data-lucide="crown" class="h-4 w-4 text-[var(--main)] mt-0.5 flex-shrink-0"></i>
+                  <div class="text-xs text-[var(--text)]">
+                    <strong class="text-[var(--main)]">Night+ Premium Feature</strong>
+                    <p class="mt-1">
+                      Upgrade to Night+ to unlock advanced proxy routing
+                      capabilities.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>-->
+          </div>
+        </section>
+
+        <section id="Keybinds" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                  Keyboard Shortcuts
+                </h2>
+                <p class="text-sm text-[var(--proto)]">
+                  Customize keyboard shortcuts for various actions
+                </p>
+              </div>
+              <button id="reset-all-keybinds"
+                class="px-4 py-2 text-sm rounded-lg bg-[var(--bg-1)] text-[var(--text)] border border-[var(--white-10)] hover:bg-[var(--white-05)] transition-colors">
+                Reset All
+              </button>
+            </div>
+          </div>
+
+          <div id="keybinds-container" class="space-y-4">
+            <!-- Keybind categories will be dynamically inserted here -->
+          </div>
+
+          <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur mt-6">
+            <div class="mb-3">
+              <h3 class="text-sm font-medium text-[var(--text)]">Available commands</h3>
+              <p class="text-xs text-[var(--proto)] mt-1">
+                Type <code class="text-[var(--text)] bg-[var(--bg-2)] px-1 rounded">&gt;</code> in the address bar to search and run any of these. Custom commands coming later.
+              </p>
+            </div>
+            <input id="commands-filter" type="text" placeholder="Filter commands…"
+              class="w-full rounded bg-[var(--bg-2)] border border-[var(--white-10)] px-2 py-1 text-xs text-[var(--text)] mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--main)]" />
+            <div id="commands-list" class="space-y-2"></div>
+          </div>
+        </section>
+
+        <section id="Advanced" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              Advanced
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Developer tools and advanced configuration options
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Remote Proxy Server
+              </h3>
+              <p class="text-xs text-[var(--proto)] mb-3">
+                Route traffic through an external proxy server (supports
+                SOCKS5, SOCKS4 & HTTP - only works with LibCurl transport).
+                Mullvad servers require Night+ VPN to function properly.
+              </p>
+              <div class="space-y-3">
+                <select id="proxyServerSelect" data-component="dropdown" data-setting="proxyServer"
+                  class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                  <option value="">None (Direct Connection)</option>
+                  <!-- Options will be populated via JavaScript -->
+                </select>
+                <div id="proxyServerCustomInput" class="hidden space-y-3">
+                  <input type="text" id="proxyServerCustomUrl" data-setting="proxyServerCustomUrl"
+                    class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                    placeholder="socks5://example.com:1080 or http://proxy.com:8080" />
+                  <div class="flex gap-3">
+                    <button id="saveProxyServerCustom" data-component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--main)] text-[var(--bg-2)] rounded-lg text-sm font-medium hover:bg-[var(--main)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--main)]/50">
+                      Save Custom
+                    </button>
+                    <button id="cancelProxyServerCustom" data-component="button"
+                      class="flex-1 px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <button id="useCustomProxyServer" data-component="button"
+                  class="w-full px-4 py-2 bg-[var(--white-10)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--white-20)] focus:outline-none focus:ring-2 focus:ring-[var(--white-20)]">
+                  Use Custom Proxy Server
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-sm font-medium text-[var(--text)] mb-3">
+                Developer Tools
+              </h3>
+              <select id="devtools-select" data-component="dropdown" data-setting="devtools"
+                class="w-full rounded-lg bg-[var(--bg-2)] border border-[var(--white-10)] px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]">
+                <option value="chii" selected>Chrome DevTools (full-featured)</option>
+                <option value="eruda">Eruda (Lightweight Console)</option>
+              </select>
+              <p class="text-xs text-[var(--proto)] mt-2">
+                Choose which developer tools to use when pressing F12 or
+                Ctrl+Shift+I
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="SitePermissions" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+                Site Permissions
+              </h2>
+              <p class="text-sm text-[var(--proto)]">
+                Manage what sites can access — camera, microphone, notifications,
+                and more. Per-site grants are remembered until you clear them.
+              </p>
+            </div>
+            <button id="sp-clear-all"
+              class="rounded-lg bg-[var(--white-10)] hover:bg-[var(--white-20)] text-[var(--text)] text-sm px-3 py-2 inline-flex items-center gap-2">
+              <i data-lucide="trash-2" class="h-4 w-4"></i>
+              <span>Clear all</span>
+            </button>
+          </div>
+
+          <div class="grid gap-4">
+            <div class="bg-[var(--bg-1)] rounded-xl p-4 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <div class="relative">
+                <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                  <i data-lucide="search" class="h-4 w-4 text-[var(--proto)]"></i>
+                </div>
+                <input id="sp-search"
+                  class="w-full rounded-lg bg-[var(--bg-2)] pl-10 pr-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--white-08)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+                  placeholder="Search sites..."
+                  autocomplete="off" />
+              </div>
+            </div>
+
+            <section id="sp-empty" class="bg-[var(--bg-1)] rounded-xl p-8 ring-1 ring-inset ring-[var(--white-08)] text-center" hidden>
+              <div class="mx-auto mb-3 grid place-items-center h-10 w-10 rounded-full bg-[var(--white-05)]">
+                <i data-lucide="shield-check" class="h-5 w-5 text-[var(--proto)]"></i>
+              </div>
+              <h3 class="text-base font-semibold text-[var(--text)]">No site permissions yet</h3>
+              <p class="text-sm text-[var(--proto)]">
+                Permissions you grant or deny while browsing will appear here.
+              </p>
+            </section>
+
+            <div id="sp-sites-list" class="space-y-3"></div>
+          </div>
+        </section>
+
+        <section id="About" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              About DayDreamX
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Information about the project and contributors
+            </p>
+          </div>
+
+          <div class="rounded-lg bg-[var(--bg-1)] p-6 ring-1 ring-inset ring-[var(--white-08)]">
+            <div class="flex items-center gap-4">
+              <img alt="DayDream X" draggable="false" class="h-14 w-14 rounded-lg" src="../../res/logo.png" />
+              <div>
+                <h3 class="text-lg font-bold text-[var(--text)]">
+                  DayDream X
+                </h3>
+                <p class="text-sm text-[var(--proto)]">
+                  A web-based browser experience
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div class="rounded-md bg-[var(--bg-2)] p-3">
+                <div class="text-xs text-[var(--proto)]">Version</div>
+                <div class="text-[var(--text)] font-medium mt-0.5" id="version">3.0.0</div>
+              </div>
+              <div class="rounded-md bg-[var(--bg-2)] p-3">
+                <div class="text-xs text-[var(--proto)]">Stack</div>
+                <div class="text-[var(--text)] font-medium mt-0.5">
+                  Nightmare + TailwindCSS + Typescript
+                </div>
+              </div>
+              <!--<div class="rounded-md bg-[var(--bg-2)] p-3">
+                  <div class="text-xs text-[var(--proto)]">Proxy Stack</div>
+                  <div class="text-[var(--text)] font-medium mt-0.5">
+                    UV + Scramjet, Epoxy, Libcurl, Reflux + Engima, Baremux
+                  </div>
+                </div>-->
+              <div class="rounded-md bg-[var(--bg-2)] p-3">
+                <div class="text-xs text-[var(--proto)]">Made by</div>
+                <div class="text-[var(--text)] font-medium mt-0.5">
+                  <a href="https://night-x.com/" target="_blank">Night Network</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="FAQ" class="space-y-6">
+          <div class="border-b border-[var(--white-08)] pb-4">
+            <h2 class="text-xl font-semibold text-[var(--text)] mb-2">
+              Frequently Asked Questions
+            </h2>
+            <p class="text-sm text-[var(--proto)]">
+              Common questions and answers about DayDreamX
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <!-- FAQ 1: Where can I find links? -->
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                Where can I find links?
+              </h3>
+              <p class="text-sm text-[var(--text)] leading-relaxed">
+                You can find links in our
+                <a href="https://discord.night-x.com"
+                  class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors" target="_blank">Discord
+                  server</a>. Join the community and check the pinned messages or links
+                channel for the latest available links. discord.gg/algebra
+              </p>
+            </div>
+
+            <!-- FAQ 2: Why do some sites not load/work? -->
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                Why do some sites not load or work?
+              </h3>
+              <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                There are several common reasons why a site might not work:
+              </p>
+              <ul class="text-sm text-[var(--text)] space-y-2 list-disc list-inside">
+                <li>
+                  The site may have strict anti-proxy or bot detection
+                  measures
+                </li>
+                <li>
+                  The site uses WebSocket connections that may be blocked by
+                  your network
+                </li>
+                <li>
+                  Some sites require features that web proxies cannot fully
+                  replicate
+                </li>
+                <li>
+                  Your network or school may be blocking the proxy transport
+                  layer
+                </li>
+                <li>
+                  The hosted link may be having issues — try a different one
+                </li>
+              </ul>
+            </div>
+
+            <!-- FAQ 3: How can I make links? (BYOD) -->
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                How can I make links? (BYOD)
+              </h3>
+              <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                You can create your own link using a free DNS service. Here's
+                how:
+              </p>
+              <ol class="text-sm text-[var(--text)] space-y-2 list-decimal list-inside">
+                <li>
+                  Go to
+                  <a href="https://freedns.afraid.org"
+                    class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors" target="_blank">FreeDNS</a>
+                  and create an account
+                </li>
+                <li>Navigate to "Subdomains" and click "Add a subdomain"</li>
+                <li>
+                  Choose any subdomain name and pick a domain from the list
+                </li>
+                <li>
+                  Set the type to
+                  <strong class="text-[var(--text)]">A</strong>
+                  and enter the IP address:
+                  <code class="bg-[var(--white-05)] px-1.5 py-0.5 rounded text-[var(--main)]">51.222.206.184</code>
+                </li>
+                <li>
+                  Save the record and wait a few minutes for DNS propagation
+                </li>
+                <li>Visit your new subdomain — it should load DayDreamX</li>
+              </ol>
+            </div>
+
+            <!-- FAQ 4: I found a bug, what now? -->
+            <div class="bg-[var(--bg-1)] rounded-xl p-6 ring-1 ring-inset ring-[var(--white-08)] backdrop-blur">
+              <h3 class="text-lg font-semibold text-[var(--main)] mb-3">
+                I found a bug, what now?
+              </h3>
+              <p class="text-sm text-[var(--text)] leading-relaxed mb-3">
+                We appreciate bug reports! Here's how you can let us know:
+              </p>
+              <ul class="text-sm text-[var(--text)] space-y-2 list-disc list-inside">
+                <li>
+                  Open an issue on our
+                  <a href="https://gitlab.com/nightnetwork/daydreamx"
+                    class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors" target="_blank">GitLab
+                    repository</a>
+                  with steps to reproduce the bug
+                </li>
+                <li>
+                  Report it in the bug reports channel on our
+                  <a href="https://discord.night-x.com"
+                    class="text-[var(--main)] hover:text-[var(--main)]/80 transition-colors" target="_blank">Discord
+                    server</a>
+                </li>
+                <li>
+                  Include details like what you were doing, what you expected,
+                  and what happened instead
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>

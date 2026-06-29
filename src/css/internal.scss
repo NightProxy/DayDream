@@ -59,7 +59,20 @@ body {
 }
 
 .has-background-image body {
-  background-color: transparent;
+  // !important is required: Themeing.applyTheme() at theming.ts:568 sets
+  // `document.body.style.backgroundColor` INLINE to the theme's opaque
+  // color. Without !important on this rule, the inline style wins (inline
+  // beats author CSS without !important), the body stays opaque, and the
+  // wallpaper layer (body::before below) is invisible — even though
+  // `.has-background-image` is correctly on <html>. This was a major
+  // contributor to the "cold-load wallpaper missing" bug.
+  background-color: transparent !important;
+  // background-attachment: fixed inside an iframe is a long-standing
+  // Chromium repaint bug — the wallpaper fails to render after any
+  // concurrent style mutation (which happens constantly during theme
+  // application). theming.ts:722 inline-sets `fixed`; this rule forces
+  // scroll so the image actually paints.
+  background-attachment: scroll !important;
 }
 
 .has-background-image body::before {
@@ -198,7 +211,12 @@ body {
   background-color: var(--internal-bg) !important;
 }
 
-.has-background-image [class*="bg-[var(--bg-1)]"] {
+.has-background-image [class*="bg-[var(--bg-1)]"],
+.has-background-image .settings-row,
+.has-background-image .about-card,
+.has-background-image .ddx-status-card,
+.has-background-image .ddx-locked-card,
+.has-background-image .faq-item {
   background-color: color-mix(
     in srgb,
     var(--input-background-color, var(--bg-1)) var(--sidebar-opacity),
