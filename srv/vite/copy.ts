@@ -1,5 +1,4 @@
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
-import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
 import {tfsPath} from "@terbiumos/tfs";
 import path from "path";
@@ -7,14 +6,11 @@ import path from "path";
 export const routePaths = {
   scramjet: "assets",
   libcurl: "libcurl",
-  reflux: "reflux",
   auth: "",
-  bmworker: "bmworker",
   plusClient: "plus",
   eruda: "core/i/eruda",
   chii: "core/i/chii",
   tfs: "core/fs",
-  obscura: "core/o",
   sw: "",
 };
 
@@ -26,7 +22,6 @@ const plusClientPath = path.resolve(
 );
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
-const obscuraPath = path.resolve("src/pkgs/Obscura/pkg");
 const swPath = path.resolve("src/core/sw/dist");
 const sjConfigPath = path.resolve("src/core/SJ/config/dist");
 const libcurlPath = path.dirname(
@@ -52,11 +47,6 @@ const copyMap = {
     path: libcurlPath,
     files: ["libcurl.wasm"],
     dest: routePaths.libcurl,
-  },
-  reflux: {
-    path: refluxPath,
-    files: ["*"],
-    dest: routePaths.reflux,
   },
   // Background images and brand assets the NightLogin modal references
   // at runtime as `${assetUrl}/bg.png`, `${assetUrl}/nightlogo.png`, etc.
@@ -106,11 +96,6 @@ const copyMap = {
     path: tfsPath,
     files: ["*"],
     dest: routePaths.tfs,
-  },
-  obscura: {
-    path: obscuraPath,
-    files: ["*"],
-    dest: routePaths.obscura,
   },
   sw: {
     path: swPath,

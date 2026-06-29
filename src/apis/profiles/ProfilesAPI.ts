@@ -1,7 +1,7 @@
 import { ProfileManager } from "./profileManager";
 import { StateManager } from "./stateManager";
 import { ExportManager } from "./exportManager";
-import type { ProfileData, ProfileExport, DatabaseExport } from "./types";
+import type { ProfileData, ProfileExport, DatabaseExport, ProfileAppearance } from "./types";
 import { getAllIDBData, setIDBDataLegacy } from "./storage/indexedDB";
 
 class ProfilesAPI {
@@ -9,7 +9,19 @@ class ProfilesAPI {
   private profileManager: ProfileManager;
   private stateManager: StateManager;
   private exportManager: ExportManager;
+  private changeListeners = new Set<() => void>();
   public readonly initPromise: Promise<void>;
+
+  private notifyChange(): void {
+    for (const fn of this.changeListeners) {
+      try { fn(); } catch (e) { console.error("[ProfilesAPI] listener error", e); }
+    }
+  }
+
+  onChange(listener: () => void): () => void {
+    this.changeListeners.add(listener);
+    return () => { this.changeListeners.delete(listener); };
+  }
 
   constructor(
     canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
@@ -67,7 +79,9 @@ class ProfilesAPI {
   }
 
   async createProfile(userID: string): Promise<boolean> {
-    return await this.profileManager.createProfile(userID);
+    const ok = await this.profileManager.createProfile(userID);
+    if (ok) this.notifyChange();
+    return ok;
   }
 
   async createProfileWithCurrentData(userID: string): Promise<boolean> {
@@ -81,6 +95,7 @@ class ProfilesAPI {
       if (result) {
         this.currentProfile = userID;
         await this.saveCurrentProfileReference();
+        this.notifyChange();
       }
 
       return result;
@@ -101,7 +116,23 @@ class ProfilesAPI {
       await this.saveCurrentProfileReference();
     }
 
+    if (result) this.notifyChange();
     return result;
+  }
+
+  async renameProfile(oldId: string, newId: string): Promise<boolean> {
+    const ok = await this.profileManager.renameProfile(oldId, newId);
+    if (ok) {
+      if (this.currentProfile === oldId) this.currentProfile = newId;
+      this.notifyChange();
+    }
+    return ok;
+  }
+
+  async updateProfileAppearance(userID: string, appearance: ProfileAppearance): Promise<boolean> {
+    const ok = await this.profileManager.setAppearance(userID, appearance);
+    if (ok) this.notifyChange();
+    return ok;
   }
 
   async saveProfile(userID: string): Promise<boolean> {
@@ -159,6 +190,7 @@ class ProfilesAPI {
       this.currentProfile,
     );
 
+    this.notifyChange();
     return true;
   }
 

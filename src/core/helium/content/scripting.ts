@@ -138,7 +138,7 @@ return (${fnSrc}).apply(null, __args__);`;
     return [{ result: undefined, frameId: 0 }];
   }
 
-  async insertCSS(_ctx: ExtensionContext, args: unknown[]): Promise<void> {
+  async insertCSS(ctx: ExtensionContext, args: unknown[]): Promise<void> {
     const opts = (args[0] ?? {}) as {
       target?: { tabId?: number };
       css?: string;
@@ -152,21 +152,28 @@ return (${fnSrc}).apply(null, __args__);`;
     const win = iframe.contentWindow as Window | null;
     if (!win) throw new Error(`Tab ${tabId} not found`);
 
-    const css = opts.css ?? '';
-    if (opts.files && opts.files.length > 0) {
-      // CSS file injection requires the ctx, which we don't have here
-      // for cross-extension scenarios. The host-side handler uses
-      // ctx.id to read files; pass ctx into the buildCssWrapper.
-      // Implementation note: this path is exercised when the extension
-      // packages CSS files. For now, support inline `css` only and
-      // log if files[] is used.
-      console.warn(
-        '[helium/content/scripting] insertCSS files[] not yet wired; use css inline string',
-      );
+    // Concatenate inline CSS + file contents. Files are resolved
+    // from the extension's extfs (same path as content scripts).
+    // Each file is decoded as UTF-8 and appended; missing files are
+    // skipped with a warning (matches Chrome's "best-effort" model).
+    let css = opts.css ?? '';
+    if (Array.isArray(opts.files) && opts.files.length > 0) {
+      for (const file of opts.files) {
+        try {
+          const bytes = await readExtensionFile(ctx.id, file);
+          if (bytes) {
+            css += (css ? '\n' : '') + new TextDecoder().decode(bytes);
+          } else {
+            console.warn('[helium/content/scripting] insertCSS file missing:', file);
+          }
+        } catch (err) {
+          console.warn('[helium/content/scripting] insertCSS file read failed:', file, err);
+        }
+      }
     }
     if (!css) return;
     const code = buildCssWrapper({
-      extId: 'scripting-insertCSS',
+      extId: ctx.id,
       cssText: css,
       runAt: 'document_idle',
       topFrameOnly: false,
@@ -178,10 +185,11 @@ return (${fnSrc}).apply(null, __args__);`;
     }
   }
 
-  async removeCSS(_ctx: ExtensionContext, args: unknown[]): Promise<void> {
+  async removeCSS(ctx: ExtensionContext, args: unknown[]): Promise<void> {
     const opts = (args[0] ?? {}) as {
       target?: { tabId?: number };
       css?: string;
+      files?: string[];
     };
     const tabId = opts.target?.tabId;
     if (typeof tabId !== 'number') {
@@ -190,15 +198,47 @@ return (${fnSrc}).apply(null, __args__);`;
     const iframe = this.deps.nyxCtx.tabResolver.resolveIframe(tabId);
     const win = iframe.contentWindow as Window | null;
     if (!win) return;
-    // Find and remove style tags whose data-helium-content-css matches.
-    // For v1, we tag by extId in the wrapper; removeCSS doesn't carry
-    // ext context here. Cleanup falls back to "all helium-content-css
-    // from any ext" — refine when needed.
+    // Find and remove style tags whose data-helium-content-css
+    // matches THIS extension's id. Buildup of removable CSS text is
+    // optional: callers may pass `css` and/or `files` to scope the
+    // removal to specific content (Chrome's contract). We compare
+    // verbatim — same text, same removal — but if neither is given
+    // we remove all helium CSS for this extension (the only behavior
+    // most extensions actually rely on).
+    //
+    // The data-helium-content-css attribute value is set to the
+    // extension's id by `buildCssWrapper`; using that as a selector
+    // keeps removal correctly scoped per-extension instead of
+    // wiping every Helium-injected stylesheet on the page.
+    let targetCss: string | undefined;
+    if (typeof opts.css === 'string' && opts.css.length > 0) {
+      targetCss = opts.css;
+    }
+    if (Array.isArray(opts.files) && opts.files.length > 0) {
+      let acc = targetCss ?? '';
+      for (const file of opts.files) {
+        try {
+          const bytes = await readExtensionFile(ctx.id, file);
+          if (bytes) acc += (acc ? '\n' : '') + new TextDecoder().decode(bytes);
+        } catch { /* skip */ }
+      }
+      if (acc) targetCss = acc;
+    }
+    // CSS-attribute-selector requires double-quoted value with
+    // embedded quotes escaped. CSS.escape is the standard way but
+    // not all eval'd realms have it; we hand-build a safe selector
+    // for the (alphanumeric+hyphen) extension id, which is all DDX
+    // accepts at install time.
+    const idForCss = ctx.id.replace(/[^A-Za-z0-9_-]/g, '');
+    const cssLit = targetCss !== undefined ? JSON.stringify(targetCss) : 'null';
     try {
-      (win as any).eval(`
-        Array.from(document.querySelectorAll('style[data-helium-content-css]'))
-          .forEach((el) => el.remove());
-      `);
+      (win as any).eval(`(function(){
+        var sel = 'style[data-helium-content-css="${idForCss}"]';
+        var match = ${cssLit};
+        Array.from(document.querySelectorAll(sel)).forEach(function(el) {
+          if (match === null || el.textContent === match) el.remove();
+        });
+      })();`);
     } catch (err) {
       console.warn(err);
     }

@@ -226,6 +226,13 @@ export interface TabsInterface {
 		renameGroup: (groupId: string, nextName?: string) => boolean;
 		changeGroupColor: (groupId: string, color: string) => boolean;
 		closeAllTabsInGroup: (groupId: string) => Promise<void>;
+		listGroups: () => TabGroup[];
+		getGroupById: (groupId: string) => TabGroup | undefined;
+		updateGroup: (
+			groupId: string,
+			props: { title?: string; color?: string; collapsed?: boolean }
+		) => TabGroup | null;
+		moveGroup: (groupId: string, targetIndex: number) => TabGroup | null;
 	};
 	pinManager?: {
 		pinTab: (tabId: string) => boolean;

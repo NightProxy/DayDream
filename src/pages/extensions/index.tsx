@@ -76,6 +76,8 @@ interface ExtensionViewModel {
    * extension doesn't declare any overrides.
    */
   urlOverrides: Array<'newtab' | 'bookmarks' | 'history'>;
+  /** True if the manifest declares `options_page` or `options_ui.page`. */
+  hasOptions: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -235,6 +237,7 @@ async function listAllExtensions(): Promise<ExtensionViewModel[]> {
         permissions: [],
         hostPermissions: [],
         urlOverrides: [],
+        hasOptions: false,
       }));
     } catch (err) {
       console.warn('[extensions] listAll failed:', err);
@@ -255,6 +258,7 @@ async function listAllExtensions(): Promise<ExtensionViewModel[]> {
     permissions: [],
     hostPermissions: [],
     urlOverrides: [],
+    hasOptions: false,
   }));
 }
 
@@ -276,7 +280,12 @@ function toViewModel(e: {
     action?: { default_icon?: string | Record<string, string> };
     browser_action?: { default_icon?: string | Record<string, string> };
     chrome_url_overrides?: Record<string, string>;
+    options_page?: string;
+    options_ui?: { page?: string };
   };
+  const hasOptions =
+    typeof m.options_page === 'string' && m.options_page.length > 0 ||
+    typeof m.options_ui?.page === 'string' && (m.options_ui.page as string).length > 0;
   const declaredOverrides: Array<'newtab' | 'bookmarks' | 'history'> = [];
   if (m.chrome_url_overrides && typeof m.chrome_url_overrides === 'object') {
     for (const kind of ['newtab', 'bookmarks', 'history'] as const) {
@@ -303,6 +312,7 @@ function toViewModel(e: {
       ? m.host_permissions.filter((p): p is string => typeof p === 'string')
       : [],
     urlOverrides: declaredOverrides,
+    hasOptions,
   };
 }
 
@@ -764,6 +774,36 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
     }
   });
 
+  const actionBtns = document.createElement('div');
+  actionBtns.className = 'flex items-center gap-1';
+
+  // Options button — only when manifest declares options_ui.page or
+  // options_page. Clicking invokes chrome.runtime.openOptionsPage on
+  // the extension's behalf, which the host handler implements as a
+  // new tab navigation to the options URL.
+  if (ext.hasOptions) {
+    const optionsBtn = document.createElement('button');
+    optionsBtn.className =
+      'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs hover:bg-[var(--white-05)] transition-colors';
+    optionsBtn.innerHTML =
+      '<i data-lucide="settings" class="h-3.5 w-3.5"></i> Options';
+    optionsBtn.addEventListener('click', async () => {
+      try {
+        const mgr = getHeliumExtMgr() as HeliumExtMgrLike & {
+          openOptionsPage?: (extId: string) => Promise<void>;
+        } | null;
+        if (mgr?.openOptionsPage) {
+          await mgr.openOptionsPage(ext.id);
+        } else {
+          status('Options page support not yet wired on host', 'error');
+        }
+      } catch (err) {
+        status(`Failed to open options: ${formatError(err)}`, 'error');
+      }
+    });
+    actionBtns.appendChild(optionsBtn);
+  }
+
   const uninstallBtn = document.createElement('button');
   uninstallBtn.className =
     'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs text-red-400 hover:bg-red-500/10 transition-colors';
@@ -782,8 +822,9 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
       console.error('[helium-uninstall]', err);
     }
   });
+  actionBtns.appendChild(uninstallBtn);
 
-  footer.append(toggleLabel, uninstallBtn);
+  footer.append(toggleLabel, actionBtns);
   card.appendChild(footer);
   return card;
 }

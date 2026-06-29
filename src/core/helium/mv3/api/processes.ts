@@ -14,16 +14,27 @@ export class ChromeProcesses {
   public readonly onUpdatedWithMemory: ChromeEvent = new ChromeEvent();
   public readonly onUpdated: ChromeEvent = new ChromeEvent();
 
-  getProcessIdForTab(..._args: any[]): any {
-    throw new Error('chrome.processes.getProcessIdForTab is not implemented');
+  // `chrome.processes.*` — process introspection. DDX has no process
+  // model (everything is one renderer + Scramjet SW). Returns safe
+  // defaults; extensions that branch on process info pick the "no
+  // info" path.
+
+  getProcessIdForTab(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(-1); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(-1);
   }
 
-  getProcessInfo(..._args: any[]): any {
-    throw new Error('chrome.processes.getProcessInfo is not implemented');
+  getProcessInfo(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb({}); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve({});
   }
 
-  terminate(..._args: any[]): any {
-    throw new Error('chrome.processes.terminate is not implemented');
+  terminate(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(false); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(false);
   }
 
   static readonly ProcessType = {

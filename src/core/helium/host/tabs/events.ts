@@ -77,11 +77,87 @@ export function installTabEventListeners(deps: TabEventDeps): () => void {
     );
   };
 
+  // `chrome.tabs.onZoomChange` — fired from `tabZoomChanged`
+  // CustomEvents. The event detail is:
+  //   { tabId, oldZoomFactor, newZoomFactor, zoomSettings? }
+  // matching Chrome's payload shape. Zoom is per-active-tab in DDX
+  // (zoom state lives on Navigation, applied to the active iframe),
+  // so we expect the dispatcher to know which tabId the zoom applies
+  // to and pass it through.
+  const onZoomChanged = (e: Event): void => {
+    const detail = (e as CustomEvent).detail as
+      | {
+          tabId?: string;
+          oldZoomFactor?: number;
+          newZoomFactor?: number;
+          zoomSettings?: { mode?: string; scope?: string; defaultZoomFactor?: number };
+        }
+      | undefined;
+    if (
+      !detail?.tabId ||
+      typeof detail.newZoomFactor !== 'number' ||
+      typeof detail.oldZoomFactor !== 'number'
+    ) {
+      return;
+    }
+    const num = safeNum(detail.tabId);
+    if (num === null) return;
+    const zoomSettings = detail.zoomSettings ?? {
+      mode: 'automatic',
+      scope: 'per-tab',
+      defaultZoomFactor: 1,
+    };
+    extMgr.fanoutEvent(
+      'chrome.tabs.onZoomChange',
+      [
+        {
+          tabId: num,
+          oldZoomFactor: detail.oldZoomFactor,
+          newZoomFactor: detail.newZoomFactor,
+          zoomSettings,
+        },
+      ],
+      'tabs',
+    );
+  };
+
+  // `tabs.onUpdated` with `status: 'loading'` / `'complete'` —
+  // synthesized from the existing `tabNavigated` phases. Extensions
+  // that branch on status (e.g. wait for loading→complete before
+  // injecting a content script) need both transitions.
+  //   phase 'before'    → status: 'loading'
+  //   phase 'completed' → status: 'complete'
+  // The existing `tabMetaChanged` path also emits onUpdated but only
+  // with the final status; this one fires the in-flight transition.
+  const onNavigated = (e: Event): void => {
+    const detail = (e as CustomEvent).detail as
+      | { tabId?: string; phase?: string; url?: string }
+      | undefined;
+    if (!detail?.tabId || !detail.phase) return;
+    const num = safeNum(detail.tabId);
+    if (num === null) return;
+    const info = safeInfo(num);
+    if (!info) return;
+    if (detail.phase === 'before') {
+      const changes: Record<string, unknown> = { status: 'loading' };
+      if (typeof detail.url === 'string') changes.url = detail.url;
+      extMgr.fanoutEvent('chrome.tabs.onUpdated', [num, changes, { ...info, status: 'loading' }], 'tabs');
+    } else if (detail.phase === 'completed') {
+      extMgr.fanoutEvent(
+        'chrome.tabs.onUpdated',
+        [num, { status: 'complete' }, info],
+        'tabs',
+      );
+    }
+  };
+
   document.addEventListener('tabCreated', onCreated);
   document.addEventListener('tabClosed', onClosed);
   document.addEventListener('tabSelected', onSelected);
   document.addEventListener('tabMetaChanged', onMeta);
   document.addEventListener('tabMoved', onMoved);
+  document.addEventListener('tabNavigated', onNavigated);
+  document.addEventListener('tabZoomChanged', onZoomChanged);
 
   return () => {
     document.removeEventListener('tabCreated', onCreated);
@@ -89,5 +165,7 @@ export function installTabEventListeners(deps: TabEventDeps): () => void {
     document.removeEventListener('tabSelected', onSelected);
     document.removeEventListener('tabMetaChanged', onMeta);
     document.removeEventListener('tabMoved', onMoved);
+    document.removeEventListener('tabNavigated', onNavigated);
+    document.removeEventListener('tabZoomChanged', onZoomChanged);
   };
 }

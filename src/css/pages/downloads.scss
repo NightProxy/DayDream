@@ -1,0 +1,182 @@
+// ddx://downloads/ — page styles. Mirrors history.scss for the
+// in-page header chip + list rendering; download-specific bits
+// (progress bars, status badges, action buttons) are unique here.
+
+.dl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dl-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--white-08);
+  border-radius: 12px;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.dl-card:hover {
+  border-color: var(--main-35a);
+  background: var(--white-03);
+}
+
+.dl-card .dl-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--white-05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dl-card .dl-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dl-card .dl-filename {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-card .dl-meta {
+  font-size: 12px;
+  color: var(--proto);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dl-card .dl-meta .dl-source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+}
+
+.dl-card .dl-progress-track {
+  height: 4px;
+  background: var(--white-08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.dl-card .dl-progress-fill {
+  height: 100%;
+  background: var(--main);
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
+.dl-card .dl-progress-fill.indeterminate {
+  width: 30%;
+  animation: dl-pulse 1.4s ease-in-out infinite;
+}
+
+.dl-card .dl-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dl-card .dl-action-btn {
+  background: var(--white-05);
+  border: 1px solid var(--white-08);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.dl-card .dl-action-btn:hover {
+  background: var(--white-10);
+}
+
+.dl-card .dl-action-btn.danger {
+  color: var(--error);
+}
+
+.dl-card .dl-action-btn.danger:hover {
+  background: rgba(243, 139, 168, 0.12);
+}
+
+.dl-state-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dl-state-badge.complete {
+  background: rgba(166, 227, 161, 0.15);
+  color: var(--success);
+}
+
+.dl-state-badge.in_progress {
+  background: var(--main-35a);
+  color: var(--text);
+}
+
+.dl-state-badge.interrupted {
+  background: rgba(243, 139, 168, 0.15);
+  color: var(--error);
+}
+
+@keyframes dl-pulse {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(330%);
+    opacity: 1;
+  }
+}
+
+.dl-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--proto);
+}
+
+.dl-empty .dl-empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: var(--white-05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dl-day-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--proto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}

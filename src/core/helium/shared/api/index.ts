@@ -5,6 +5,23 @@ export { ChromeClipboard } from './clipboard';
 export { ChromeCommands } from './commands';
 export { ChromeContextMenus } from './contextMenus';
 export { ChromeCookies } from './cookies';
+export { ChromeMenus } from './menus';
+export { ChromePageAction } from './pageAction';
+// ChromeOS-only stubs — declared so chrome.X is non-undefined; all
+// methods throw a clear "ChromeOS-only" error. See chromeOsStubs.ts
+// for the rationale and full list.
+export {
+  ChromeAudio,
+  ChromeCertificateProvider,
+  ChromeDocumentScan,
+  ChromeEnterprise,
+  ChromeFileSystemProvider,
+  ChromeInput,
+  ChromeNetworking,
+  ChromePlatformKeys,
+  ChromeVpnProvider,
+  ChromeWallpaper,
+} from './chromeOsStubs';
 export { ChromeDebugger } from './debugger';
 export { ChromeDeclarativeContent } from './declarativeContent';
 export { ChromeDesktopCapture } from './desktopCapture';

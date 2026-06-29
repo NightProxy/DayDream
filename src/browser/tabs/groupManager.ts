@@ -274,4 +274,95 @@ export class TabGroupManager2 {
 			await this.tabs.closeTabById(tabId);
 		}
 	};
+
+	/**
+	 * Returns all tab groups (snapshot copy). Used by `chrome.tabGroups.query`.
+	 */
+	listGroups = (): TabGroup[] => {
+		return [...this.tabs.getGroups()];
+	};
+
+	/**
+	 * Look up a group by its DDX string id. Used by `chrome.tabGroups.get`.
+	 * Thin pass-through to `tabs.getGroupById` so callers can stay on
+	 * `groupManager.*` for the whole tabGroups surface.
+	 */
+	getGroupById = (groupId: string): TabGroup | undefined => {
+		return this.tabs.getGroupById(groupId);
+	};
+
+	/**
+	 * Apply partial updates to a group. Mirrors `chrome.tabGroups.update`:
+	 *   - `title`  → `group.name`
+	 *   - `color`  → `group.color`
+	 *   - `collapsed` → `group.isCollapsed` (only toggles if it changes
+	 *     to keep `toggleGroupCollapse` UI state in sync)
+	 * Re-renders the tab strip on any change.
+	 */
+	updateGroup = (
+		groupId: string,
+		props: { title?: string; color?: string; collapsed?: boolean }
+	): TabGroup | null => {
+		const group = this.tabs.getGroupById(groupId);
+		if (!group) return null;
+
+		let changed = false;
+		if (
+			typeof props.title === 'string' &&
+			props.title.trim() &&
+			props.title !== group.name
+		) {
+			group.name = props.title;
+			changed = true;
+		}
+		if (typeof props.color === 'string' && props.color !== group.color) {
+			group.color = props.color;
+			group.tabIds.forEach(tabId => this.tabs.syncTabVisualState(tabId));
+			changed = true;
+		}
+		if (
+			typeof props.collapsed === 'boolean' &&
+			props.collapsed !== group.isCollapsed
+		) {
+			this.toggleGroupCollapse(groupId);
+			changed = true;
+		}
+
+		if (changed) {
+			this.tabs.renderTabStrip();
+		}
+		return group;
+	};
+
+	/**
+	 * Move a group to a target position within the tab strip. Mirrors
+	 * `chrome.tabGroups.move({groupId, index})`. DDX has no separate
+	 * "group order" array — groups are positioned by where their
+	 * member-tabs sit in the flat tab list. We approximate `index` as
+	 * the target slot for the group's FIRST tab among ungrouped/grouped
+	 * tabs, then re-anchor sibling tabs to follow.
+	 *
+	 * Returns the updated group, or null if the group doesn't exist.
+	 */
+	moveGroup = (groupId: string, targetIndex: number): TabGroup | null => {
+		const group = this.tabs.getGroupById(groupId);
+		if (!group || group.tabIds.length === 0) return null;
+
+		this.tabs.runStateTransaction('move-group', () => {
+			const orderedTabIds = [...group.tabIds];
+			// Re-anchor: move the first tab to `targetIndex`, then place
+			// the rest immediately after, preserving intra-group order.
+			const ungrouped = this.tabs.getUngroupedUnpinnedTabs().map(t => t.id);
+			const clamped = Math.max(
+				0,
+				Math.min(targetIndex, ungrouped.length + orderedTabIds.length)
+			);
+			orderedTabIds.forEach((tabId, idx) => {
+				this.tabs.reorderUngrouped(tabId, clamped + idx);
+			});
+		});
+
+		this.tabs.renderTabStrip();
+		return group;
+	};
 }

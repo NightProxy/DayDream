@@ -10,20 +10,55 @@ export class ChromeDeclarativeContent {
 
   public readonly onPageChanged: DeclarativeEvent = new DeclarativeEvent();
 
-  PageStateMatcher(..._args: any[]): any {
-    throw new Error('chrome.declarativeContent.PageStateMatcher is not implemented');
+  /**
+   * `chrome.declarativeContent.*` — declarative page-state matching
+   * for showing/hiding the page action.
+   *
+   * Constructors return tagged objects carrying their conditions /
+   * actions. `onPageChanged.addRules(...)` is overlaid via the
+   * bootstrap's RPC bindings, which relay rules to the host's
+   * `DeclarativeContentHandlers` (`src/core/helium/host/declarativeContent/`).
+   * The host then evaluates rules on every tabNavigated / tabSelected
+   * and applies actions (ShowAction → pageAction.show, SetIcon → setIcon).
+   *
+   * Spreading `args[0]` into the returned object lets PageStateMatcher
+   * carry `pageUrl` and `css` directly on the tagged shape — that's
+   * how the host matcher reads them.
+   */
+  PageStateMatcher(...args: any[]): { instanceType: string; pageUrl?: unknown; css?: unknown; conditions: unknown[] } {
+    const first = (args[0] ?? {}) as { pageUrl?: unknown; css?: unknown };
+    return {
+      instanceType: 'declarativeContent.PageStateMatcher',
+      pageUrl: first.pageUrl,
+      css: first.css,
+      conditions: args,
+    };
   }
 
-  ShowAction(..._args: any[]): any {
-    throw new Error('chrome.declarativeContent.ShowAction is not implemented');
+  ShowAction(...args: any[]): { instanceType: string; args: unknown[] } {
+    return { instanceType: 'declarativeContent.ShowAction', args };
   }
 
-  ShowPageAction(..._args: any[]): any {
-    throw new Error('chrome.declarativeContent.ShowPageAction is not implemented');
+  ShowPageAction(...args: any[]): { instanceType: string; args: unknown[] } {
+    return { instanceType: 'declarativeContent.ShowPageAction', args };
   }
 
-  RequestContentScript(..._args: any[]): any {
-    throw new Error('chrome.declarativeContent.RequestContentScript is not implemented');
+  RequestContentScript(...args: any[]): { instanceType: string; args: unknown[] } {
+    return { instanceType: 'declarativeContent.RequestContentScript', args };
+  }
+
+  /**
+   * Set a per-tab icon when the rule matches. `args[0]` carries the
+   * imageData (single ImageData OR `{16:..., 32:...}` Record), same
+   * shape as `chrome.action.setIcon({imageData})`.
+   */
+  SetIcon(...args: any[]): { instanceType: string; imageData?: unknown; args: unknown[] } {
+    const first = (args[0] ?? {}) as { imageData?: unknown };
+    return {
+      instanceType: 'declarativeContent.SetIcon',
+      imageData: first.imageData,
+      args,
+    };
   }
 
   static readonly PageStateMatcherInstanceType = {

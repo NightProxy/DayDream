@@ -59,20 +59,17 @@ export class ChromeRuntimeBase {
   // throw is contractually fine.
 
   /**
-   * BG-initiated `chrome.runtime.connect`. NOT YET FULLY WIRED to a
-   * BG→{BG,CS} port-routing host handler — currently returns a
-   * stub Port that immediately fires `onDisconnect`. This is
-   * strictly less-broken than the previous "throws" behavior:
-   * extensions that defensively listen for `port.onDisconnect`
-   * will gracefully fall back to their non-port code path
-   * (chrome.runtime.sendMessage etc.).
+   * BG-initiated `chrome.runtime.connect`. Opens a Port to another
+   * extension (or self when extensionId omitted).
    *
-   * The real fix requires a new wire protocol + PortRouter method
-   * + per-target dispatch. Tracked as a follow-up.
+   * NOTE: this stub is overlaid post-handshake — see
+   * `bootstrap/client.ts:installRuntimeConnect`. The dead-port
+   * return below is the pre-handshake fallback for the rare case
+   * where an extension calls connect at top-level of its BG script
+   * before the handshake completes.
    */
   connect(...args: any[]): any {
     const name = (() => {
-      // Two call signatures: connect(connectInfo) or connect(extensionId, connectInfo)
       const last = args[args.length - 1];
       if (last && typeof last === 'object' && 'name' in last) {
         return String((last as { name?: unknown }).name ?? '');
@@ -163,12 +160,18 @@ export class ChromeRuntimeBase {
     return Promise.resolve();
   }
 
-  // --- KEEP-THROWING (rarely called; loud-fail is better than silent) ---
-  restart(..._args: any[]): any {
-    throw new Error('chrome.runtime.restart is not implemented');
+  // --- KEEP-AS-NOOP (ChromeOS-kiosk-only in real Chrome; no-op here) ---
+  //
+  // Originally throwing; flipped to no-op so the few extensions that
+  // call them defensively at top-level don't crash. DDX has no
+  // OS-restart concept — calls are intentionally silent.
+  restart(..._args: any[]): undefined {
+    return undefined;
   }
-  restartAfterDelay(..._args: any[]): any {
-    throw new Error('chrome.runtime.restartAfterDelay is not implemented');
+  restartAfterDelay(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
 
   static readonly ContextType = {

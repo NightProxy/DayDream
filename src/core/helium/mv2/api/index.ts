@@ -8,6 +8,21 @@ export { ChromeCommands } from '../../shared';
 export { ChromeContentSettings } from './contentSettings';
 export { ChromeContextMenus } from '../../shared';
 export { ChromeCookies } from '../../shared';
+export { ChromeMenus } from '../../shared';
+export { ChromePageAction } from '../../shared';
+// ChromeOS-only stubs — see shared/api/chromeOsStubs.ts.
+export {
+  ChromeAudio,
+  ChromeCertificateProvider,
+  ChromeDocumentScan,
+  ChromeEnterprise,
+  ChromeFileSystemProvider,
+  ChromeInput,
+  ChromeNetworking,
+  ChromePlatformKeys,
+  ChromeVpnProvider,
+  ChromeWallpaper,
+} from '../../shared';
 export { ChromeDebugger } from '../../shared';
 export { ChromeDeclarativeContent } from '../../shared';
 export { ChromeDesktopCapture } from '../../shared';

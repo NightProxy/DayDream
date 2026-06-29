@@ -6,8 +6,15 @@ class ChromeSystemStorage extends ChromeSystemStorageBase {
     super(ctx);
   }
 
-  getAvailableCapacity(..._args: any[]): any {
-    throw new Error('chrome.system.storage.getAvailableCapacity is not implemented');
+  // MV3-only. Returns 0 — we don't manage external storage. Real Chrome
+  // returns the free bytes on the storage unit; with no units, returning
+  // 0 is honest. Extensions that branch on >0 will pick the "no space"
+  // path which is safer than the "infinite space" lie.
+  getAvailableCapacity(...args: any[]): any {
+    const result = { id: 'unknown', availableCapacity: 0 };
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(result); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(result);
   }
 }
 

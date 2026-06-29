@@ -7,6 +7,7 @@
 
 import { DDXError } from './types';
 import type { TabId, TabInfo } from './api';
+import { decodeIframeUrl } from '@browser/tabs/urlDecoder';
 
 interface TabRecord {
 	id: string;
@@ -16,6 +17,7 @@ interface TabRecord {
 	status?: string;
 	isPinned?: boolean;
 	groupId?: string;
+	iframe?: HTMLIFrameElement;
 }
 
 export interface TabsLike {
@@ -57,7 +59,17 @@ export class TabResolver {
 	private numToDdx = new Map<number, string>();
 	private ddxToNum = new Map<string, number>();
 
-	constructor(private tabs: TabsLike | null) {}
+	/**
+	 * Scramjet `proxy` reference, used by `info()` to defensively
+	 * decode a tab's iframe.src when the cached `t.url` is stale or
+	 * empty. Optional — if not passed, the fallback just reads
+	 * `iframe.src` raw (still better than throwing).
+	 */
+	private proxy: unknown = null;
+
+	constructor(private tabs: TabsLike | null, proxy?: unknown) {
+		this.proxy = proxy ?? null;
+	}
 
 	toNum(ddxId: string): TabId {
 		let n = this.ddxToNum.get(ddxId);
@@ -103,11 +115,29 @@ export class TabResolver {
 		if (!t) throw new DDXError('tab_not_found', `tab_not_found: tab data missing for ${ddxId}`);
 		const order = this.tabs.getTabsInOrder();
 		const idx = order.findIndex((x) => x?.id === ddxId);
+		// URL coverage in order of preference:
+		//   1. `t.url` — kept fresh by metaWatcher (decoded already)
+		//   2. Live decode from iframe — covers the "navigation just
+		//      happened, metaWatcher hasn't run yet" race + the
+		//      "non-active tab navigated in the background" case
+		//   3. Empty string — last resort. Extensions like uBO derive
+		//      hostnames from this; passing undefined would crash
+		//      their `punycode.toUnicode(undefined)` path.
+		let url = t.url ?? '';
+		if (!url || url.startsWith('about:blank')) {
+			try {
+				const decoded = decodeIframeUrl(
+					t.iframe ?? null,
+					this.proxy as Parameters<typeof decodeIframeUrl>[1],
+				);
+				if (decoded) url = decoded;
+			} catch { /* swallow */ }
+		}
 		const info: TabInfo = {
 			id: n,
 			index: idx >= 0 ? idx : 0,
 			active: this.tabs.activeTabId === ddxId,
-			url: t.url,
+			url,
 			title: t.title,
 			favIconUrl: t.favIconUrl,
 			status: (t.status as TabInfo['status']) ?? 'complete',

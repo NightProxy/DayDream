@@ -31,6 +31,19 @@ export class Omnibox {
 	private logger: Logger | null = null;
 	private currentDispatch: DispatchResult | null = null;
 	private currentExtensionKeyword: string | null = null;
+	/**
+	 * Token incremented every time the extension mode renders. Used
+	 * to guard stale re-render callbacks scheduled from previous
+	 * renders (e.g. async-suggest arrived but the user has since
+	 * typed something new). Compared in the rerender closure.
+	 */
+	private extensionRerenderToken = 0;
+	/**
+	 * Unsubscribe handle for the current OmniboxRegistry.onChange
+	 * subscription. Cleared and re-subscribed every render of the
+	 * extension mode; explicitly torn down when the mode changes.
+	 */
+	private extensionRegistryUnsub: (() => void) | null = null;
 
 	constructor(deps: OmniboxDeps) {
 		this.deps = deps;
@@ -248,21 +261,54 @@ export class Omnibox {
 				return;
 			}
 			const { renderExtensionMode } = await import('./modes/extension');
-			const { rowHtml } = await import('./ui');
+			const { rowHtml, sectionHtml } = await import('./ui');
+			const extMgr = (window as {
+				extensions?: {
+					fireEventOn?: (id: string, m: string, a: unknown[]) => void;
+					omniboxRegistry?: {
+						listSuggestions(extId: string): Array<{ content: string; description: string; deletable?: boolean }>;
+						onChange?(listener: (extId: string) => void): () => void;
+					};
+				};
+			}).extensions;
 			const fireExtensionsEvent = (event: string, args: unknown[]) => {
 				try {
-					(window as { extensions?: { fireEventOn?: (id: string, m: string, a: unknown[]) => void } }).extensions
-						?.fireEventOn?.(ext.extId, event, args);
+					extMgr?.fireEventOn?.(ext.extId, event, args);
 				} catch (err) {
 					console.warn('[omnibox] fireEventOn failed:', err);
 				}
 			};
+			// Subscribe to OmniboxRegistry change notifications so
+			// async-suggest payloads from the extension's `suggest()`
+			// callback trigger a re-render the moment they arrive at
+			// the host (no polling, no timeout). Token ensures stale
+			// subscriptions from prior renders are no-ops.
+			const rerenderToken = ++this.extensionRerenderToken;
+			// Clean up the prior subscription, if any.
+			if (this.extensionRegistryUnsub) {
+				try { this.extensionRegistryUnsub(); } catch { /* noop */ }
+				this.extensionRegistryUnsub = null;
+			}
+			if (extMgr?.omniboxRegistry?.onChange) {
+				this.extensionRegistryUnsub = extMgr.omniboxRegistry.onChange((id) => {
+					if (id !== ext.extId) return;
+					if (this.extensionRerenderToken !== rerenderToken) return;
+					void this.render();
+				});
+			}
 			const deps: Parameters<typeof renderExtensionMode>[0] = {
 				keyword: ext.keyword,
 				rest: ext.rest,
 				extId: ext.extId,
 				fireEvent: fireExtensionsEvent,
 				onNavigate: (url) => this.navigateActive(url),
+				listSuggestions: extMgr?.omniboxRegistry
+					? (id) => extMgr.omniboxRegistry!.listSuggestions(id)
+					: undefined as never,
+				requestRerender: () => {
+					if (this.extensionRerenderToken !== rerenderToken) return;
+					void this.render();
+				},
 			};
 			if (ext.defaultSuggestionDescription) deps.defaultSuggestionDescription = ext.defaultSuggestionDescription;
 			const result = renderExtensionMode(deps);
@@ -276,7 +322,8 @@ export class Omnibox {
 			const primary = result.primaryRow
 				? `<div class="omnibox-primary py-1">${rowHtml(result.primaryRow, this.selectedRowId === result.primaryRow.id)}</div>`
 				: '<div class="px-3 py-2 text-sm text-[var(--proto)]">Waiting for extension...</div>';
-			this.dropdown.innerHTML = primary;
+			const sectionsHtml = result.sections.map((s) => sectionHtml(s, this.selectedRowId)).join('');
+			this.dropdown.innerHTML = primary + sectionsHtml;
 			this.attachRowListeners();
 			return;
 		}

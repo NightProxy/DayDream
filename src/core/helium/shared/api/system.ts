@@ -1,57 +1,142 @@
 import type { ExtensionContext } from '../../extfs/types';
 import { ChromeEvent } from '../ChromeEvent';
 
+/**
+ * `chrome.system.*` — host-environment introspection.
+ *
+ * All getInfo methods synthesize from `navigator.*` / `screen.*` so
+ * extensions that branch on hardware info don't crash. The synthesized
+ * values are realistic best-effort:
+ *
+ *   - `cpu.getInfo`        → `{numOfProcessors, archName, modelName, features, processors}`
+ *                            from `navigator.hardwareConcurrency` etc.
+ *   - `memory.getInfo`     → `{capacity, availableCapacity}` from
+ *                            `navigator.deviceMemory * 1GB`. We can't
+ *                            measure free memory in JS so capacity ≈ available.
+ *   - `display.getInfo`    → one `DisplayUnitInfo` per `screen` /
+ *                            `window.screen`. Synthesized as the primary
+ *                            display matching `screen.*` properties.
+ *   - `storage.getInfo`    → `[]`. OPFS doesn't expose attached USB
+ *                            sticks etc., and that's the only thing
+ *                            Chrome's system.storage really cares about.
+ *
+ * Mutating methods (touch calibration, mirror mode, etc.) are all
+ * no-ops — DDX is not ChromeOS, these have no analog.
+ */
+
+function navHardwareConcurrency(): number {
+  try { return typeof navigator !== 'undefined' && typeof navigator.hardwareConcurrency === 'number' ? navigator.hardwareConcurrency : 4; }
+  catch { return 4; }
+}
+
+function navDeviceMemoryGB(): number {
+  try {
+    const n = (navigator as { deviceMemory?: number }).deviceMemory;
+    return typeof n === 'number' ? n : 8;
+  } catch { return 8; }
+}
+
+function navUserAgentArch(): string {
+  try {
+    const ua = navigator.userAgent || '';
+    if (/x86_64|x64|Win64|WOW64/i.test(ua)) return 'x86-64';
+    if (/i686|i386|x86/i.test(ua)) return 'x86-32';
+    if (/aarch64|arm64/i.test(ua)) return 'arm64';
+    if (/armv7|armv8|arm/i.test(ua)) return 'arm';
+  } catch { /* noop */ }
+  return 'x86-64';
+}
+
 class ChromeSystemCpu {
-  getInfo(..._args: any[]): any {
-    throw new Error('chrome.system.cpu.getInfo is not implemented');
+  getInfo(...args: any[]): any {
+    const n = navHardwareConcurrency();
+    const info = {
+      numOfProcessors: n,
+      archName: navUserAgentArch(),
+      modelName: 'unknown',
+      features: [] as string[],
+      // Per-CPU usage stats. Chrome populates idle/kernel/user/total
+      // counters; we have no way to read those, so all zeros.
+      processors: Array.from({ length: n }, () => ({
+        usage: { user: 0, kernel: 0, idle: 0, total: 0 },
+      })),
+      temperatures: [] as number[],
+    };
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb(info); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(info);
   }
 }
 
 class ChromeSystemDisplay {
   public readonly onDisplayChanged: ChromeEvent = new ChromeEvent();
 
-  clearTouchCalibration(..._args: any[]): any {
-    throw new Error('chrome.system.display.clearTouchCalibration is not implemented');
+  private synthesizeDisplay(): unknown {
+    let w = 1920, h = 1080, dpr = 1;
+    try { w = window.screen.width; h = window.screen.height; dpr = window.devicePixelRatio; } catch { /* noop */ }
+    return {
+      id: 'primary',
+      name: 'Primary Display',
+      mirroringSourceId: '',
+      isPrimary: true,
+      isInternal: true,
+      isEnabled: true,
+      dpiX: 96 * dpr,
+      dpiY: 96 * dpr,
+      rotation: 0,
+      bounds: { left: 0, top: 0, width: w, height: h },
+      overscan: { left: 0, top: 0, right: 0, bottom: 0 },
+      workArea: { left: 0, top: 0, width: w, height: h },
+      // displayZoomFactor / hasTouchSupport etc. are optional.
+      displayZoomFactor: dpr,
+      hasTouchSupport: false,
+      hasAccelerometerSupport: false,
+      activeState: 'active',
+    };
   }
-  completeCustomTouchCalibration(..._args: any[]): any {
-    throw new Error('chrome.system.display.completeCustomTouchCalibration is not implemented');
+
+  getInfo(...args: any[]): any {
+    const list = [this.synthesizeDisplay()];
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(list); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(list);
   }
-  enableUnifiedDesktop(..._args: any[]): any {
-    throw new Error('chrome.system.display.enableUnifiedDesktop is not implemented');
+
+  getDisplayLayout(...args: any[]): any {
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb([]); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve([]);
   }
-  getDisplayLayout(..._args: any[]): any {
-    throw new Error('chrome.system.display.getDisplayLayout is not implemented');
+
+  // ChromeOS-kiosk-only methods. No-op everywhere else.
+  clearTouchCalibration(): void { /* no-op */ }
+  completeCustomTouchCalibration(): void { /* no-op */ }
+  enableUnifiedDesktop(): void { /* no-op */ }
+  overscanCalibrationAdjust(): void { /* no-op */ }
+  overscanCalibrationComplete(): void { /* no-op */ }
+  overscanCalibrationReset(): void { /* no-op */ }
+  overscanCalibrationStart(): void { /* no-op */ }
+  setDisplayLayout(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
-  getInfo(..._args: any[]): any {
-    throw new Error('chrome.system.display.getInfo is not implemented');
+  setDisplayProperties(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
-  overscanCalibrationAdjust(..._args: any[]): any {
-    throw new Error('chrome.system.display.overscanCalibrationAdjust is not implemented');
+  setMirrorMode(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
-  overscanCalibrationComplete(..._args: any[]): any {
-    throw new Error('chrome.system.display.overscanCalibrationComplete is not implemented');
+  showNativeTouchCalibration(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(false); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(false);
   }
-  overscanCalibrationReset(..._args: any[]): any {
-    throw new Error('chrome.system.display.overscanCalibrationReset is not implemented');
-  }
-  overscanCalibrationStart(..._args: any[]): any {
-    throw new Error('chrome.system.display.overscanCalibrationStart is not implemented');
-  }
-  setDisplayLayout(..._args: any[]): any {
-    throw new Error('chrome.system.display.setDisplayLayout is not implemented');
-  }
-  setDisplayProperties(..._args: any[]): any {
-    throw new Error('chrome.system.display.setDisplayProperties is not implemented');
-  }
-  setMirrorMode(..._args: any[]): any {
-    throw new Error('chrome.system.display.setMirrorMode is not implemented');
-  }
-  showNativeTouchCalibration(..._args: any[]): any {
-    throw new Error('chrome.system.display.showNativeTouchCalibration is not implemented');
-  }
-  startCustomTouchCalibration(..._args: any[]): any {
-    throw new Error('chrome.system.display.startCustomTouchCalibration is not implemented');
-  }
+  startCustomTouchCalibration(): void { /* no-op */ }
 
   static readonly ActiveState = {
     ACTIVE: "active",
@@ -73,8 +158,12 @@ class ChromeSystemDisplay {
 }
 
 class ChromeSystemMemory {
-  getInfo(..._args: any[]): any {
-    throw new Error('chrome.system.memory.getInfo is not implemented');
+  getInfo(...args: any[]): any {
+    const bytes = navDeviceMemoryGB() * 1024 * 1024 * 1024;
+    const info = { capacity: bytes, availableCapacity: bytes };
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb(info); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(info);
   }
 }
 
@@ -88,11 +177,18 @@ export class ChromeSystemStorageBase {
   public readonly onDetached: ChromeEvent = new ChromeEvent();
   public readonly onAttached: ChromeEvent = new ChromeEvent();
 
-  ejectDevice(..._args: any[]): any {
-    throw new Error('chrome.system.storage.ejectDevice is not implemented');
+  ejectDevice(...args: any[]): any {
+    // We don't manage external storage; always return NO_SUCH_DEVICE
+    // — extensions handle this gracefully (it's a documented outcome).
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb('no_such_device'); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve('no_such_device');
   }
-  getInfo(..._args: any[]): any {
-    throw new Error('chrome.system.storage.getInfo is not implemented');
+
+  getInfo(...args: any[]): any {
+    const cb = typeof args[0] === 'function' ? args[0] : null;
+    if (cb) { try { cb([]); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve([]);
   }
 
   static readonly EjectDeviceResultCode = {

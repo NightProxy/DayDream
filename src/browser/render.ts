@@ -159,6 +159,28 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "data-tooltip": "Downloads",
+                    "data-side": "right",
+                    "data-align": "center",
+                    onclick: async () => {
+                      await window.tabs.createTab("ddx://downloads/");
+                    },
+                  },
+                  [
+                    this.ui.createElement(
+                      "i",
+                      { "data-lucide": "download", class: "h-4 w-4" },
+                      [],
+                    ),
+                  ],
+                ),
+              ]),
+              this.ui.createElement("li", { class: "self-center" }, [
+                this.ui.createElement(
+                  "button",
+                  {
+                    class:
+                      "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
                     // Wired in src/browser/functions/functions.ts via
                     // MenuManager.extensionsMenu(button) — opens the
                     // Edge-style dropdown listing installed extensions
@@ -580,18 +602,29 @@ class Render {
                     "div",
                     { class: "relative w-full flex-1 urlbar-ring" },
                     [
+                      // Lock icon — clickable wrapper so the
+                      // site-permissions lock-dropdown can mount onto
+                      // it. Was previously a static `<i>` inside a
+                      // `pointer-events-none` div; now a real
+                      // `<button data-component="site-info">` that
+                      // sits absolutely positioned but accepts clicks.
+                      // LockDropdown (`src/browser/sitePermissions/lockDropdown.ts`)
+                      // attaches its click handler post-render.
                       this.ui.createElement(
-                        "div",
+                        "button",
                         {
+                          type: "button",
+                          "data-component": "site-info",
+                          "aria-label": "View site information",
                           class:
-                            "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1",
+                            "absolute left-2 top-1/2 -translate-y-1/2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--success)] hover:bg-[var(--white-05)] transition-colors",
                         },
                         [
                           this.ui.createElement(
                             "i",
                             {
                               "data-lucide": "lock",
-                              class: "h-4 w-4 text-[var(--success)]",
+                              class: "h-4 w-4",
                             },
                             [],
                           ),
@@ -815,6 +848,31 @@ class Render {
                                       "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
                                     onclick: async () => {
                                       await window.tabs.createTab(
+                                        "ddx://downloads/",
+                                      );
+                                    },
+                                  },
+                                  [
+                                    this.ui.createElement(
+                                      "i",
+                                      {
+                                        "data-lucide": "download",
+                                        class: "h-4 w-4",
+                                      },
+                                      [],
+                                    ),
+                                    this.ui.createElement("span", {}, [
+                                      "Downloads",
+                                    ]),
+                                  ],
+                                ),
+                                this.ui.createElement(
+                                  "li",
+                                  {
+                                    class:
+                                      "px-4 py-2 hover:bg-[var(--white-10)] cursor-pointer flex gap-1 items-center",
+                                    onclick: async () => {
+                                      await window.tabs.createTab(
                                         "ddx://games/",
                                       );
                                     },
@@ -933,6 +991,19 @@ class Render {
               "data-component": "frame-container",
               style:
                 "border: none; outline: none; will-change: filter, transform, opacity;",
+            },
+            [],
+          ),
+          // Download shelf slot — sits between the iframe and the
+          // bottom of the viewport. Initially hidden (display:none);
+          // DownloadShelf (`src/browser/downloads/shelf.ts`) toggles
+          // visibility based on download activity.
+          this.ui.createElement(
+            "div",
+            {
+              "data-component": "download-shelf",
+              style:
+                "display:none; width:100%; flex-shrink:0; border-top:1px solid var(--white-08); background:var(--bg-1); z-index:11;",
             },
             [],
           ),

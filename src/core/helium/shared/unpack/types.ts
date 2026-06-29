@@ -71,6 +71,53 @@ export type ContentSecurityPolicy =
   | string
   | { extension_pages?: string; sandbox?: string; [key: string]: unknown };
 
+export interface ChromeThemeManifest {
+  images?: {
+    theme_frame?: string;
+    theme_frame_overlay?: string;
+    theme_toolbar?: string;
+    theme_tab_background?: string;
+    theme_tab_background_v?: string;
+    theme_ntp_background?: string;
+    theme_ntp_attribution?: string;
+    theme_button_background?: string;
+    theme_window_control_background?: string;
+    [k: string]: string | undefined;
+  };
+  colors?: {
+    frame?: [number, number, number];
+    frame_inactive?: [number, number, number];
+    toolbar?: [number, number, number];
+    tab_text?: [number, number, number];
+    tab_text_inactive?: [number, number, number];
+    tab_background_text?: [number, number, number];
+    tab_background_text_inactive?: [number, number, number];
+    bookmark_text?: [number, number, number];
+    toolbar_button_icon?: [number, number, number];
+    ntp_background?: [number, number, number];
+    ntp_text?: [number, number, number];
+    ntp_link?: [number, number, number];
+    ntp_header?: [number, number, number];
+    button_background?: [number, number, number];
+    omnibox_background?: [number, number, number];
+    omnibox_text?: [number, number, number];
+    [k: string]: [number, number, number] | undefined;
+  };
+  tints?: {
+    buttons?: [number, number, number];
+    frame?: [number, number, number];
+    frame_inactive?: [number, number, number];
+    background_tab?: [number, number, number];
+    [k: string]: [number, number, number] | undefined;
+  };
+  properties?: {
+    ntp_background_alignment?: string;
+    ntp_background_repeat?: string;
+    ntp_logo_alternate?: number;
+    [k: string]: unknown;
+  };
+}
+
 export interface ChromeManifest {
   manifest_version: 2 | 3;
   name: string;
@@ -106,6 +153,7 @@ export interface ChromeManifest {
   sandbox?: { pages: string[]; content_security_policy?: string };
   side_panel?: SidePanelDescriptor;
   devtools_page?: string;
+  theme?: ChromeThemeManifest;
   [key: string]: unknown;
 }
 

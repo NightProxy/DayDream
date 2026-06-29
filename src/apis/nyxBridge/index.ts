@@ -103,7 +103,7 @@ export class NyxBridge {
 		this.allowlist = [...NYX_ORIGINS_DEFAULT, ...(devOrigin ? [devOrigin] : [])];
 
 		this.handshake = new Handshake({ hostMarker: this.hostMarker, allowlist: this.allowlist });
-		this.tabResolver = new TabResolver(this.deps.tabs);
+		this.tabResolver = new TabResolver(this.deps.tabs, this.deps.proxy);
 		this.channel = new NyxChannel({
 			handshake: this.handshake,
 			dispatchMethod: async (method, args) =>

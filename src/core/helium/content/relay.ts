@@ -12,7 +12,8 @@
  * Posts back to source windows:
  *   - rpc-resp        : reply to rpc-req
  *   - event           : fanout from BG (storage.onChanged, runtime.onMessage)
- *   - port-opened     : ack on port-connect
+ *   - port-opened     : ack on port-connect (CS-initiated)
+ *   - port-incoming   : BG-initiated port (host → CS) — CS mints local Port
  *   - port-msg        : forward from BG to CS port
  *   - port-close      : CS observes port disconnected from BG side
  *   - port-error      : port-connect failed (target down, perm denied, etc.)
