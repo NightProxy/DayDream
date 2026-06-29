@@ -1,5 +1,5 @@
 import type { Plugin, ResolvedConfig } from "vite";
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
 export function svgWrapperPlugin(): Plugin {
@@ -15,9 +15,14 @@ export function svgWrapperPlugin(): Plugin {
     },
 
     closeBundle() {
+      const outDir = resolve(config.root, config.build.outDir);
+      const indexPath = resolve(outDir, "index.html");
+      // closeBundle still fires when an upstream build error prevented the
+      // HTML from being emitted. Silently skip in that case so the real
+      // error isn't buried under a misleading ENOENT.
+      if (!existsSync(indexPath)) return;
       try {
-        const outDir = resolve(config.root, config.build.outDir);
-        const html = readFileSync(resolve(outDir, "index.html"), "utf-8");
+        const html = readFileSync(indexPath, "utf-8");
         const svg = convertHtmlToSvg(html);
         writeFileSync(resolve(outDir, "index.svg"), svg, "utf-8");
         console.log("\x1b[36m  Generated index.svg from index.html\x1b[0m");
