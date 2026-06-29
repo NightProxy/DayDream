@@ -108,6 +108,18 @@ class Themeing implements ThemeingInterface {
 
     await this.applyTheme(this.currentTheme);
 
+    // Chrome theme adapter fires this when the set of installed
+    // extension themes changes (install / uninstall / enable / disable).
+    // Reload presets so the new entry appears in pickers, then re-apply
+    // the active theme in case the change affected it.
+    try {
+      const events = (window as any).eventsAPI;
+      events?.addEventListener?.("theme:preset-list-changed", async () => {
+        await this.loadThemePresets();
+        await this.applyTheme(this.currentTheme);
+      });
+    } catch { /* ignore */ }
+
     this.events.addEventListener("theme:preset-change", async (event: any) => {
       const { theme } = event.detail;
       if (theme !== this.currentTheme) {
@@ -333,10 +345,19 @@ class Themeing implements ThemeingInterface {
 
     await this.migrateLegacyBackgroundImage();
 
-    this.setBackgroundImage();
+    // Was: `this.setBackgroundImage();` (unawaited). That fire-and-forget
+    // returned from init() before the DOM mutation finished, letting any
+    // caller that awaited init() see a half-initialized instance — and
+    // worse, racing against concurrent Themeing instances on the same
+    // realm. If a sibling instance's resolveBackgroundImage() resolves
+    // null first (stale settings.json read), its fanout could strip the
+    // .has-background-image class from every iframe right after this paint
+    // landed. Awaiting serializes the call into the init promise so
+    // anything that awaits init() actually sees the final state.
+    await this.setBackgroundImage();
 
     this.events.addEventListener("theme:background-change", async () => {
-      this.setBackgroundImage();
+      await this.setBackgroundImage();
     });
   }
 
@@ -432,6 +453,20 @@ class Themeing implements ThemeingInterface {
 
       this.themes = themesData;
       console.log(`Successfully loaded ${validThemeCount} theme presets`);
+
+      // Merge presets contributed by installed Chrome theme extensions.
+      // Lazy import keeps the adapter (and its SettingsAPI dependency)
+      // out of the hot path for fresh-install boots where the store is
+      // empty. Failures are swallowed — base presets must always load.
+      try {
+        const { chromeThemeAdapter } = await import("../../apis/extensions/chromeThemes");
+        const extThemes = await chromeThemeAdapter.listExtensionThemes();
+        for (const e of extThemes) {
+          this.themes[e.id] = e.preset as any;
+        }
+      } catch (err) {
+        console.warn("[theming] extension theme merge failed:", err);
+      }
     } catch (error) {
       console.error("Error loading theme presets:", error);
       console.log("Using fallback themes");
@@ -639,20 +674,31 @@ class Themeing implements ThemeingInterface {
   /**
    * Resolves which background image should currently be displayed.
    * Precedence: user upload (`theme:user-background-image`) wins over the
-   * active theme's preset (`background-image` field in t.json). Returns
-   * `null` when neither is set.
+   * active theme's preset (`background-image` field in t.json). The theme
+   * preset's bg is gated by the `theme:useThemeBackground` toggle — when
+   * that's explicitly disabled, the preset is treated as absent. Returns
+   * `null` when neither source applies.
    */
   async resolveBackgroundImage(): Promise<string | null> {
     try {
       const userOverride = await this.settings.getItem(
         "theme:user-background-image",
       );
-      if (userOverride) return userOverride;
+      if (userOverride && typeof userOverride === "string") return userOverride;
     } catch (error) {
       console.warn("Could not read user background override:", error);
     }
 
-    const themePreset = this.themes[this.currentTheme]?.["background-image"];
+    // Theme preset's bg-image is gated by the user-facing toggle (default
+    // ON). The string check covers settings that store booleans as text.
+    try {
+      const useTheme = await this.settings.getItem("theme:useThemeBackground");
+      if (useTheme === false || useTheme === "false") return null;
+    } catch (error) {
+      console.warn("Could not read theme:useThemeBackground:", error);
+    }
+
+    const themePreset = this.themes?.[this.currentTheme]?.["background-image"];
     return themePreset || null;
   }
 
@@ -673,13 +719,53 @@ class Themeing implements ThemeingInterface {
           document.body.style.backgroundSize = "cover";
           document.body.style.backgroundPosition = "center";
           document.body.style.backgroundRepeat = "no-repeat";
-          document.body.style.backgroundAttachment = "fixed";
+          // scroll, not fixed: Chromium has a long-standing bug where
+          // background-attachment:fixed inside an iframe fails to repaint
+          // after concurrent style mutations. This used to cause cold-
+          // loaded internal pages to never render the wallpaper.
+          document.body.style.backgroundAttachment = "scroll";
 
           document.documentElement.classList.add("has-background-image");
         }
 
+        // Only the host frame fans out to iframes; internal pages don't have children.
+        if (!window.location.pathname.includes("/internal/")) {
+          try {
+            document.querySelectorAll("iframe").forEach((frame) => {
+              const docEl = (frame as HTMLIFrameElement).contentDocument?.documentElement;
+              if (docEl) docEl.classList.add("has-background-image");
+            });
+          } catch (err) { /* expected for cross-origin frames */ }
+        }
+
         console.log("Applied background image successfully");
       } else {
+        // GUARDED REMOVE — applies to both /internal/ pages (their own
+        // body inline styles + class) and the host shell (its iframe-
+        // fanout class strip). A null resolveBackgroundImage() is most
+        // often a stale-read race artifact: ~3 Themeing instances on the
+        // host + 1 per iframe + ~12 SettingsAPI consumers all hammer the
+        // same /data/settings.json without locking. Any one of them can
+        // resolve null after another resolved truthy, then clobber the
+        // good paint.
+        //
+        // Before tearing anything down, re-read theme:user-background-
+        // image with a fresh getItem. If still present, this null was a
+        // race not a real "no image" — bail entirely and leave whatever
+        // was painted intact. A subsequent setBackgroundImage call (or
+        // the themeInit MutationObserver in /internal/ pages) will
+        // reconcile to the real state.
+        let stillHasUserBg = false;
+        try {
+          const userBg = await this.settings.getItem("theme:user-background-image");
+          if (userBg && typeof userBg === "string") stillHasUserBg = true;
+        } catch { /* read failed → fall through and remove */ }
+
+        if (stillHasUserBg) {
+          console.log("Skipped background-image remove: user upload still present (race guard)");
+          return;
+        }
+
         root.style.removeProperty("--background-image-url");
         root.style.removeProperty("--has-background-image");
 
@@ -691,6 +777,15 @@ class Themeing implements ThemeingInterface {
           document.body.style.removeProperty("background-attachment");
 
           document.documentElement.classList.remove("has-background-image");
+        }
+
+        if (!window.location.pathname.includes("/internal/")) {
+          try {
+            document.querySelectorAll("iframe").forEach((frame) => {
+              const docEl = (frame as HTMLIFrameElement).contentDocument?.documentElement;
+              if (docEl) docEl.classList.remove("has-background-image");
+            });
+          } catch (err) { /* expected for cross-origin frames */ }
         }
 
         console.log("Removed background image");

@@ -4,14 +4,14 @@
 // override them at runtime.
 
 :root {
-	--main: #cba6f7;
-	--bg-1: #1a1a25;
-	--bg-2: #11111b;
+	--main: rgba(199, 125, 255, 1);
+	--bg-1: rgba(10, 10, 10, 1);
+	--bg-2: rgba(12, 12, 12, 1);
 	--bg-3: var(
 		--bg-3-override,
 		color-mix(in oklab, var(--white) 15%, var(--bg-2))
 	);
-	--text: #ededed;
+	--text: rgba(178, 178, 178, 1);
 	--white: #ffffff;
 	--black: #000000;
 	--error: #f38ba8;

@@ -21,9 +21,33 @@ export class TabCloakManager {
     const doc = targetDocument || document;
 
     try {
+      // Legacy selector — "off" | "custom" | <preset id>.
       const tabCloakId = (await this.settings.getItem("tabCloak")) || "off";
 
-      if (tabCloakId === "off") {
+      // New T15 toggle. Privacy → Cloaking writes "true"/"false"
+      // strings via writeMap, but accept boolean defensively.
+      const autoCloakRaw = await this.settings.getItem("autoCloak");
+      const autoCloakOn =
+        autoCloakRaw === "true" || autoCloakRaw === true;
+
+      // New T15 URL-cloak boolean — currently no-op at this layer
+      // because the Tab class exposes no setDisplayUrl hook. Wired here
+      // so the read is visible to future implementers; favicon/title
+      // application below is reused when urlCloak is on so the user
+      // still gets disguised tab metadata even without URL hiding.
+      const urlCloakRaw = await this.settings.getItem("urlCloak");
+      const urlCloakOn = urlCloakRaw === true || urlCloakRaw === "true";
+      if (urlCloakOn) {
+        // No-op: the Tab/Frame layer has no setDisplayUrl method
+        // (see src/browser/tabs/types.ts). Tracked for a follow-up.
+        console.log(
+          "[tabCloak] urlCloak is enabled but no display-URL hook exists yet",
+        );
+      }
+
+      // If neither the legacy selector nor the new autoCloak toggle
+      // are active, restore defaults and exit.
+      if (tabCloakId === "off" && !autoCloakOn) {
         console.log("Tab cloak is disabled, restoring defaults");
         doc.title = "DayDream X";
         let link = doc.querySelector("link[rel~='icon']") as HTMLLinkElement;
@@ -40,11 +64,25 @@ export class TabCloakManager {
       let favicon = "";
 
       if (tabCloakId === "custom") {
+        // Legacy custom preset path — keep using legacy keys.
         title = (await this.settings.getItem("customTabTitle")) || "";
         favicon = (await this.settings.getItem("customTabFavicon")) || "";
-      } else {
+      } else if (tabCloakId !== "off") {
+        // Legacy preset path.
         title = (await this.settings.getItem("tabCloakTitle")) || "";
         favicon = (await this.settings.getItem("tabCloakFavicon")) || "";
+      }
+
+      // New T15 keys — when autoCloak is on (or when the user has
+      // configured custom values via the Cloaking → Editor subpage),
+      // these override anything from the legacy presets.
+      if (autoCloakOn) {
+        const newTitle =
+          (await this.settings.getItem("customTitle")) || "";
+        const newFavicon =
+          (await this.settings.getItem("customFavicon")) || "";
+        if (newTitle) title = newTitle;
+        if (newFavicon) favicon = newFavicon;
       }
 
       if (title) {

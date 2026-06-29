@@ -1,25 +1,25 @@
 :root {
-  --background-color: rgb(24, 24, 37);
-  --hover-background-color: rgba(203, 166, 247, 0.13);
-  --input-background-color: rgb(30, 30, 46);
-  --input-hover-background-color: rgba(30, 30, 46, 0.49);
-  --tab-bg-color: rgb(49, 50, 68);
-  --tab-active-bg-color: rgb(88, 91, 112);
-  --utility-background-color: rgb(49, 50, 68);
-  --dark-translucent-bg: rgba(88, 91, 112, 0.43);
+  --background-color: rgba(12, 12, 12, 1);
+  --hover-background-color: rgba(25, 25, 25, 0.13);
+  --input-background-color: rgba(10, 10, 10, 1);
+  --input-hover-background-color: rgba(10, 10, 10, 0.49);
+  --tab-bg-color: rgba(50, 50, 50, 1);
+  --tab-active-bg-color: rgba(90, 90, 90, 1);
+  --utility-background-color: rgba(50, 50, 50, 1);
+  --dark-translucent-bg: rgba(80, 80, 80, 0.43);
   --background-image: url("/res/DDX.bg.png");
   --logo: url("/res/logo.png");
 
-  --border-color: rgb(88, 91, 112);
+  --border-color: rgba(90, 90, 90, 1);
 
-  --text-color: rgb(205, 214, 244);
-  --hover-text-color: rgba(205, 214, 244, 0.7);
-  --active-text-color: rgba(203, 166, 247, 1);
+  --text-color: rgba(178, 178, 178, 1);
+  --hover-text-color: rgba(178, 178, 178, 0.8);
+  --active-text-color: rgba(128, 128, 128, 1);
 
   --tab-content-margin: 9px;
   --searchbar-width: calc(100% - calc(2 * 36px));
 
-  --main-color: rgb(203, 166, 247);
-  --muted: rgb(172, 176, 190);
-  --faded-main-color: rgba(203, 166, 247, 0.26);
+  --main-color: rgba(199, 125, 255, 1);
+  --muted: rgba(128, 128, 128, 1);
+  --faded-main-color: rgba(128, 128, 128, 0.26);
 }
