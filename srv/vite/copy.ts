@@ -48,10 +48,15 @@ const copyMap = {
     files: ["libcurl.wasm"],
     dest: routePaths.libcurl,
   },
-  // Background images and brand assets the NightLogin modal references
-  // at runtime as `${assetUrl}/bg.png`, `${assetUrl}/nightlogo.png`, etc.
-  // We pass `assetUrl: ""` (the default) at construction time so the modal
-  // resolves them against the served root — these copies put them there.
+  // Background image + logo the NightLogin modal fetches at runtime
+  // as `${assetUrl}/bg_alt.jpeg` and `${assetUrl}/nightlogo.png`.
+  // We pass `assetUrl: ""` so the modal resolves them against the served
+  // origin root — these copies put them there.
+  //
+  // Other assets shipped in @nightnetwork/night-auth/dist/login (bg.png,
+  // bg_alt_2.png, nightplus*.png, vite.svg) are only used by the package's
+  // demo `index.html` and are NOT referenced by night-login.umd.js or
+  // night-login.cdn.js, so we skip copying them. (Saves ~12 MB.)
   //
   // The UMD/ESM JavaScript bundles and CSS are NO LONGER copied: night-auth
   // 1.2.3 ships proper ESM entry points (`exports["."].import`), so DDX
@@ -60,16 +65,7 @@ const copyMap = {
   // src/pages/newtab/index.tsx:setupNightPlusButton.)
   auth: {
     path: authPath,
-    files: [
-      "vite.svg",
-      "nightlogo.png",
-      "bg_alt.jpeg",
-      "nightplus.png",
-      "nightplusheader.png",
-      "nightplus_icon.png",
-      "bg.png",
-      "bg_alt_2.png",
-    ],
+    files: ["nightlogo.png", "bg_alt.jpeg"],
     dest: routePaths.auth,
   },
   plusClient: {
