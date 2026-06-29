@@ -31,6 +31,7 @@ import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
 import { svgWrapperPlugin } from "./srv/vite/svg";
+import { relocatePagesPlugin } from "./srv/vite/relocate-pages";
 
 export default defineConfig({
   base: "./",
@@ -45,6 +46,7 @@ export default defineConfig({
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
     //vitePluginBundleObfuscator(obfuscationConfig as any),
+    relocatePagesPlugin(),
     svgWrapperPlugin(),
     {
       name: "strip-console-and-debugger",
@@ -209,7 +211,14 @@ export default defineConfig({
         top_retain: [],
         typeofs: true,
         unsafe: false,
-        unsafe_arrows: true,
+        // unsafe_arrows: true rewrites `function(){}` → `()=>{}` globally.
+        // That breaks any code that uses `new` on the rewritten function.
+        // libcurl.js (Emscripten output) does exactly this:
+        //   FS.FSStream = function(){};
+        //   FS.FSStream.prototype = {...};
+        //   new FS.FSStream(...)  // ← TypeError if rewritten to arrow
+        // Keep this off so Emscripten-style constructor patterns survive.
+        unsafe_arrows: false,
         unsafe_methods: true,
         unsafe_proto: false,
         unused: true,
