@@ -514,6 +514,12 @@ export class MenuManager implements MenuInterface {
     pinBtn.appendChild(iconSvg(isPinned ? "pin-filled" : "pin", 15));
     attachHoverBg(pinBtn);
     row.appendChild(pinBtn);
+    // Notify the toolbar buttons component so it picks up the pin
+    // change immediately (it caches the pin set otherwise).
+    pinBtn.addEventListener("click", () => {
+      const tb = (window as { extensionToolbar?: { markPinsDirty?: () => void } }).extensionToolbar;
+      tb?.markPinsDirty?.();
+    });
 
     // Overflow menu (⋯)
     const moreBtn = this.ui.createElement("button", {

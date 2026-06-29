@@ -1,10 +1,49 @@
 // src/core/helium/host/windows/events.ts
 //
-// chrome.windows.onFocusChanged emitted on window focus/blur. DDX is
-// single-window so the only valid windowId is 1 (or WINDOW_ID_NONE
-// = -1 on blur).
+// chrome.windows.* events. DDX is single-window so the only valid
+// windowId is 1 (or WINDOW_ID_NONE = -1 on blur).
 
 import type { ExtensionManager } from '@apis/extensions';
+
+/**
+ * Synthesized chrome.windows.Window object. Sourced from the host
+ * window's outer dimensions. Used by:
+ *   - boot-time onCreated emit (so extensions that record window
+ *     creation at install time see the host window appear)
+ *   - onBoundsChanged on resize
+ */
+function buildWindowSnapshot(): {
+  id: number;
+  focused: boolean;
+  alwaysOnTop: boolean;
+  incognito: boolean;
+  state: 'normal' | 'fullscreen' | 'maximized' | 'minimized';
+  type: 'normal';
+  top?: number;
+  left?: number;
+  width?: number;
+  height?: number;
+} {
+  let w = 0, h = 0, top = 0, left = 0;
+  try {
+    w = window.outerWidth || window.innerWidth;
+    h = window.outerHeight || window.innerHeight;
+    top = window.screenY ?? 0;
+    left = window.screenX ?? 0;
+  } catch { /* swallow */ }
+  return {
+    id: 1,
+    focused: typeof document !== 'undefined' ? document.hasFocus() : true,
+    alwaysOnTop: false,
+    incognito: false,
+    state: 'normal',
+    type: 'normal',
+    top,
+    left,
+    width: w,
+    height: h,
+  };
+}
 
 export function installWindowEventListeners(extMgr: ExtensionManager): () => void {
   const onFocus = (): void => {
@@ -13,10 +52,35 @@ export function installWindowEventListeners(extMgr: ExtensionManager): () => voi
   const onBlur = (): void => {
     extMgr.fanoutEvent('chrome.windows.onFocusChanged', [-1]);
   };
+
+  // onBoundsChanged on resize. Debounced via raf so a drag doesn't
+  // fire 60 events/s — last value wins.
+  let rafPending: number | null = null;
+  const onResize = (): void => {
+    if (rafPending != null) return;
+    rafPending = requestAnimationFrame(() => {
+      rafPending = null;
+      extMgr.fanoutEvent('chrome.windows.onBoundsChanged', [buildWindowSnapshot()]);
+    });
+  };
+
   window.addEventListener('focus', onFocus);
   window.addEventListener('blur', onBlur);
+  window.addEventListener('resize', onResize);
+
+  // Boot-time onCreated emit. Some extensions track "first window
+  // seen since BG started" and re-init UI on each new one — we fire
+  // exactly one event for the synthetic DDX window. Fire on the next
+  // microtask so any extension that registers `onCreated.addListener`
+  // synchronously during BG init catches it.
+  queueMicrotask(() => {
+    extMgr.fanoutEvent('chrome.windows.onCreated', [buildWindowSnapshot()]);
+  });
+
   return () => {
     window.removeEventListener('focus', onFocus);
     window.removeEventListener('blur', onBlur);
+    window.removeEventListener('resize', onResize);
+    if (rafPending != null) cancelAnimationFrame(rafPending);
   };
 }

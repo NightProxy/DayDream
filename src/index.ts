@@ -148,8 +148,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 	);
 	window.proxy = proxy;
 
-	const proxySetting = ((await settingsAPI.getItem('proxy')) ??
-		'sj') as string;
+	// Backend swap removed in round-2 settings redesign — Scramjet ('sj') is the only
+	// supported backend. The old `proxy` SettingsAPI key (auto/sj/uv) is no longer read.
+	// Legacy settings page still writes it harmlessly.
+	const proxySetting = 'sj' as const;
 	let swConfigSettings: Record<string, any> = {};
 	var swConfig = {
 		sj: {
@@ -160,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 				console.log('Scramjet Service Worker registered.');
 			}
 		},
+		// 'auto' was the "no service worker" mode; unreachable since round-2 backend swap removal.
 		auto: {
 			file: null,
 			config: null,
@@ -286,6 +289,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// Replay persisted active overrides now that extensions are
 		// spawned (so `getManifest(extId)` can resolve).
 		await urlOverrides.applyAll((extId) => extensionManager.getManifest(extId));
+
+		// Mount per-extension toolbar buttons (browser-action + page-action)
+		// inside the urlbar-ring. Render is already in the shadow DOM at
+		// this point. Toolbar self-subscribes to lifecycle events
+		// (tabSelected, install/uninstall, action-state mutations) for
+		// auto-refresh.
+		try {
+			const { ExtensionToolbarButtons } = await import('@browser/extensions/toolbarButtons');
+			const toolbar = new ExtensionToolbarButtons();
+			const tryMount = (): void => {
+				if (!toolbar.install()) {
+					// urlbar-ring not in DOM yet — retry next frame.
+					requestAnimationFrame(tryMount);
+				}
+			};
+			tryMount();
+			(window as any).extensionToolbar = toolbar;
+		} catch (err) {
+			console.warn('[index] extension toolbar mount failed:', err);
+		}
+
+		// Mount the download shelf. Slot is in render.ts (hidden by
+		// default). Shelf subscribes to DownloadsManager events and
+		// auto-shows when the first download arrives.
+		try {
+			const { DownloadShelf } = await import('@browser/downloads/shelf');
+			const shelf = new DownloadShelf();
+			const tryMount = (): void => {
+				if (!shelf.install()) requestAnimationFrame(tryMount);
+			};
+			tryMount();
+			window.downloadShelf = shelf;
+		} catch (err) {
+			console.warn('[index] download shelf mount failed:', err);
+		}
+
+		// Mount the lock-icon dropdown. Wires the `[data-component=
+		// "site-info"]` button to a floating panel showing the
+		// current site's permissions + cookie count + "Clear site
+		// data" button.
+		try {
+			const { LockDropdown } = await import('@browser/sitePermissions/lockDropdown');
+			const lock = new LockDropdown();
+			const tryMount = (): void => {
+				if (!lock.install()) requestAnimationFrame(tryMount);
+			};
+			tryMount();
+			window.lockDropdown = lock;
+		} catch (err) {
+			console.warn('[index] lock dropdown mount failed:', err);
+		}
 
 		const startupBehavior =
 			(await settingsAPI.getItem('startupBehavior')) || 'newtab';

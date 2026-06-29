@@ -3,9 +3,41 @@
 import { register, type HandlerContext } from './index';
 import { DDXError } from '../types';
 import type { TabTarget, TabId, ElementHandle, FrameDetails } from '../api';
+import { decodeIframeUrl } from '@browser/tabs/urlDecoder';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const POLL_MS = 50;
+
+/**
+ * Safely read the current human-readable URL of an iframe.
+ *
+ * Three things this guards against:
+ *
+ *   1. **Cross-origin throws.** Accessing
+ *      `iframe.contentWindow.location.href` on a frame whose document
+ *      is in a transient cross-origin state (mid-navigation, srcdoc
+ *      reset, scramjet rehydrating) throws synchronously. uBlock
+ *      Origin's popup hit exactly this path: `webNavigation.getFrame`
+ *      returned a rejected promise / undefined URL, uBO's
+ *      `safePunycodeToUnicode(undefined)` blew up at
+ *      `mapDomain(undefined).split('.')`. Wrap the access in
+ *      try/catch and fall back to `iframe.src`.
+ *
+ *   2. **Encoded URL leak.** `iframe.contentWindow.location.href`
+ *      and `iframe.src` for proxied tabs are scramjet-encoded
+ *      gibberish like `https://service.tomp.app/scramjet/url/...`.
+ *      Extensions like uBO derive hostnames from this URL — they need
+ *      the REAL site URL (`https://example.com/page`), not the
+ *      proxy host. `decodeProxiedUrl` reverses the encoding.
+ *
+ *   3. **Empty / null safety.** Always returns a string (never
+ *      undefined / null) so downstream consumers don't crash on
+ *      property access.
+ */
+function safeIframeUrl(iframe: HTMLIFrameElement | null, ctx: HandlerContext): string {
+	const proxy = ctx.proxy as Parameters<typeof decodeIframeUrl>[1];
+	return decodeIframeUrl(iframe, proxy) || (iframe?.src ?? '');
+}
 
 async function pollUntil<T>(predicate: () => T | null, timeoutMs: number): Promise<T> {
 	const deadline = Date.now() + timeoutMs;
@@ -28,8 +60,7 @@ function isVisible(el: Element): boolean {
 
 function mainFrameDetails(ctx: HandlerContext, tabId: TabId): FrameDetails {
 	const iframe = ctx.tabResolver.resolveIframe(tabId);
-	const url = (iframe.contentWindow as Window | null)?.location.href ?? iframe.src;
-	return { frameId: 0, parentFrameId: -1, url };
+	return { frameId: 0, parentFrameId: -1, url: safeIframeUrl(iframe, ctx) };
 }
 
 register('webNavigation.getFrame', async (ctx, args: { tabId: TabId; frameId: number }) => {
@@ -49,9 +80,10 @@ register('webNavigation.waitForLoad', async (ctx, args: [TabTarget, { timeout?: 
 	const timeout = opts?.timeout ?? DEFAULT_TIMEOUT_MS;
 	const url = await pollUntil(() => {
 		const doc = iframe.contentDocument;
-		if (doc?.readyState === 'complete') {
-			return iframe.contentWindow?.location.href ?? iframe.src;
-		}
+		// readyState read can also throw cross-origin; guard it.
+		let ready: string | undefined;
+		try { ready = doc?.readyState; } catch { ready = undefined; }
+		if (ready === 'complete') return safeIframeUrl(iframe, ctx) || '<unknown>';
 		return null;
 	}, timeout);
 	return { url };
@@ -60,11 +92,11 @@ register('webNavigation.waitForLoad', async (ctx, args: [TabTarget, { timeout?: 
 register('webNavigation.waitForNavigation', async (ctx, args: [TabTarget, { timeout?: number; urlPattern?: string }?] | { target: TabTarget; opts?: { timeout?: number; urlPattern?: string } }) => {
 	const [target, opts] = Array.isArray(args) ? args : [args.target, args.opts];
 	const iframe = ctx.tabResolver.resolveIframe(target.tabId);
-	const start = iframe.contentWindow?.location.href ?? iframe.src;
+	const start = safeIframeUrl(iframe, ctx);
 	const pattern = opts?.urlPattern;
 	const url = await pollUntil(() => {
-		const u = iframe.contentWindow?.location.href ?? iframe.src;
-		if (u === start) return null;
+		const u = safeIframeUrl(iframe, ctx);
+		if (!u || u === start) return null;
 		if (pattern && !u.includes(pattern)) return null;
 		return u;
 	}, opts?.timeout ?? DEFAULT_TIMEOUT_MS);

@@ -6,6 +6,7 @@
 import { register } from './index';
 import { getDoc, resolveRef, isVisible, snapshotElements } from './_dom_helpers';
 import type { TabTarget, ElementHandle } from '../api';
+import { decodeIframeUrl } from '@browser/tabs/urlDecoder';
 
 function unpack2<A, B>(args: unknown): [A, B] {
 	if (Array.isArray(args)) return [args[0] as A, args[1] as B];
@@ -25,10 +26,18 @@ register('dom.readPage', async (ctx, args: [TabTarget, { interactiveOnly?: boole
 		: [args as TabTarget, undefined];
 	const iframe = ctx.tabResolver.resolveIframe(target.tabId);
 	const doc = getDoc(iframe);
+	// Same safety as webNavigation.getFrame: decode the proxied URL
+	// so consumers see the real site URL, not scramjet gibberish, and
+	// the read can't throw on cross-origin contentWindow access.
+	const url = decodeIframeUrl(iframe, ctx.proxy as Parameters<typeof decodeIframeUrl>[1]) || iframe.src;
+	let title = '';
+	try { title = doc.title ?? ''; } catch { /* cross-origin */ }
+	let text = '';
+	try { text = (doc.body?.innerText ?? '').slice(0, 50_000); } catch { /* cross-origin */ }
 	return {
-		url: iframe.contentWindow?.location.href ?? iframe.src,
-		title: doc.title,
-		text: (doc.body?.innerText ?? '').slice(0, 50_000),
+		url,
+		title,
+		text,
 		elements: snapshotElements(doc, opts),
 	};
 });

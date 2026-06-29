@@ -1,138 +1,114 @@
 // src/core/helium/host/downloads/handlers.ts
 //
-// chrome.downloads.* host handlers (spec §26.1).
+// chrome.downloads.* host handlers — thin delegation layer over the
+// host-side DownloadsManager (src/apis/downloads.ts).
 //
-// `download()` is real: fetches the requested URL and triggers a
-// browser-native download via an anchor click on a Blob URL. This
-// works for any extension that needs to save data the user can
-// access (filter lists, exports, generated artifacts).
+// All methods translate Chrome's argument shape into the manager's
+// API and proxy the result. This means extensions get:
+//   - Real onCreated / onChanged / onErased events (fanned out by
+//     the manager's changeListener; wired in extensions.ts).
+//   - Real search() that returns persisted history.
+//   - Real pause / resume / cancel / erase wired through the
+//     current provider (default web provider supports cancel; other
+//     providers may add pause/resume).
+//   - Real download IDs that round-trip across all methods.
 //
-// The rest of the surface is still stubbed:
-//   - search           → []  (no download history maintained)
-//   - setShelfEnabled  → no-op
-//   - acceptDanger     → no-op
-//   - pause/resume/cancel/remove/erase/open/show → throw 'not_supported'
+// chrome.downloads.acceptDanger / setShelfEnabled / setUiOptions remain
+// no-ops — DDX has no download shelf UI surface (yet).
 //
-// Events (onCreated, onChanged, onErased, onDeterminingFilename)
-// never fire — there's no real download manager to observe.
-//
-// Limitations vs real Chrome:
-//   - returned download id is an opaque counter, not usable with
-//     other download methods (which all throw)
-//   - `conflictAction` is ignored (Chrome's "uniquify" / "overwrite"
-//     / "prompt" all just go through the browser's default behavior)
-//   - `headers` and `method:'POST' + body` work but require the
-//     extension to have host_permissions for the URL (the fetch
-//     goes through Scramjet's proxy path)
+// chrome.downloads.getFileIcon / show / showDefaultFolder / open throw
+// because the default web provider has no filesystem accounting
+// (Blob URL + anchor click). Native providers may implement them.
 
 import type { ExtensionContext } from '../../extfs/types';
 
 function notSupported(method: string): never {
-	throw new Error(`chrome.downloads.${method} is not supported`);
-}
-
-let nextDownloadId = 1;
-
-interface DownloadOpts {
-	url?: string;
-	filename?: string;
-	method?: 'GET' | 'POST';
-	headers?: Array<{ name: string; value: string }>;
-	body?: string;
-	conflictAction?: 'uniquify' | 'overwrite' | 'prompt';
-	saveAs?: boolean;
+	throw new Error(
+		`chrome.downloads.${method} is not supported by the current provider`,
+	);
 }
 
 export class DownloadsHandlers {
+	private async mgr(): Promise<import('@apis/downloads').DownloadsManager> {
+		const { DownloadsManager } = await import('@apis/downloads');
+		return DownloadsManager.getInstance();
+	}
+
 	download = async (
 		_ctx: ExtensionContext,
 		args: unknown[],
 	): Promise<number> => {
-		const opts = (args[0] ?? {}) as DownloadOpts;
+		const opts = (args[0] ?? {}) as {
+			url?: string;
+			filename?: string;
+			method?: 'GET' | 'POST';
+			headers?: Array<{ name: string; value: string }>;
+			body?: string;
+			conflictAction?: 'uniquify' | 'overwrite' | 'prompt';
+			saveAs?: boolean;
+		};
 		if (typeof opts.url !== 'string' || opts.url.length === 0) {
 			throw new Error('chrome.downloads.download requires a url');
 		}
-		// Build fetch init from the optional options. We honor method,
-		// headers, body; everything else (conflictAction, saveAs) is
-		// a no-op because we don't drive the browser's download UI.
-		const init: RequestInit = { method: opts.method ?? 'GET' };
-		if (Array.isArray(opts.headers) && opts.headers.length > 0) {
-			init.headers = opts.headers.reduce<Record<string, string>>(
-				(acc, h) => {
-					if (typeof h?.name === 'string' && typeof h?.value === 'string') {
-						acc[h.name] = h.value;
-					}
-					return acc;
-				},
-				{},
-			);
-		}
-		if (typeof opts.body === 'string') init.body = opts.body;
-
-		const id = nextDownloadId++;
-
-		// Run the fetch asynchronously; the chrome.downloads.download
-		// contract is to return the id immediately and let the caller
-		// observe completion via chrome.downloads.onChanged (which we
-		// don't fire — caveat noted in the file header).
-		void (async () => {
-			try {
-				const res = await fetch(opts.url!, init);
-				if (!res.ok) {
-					console.warn(
-						`[helium/downloads] fetch ${opts.url} failed:`,
-						res.status,
-						res.statusText,
-					);
-					return;
-				}
-				const blob = await res.blob();
-				const url = URL.createObjectURL(blob);
-				try {
-					const a = document.createElement('a');
-					a.href = url;
-					a.download = opts.filename ?? deriveFilenameFromUrl(opts.url!);
-					a.style.display = 'none';
-					document.body.appendChild(a);
-					a.click();
-					a.remove();
-				} finally {
-					// Defer revocation so the browser has time to start
-					// the download. 30s is generous; real browsers
-					// typically need <1s.
-					setTimeout(() => URL.revokeObjectURL(url), 30_000);
-				}
-			} catch (err) {
-				console.warn(
-					'[helium/downloads] download failed:',
-					opts.url,
-					err,
-				);
-			}
-		})();
-
-		return id;
+		const mgr = await this.mgr();
+		return mgr.startDownload({
+			url: opts.url,
+			...(opts.filename ? { filename: opts.filename } : {}),
+			...(opts.method ? { method: opts.method } : {}),
+			...(opts.headers ? { headers: opts.headers } : {}),
+			...(typeof opts.body === 'string' ? { body: opts.body } : {}),
+			...(opts.conflictAction ? { conflictAction: opts.conflictAction } : {}),
+			...(typeof opts.saveAs === 'boolean' ? { saveAs: opts.saveAs } : {}),
+		});
 	};
 
 	search = async (
 		_ctx: ExtensionContext,
-		_args: unknown[],
-	): Promise<unknown[]> => [];
+		args: unknown[],
+	): Promise<unknown[]> => {
+		const query = (args[0] ?? {}) as Parameters<
+			import('@apis/downloads').DownloadsManager['search']
+		>[0];
+		const mgr = await this.mgr();
+		return mgr.search(query);
+	};
 
-	pause = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
-		notSupported('pause');
+	pause = async (_ctx: ExtensionContext, args: unknown[]): Promise<void> => {
+		const id = args[0];
+		if (typeof id !== 'number') throw new Error('chrome.downloads.pause requires id');
+		const mgr = await this.mgr();
+		await mgr.pause(id);
+	};
 
-	resume = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
-		notSupported('resume');
+	resume = async (_ctx: ExtensionContext, args: unknown[]): Promise<void> => {
+		const id = args[0];
+		if (typeof id !== 'number') throw new Error('chrome.downloads.resume requires id');
+		const mgr = await this.mgr();
+		await mgr.resume(id);
+	};
 
-	cancel = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
-		notSupported('cancel');
+	cancel = async (_ctx: ExtensionContext, args: unknown[]): Promise<void> => {
+		const id = args[0];
+		if (typeof id !== 'number') throw new Error('chrome.downloads.cancel requires id');
+		const mgr = await this.mgr();
+		await mgr.cancel(id);
+	};
 
-	remove = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
-		notSupported('remove');
+	remove = async (_ctx: ExtensionContext, args: unknown[]): Promise<number[]> => {
+		const query = (args[0] ?? {}) as Parameters<
+			import('@apis/downloads').DownloadsManager['erase']
+		>[0];
+		const mgr = await this.mgr();
+		return mgr.erase(query);
+	};
 
-	erase = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
-		notSupported('erase');
+	erase = async (_ctx: ExtensionContext, args: unknown[]): Promise<number[]> => {
+		const query = (args[0] ?? {}) as Parameters<
+			import('@apis/downloads').DownloadsManager['erase']
+		>[0];
+		const mgr = await this.mgr();
+		return mgr.erase(query);
+	};
 
 	open = async (_ctx: ExtensionContext, _args: unknown[]): Promise<never> =>
 		notSupported('open');
@@ -149,30 +125,13 @@ export class DownloadsHandlers {
 		_ctx: ExtensionContext,
 		_args: unknown[],
 	): Promise<void> => {
-		// No-op: Helium does not surface a danger prompt.
+		// No-op: DDX has no danger prompt UI.
 	};
 
 	setShelfEnabled = async (
 		_ctx: ExtensionContext,
 		_args: unknown[],
 	): Promise<void> => {
-		// No-op: Helium has no download shelf to toggle.
+		// No-op: DDX has no download shelf to toggle.
 	};
-}
-
-/**
- * Pull a sensible filename out of the URL when the caller didn't
- * provide one. Strips query params, decodes percent-escapes, and
- * falls back to `download` if no segment is recoverable.
- */
-function deriveFilenameFromUrl(url: string): string {
-	try {
-		const u = new URL(url);
-		const segments = u.pathname.split('/').filter((s) => s.length > 0);
-		const last = segments[segments.length - 1];
-		if (last) return decodeURIComponent(last);
-	} catch {
-		/* ignore parse failures */
-	}
-	return 'download';
 }

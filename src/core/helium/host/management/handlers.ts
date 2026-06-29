@@ -39,10 +39,11 @@ export interface ExtensionInfo {
 	shortName: string;
 	description: string;
 	version: string;
+	versionName?: string;
 	mayDisable: boolean;
 	enabled: boolean;
 	isApp: false;
-	type: 'extension';
+	type: 'extension' | 'theme';
 	appLaunchUrl?: string;
 	homepageUrl?: string;
 	updateUrl?: string;
@@ -108,6 +109,7 @@ export function buildExtensionInfo(
 		description?: string;
 		homepage_url?: string;
 		update_url?: string;
+		version_name?: string;
 	};
 	const info: ExtensionInfo = {
 		id: entry.id,
@@ -118,12 +120,17 @@ export function buildExtensionInfo(
 		mayDisable: true,
 		enabled: entry.enabled,
 		isApp: false,
-		type: 'extension',
+		type: (manifest as any)?.theme ? 'theme' : 'extension',
 		offlineEnabled: false,
 		permissions: manifestPermissions(manifest),
 		hostPermissions: manifestHostPermissions(manifest),
 		installType: 'normal',
 	};
+	// Optional fields, only set if present in manifest. `version_name`
+	// is a user-friendly version label (e.g. "v3.0 beta") distinct from
+	// the strict numeric `version`. Real Chrome surfaces it here when
+	// declared; some extensions check for it.
+	if (typeof m.version_name === 'string') info.versionName = m.version_name;
 	if (typeof m.homepage_url === 'string') info.homepageUrl = m.homepage_url;
 	if (typeof m.update_url === 'string') info.updateUrl = m.update_url;
 	const optionsUrl = buildOptionsUrl(entry, manifest);
@@ -183,7 +190,7 @@ export class ManagementHandlers {
 			mayDisable: true,
 			enabled: true,
 			isApp: false,
-			type: 'extension',
+			type: (ctx.manifest as any)?.theme ? 'theme' : 'extension',
 			offlineEnabled: false,
 			permissions: manifestPermissions(ctx.manifest),
 			hostPermissions: manifestHostPermissions(ctx.manifest),

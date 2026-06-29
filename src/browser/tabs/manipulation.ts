@@ -42,13 +42,18 @@ export class TabManipulation {
 	};
 
 	/**
-	 * Hard reload: bypass the proxy/HTTP cache by appending a unique
-	 * cache-busting query param to the iframe src and reassigning.
+	 * Hard reload — "Empty Cache and Hard Reload" variant.
 	 *
-	 * The "Empty Cache and Hard Reload" variant (clear scramjet's cache
-	 * plugin too) is left out until the per-site permissions system lands —
-	 * cache state will live there. This implementation handles the
-	 * common case (force a fresh fetch ignoring browser HTTP cache).
+	 * Bumps the per-origin cache epoch via SiteDataManager (which also
+	 * invalidates the Scramjet HTTP cache plugin if present) AND
+	 * appends a unique cache-busting query param to force network
+	 * revalidation. The two together approximate Chrome's
+	 * Ctrl+Shift+R behavior.
+	 *
+	 * Best-effort: if SiteDataManager isn't loaded yet (very early
+	 * boot), the cache-buster query param alone is enough to force a
+	 * fresh network round-trip — the HTTP proxy honors it as a new
+	 * request URL.
 	 */
 	hardReloadTab = (tabId: string) => {
 		const tabInfo = this.tabs.getTabById(tabId);
@@ -59,6 +64,19 @@ export class TabManipulation {
 
 		try {
 			const url = new URL(currentSrc);
+			// Fire-and-forget cache eviction via SiteDataManager. We
+			// pass the decoded URL when available so the host matches
+			// the cookie/cache namespace of the displayed site rather
+			// than the scramjet-encoded one.
+			let originForClear = currentSrc;
+			try {
+				const decoded = (this.tabs.proxy as { decodeUrl?: (u: string) => string }).decodeUrl?.(currentSrc);
+				if (decoded) originForClear = decoded;
+			} catch { /* swallow */ }
+			void import('@apis/siteData').then(({ SiteDataManager }) => {
+				try { void SiteDataManager.getInstance().clearCache(originForClear); }
+				catch { /* swallow */ }
+			}).catch(() => { /* manager not available */ });
 			// Use a stable parameter key so back-to-back hard-reloads don't
 			// pile up multiple cache-bust params on the URL.
 			url.searchParams.set('__ddxHardReload', String(Date.now()));

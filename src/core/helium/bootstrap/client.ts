@@ -266,6 +266,8 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['declarativeNetRequest', 'getEnabledRulesets'],         'chrome.declarativeNetRequest.getEnabledRulesets'],
   [['declarativeNetRequest', 'getAvailableStaticRules'],    'chrome.declarativeNetRequest.getAvailableStaticRules'],
   [['declarativeNetRequest', 'getAvailableStaticRuleCount'],'chrome.declarativeNetRequest.getAvailableStaticRuleCount'],
+  [['declarativeNetRequest', 'getDisabledRuleIds'],         'chrome.declarativeNetRequest.getDisabledRuleIds'],
+  [['declarativeNetRequest', 'updateStaticRules'],          'chrome.declarativeNetRequest.updateStaticRules'],
   [['declarativeNetRequest', 'setExtensionActionOptions'],  'chrome.declarativeNetRequest.setExtensionActionOptions'],
   [['declarativeNetRequest', 'getMatchedRules'],            'chrome.declarativeNetRequest.getMatchedRules'],
   [['declarativeNetRequest', 'isRegexSupported'],           'chrome.declarativeNetRequest.isRegexSupported'],
@@ -340,10 +342,73 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['idle', 'queryState'],            'chrome.idle.queryState'],
   [['idle', 'setDetectionInterval'],  'chrome.idle.setDetectionInterval'],
 
+  // ---- runtime.getContexts (MV3) ----
+  [['runtime', 'getContexts'],        'chrome.runtime.getContexts'],
+
   // ---- offscreen ----
   [['offscreen', 'createDocument'],  'chrome.offscreen.createDocument'],
   [['offscreen', 'closeDocument'],   'chrome.offscreen.closeDocument'],
   [['offscreen', 'hasDocument'],     'chrome.offscreen.hasDocument'],
+
+  // ---- search ----
+  [['search', 'query'],              'chrome.search.query'],
+
+  // ---- sessions ----
+  [['sessions', 'getDevices'],          'chrome.sessions.getDevices'],
+  [['sessions', 'getRecentlyClosed'],   'chrome.sessions.getRecentlyClosed'],
+  [['sessions', 'restore'],             'chrome.sessions.restore'],
+
+  // ---- topSites ----
+  [['topSites', 'get'],                 'chrome.topSites.get'],
+
+  // ---- browsingData ----
+  [['browsingData', 'remove'],            'chrome.browsingData.remove'],
+  [['browsingData', 'removeAppcache'],    'chrome.browsingData.removeAppcache'],
+  [['browsingData', 'removeCache'],       'chrome.browsingData.removeCache'],
+  [['browsingData', 'removeCacheStorage'],'chrome.browsingData.removeCacheStorage'],
+  [['browsingData', 'removeCookies'],     'chrome.browsingData.removeCookies'],
+  [['browsingData', 'removeDownloads'],   'chrome.browsingData.removeDownloads'],
+  [['browsingData', 'removeFileSystems'], 'chrome.browsingData.removeFileSystems'],
+  [['browsingData', 'removeFormData'],    'chrome.browsingData.removeFormData'],
+  [['browsingData', 'removeHistory'],     'chrome.browsingData.removeHistory'],
+  [['browsingData', 'removeIndexedDB'],   'chrome.browsingData.removeIndexedDB'],
+  [['browsingData', 'removeLocalStorage'],'chrome.browsingData.removeLocalStorage'],
+  [['browsingData', 'removePasswords'],   'chrome.browsingData.removePasswords'],
+  [['browsingData', 'removePluginData'],  'chrome.browsingData.removePluginData'],
+  [['browsingData', 'removeServiceWorkers'],'chrome.browsingData.removeServiceWorkers'],
+  [['browsingData', 'removeWebSQL'],      'chrome.browsingData.removeWebSQL'],
+  [['browsingData', 'settings'],          'chrome.browsingData.settings'],
+
+  // ---- tabGroups (MV3) ----
+  [['tabGroups', 'get'],    'chrome.tabGroups.get'],
+  [['tabGroups', 'move'],   'chrome.tabGroups.move'],
+  [['tabGroups', 'query'],  'chrome.tabGroups.query'],
+  [['tabGroups', 'update'], 'chrome.tabGroups.update'],
+
+  // ---- readingList (MV3) ----
+  [['readingList', 'addEntry'],    'chrome.readingList.addEntry'],
+  [['readingList', 'query'],       'chrome.readingList.query'],
+  [['readingList', 'removeEntry'], 'chrome.readingList.removeEntry'],
+  [['readingList', 'updateEntry'], 'chrome.readingList.updateEntry'],
+
+  // ---- dns (MV3) ----
+  [['dns', 'resolve'], 'chrome.dns.resolve'],
+
+  // ---- debugger ----
+  [['debugger', 'attach'],      'chrome.debugger.attach'],
+  [['debugger', 'detach'],      'chrome.debugger.detach'],
+  [['debugger', 'sendCommand'], 'chrome.debugger.sendCommand'],
+  [['debugger', 'getTargets'],  'chrome.debugger.getTargets'],
+
+  // ---- declarativeContent.onPageChanged rule manipulation ----
+  // RPC overlay replaces the `DeclarativeEvent` methods on the
+  // `onPageChanged` instance so addRules / removeRules / getRules
+  // hit host-side `DeclarativeContentHandlers`. Synthetic RPC keys
+  // because Chrome's API doesn't expose top-level addRules; we use
+  // the path-based replacement of `installRpcBindings`.
+  [['declarativeContent', 'onPageChanged', 'addRules'],    'chrome.declarativeContent.addRules'],
+  [['declarativeContent', 'onPageChanged', 'removeRules'], 'chrome.declarativeContent.removeRules'],
+  [['declarativeContent', 'onPageChanged', 'getRules'],    'chrome.declarativeContent.getRules'],
 ];
 
 (function main() {
@@ -436,6 +501,7 @@ const RPC_BINDINGS: Array<[string[], string]> = [
     // queued pre-handshake calls now resolve.
     resolveChannel(channel);
     installRuntimeOnMessageHandler(chrome, channel);
+    installRuntimeConnect(chrome, channel);
     installEventRouter(chrome, channel);
     installWebRequestEventBindings(chrome, channel);
     resolveReady();
@@ -571,25 +637,169 @@ function installRpcBindings(
  * is reused here so the bootstrap and the host-side relay agree on
  * behaviour.
  */
+/**
+ * Replace `chrome.runtime.connect` (and `chrome.tabs.connect`) with
+ * real port implementations that request a host-allocated portId
+ * via RPC, then send port-msg / port-close events through the
+ * channel.
+ *
+ * Wire flow (BG-initiated → CS):
+ *   1. BG: `chrome.tabs.connect(tabId, {name})`
+ *   2. → request `__helium_bg_connect_tab__` with {tabId, name}
+ *   3. ← host returns {portId} after registering the port
+ *   4. BG wraps in BgInitiatedPort; subsequent port.postMessage
+ *      sends `chrome.runtime.port-msg-bg-to-cs` events; CS receives
+ *      via the existing port-msg relay.
+ *
+ * Same shape for runtime.connect: `__helium_bg_connect_runtime__`
+ * with {targetExtId?, name}.
+ *
+ * If the host doesn't yet implement these RPCs, the returned port's
+ * onMessage / onDisconnect fire normally (it's still a valid Port
+ * object) but no real traffic flows. Extensions degrade gracefully.
+ */
+function installRuntimeConnect(
+  chrome: any,
+  channel: ExtensionBridgeChannel,
+): void {
+  const makePort = (
+    portIdPromise: Promise<number>,
+    name: string,
+  ): unknown => {
+    const onMessage = makeBgEvent();
+    const onDisconnect = makeBgEvent();
+    let disconnected = false;
+    let resolvedPortId: number | null = null;
+    const queuedSends: unknown[] = [];
+
+    void (async () => {
+      try {
+        const portId = await portIdPromise;
+        if (typeof portId !== 'number' || portId < 0) {
+          // Host rejected (target not running / not externally_connectable / etc.)
+          disconnected = true;
+          onDisconnect._dispatch([]);
+          return;
+        }
+        resolvedPortId = portId;
+        bgPorts.set(portId, {
+          portId, name, sender: { id: chrome.runtime.id },
+          channel,
+          disconnected: false,
+          _receiveMessage(msg: unknown) {
+            if (disconnected) return;
+            onMessage._dispatch([msg]);
+          },
+          _hostClosed() {
+            if (disconnected) return;
+            disconnected = true;
+            onDisconnect._dispatch([]);
+          },
+          postMessage() { /* never called externally */ },
+          disconnect() { /* never called externally */ },
+          onMessage,
+          onDisconnect,
+        } as unknown as BgPort);
+        // Drain queued sends
+        for (const msg of queuedSends) {
+          channel.sendEvent('chrome.runtime.port-msg-bg-to-cs', [{ portId, message: msg }]);
+        }
+        queuedSends.length = 0;
+      } catch (err) {
+        console.warn('[helium/runtime.connect] host RPC failed:', err);
+        disconnected = true;
+        onDisconnect._dispatch([]);
+      }
+    })();
+
+    return {
+      name,
+      sender: undefined,
+      onMessage,
+      onDisconnect,
+      postMessage(msg: unknown) {
+        if (disconnected) return;
+        if (resolvedPortId == null) {
+          queuedSends.push(msg);
+          return;
+        }
+        channel.sendEvent('chrome.runtime.port-msg-bg-to-cs', [{
+          portId: resolvedPortId, message: msg,
+        }]);
+      },
+      disconnect() {
+        if (disconnected) return;
+        disconnected = true;
+        if (resolvedPortId != null) {
+          channel.sendEvent('chrome.runtime.port-close-bg-initiated', [{
+            portId: resolvedPortId,
+          }]);
+          bgPorts.delete(resolvedPortId);
+        }
+        onDisconnect._dispatch([]);
+      },
+    };
+  };
+
+  // chrome.runtime.connect(extensionId?, connectInfo?) → Port
+  chrome.runtime.connect = (...args: unknown[]): unknown => {
+    let extId: string | undefined;
+    let connectInfo: { name?: string; includeTlsChannelId?: boolean } | undefined;
+    if (typeof args[0] === 'string') {
+      extId = args[0];
+      connectInfo = args[1] as typeof connectInfo;
+    } else {
+      connectInfo = args[0] as typeof connectInfo;
+    }
+    const name = connectInfo?.name ?? '';
+    const portIdPromise = (async (): Promise<number> => {
+      const r = await channel.request('__helium_bg_connect_runtime__', {
+        args: [{ targetExtId: extId ?? chrome.runtime.id, name }],
+      });
+      return (r as { portId?: number })?.portId ?? -1;
+    })();
+    return makePort(portIdPromise, name);
+  };
+
+  // chrome.tabs.connect(tabId, connectInfo) → Port
+  if (chrome.tabs) {
+    chrome.tabs.connect = (...args: unknown[]): unknown => {
+      const tabId = typeof args[0] === 'number' ? args[0] : -1;
+      const connectInfo = args[1] as { name?: string; frameId?: number } | undefined;
+      const name = connectInfo?.name ?? '';
+      const portIdPromise = (async (): Promise<number> => {
+        const r = await channel.request('__helium_bg_connect_tab__', {
+          args: [{ tabId, name, frameId: connectInfo?.frameId }],
+        });
+        return (r as { portId?: number })?.portId ?? -1;
+      })();
+      return makePort(portIdPromise, name);
+    };
+  }
+}
+
 function installRuntimeOnMessageHandler(
   chrome: any,
   channel: ExtensionBridgeChannel,
 ): void {
-  channel.registerEventHandler('chrome.runtime.onMessage', async (args) => {
-    const [message, sender] = args as [unknown, unknown];
-
-    const event = chrome.runtime?.onMessage;
-    if (!event) return undefined;
-
-    // ChromeEvent stores listeners internally; expose an iterable view
-    // by walking the listeners via the public addListener bookkeeping.
-    // ChromeEvent.dispatchSync(...) iterates listeners — we instead
-    // hand the listener set to dispatchOnMessage so it owns the
-    // sendResponse / async / timeout contract.
-    const listeners = collectOnMessageListeners(event);
-    const result = await dispatchOnMessage(listeners, message, sender);
-    return result.response;
-  });
+  const dispatch = (eventName: 'onMessage' | 'onMessageExternal') =>
+    async (args: unknown[]) => {
+      const [message, sender] = args as [unknown, unknown];
+      const event = chrome.runtime?.[eventName];
+      if (!event) return undefined;
+      // ChromeEvent stores listeners internally; expose an iterable view
+      // via the documented `_listenersForDispatch()` escape hatch. We
+      // hand the listener set to dispatchOnMessage so it owns the
+      // sendResponse / async / timeout contract.
+      const listeners = collectOnMessageListeners(event);
+      const result = await dispatchOnMessage(listeners, message, sender);
+      return result.response;
+    };
+  channel.registerEventHandler('chrome.runtime.onMessage', dispatch('onMessage'));
+  // Cross-extension messages route to `onMessageExternal` per Chrome's
+  // contract. Same dispatch contract — sendResponse, return-true-for-
+  // async, single-winner, 30s timeout.
+  channel.registerEventHandler('chrome.runtime.onMessageExternal', dispatch('onMessageExternal'));
 }
 
 /**
@@ -739,15 +949,24 @@ function installEventRouter(
     if (target && typeof (target as any).dispatch === 'function') {
       // chrome.omnibox.onInputChanged listeners are invoked with
       // (text, suggest) where `suggest` is a callback. The host
-      // transport drops the function across the MessageChannel, so we
-      // synthesize a no-op stub here. Suggestions populated through
-      // this path are not surfaced to the omnibox UI — documented
-      // best-effort behaviour. See host/omnibox/events.ts.
+      // transport drops the function across the MessageChannel, so
+      // we synthesize a callback that wraps suggestions and sends
+      // them back to the host via a sendEvent. The host's omnibox
+      // UI listens for `chrome.omnibox.suggestions-out` events and
+      // applies them to the dropdown.
+      //
+      // The host expects the event payload to be the suggestion
+      // array. Convention: the suggest callback wraps any input —
+      // the host renders whatever it gets, latest call wins.
       if (method === 'chrome.omnibox.onInputChanged') {
-        const noopSuggest = (_suggestions: unknown) => {
-          /* dropped: see comment above */
+        const suggest = (suggestions: unknown) => {
+          try {
+            channel.sendEvent('chrome.omnibox.suggestions-out', [suggestions]);
+          } catch (err) {
+            console.warn('[helium/bootstrap] omnibox suggest send failed:', err);
+          }
         };
-        (target as any).dispatch(...args, noopSuggest);
+        (target as any).dispatch(...args, suggest);
         return;
       }
       (target as any).dispatch(...args);

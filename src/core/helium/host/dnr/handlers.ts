@@ -135,6 +135,37 @@ export class DnrHandlers {
     return 30000;
   };
 
+  /**
+   * `chrome.declarativeNetRequest.getDisabledRuleIds({rulesetId})` —
+   * Chrome 111+. Returns the list of per-rule disable overrides for a
+   * given static ruleset.
+   *
+   * DDX has no per-rule disable feature yet, so we always return [].
+   * Extensions branch on "is this rule disabled?" and pick the "rule
+   * active" path, which is the normal/expected default.
+   */
+  getDisabledRuleIds = async (
+    _ctx: ExtensionContext,
+    _args: unknown[],
+  ): Promise<number[]> => {
+    return [];
+  };
+
+  /**
+   * `chrome.declarativeNetRequest.updateStaticRules({rulesetId, disableRuleIds?, enableRuleIds?})`
+   * — Chrome 111+. Per-rule enable/disable within static rulesets.
+   *
+   * No-op for now (matches `getDisabledRuleIds` returning []) until
+   * we wire per-rule overrides into DnrStorage. Resolves successfully
+   * so extensions don't crash on the await.
+   */
+  updateStaticRules = async (
+    _ctx: ExtensionContext,
+    _args: unknown[],
+  ): Promise<void> => {
+    return;
+  };
+
   // --- extension action options (stub) --------------------------
 
   setExtensionActionOptions = async (

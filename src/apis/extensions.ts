@@ -18,6 +18,7 @@
 
 import type { Proxy } from './proxy';
 import type { HandlerContext as NyxHandlerContext } from './nyxBridge/handlers';
+import type { TabsInterface } from '@browser/tabs/types';
 import {
   ActionHandlers,
   AlarmScheduler,
@@ -28,6 +29,8 @@ import {
   ContextMenuRegistry,
   ContextMenusHandlers,
   CookiesHandlers,
+  DebuggerHandlers,
+  DeclarativeContentHandlers,
   DevtoolsHandlers,
   DevtoolsPageHost,
   DnrEngineFacadeImpl,
@@ -59,7 +62,10 @@ import {
   installBookmarkEventListeners,
   installContentScripts,
   installCookieEventListeners,
+  installDownloadsEventListeners,
+  installReadingListEventListeners,
   installExtension,
+  getExtension,
   contentTypeFromPath,
   buildSwDnrUpdate,
   installHistoryEventListeners,
@@ -314,6 +320,8 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.declarativeNetRequest.getEnabledRulesets':       'declarativeNetRequest',
   'chrome.declarativeNetRequest.getAvailableStaticRules':  'declarativeNetRequest',
   'chrome.declarativeNetRequest.getAvailableStaticRuleCount': 'declarativeNetRequest',
+  'chrome.declarativeNetRequest.getDisabledRuleIds':       'declarativeNetRequest',
+  'chrome.declarativeNetRequest.updateStaticRules':        'declarativeNetRequest',
   'chrome.declarativeNetRequest.setExtensionActionOptions':'declarativeNetRequest',
   'chrome.declarativeNetRequest.getMatchedRules':          'declarativeNetRequestFeedback',
   'chrome.declarativeNetRequest.isRegexSupported':         'declarativeNetRequest',
@@ -390,10 +398,75 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.idle.queryState':            'idle',
   'chrome.idle.setDetectionInterval':  'idle',
 
+  // chrome.runtime.getContexts (MV3) — auto-granted
+  'chrome.runtime.getContexts':        null,
+
   // chrome.offscreen (MV3)
   'chrome.offscreen.createDocument':  'offscreen',
   'chrome.offscreen.closeDocument':   'offscreen',
   'chrome.offscreen.hasDocument':     'offscreen',
+
+  // chrome.search (auto-granted, mostly used for keyword-driven new
+  // tabs)
+  'chrome.search.query':              null,
+
+  // chrome.sessions
+  'chrome.sessions.getDevices':         'sessions',
+  'chrome.sessions.getRecentlyClosed':  'sessions',
+  'chrome.sessions.restore':            'sessions',
+
+  // chrome.topSites — auto-granted; reads from HistoryManager
+  'chrome.topSites.get':                null,
+
+  // chrome.browsingData — same scope-key as Chrome
+  'chrome.browsingData.remove':         'browsingData',
+  'chrome.browsingData.removeAppcache': 'browsingData',
+  'chrome.browsingData.removeCache':       'browsingData',
+  'chrome.browsingData.removeCacheStorage':'browsingData',
+  'chrome.browsingData.removeCookies':   'browsingData',
+  'chrome.browsingData.removeDownloads': 'browsingData',
+  'chrome.browsingData.removeFileSystems':'browsingData',
+  'chrome.browsingData.removeFormData':  'browsingData',
+  'chrome.browsingData.removeHistory':   'browsingData',
+  'chrome.browsingData.removeIndexedDB': 'browsingData',
+  'chrome.browsingData.removeLocalStorage':'browsingData',
+  'chrome.browsingData.removePasswords':  'browsingData',
+  'chrome.browsingData.removePluginData': 'browsingData',
+  'chrome.browsingData.removeServiceWorkers':'browsingData',
+  'chrome.browsingData.removeWebSQL':    'browsingData',
+  'chrome.browsingData.settings':        'browsingData',
+
+  // chrome.tabGroups (MV3) — DDX already groups tabs internally
+  'chrome.tabGroups.get':    'tabGroups',
+  'chrome.tabGroups.move':   'tabGroups',
+  'chrome.tabGroups.query':  'tabGroups',
+  'chrome.tabGroups.update': 'tabGroups',
+
+  // chrome.readingList (MV3) — backed by ReadingListManager
+  // (`src/apis/readingList.ts`). Requires `readingList` manifest perm
+  // per Chrome's contract.
+  'chrome.readingList.addEntry':    'readingList',
+  'chrome.readingList.query':       'readingList',
+  'chrome.readingList.removeEntry': 'readingList',
+  'chrome.readingList.updateEntry': 'readingList',
+
+  // chrome.dns (MV3) — best-effort DNS resolver hook for the future
+  // network stack. Requires no manifest permission (matches Chrome's
+  // public surface — no such perm exists on the platform).
+  'chrome.dns.resolve':             null,
+
+  // chrome.debugger — per-extension CDP sessions. Requires the
+  // `debugger` manifest permission to mirror Chrome's gate.
+  'chrome.debugger.attach':         'debugger',
+  'chrome.debugger.detach':         'debugger',
+  'chrome.debugger.sendCommand':    'debugger',
+  'chrome.debugger.getTargets':     'debugger',
+
+  // chrome.declarativeContent — synthetic RPC keys for the
+  // onPageChanged rule store. Requires `declarativeContent` perm.
+  'chrome.declarativeContent.addRules':    'declarativeContent',
+  'chrome.declarativeContent.removeRules': 'declarativeContent',
+  'chrome.declarativeContent.getRules':    'declarativeContent',
 };
 
 const KNOWN_API_PERMS = [
@@ -423,10 +496,17 @@ const KNOWN_API_PERMS = [
   'permissions',            // for chrome.permissions
   'idle',
   'offscreen',
+  'sessions',
+  'browsingData',
+  'tabGroups',
   'system.cpu',
   'system.memory',
   'system.storage',
   'system.display',
+  'readingList',
+  // chrome.dns has no manifest permission keyword (matches Chrome).
+  'debugger',
+  'declarativeContent',
 ];
 
 interface SpawnedContext {
@@ -528,6 +608,8 @@ export class ExtensionManager {
   private managementHandlers: ManagementHandlers | null = null;
   private idleHandlers: IdleHandlers | null = null;
   private offscreenHandlers: OffscreenHandlers | null = null;
+  private debuggerHandlers: DebuggerHandlers | null = null;
+  private declarativeContentHandlers: DeclarativeContentHandlers | null = null;
 
   // Event-listener cleanups returned by each install*EventListeners().
   private readonly eventCleanups: Array<() => void> = [];
@@ -650,7 +732,15 @@ export class ExtensionManager {
     });
     this.bookmarksHandlers = new BookmarksHandlers();
     this.historyHandlers = new HistoryHandlers();
-    this.cookiesHandlers = new CookiesHandlers(new CookieAccessor(this.proxy));
+    const cookieAccessor = new CookieAccessor(this.proxy);
+    this.cookiesHandlers = new CookiesHandlers(cookieAccessor);
+    // Wire SiteDataManager singleton with the shared cookie accessor so
+    // chrome.browsingData and the lock-icon "Clear site data" UX can
+    // remove cookies properly. Import is dynamic to avoid pulling the
+    // module into the boot bundle when no clearing path is hit.
+    void import('@apis/siteData').then(({ SiteDataManager }) => {
+      SiteDataManager.getInstance({ cookieAccessor }).setCookieAccessor(cookieAccessor);
+    });
     this.i18nHandlers = new I18nHandlers();
     this.webNavigationHandlers = new WebNavigationHandlers(this.nyxCtx);
     this.actionHandlers = new ActionHandlers();
@@ -857,6 +947,119 @@ export class ExtensionManager {
       createExtensionPlugin: (extId) => this.createExtensionPlugin(extId),
       wireAuxiliaryViewChannel: (ctx, iframe, opts) => this.wireAuxiliaryViewChannel(ctx, iframe, opts ?? { isBackground: false }),
     });
+    // chrome.debugger session manager. CdpHelper is the same instance
+    // nyxBridge uses for its own debugger surface; this gives extension
+    // debugger.* sessions a distinct identity (per (extId, tabId)) while
+    // sharing the underlying per-tab CDP transport. Event observer hook
+    // dispatches unpaired CDP events to whichever extension currently
+    // holds a session on each tab.
+    {
+      const cdp = (this.nyxCtx as unknown as { cdp?: import('./nyxBridge/cdp').CdpHelper }).cdp;
+      if (cdp) {
+        this.debuggerHandlers = new DebuggerHandlers({
+          cdp,
+          fanoutToExt: (extId, eventName, args) => this.fireEventOn(extId, eventName, args),
+        });
+        this.eventCleanups.push(
+          cdp.onCdpEvent((tabId, method, params) => {
+            this.debuggerHandlers?.onCdpEvent(tabId, method, params);
+          }),
+        );
+        // Fire chrome.debugger.onDetach with 'target_closed' when a
+        // tab closes while still attached. We listen on the same
+        // `tabClosed` CustomEvent that host/tabs/events.ts uses for
+        // chrome.tabs.onRemoved fan-out.
+        const onTabClosed = (e: Event): void => {
+          const detail = (e as CustomEvent).detail as { tabId?: string } | undefined;
+          if (!detail?.tabId) return;
+          try {
+            const n = this.nyxCtx.tabResolver.toNum(detail.tabId);
+            this.debuggerHandlers?.onTabClosed(n);
+            this.declarativeContentHandlers?.onTabClosed(n);
+          } catch { /* swallow */ }
+        };
+        document.addEventListener('tabClosed', onTabClosed);
+        this.eventCleanups.push(() =>
+          document.removeEventListener('tabClosed', onTabClosed),
+        );
+      }
+    }
+
+    // chrome.declarativeContent matcher engine. Subscribes to
+    // tabNavigated (URL-change) events and re-evaluates each
+    // extension's PageStateMatcher rules. ShowAction triggers
+    // pageActionShow on the underlying ActionHandlers — which the
+    // toolbar buttons component already picks up via its
+    // `pageActionIsShown` poll.
+    this.declarativeContentHandlers = new DeclarativeContentHandlers({
+      pageActionShow: (extId, tabId) => {
+        // Use the real handler so persistence + onChange listeners fire.
+        const ah = this.actionHandlers;
+        if (!ah) return;
+        const ctx = this.spawned.get(extId)?.ctx;
+        if (!ctx) return;
+        void ah.pageActionShow(ctx, [tabId]);
+      },
+      pageActionHide: (extId, tabId) => {
+        const ah = this.actionHandlers;
+        if (!ah) return;
+        const ctx = this.spawned.get(extId)?.ctx;
+        if (!ctx) return;
+        void ah.pageActionHide(ctx, [tabId]);
+      },
+      setActionIcon: (extId, tabId, imageData) => {
+        const ah = this.actionHandlers;
+        if (!ah) return;
+        const ctx = this.spawned.get(extId)?.ctx;
+        if (!ctx) return;
+        void ah.setIcon(ctx, [{ tabId, imageData }]);
+      },
+      probeCss: async (tabId, selectors) => {
+        // Best-effort probe via chrome.scripting.executeScript.
+        // We can't import that handler module from here without
+        // circular issues — fall back to a no-op `false` if not
+        // available. (CSS-condition rules then never match; pageUrl-
+        // only rules still work.)
+        try {
+          const tabResolver = this.nyxCtx.tabResolver;
+          const iframe = tabResolver.resolveIframe(tabId);
+          const win = iframe?.contentWindow as Window | null;
+          if (!win) return false;
+          // Best-effort: synchronously evaluate the selectors in the
+          // target window. Uses (win as any).eval which Scramjet
+          // patches per-realm. If any selector matches, return true.
+          const expr = `[${selectors.map((s) => JSON.stringify(s)).join(',')}].some(function(s){try{return document.querySelector(s)!=null}catch{return false}})`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return Boolean((win as any).eval(expr));
+        } catch {
+          return false;
+        }
+      },
+    });
+
+    // Re-evaluate rules on every tabNavigated (committed phase)
+    // and every tabSelected. We use `committed` over `before` so
+    // the URL is the post-redirect canonical value.
+    {
+      const reeval = (e: Event): void => {
+        const detail = (e as CustomEvent).detail as { tabId?: string; phase?: string } | undefined;
+        if (!detail?.tabId) return;
+        if (detail.phase && detail.phase !== 'committed' && detail.phase !== 'completed') return;
+        try {
+          const num = this.nyxCtx.tabResolver.toNum(detail.tabId);
+          const info = this.nyxCtx.tabResolver.info(num);
+          const url = typeof info.url === 'string' ? info.url : '';
+          if (!url) return;
+          void this.declarativeContentHandlers?.evaluateForTab(num, url);
+        } catch { /* swallow */ }
+      };
+      document.addEventListener('tabNavigated', reeval);
+      document.addEventListener('tabSelected', reeval);
+      this.eventCleanups.push(() => {
+        document.removeEventListener('tabNavigated', reeval);
+        document.removeEventListener('tabSelected', reeval);
+      });
+    }
     this.eventCleanups.push(
       installManagementEventListeners({
         on: (event, listener) => this.on(event, listener),
@@ -876,6 +1079,8 @@ export class ExtensionManager {
     this.eventCleanups.push(installBookmarkEventListeners(this));
     this.eventCleanups.push(installHistoryEventListeners(this));
     this.eventCleanups.push(installCookieEventListeners(this));
+    this.eventCleanups.push(installReadingListEventListeners(this));
+    this.eventCleanups.push(installDownloadsEventListeners(this));
     this.eventCleanups.push(
       installWebNavigationEventListeners(this, this.nyxCtx.tabResolver),
     );
@@ -917,10 +1122,36 @@ export class ExtensionManager {
     // boot for the user).
     const unpacked = await unpackExtension(bytes);
     console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] unpack OK: id=${unpacked.id} format=${unpacked.format} files=${unpacked.files.size} name="${unpacked.manifest.name}"`);
+
+    // `minimum_chrome_version`: extensions can declare the minimum
+    // Chromium milestone they need. We don't have a real Chrome
+    // version to compare against, but we expose a "DDX is built on
+    // Chrome 120-ish" baseline. Reject installs that ask for newer
+    // than that so the user gets an error instead of a silently
+    // broken extension at runtime.
+    const minVer = (unpacked.manifest as { minimum_chrome_version?: string }).minimum_chrome_version;
+    if (typeof minVer === 'string') {
+      const major = Number.parseInt(minVer.split('.')[0] ?? '0', 10);
+      const DDX_CHROME_BASELINE = 120;
+      if (Number.isFinite(major) && major > DDX_CHROME_BASELINE) {
+        throw new Error(
+          `Extension requires Chrome ${minVer} or newer (DDX baseline: ${DDX_CHROME_BASELINE}). Install rejected.`,
+        );
+      }
+    }
     const prior = this.installLocks.get(unpacked.id);
     if (prior) {
       console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] chaining onto prior install for id=${unpacked.id}`);
     }
+    // Chrome theme manifests carry a top-level `theme` object and no
+    // executable code. They must skip spawn() — there's nothing to run
+    // in a background frame and Scramjet would just fail to find an
+    // HTML entry. Detected once here and reused below.
+    const isTheme = (() => {
+      try {
+        return !!(unpacked.manifest as any).theme && typeof (unpacked.manifest as any).theme === "object";
+      } catch { return false; }
+    })();
     const run = async (): Promise<ExtensionIndexEntry> => {
       const entry = await installExtension(unpacked);
       console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] installExtension returned:`, entry);
@@ -930,7 +1161,7 @@ export class ExtensionManager {
         manifest: unpacked.manifest,
         origin: `${entry.id}.ddx`,
       };
-      if (entry.enabled) {
+      if (entry.enabled && !isTheme) {
         try {
           console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] spawning ${entry.id}...`);
           await this.spawn({ entry, manifest: unpacked.manifest, context: ctx });
@@ -967,6 +1198,21 @@ export class ExtensionManager {
           );
         }
       }
+      // Chrome theme manifests: register the preset with the theming
+      // subsystem. Dynamic import to keep the module graph lazy and
+      // avoid pulling theming into bootstrap.
+      try {
+        const { chromeThemeAdapter, ChromeThemeAdapter } = await import("./extensions/chromeThemes");
+        if (ChromeThemeAdapter.isThemeManifest(unpacked.manifest)) {
+          await chromeThemeAdapter.onExtensionInstalled(
+            entry.id,
+            unpacked.manifest,
+            unpacked.files,
+          );
+        }
+      } catch (err) {
+        console.warn(`[ExtensionManager] chromeTheme.install failed for ${entry.id}:`, err);
+      }
       return entry;
     };
 
@@ -996,6 +1242,14 @@ export class ExtensionManager {
   private installLocks = new Map<string, Promise<ExtensionIndexEntry>>();
 
   async uninstall(id: string): Promise<void> {
+    // Capture whether this is a Chrome theme manifest BEFORE the
+    // extfs tree disappears — getExtension() reads manifest.json off
+    // disk and we need that data to drive the theming cleanup hook.
+    let wasTheme = false;
+    try {
+      const got = await getExtension(id);
+      wasTheme = !!(got?.manifest as any)?.theme;
+    } catch { /* ignore — best effort */ }
     // kill() is already defensive (each step is wrapped). The remaining
     // failure surface is the extfs operation — surface that as a real
     // error message rather than [object Object] or similar.
@@ -1028,6 +1282,16 @@ export class ExtensionManager {
           err,
         );
       }
+    }
+    // Chrome theme cleanup: drop the preset from the extension theme
+    // store and revert if it was active. Only do this when the manifest
+    // we saw on disk had a `theme` field — non-theme extensions never
+    // touched the theme store.
+    try {
+      const { chromeThemeAdapter } = await import("./extensions/chromeThemes");
+      if (wasTheme) await chromeThemeAdapter.onExtensionRemoved(id);
+    } catch (err) {
+      console.warn(`[ExtensionManager] chromeTheme.remove failed for ${id}:`, err);
     }
   }
 
@@ -1070,6 +1334,16 @@ export class ExtensionManager {
           );
         }
       }
+    }
+    // Chrome theme: enable/disable just re-emits the list-changed event
+    // so consumers can re-render; disabling an active theme reverts to
+    // the default theme inside the adapter.
+    try {
+      const { chromeThemeAdapter } = await import("./extensions/chromeThemes");
+      if (enabled) await chromeThemeAdapter.onExtensionEnabled(id);
+      else await chromeThemeAdapter.onExtensionDisabled(id);
+    } catch (err) {
+      console.warn(`[ExtensionManager] chromeTheme.toggle failed for ${id}:`, err);
     }
   }
 
@@ -1440,6 +1714,19 @@ export class ExtensionManager {
       console.warn(`[ExtensionManager] contextMenus restore failed for ${ctx.id}:`, err);
     }
 
+    // Seed action state from manifest defaults (default_state /
+    // default_title / default_popup). Honors `action` (MV3) and
+    // `browser_action` (MV2). Only applies on first install — if a
+    // persisted state file already exists, it wins.
+    try {
+      await this.actionHandlers?.seedFromManifest(
+        ctx.id,
+        ctx.manifest as Parameters<NonNullable<typeof this.actionHandlers>['seedFromManifest']>[1],
+      );
+    } catch (err) {
+      console.warn(`[ExtensionManager] action seed failed for ${ctx.id}:`, err);
+    }
+
     // Phase 4 (Task 32): if devtools is already open for some tab and
     // this extension declares devtools_page, spawn the per-tab
     // devtools_page iframe now.
@@ -1617,6 +1904,8 @@ export class ExtensionManager {
     safe('uninstallContentScripts', () => uninstallContentScripts(id));
     safe('alarmScheduler.clearAllForExt', () => this.alarmScheduler?.clearAllForExt(id));
     safe('actionHandlers.clearForExt', () => this.actionHandlers?.clearForExt(id));
+    safe('debuggerHandlers.clearForExt', () => this.debuggerHandlers?.clearForExt(id));
+    safe('declarativeContentHandlers.clearForExt', () => this.declarativeContentHandlers?.clearForExt(id));
     safe('sessionStorage.delete', () => this.sessionStorage.delete(id));
     safe('managedStorageCache.delete', () => this.managedStorageCache.delete(id));
     safe('activeTabGrants.delete', () => this.activeTabGrants.delete(id));
@@ -1776,6 +2065,19 @@ export class ExtensionManager {
       if (method === 'chrome.runtime.port-close-bg-initiated') {
         const info = args[0] as { portId: number };
         this.portRouter?.closePort(info.portId, 'bg-initiated');
+        return;
+      }
+      // chrome.omnibox.onInputChanged's `suggest` callback fires this
+      // event with the list of suggestions the extension wants shown.
+      // Forward to the omnibox UI registry which knows how to render
+      // them in the active dropdown.
+      if (method === 'chrome.omnibox.suggestions-out') {
+        const suggestions = args[0];
+        try {
+          this.omniboxRegistry?.applySuggestions(ctx.id, suggestions);
+        } catch (err) {
+          console.warn(`[ExtensionManager] omnibox suggestions apply failed for ${ctx.id}:`, err);
+        }
         return;
       }
     });
@@ -1993,6 +2295,70 @@ export class ExtensionManager {
   }
 
   /**
+   * Open an extension's options page. Used by the extensions-page UI's
+   * "Options" button as well as by `chrome.runtime.openOptionsPage`.
+   * Resolves the options URL from manifest.options_ui.page (MV3) /
+   * options_page (MV2) and opens a new tab.
+   */
+  public async openOptionsPage(extId: string): Promise<void> {
+    const s = this.spawned.get(extId);
+    if (!s) throw new Error(`Extension ${extId} is not running`);
+    const m = s.ctx.manifest as { options_page?: string; options_ui?: { page?: string } };
+    const opts = m.options_page ?? m.options_ui?.page;
+    if (!opts) throw new Error(`Extension ${extId} has no options page`);
+    const url = `https://${s.ctx.origin}/${String(opts).replace(/^\/+/, '')}`;
+    await this.openTab(url);
+  }
+
+  /**
+   * Programmatically open the extension's browser-action popup.
+   * Backs `chrome.action.openPopup` from BG. Routes through the
+   * extension menu's anchor if it exists; falls back to a synthesized
+   * anchor at the screen center.
+   *
+   * No-ops if the extension doesn't declare a `default_popup`.
+   */
+  public async openActionPopup(extId: string): Promise<void> {
+    const s = this.spawned.get(extId);
+    if (!s) throw new Error(`Extension ${extId} is not running`);
+    const m = s.ctx.manifest as {
+      action?: { default_popup?: string };
+      browser_action?: { default_popup?: string };
+    };
+    const popupPath = m.action?.default_popup ?? m.browser_action?.default_popup;
+    if (!popupPath) {
+      throw new Error(`Extension ${extId} declares no default_popup`);
+    }
+    // Find an anchor element. Best case: the extension's own toolbar
+    // icon (rendered by ExtensionToolbarButtons inside the urlbar-ring).
+    // Falls back to the extensions menu trigger button at the
+    // navbar's puzzle icon. DOM lookups go through `window.d`
+    // (the shadow root) because the browser shell renders inside a
+    // ShadowRoot.
+    const candidates: HTMLElement[] = [];
+    try {
+      const shadow = (window as { d?: ShadowRoot | Document }).d ?? document;
+      // Per-extension toolbar buttons carry data-action-ext-id.
+      const tb = shadow.querySelector(`[data-action-ext-id="${extId}"]`) as HTMLElement | null;
+      if (tb) candidates.push(tb);
+      // Extensions menu trigger — the navbar's puzzle button uses
+      // data-component="extensions" (see src/browser/render.ts:167).
+      const menuTrigger = shadow.querySelector('[data-component="extensions"]') as HTMLElement | null;
+      if (menuTrigger) candidates.push(menuTrigger);
+    } catch { /* swallow */ }
+    const anchor = candidates[0] ?? document.body;
+
+    // Import lazily to avoid circular dep at module init.
+    const { openExtensionPopup } = await import('@browser/extensions/popupHost');
+    openExtensionPopup({
+      extId,
+      ctx: s.ctx,
+      popupPath,
+      anchorEl: anchor,
+    });
+  }
+
+  /**
    * Track a popup iframe's contentWindow for an extension. Called by
    * popupHost.openExtensionPopup once the popup iframe is constructed
    * and its contentWindow is available. The window is exposed through
@@ -2090,6 +2456,41 @@ export class ExtensionManager {
         return this.runChromeHandler(ctx, method, req.args);
       });
     }
+
+    // BG-initiated port opening. Special-cased (not in
+    // handlerImpls) because they don't gate on permissions and they
+    // need direct access to `channel` to wire bidirectional dispatch.
+    channel.registerHandler('__helium_bg_connect_tab__', async (req) => {
+      const opts = (req.args?.[0] ?? {}) as { tabId?: number; name?: string; frameId?: number };
+      if (!this.portRouter || typeof opts.tabId !== 'number') {
+        return { portId: -1 };
+      }
+      try {
+        const iframe = this.nyxCtx.tabResolver.resolveIframe(opts.tabId);
+        const portId = this.portRouter.bgInitiatedConnectTab(
+          ctx.id,
+          channel,
+          opts.tabId,
+          opts.name ?? '',
+          opts.frameId,
+          iframe,
+        );
+        return { portId };
+      } catch (err) {
+        console.warn(`[ExtensionManager] bg_connect_tab failed for ${ctx.id}:`, err);
+        return { portId: -1 };
+      }
+    });
+    channel.registerHandler('__helium_bg_connect_runtime__', async (req) => {
+      const opts = (req.args?.[0] ?? {}) as { targetExtId?: string; name?: string };
+      if (!this.portRouter) return { portId: -1 };
+      const portId = this.portRouter.bgInitiatedConnectRuntime(
+        ctx.id,
+        opts.targetExtId ?? ctx.id,
+        opts.name ?? '',
+      );
+      return { portId };
+    });
   }
 
   private handlerImpls(): Record<
@@ -2121,6 +2522,12 @@ export class ExtensionManager {
     const mh = (h: ManagementHandlers | null): ManagementHandlers => h!;
     const ih = (h: IdleHandlers | null): IdleHandlers => h!;
     const oh = (h: OffscreenHandlers | null): OffscreenHandlers => h!;
+    const dgh = (h: DebuggerHandlers | null): DebuggerHandlers => {
+      if (!h) {
+        throw new Error('chrome.debugger is not available (CdpHelper not registered)');
+      }
+      return h;
+    };
     return {
       // storage (local/sync) + session/managed (Task 14)
       'chrome.storage.local.get':    (ctx, args) => this.storageGet(ctx, args),
@@ -2480,6 +2887,10 @@ export class ExtensionManager {
         dnh(this.dnrHandlers).getAvailableStaticRules(ctx, args),
       'chrome.declarativeNetRequest.getAvailableStaticRuleCount': (ctx, args) =>
         dnh(this.dnrHandlers).getAvailableStaticRuleCount(ctx, args),
+      'chrome.declarativeNetRequest.getDisabledRuleIds': (ctx, args) =>
+        dnh(this.dnrHandlers).getDisabledRuleIds(ctx, args),
+      'chrome.declarativeNetRequest.updateStaticRules': (ctx, args) =>
+        dnh(this.dnrHandlers).updateStaticRules(ctx, args),
       'chrome.declarativeNetRequest.setExtensionActionOptions': (ctx, args) =>
         dnh(this.dnrHandlers).setExtensionActionOptions(ctx, args),
       'chrome.declarativeNetRequest.getMatchedRules': (ctx, args) =>
@@ -2563,6 +2974,736 @@ export class ExtensionManager {
       'chrome.offscreen.createDocument':  (ctx, args) => oh(this.offscreenHandlers).createDocument(ctx, args),
       'chrome.offscreen.closeDocument':   (ctx, args) => oh(this.offscreenHandlers).closeDocument(ctx, args),
       'chrome.offscreen.hasDocument':     (ctx, args) => oh(this.offscreenHandlers).hasDocument(ctx, args),
+
+      // chrome.runtime.getContexts — MV3. Enumerate live realms for
+      // the calling extension. We report:
+      //   - the BG iframe as `BACKGROUND` / `SERVICE_WORKER` (MV3
+      //     extensions don't distinguish; we use SERVICE_WORKER for MV3
+      //     and BACKGROUND for MV2)
+      //   - any open popup window as `POPUP`
+      //   - any active offscreen document as `OFFSCREEN_DOCUMENT`
+      //
+      // Filter args[0] respects `contextTypes` / `documentIds` /
+      // `frameIds` / `tabIds` / `windowIds` / `documentUrls` /
+      // `documentOrigins` / `incognito`. We honor the common ones
+      // (contextTypes); others are accepted but not enforced.
+      'chrome.runtime.getContexts': async (ctx, args) => {
+        const filter = (args[0] ?? {}) as {
+          contextTypes?: string[];
+          documentUrls?: string[];
+          documentOrigins?: string[];
+          incognito?: boolean;
+          tabIds?: number[];
+          windowIds?: number[];
+          frameIds?: number[];
+        };
+        const types = filter.contextTypes;
+        const wantType = (t: string): boolean => !types || types.includes(t);
+        // Honor documentUrls / documentOrigins filters by checking the
+        // synthesized URL/origin per row before pushing.
+        const matchesUrl = (url?: string): boolean => {
+          if (!filter.documentUrls || filter.documentUrls.length === 0) return true;
+          if (!url) return false;
+          return filter.documentUrls.includes(url);
+        };
+        const matchesOrigin = (origin?: string): boolean => {
+          if (!filter.documentOrigins || filter.documentOrigins.length === 0) return true;
+          if (!origin) return false;
+          return filter.documentOrigins.includes(origin);
+        };
+        const matchesTab = (tabId?: number): boolean => {
+          if (!filter.tabIds || filter.tabIds.length === 0) return true;
+          if (tabId === undefined) return false;
+          return filter.tabIds.includes(tabId);
+        };
+        // incognito is always false in DDX — filter true only if
+        // caller explicitly wants incognito-only (none match).
+        if (filter.incognito === true) return [];
+        const out: Array<{
+          contextType: string;
+          contextId: string;
+          tabId?: number;
+          windowId?: number;
+          documentId?: string;
+          frameId?: number;
+          documentUrl?: string;
+          documentOrigin?: string;
+          incognito: boolean;
+        }> = [];
+        const extOrigin = `https://${ctx.origin}`;
+        const spawn = this.spawned.get(ctx.id);
+        if (spawn) {
+          const bgType = ctx.manifestVersion === 3 ? 'SERVICE_WORKER' : 'BACKGROUND';
+          if (wantType(bgType) && matchesOrigin(extOrigin)) {
+            out.push({
+              contextType: bgType,
+              contextId: `bg:${ctx.id}`,
+              tabId: -1,
+              windowId: -1,
+              frameId: 0,
+              documentOrigin: extOrigin,
+              incognito: false,
+            });
+          }
+        }
+        if (wantType('POPUP')) {
+          const popups = this.popupWindows.get(ctx.id);
+          if (popups) {
+            let i = 0;
+            for (const _ of popups) {
+              if (matchesOrigin(extOrigin)) {
+                out.push({
+                  contextType: 'POPUP',
+                  contextId: `popup:${ctx.id}:${i}`,
+                  tabId: -1,
+                  windowId: 1,
+                  frameId: 0,
+                  documentOrigin: extOrigin,
+                  incognito: false,
+                });
+              }
+              i++;
+            }
+          }
+        }
+        if (wantType('OFFSCREEN_DOCUMENT') && this.offscreenHandlers) {
+          const has = await this.offscreenHandlers.hasDocument(ctx, []);
+          if (has && matchesOrigin(extOrigin)) {
+            out.push({
+              contextType: 'OFFSCREEN_DOCUMENT',
+              contextId: `offscreen:${ctx.id}`,
+              tabId: -1,
+              windowId: -1,
+              frameId: 0,
+              documentOrigin: extOrigin,
+              incognito: false,
+            });
+          }
+        }
+        // TAB contexts — every DDX tab is potentially one. We surface
+        // tabs whose URL is determinable, decoded back to the
+        // user-facing form (so Scramjet-encoded blob: URIs aren't
+        // leaked). Chrome reports `documentId` as a unique per-doc
+        // string; we synthesize from tabId + url hash.
+        if (wantType('TAB')) {
+          try {
+            const tabResolver = this.nyxCtx?.tabResolver;
+            const tabsApi = (window as { tabs?: { getTabsInOrder?: () => Array<{ id: string }> } }).tabs;
+            if (tabResolver && tabsApi?.getTabsInOrder) {
+              for (const t of tabsApi.getTabsInOrder()) {
+                let info: { id: number; url: string } | null = null;
+                try {
+                  const n = tabResolver.toNum(t.id);
+                  const i = tabResolver.info(n);
+                  info = { id: n, url: typeof i.url === 'string' ? i.url : '' };
+                } catch { /* skip */ }
+                if (!info) continue;
+                let origin: string | undefined;
+                try { origin = info.url ? new URL(info.url).origin : undefined; } catch { /* skip */ }
+                if (!matchesUrl(info.url)) continue;
+                if (!matchesOrigin(origin)) continue;
+                if (!matchesTab(info.id)) continue;
+                out.push({
+                  contextType: 'TAB',
+                  contextId: `tab:${info.id}`,
+                  tabId: info.id,
+                  windowId: 1,
+                  frameId: 0,
+                  documentUrl: info.url || undefined,
+                  documentOrigin: origin,
+                  incognito: false,
+                });
+              }
+            }
+          } catch (err) {
+            console.warn('[chrome.runtime.getContexts] TAB enumeration failed:', err);
+          }
+        }
+        // CONTENT_SCRIPT contexts — the relay tracks per-extension
+        // windows that have at least one content script registered.
+        // Map each to a row keyed by the underlying tab if we can
+        // resolve it (best-effort via `data-tab-id` attribute on the
+        // iframe ancestor).
+        if (wantType('CONTENT_SCRIPT') && this.contentScriptRelay) {
+          try {
+            const windows = this.contentScriptRelay.windowsForExt(ctx.id);
+            for (const win of windows) {
+              let tabId: number | undefined;
+              let docUrl: string | undefined;
+              let origin: string | undefined;
+              try {
+                // Find owning iframe via window.frameElement; read data-tab-id.
+                const frame = (win as Window & { frameElement?: Element | null }).frameElement;
+                const tabIdStr = frame?.getAttribute?.('data-tab-id') ?? null;
+                if (tabIdStr && this.nyxCtx?.tabResolver) {
+                  tabId = this.nyxCtx.tabResolver.toNum(tabIdStr);
+                  const info = this.nyxCtx.tabResolver.info(tabId);
+                  docUrl = typeof info.url === 'string' ? info.url : undefined;
+                  origin = docUrl ? new URL(docUrl).origin : undefined;
+                }
+              } catch { /* swallow */ }
+              if (!matchesUrl(docUrl)) continue;
+              if (!matchesOrigin(origin)) continue;
+              if (!matchesTab(tabId)) continue;
+              out.push({
+                contextType: 'CONTENT_SCRIPT',
+                contextId: `cs:${ctx.id}:${tabId ?? 'unknown'}`,
+                tabId,
+                windowId: 1,
+                frameId: 0,
+                documentUrl: docUrl,
+                documentOrigin: origin,
+                incognito: false,
+              });
+            }
+          } catch (err) {
+            console.warn('[chrome.runtime.getContexts] CONTENT_SCRIPT enumeration failed:', err);
+          }
+        }
+        return out;
+      },
+
+      // chrome.search.query — opens a tab with the configured search
+      // engine URL. Disposition selects current/new tab.
+      'chrome.search.query': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as { text?: string; disposition?: string; tabId?: number };
+        if (typeof opts.text !== 'string' || !opts.text) {
+          throw new Error('chrome.search.query requires text');
+        }
+        const tmpl = (window as { searchEngines?: { getDefault(): { urlTemplate: string } } })
+          .searchEngines?.getDefault().urlTemplate
+          ?? 'https://duckduckgo.com/?q=%s';
+        const url = tmpl.replace('%s', encodeURIComponent(opts.text));
+        await this.openTab(url);
+      },
+
+      // chrome.sessions — surfaced from DDX's TabClosedStack.
+      //
+      // The stack stores `ClosedTabRecord { url, title, favicon,
+      // wasPinned, groupId, closedAt }`. Chrome's Session shape is
+      // `{ lastModified: epoch_sec, tab? | window? }` keyed off
+      // `sessionId`. We use the record's `closedAt` (epoch ms)
+      // stringified as the sessionId — stable within the session,
+      // round-trips cleanly through restore().
+      'chrome.sessions.getDevices': async () => [],
+      'chrome.sessions.getRecentlyClosed': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as { maxResults?: number };
+        const max = typeof opts.maxResults === 'number'
+          ? Math.max(1, Math.min(opts.maxResults, 25))
+          : 25;
+        const tabsMod = (window as { tabs?: TabsInterface }).tabs;
+        const stack = tabsMod?.closedTabStack;
+        if (!stack || typeof stack.list !== 'function') return [];
+        // list() is newest-first; slice to requested count.
+        const records = stack.list().slice(0, max);
+        return records.map((t) => ({
+          lastModified: Math.floor(t.closedAt / 1000),
+          tab: {
+            // Negative ephemeral id — Chrome's restore() reads sessionId,
+            // not this. Kept distinct per record so multiple closed-tabs
+            // don't collide if a consumer keys off `id`.
+            id: -Math.abs(t.closedAt | 0) - 1,
+            url: t.url,
+            title: t.title,
+            favIconUrl: t.favicon ?? '',
+            index: 0,
+            windowId: 1,
+            active: false,
+            pinned: t.wasPinned === true,
+            highlighted: false,
+            discarded: false,
+            incognito: false,
+            sessionId: String(t.closedAt),
+          },
+        }));
+      },
+      'chrome.sessions.restore': async (_ctx, args) => {
+        // sessionId arg is optional. If absent, restore the most
+        // recently closed (Chrome's contract: `sessionId` omitted →
+        // most-recent entry). On match we remove that entry from the
+        // stack and reopen via the existing `tabs.createTab` path.
+        const sessionId = typeof args[0] === 'string' ? args[0] : undefined;
+        const tabsMod = (window as { tabs?: TabsInterface }).tabs;
+        if (!tabsMod?.closedTabStack || typeof tabsMod.createTab !== 'function') {
+          return null;
+        }
+        const stack = tabsMod.closedTabStack;
+        let target: { url: string; title: string; favicon: string | null; closedAt: number } | undefined;
+        if (sessionId !== undefined) {
+          const closedAt = Number(sessionId);
+          if (!Number.isFinite(closedAt)) return null;
+          target = stack.list().find((r) => r.closedAt === closedAt);
+          if (!target) return null;
+          stack.removeByTimestamp(closedAt);
+        } else {
+          target = stack.popMostRecent();
+        }
+        if (!target?.url) return null;
+        try {
+          await tabsMod.createTab(target.url);
+        } catch (err) {
+          console.warn('[chrome.sessions.restore] createTab failed:', err);
+        }
+        // Chrome returns the restored Session object.
+        return {
+          lastModified: Math.floor(target.closedAt / 1000),
+          tab: {
+            id: -Math.abs(target.closedAt | 0) - 1,
+            url: target.url,
+            title: target.title,
+            favIconUrl: target.favicon ?? '',
+            index: 0,
+            windowId: 1,
+            active: true,
+            pinned: false,
+            highlighted: false,
+            discarded: false,
+            incognito: false,
+            sessionId: String(target.closedAt),
+          },
+        };
+      },
+
+      // chrome.topSites — synthesize from HistoryManager. Top sites
+      // are the URLs with the highest visit counts; we approximate by
+      // grouping HistoryManager entries by hostname (via
+      // `getMostVisitedSites`) and picking the most-visited entry per
+      // hostname to recover a (url, title) pair.
+      //
+      // HistoryManager exposes `getMostVisitedSites(limit)` returning
+      // `[{ domain, visits, lastVisit }]`. To get a representative
+      // URL+title per top domain we walk `getEntries()` once and pick
+      // the highest-`visitCount` entry per hostname. Result is sliced
+      // to 20 to match Chrome's defaults.
+      'chrome.topSites.get': async () => {
+        try {
+          const { HistoryManager } = await import('@apis/history');
+          const hm = HistoryManager.getInstance();
+          const entries = hm.getEntries();
+          if (entries.length === 0) return [];
+          // Best entry per hostname — prefer highest visitCount, break
+          // ties by most-recent visit. Chrome's topSites is keyed by
+          // origin/hostname in practice; we mirror that.
+          const bestByHost = new Map<string, { url: string; title: string; visits: number; lastVisit: number }>();
+          for (const e of entries) {
+            let host: string;
+            try {
+              host = new URL(e.url).hostname;
+            } catch {
+              continue;
+            }
+            if (!host) continue;
+            const lastVisitTs = e.visitedAt instanceof Date ? e.visitedAt.getTime() : Date.now();
+            const cur = bestByHost.get(host);
+            if (
+              !cur ||
+              e.visitCount > cur.visits ||
+              (e.visitCount === cur.visits && lastVisitTs > cur.lastVisit)
+            ) {
+              bestByHost.set(host, {
+                url: e.url,
+                title: e.title || host,
+                visits: e.visitCount,
+                lastVisit: lastVisitTs,
+              });
+            }
+          }
+          return [...bestByHost.values()]
+            .sort((a, b) => b.visits - a.visits || b.lastVisit - a.lastVisit)
+            .slice(0, 20)
+            .map((s) => ({ url: s.url, title: s.title }));
+        } catch (err) {
+          console.warn('[chrome.topSites] history read failed:', err);
+          return [];
+        }
+      },
+
+      // chrome.readingList.* — wraps ReadingListManager singleton.
+      // Manager handles validation, persistence, and onEntry* events
+      // which we fan out below via addChangeListener (wired once at
+      // ExtensionManager construction).
+      'chrome.readingList.addEntry': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as { url?: string; title?: string; hasBeenRead?: boolean };
+        if (typeof opts.url !== 'string' || !opts.url) {
+          throw new Error('chrome.readingList.addEntry requires url');
+        }
+        const { ReadingListManager } = await import('@apis/readingList');
+        const rm = ReadingListManager.getInstance();
+        return rm.addEntry({
+          url: opts.url,
+          title: opts.title ?? opts.url,
+          hasBeenRead: opts.hasBeenRead === true,
+        });
+      },
+      'chrome.readingList.query': async (_ctx, args) => {
+        const filter = (args[0] ?? {}) as { url?: string; title?: string; hasBeenRead?: boolean };
+        const { ReadingListManager } = await import('@apis/readingList');
+        const rm = ReadingListManager.getInstance();
+        return rm.query(filter);
+      },
+      'chrome.readingList.removeEntry': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as { url?: string };
+        if (typeof opts.url !== 'string' || !opts.url) {
+          throw new Error('chrome.readingList.removeEntry requires url');
+        }
+        const { ReadingListManager } = await import('@apis/readingList');
+        const rm = ReadingListManager.getInstance();
+        await rm.removeEntry({ url: opts.url });
+        // Chrome returns undefined.
+        return undefined;
+      },
+      'chrome.readingList.updateEntry': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as {
+          url?: string;
+          title?: string;
+          hasBeenRead?: boolean;
+        };
+        if (typeof opts.url !== 'string' || !opts.url) {
+          throw new Error('chrome.readingList.updateEntry requires url');
+        }
+        const { ReadingListManager } = await import('@apis/readingList');
+        const rm = ReadingListManager.getInstance();
+        return rm.updateEntry({
+          url: opts.url,
+          ...(typeof opts.title === 'string' ? { title: opts.title } : {}),
+          ...(typeof opts.hasBeenRead === 'boolean' ? { hasBeenRead: opts.hasBeenRead } : {}),
+        });
+      },
+
+      // chrome.dns.resolve — delegates to the pluggable DnsResolver
+      // (src/apis/network/dns.ts). If no backend is registered the
+      // resolver throws a clear "No DNS backend registered" error
+      // that callers can catch. The future network stack will
+      // register a real backend.
+      'chrome.dns.resolve': async (_ctx, args) => {
+        const hostname = args[0];
+        if (typeof hostname !== 'string' || !hostname) {
+          throw new Error('chrome.dns.resolve requires a hostname');
+        }
+        const { getDnsResolver } = await import('@apis/network/dns');
+        return getDnsResolver().resolve(hostname);
+      },
+
+      // chrome.debugger.* — per-extension CDP sessions. Each attach
+      // creates an isolated session (extId, tabId) on top of the
+      // shared CdpHelper. onEvent fan-out happens via the
+      // `cdp.onCdpEvent` observer wired at manager init time.
+      'chrome.debugger.attach': async (ctx, args) => {
+        const target = (args[0] ?? {}) as { tabId?: number };
+        const requiredVersion = typeof args[1] === 'string' ? args[1] : undefined;
+        dgh(this.debuggerHandlers).attach(ctx.id, target, requiredVersion);
+        return undefined;
+      },
+      'chrome.debugger.detach': async (ctx, args) => {
+        const target = (args[0] ?? {}) as { tabId?: number };
+        dgh(this.debuggerHandlers).detach(ctx.id, target);
+        return undefined;
+      },
+      'chrome.debugger.sendCommand': async (ctx, args) => {
+        const target = (args[0] ?? {}) as { tabId?: number };
+        const method = String(args[1] ?? '');
+        const params = (args[2] ?? {}) as object;
+        return dgh(this.debuggerHandlers).sendCommand(ctx.id, target, method, params);
+      },
+      // chrome.declarativeContent.{addRules,removeRules,getRules} —
+      // relayed from BG's DeclarativeEvent.addRules() via RPC overlay.
+      'chrome.declarativeContent.addRules': async (ctx, args) => {
+        const rules = (args[0] ?? []) as Array<{
+          id?: string;
+          conditions?: unknown[];
+          actions?: unknown[];
+          priority?: number;
+        }>;
+        if (!this.declarativeContentHandlers) return [];
+        // Trust the structural shape — host-side matcher validates
+        // instanceType strings during evaluation.
+        this.declarativeContentHandlers.addRules(
+          ctx.id,
+          rules as Parameters<DeclarativeContentHandlers['addRules']>[1],
+        );
+        return rules;
+      },
+      'chrome.declarativeContent.removeRules': async (ctx, args) => {
+        const ids = Array.isArray(args[0]) ? (args[0] as string[]) : undefined;
+        this.declarativeContentHandlers?.removeRules(ctx.id, ids);
+        return undefined;
+      },
+      'chrome.declarativeContent.getRules': async (ctx, args) => {
+        const ids = Array.isArray(args[0]) ? (args[0] as string[]) : undefined;
+        return this.declarativeContentHandlers?.getRules(ctx.id, ids) ?? [];
+      },
+
+      'chrome.debugger.getTargets': async () => {
+        return dgh(this.debuggerHandlers).getTargets({
+          listTabs: () => {
+            const out: Array<{ tabId: number; title: string; url: string }> = [];
+            try {
+              const tabsApi = (window as { tabs?: { getTabsInOrder?: () => Array<{ id: string }> } }).tabs;
+              const tr = this.nyxCtx.tabResolver;
+              if (tabsApi?.getTabsInOrder) {
+                for (const t of tabsApi.getTabsInOrder()) {
+                  try {
+                    const n = tr.toNum(t.id);
+                    const info = tr.info(n);
+                    out.push({
+                      tabId: n,
+                      title: typeof info.title === 'string' ? info.title : '',
+                      url: typeof info.url === 'string' ? info.url : '',
+                    });
+                  } catch { /* skip */ }
+                }
+              }
+            } catch { /* swallow */ }
+            return out;
+          },
+        });
+      },
+
+      // chrome.browsingData.* — selectively clears persistent state.
+      // Real Chrome maps each remove* call to a `dataToRemove` flag;
+      // we route through SiteDataManager (src/apis/siteData.ts) which
+      // owns the per-origin clearing logic.
+      //
+      // `options.origins` is honored when present (chrome.browsingData
+      // ≥ 74); otherwise the operation is global (all sites).
+      'chrome.browsingData.remove': async (_ctx, args) => {
+        const [options, dataToRemove] = args as [
+          { origins?: string[] } | undefined,
+          Record<string, boolean> | undefined,
+        ];
+        if (!dataToRemove) return;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        const origins = options?.origins;
+        if (dataToRemove.history) {
+          const { HistoryManager } = await import('@apis/history');
+          await HistoryManager.getInstance().clearAll();
+        }
+        if (dataToRemove.cookies) {
+          if (origins && origins.length > 0) {
+            for (const o of origins) await sdm.clearCookies(o);
+          } else {
+            await sdm.clearAllSites().then((r) => r.cookies);
+          }
+        }
+        if (dataToRemove.cache || dataToRemove.cacheStorage) {
+          if (origins) for (const o of origins) await sdm.clearCache(o);
+        }
+        if (dataToRemove.localStorage || dataToRemove.indexedDB || dataToRemove.fileSystems) {
+          if (origins) {
+            for (const o of origins) await sdm.clearStorage(o);
+          } else {
+            await sdm.clearAllSites();
+          }
+        }
+        if (dataToRemove.downloads) {
+          // Downloads manager has its own clear API — wired separately.
+          try {
+            const { DownloadsManager } = await import('@apis/downloads');
+            await DownloadsManager.getInstance().clearAll();
+          } catch { /* manager not yet available */ }
+        }
+      },
+      'chrome.browsingData.removeAppcache': async () => { /* obsolete API; no-op */ },
+      'chrome.browsingData.removeCache': async (_ctx, args) => {
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        if (opts?.origins) {
+          for (const o of opts.origins) await sdm.clearCache(o);
+        }
+      },
+      'chrome.browsingData.removeCacheStorage': async (_ctx, args) => {
+        // No separate cache storage in DDX; route through cache buster.
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        if (opts?.origins) {
+          for (const o of opts.origins) await sdm.clearCache(o);
+        }
+      },
+      'chrome.browsingData.removeCookies': async (_ctx, args) => {
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        if (opts?.origins) {
+          for (const o of opts.origins) await sdm.clearCookies(o);
+        } else {
+          await sdm.clearAllSites();
+        }
+      },
+      'chrome.browsingData.removeDownloads': async () => {
+        try {
+          const { DownloadsManager } = await import('@apis/downloads');
+          await DownloadsManager.getInstance().clearAll();
+        } catch { /* manager not yet available */ }
+      },
+      'chrome.browsingData.removeFileSystems': async (_ctx, args) => {
+        // We treat fileSystems as part of localStorage namespace.
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        if (opts?.origins) {
+          for (const o of opts.origins) await sdm.clearStorage(o);
+        }
+      },
+      'chrome.browsingData.removeFormData': async () => { /* no DDX form-data store */ },
+      'chrome.browsingData.removeHistory': async (_ctx, args) => {
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { HistoryManager } = await import('@apis/history');
+        const hm = HistoryManager.getInstance();
+        if (opts?.origins && opts.origins.length > 0) {
+          // Filter HistoryManager entries by origin.
+          for (const origin of opts.origins) {
+            try {
+              const host = new URL(origin).hostname;
+              hm.deleteEntriesByDomain(host);
+            } catch { /* invalid origin — skip */ }
+          }
+        } else {
+          await hm.clearAll();
+        }
+      },
+      'chrome.browsingData.removeIndexedDB': async (_ctx, args) => {
+        // IndexedDB is shared with the host page in DDX (no Scramjet
+        // rewriter for IDB). We refuse per-origin partial clears to
+        // avoid nuking DDX's own DBs.
+        const opts = args[0] as { origins?: string[] } | undefined;
+        if (opts?.origins && opts.origins.length > 0) {
+          console.warn(
+            '[browsingData.removeIndexedDB] per-origin clear unsupported in DDX; IDB is shared with host. Ignoring.',
+          );
+        }
+      },
+      'chrome.browsingData.removeLocalStorage': async (_ctx, args) => {
+        const opts = args[0] as { origins?: string[] } | undefined;
+        const { SiteDataManager } = await import('@apis/siteData');
+        const sdm = SiteDataManager.getInstance();
+        if (opts?.origins) {
+          for (const o of opts.origins) await sdm.clearStorage(o);
+        } else {
+          await sdm.clearAllSites();
+        }
+      },
+      'chrome.browsingData.removePasswords': async () => { /* no DDX password store */ },
+      'chrome.browsingData.removePluginData': async () => { /* obsolete (Flash) */ },
+      'chrome.browsingData.removeServiceWorkers': async () => {
+        // Service workers in DDX are owned by Scramjet's controller —
+        // there's no per-origin worker registration to clear.
+      },
+      'chrome.browsingData.removeWebSQL': async () => { /* obsolete */ },
+      'chrome.browsingData.settings': async () => ({
+        options: { since: 0, originTypes: { unprotectedWeb: true, protectedWeb: false, extension: false } },
+        dataToRemove: {
+          cookies: true,
+          history: true,
+          cache: true,
+          localStorage: true,
+          downloads: true,
+        },
+        dataRemovalPermitted: {
+          cookies: true,
+          history: true,
+          cache: true,
+          localStorage: true,
+          downloads: true,
+          fileSystems: true,
+          formData: false,
+          indexedDB: false,
+          passwords: false,
+          serviceWorkers: false,
+          webSQL: false,
+        },
+      }),
+
+      // chrome.tabGroups — wraps DDX's existing tab-grouping internals.
+      // DDX stores groups by string IDs; we hash to numeric IDs via
+      // tabResolver to satisfy chrome.tabs.Tab.groupId / chrome.tabGroups.
+      // DDX TabGroup shape is `{id, name, color, isCollapsed, tabIds}`;
+      // we map `name → chrome.title` and `isCollapsed → chrome.collapsed`.
+      'chrome.tabGroups.get': async (_ctx, args) => {
+        const groupId = typeof args[0] === 'number' ? args[0] : -1;
+        const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
+        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
+        const ddxId = getDdxGroupId(groupId);
+        if (!ddxId || !gm) {
+          throw new Error(`No tab group with id ${groupId}`);
+        }
+        const g = gm.getGroupById(ddxId);
+        if (!g) throw new Error(`No tab group with id ${groupId}`);
+        return {
+          id: groupId,
+          collapsed: g.isCollapsed,
+          color: g.color || 'grey',
+          title: g.name || '',
+          windowId: 1,
+        };
+      },
+      'chrome.tabGroups.query': async (_ctx, args) => {
+        const opts = (args[0] ?? {}) as {
+          collapsed?: boolean;
+          color?: string;
+          title?: string;
+          windowId?: number;
+        };
+        const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
+        const all = gm?.listGroups() ?? [];
+        const { hashGroupId } = await import('@apis/nyxBridge/tabResolver');
+        return all
+          .filter((g) => opts.collapsed === undefined || g.isCollapsed === opts.collapsed)
+          .filter((g) => opts.color === undefined || g.color === opts.color)
+          .filter((g) => opts.title === undefined || g.name === opts.title)
+          .map((g) => ({
+            id: hashGroupId(g.id),
+            collapsed: g.isCollapsed,
+            color: g.color || 'grey',
+            title: g.name || '',
+            windowId: 1,
+          }));
+      },
+      'chrome.tabGroups.update': async (_ctx, args) => {
+        const groupId = typeof args[0] === 'number' ? args[0] : -1;
+        const updateProps = (args[1] ?? {}) as {
+          collapsed?: boolean;
+          color?: string;
+          title?: string;
+        };
+        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
+        const ddxId = getDdxGroupId(groupId);
+        const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
+        if (!ddxId || !gm) {
+          throw new Error(`No tab group with id ${groupId}`);
+        }
+        const g = gm.updateGroup(ddxId, updateProps);
+        if (!g) throw new Error(`No tab group with id ${groupId}`);
+        return {
+          id: groupId,
+          collapsed: g.isCollapsed,
+          color: g.color || 'grey',
+          title: g.name || '',
+          windowId: 1,
+        };
+      },
+      'chrome.tabGroups.move': async (_ctx, args) => {
+        const groupId = typeof args[0] === 'number' ? args[0] : -1;
+        const moveProps = (args[1] ?? {}) as { index?: number; windowId?: number };
+        const targetIndex = typeof moveProps.index === 'number' ? moveProps.index : 0;
+        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
+        const ddxId = getDdxGroupId(groupId);
+        const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
+        if (!ddxId || !gm) {
+          throw new Error(`No tab group with id ${groupId}`);
+        }
+        const g = gm.moveGroup(ddxId, targetIndex);
+        if (!g) throw new Error(`No tab group with id ${groupId}`);
+        return {
+          id: groupId,
+          collapsed: g.isCollapsed,
+          color: g.color || 'grey',
+          title: g.name || '',
+          windowId: 1,
+        };
+      },
       'chrome.management.uninstallSelf':                   (ctx, args) => mh(this.managementHandlers).uninstallSelf(ctx, args),
       'chrome.management.getPermissionWarningsById':       (ctx, args) => mh(this.managementHandlers).getPermissionWarningsById(ctx, args),
       'chrome.management.getPermissionWarningsByManifest': (ctx, args) => mh(this.managementHandlers).getPermissionWarningsByManifest(ctx, args),
@@ -2645,9 +3786,24 @@ export class ExtensionManager {
       data[k] = newValue;
     }
     await this.writeStorage(ctx.id, data);
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, area]);
-    }
+    this.fireStorageChanged(ctx.id, changes, area);
+  }
+
+  /**
+   * Fire BOTH the namespace-level `chrome.storage.onChanged` AND the
+   * per-area `chrome.storage.<area>.onChanged` events. MV3 docs
+   * specifically recommend the per-area form, and many modern
+   * extensions use ONLY that listener. Firing both keeps old code
+   * working too.
+   */
+  private fireStorageChanged(
+    extId: string,
+    changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+    area: 'local' | 'sync' | 'session' | 'managed',
+  ): void {
+    if (Object.keys(changes).length === 0) return;
+    this.fireEventOn(extId, 'chrome.storage.onChanged', [changes, area]);
+    this.fireEventOn(extId, `chrome.storage.${area}.onChanged`, [changes]);
   }
 
   private async storageRemove(
@@ -2670,9 +3826,7 @@ export class ExtensionManager {
       }
     }
     await this.writeStorage(ctx.id, data);
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, area]);
-    }
+    this.fireStorageChanged(ctx.id, changes, area);
   }
 
   private async storageClear(
@@ -2689,9 +3843,7 @@ export class ExtensionManager {
       changes[k] = { oldValue: data[k], newValue: undefined };
     }
     await this.writeStorage(ctx.id, {});
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, area]);
-    }
+    this.fireStorageChanged(ctx.id, changes, area);
   }
 
   private async storageGetBytesInUse(
@@ -2726,9 +3878,7 @@ export class ExtensionManager {
       changes[k] = { oldValue: data[k], newValue: v };
       data[k] = v;
     }
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, 'session']);
-    }
+    this.fireStorageChanged(ctx.id, changes, 'session');
   }
 
   private async storageSessionRemove(
@@ -2746,9 +3896,7 @@ export class ExtensionManager {
         delete data[k];
       }
     }
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, 'session']);
-    }
+    this.fireStorageChanged(ctx.id, changes, 'session');
   }
 
   private async storageSessionClear(
@@ -2762,9 +3910,7 @@ export class ExtensionManager {
       changes[k] = { oldValue: data[k], newValue: undefined };
     }
     this.sessionStorage.delete(ctx.id);
-    if (Object.keys(changes).length > 0) {
-      this.fireEventOn(ctx.id, 'chrome.storage.onChanged', [changes, 'session']);
-    }
+    this.fireStorageChanged(ctx.id, changes, 'session');
   }
 
   private async storageSessionGetBytesInUse(
@@ -2893,8 +4039,16 @@ export class ExtensionManager {
     }
 
     const sender = { id: ctx.id, origin: `https://${ctx.origin}` };
+    // Cross-extension messages should fire `onMessageExternal` on the
+    // receiving extension; same-extension messages fire `onMessage`.
+    // Matches Chrome's contract — extensions wire `onMessageExternal`
+    // specifically to handle cross-ext communication (and reject
+    // foreign senders that didn't opt in via externally_connectable).
+    const eventName = targetId !== ctx.id
+      ? 'chrome.runtime.onMessageExternal'
+      : 'chrome.runtime.onMessage';
     return target.channel.requestEvent(
-      'chrome.runtime.onMessage',
+      eventName,
       [message, sender],
       { timeoutMs: SEND_MESSAGE_TIMEOUT_MS },
     );

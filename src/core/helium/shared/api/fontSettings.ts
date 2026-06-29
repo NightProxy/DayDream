@@ -1,6 +1,13 @@
 import type { ExtensionContext } from '../../extfs/types';
 import { ChromeEvent } from '..';
 
+/** Helper: invoke a trailing-callback arg with the result, or return as Promise. */
+function cbOrPromise(args: unknown[], result: unknown): unknown {
+  const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] as (r: unknown) => void : null;
+  if (cb) { try { cb(result); } catch { /* swallow */ } return undefined; }
+  return Promise.resolve(result);
+}
+
 export class ChromeFontSettings {
   protected readonly ctx: ExtensionContext;
 
@@ -13,57 +20,69 @@ export class ChromeFontSettings {
   public readonly onDefaultFontSizeChanged: ChromeEvent = new ChromeEvent();
   public readonly onFontChanged: ChromeEvent = new ChromeEvent();
 
-  clearDefaultFixedFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.clearDefaultFixedFontSize is not implemented');
+  /**
+   * `chrome.fontSettings.*` — read/write per-script font preferences.
+   *
+   * DDX has no global font-control surface, but we honor the
+   * read-side getters by returning sensible defaults:
+   *   - getFontList → `document.fonts` enumeration
+   *   - getDefaultFontSize / getDefaultFixedFontSize / getMinimumFontSize
+   *     → DDX defaults (16 / 13 / 0)
+   *   - getFont → the manifest's default sans-serif
+   *
+   * Writers are no-ops (we don't propagate to a real Chrome font
+   * subsystem). Extensions that just READ to display their UI
+   * (e.g. dark-reader configuration pages) work correctly.
+   */
+
+  clearDefaultFixedFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
+  clearDefaultFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
+  clearFont(...args: any[]): any { return cbOrPromise(args, undefined); }
+  clearMinimumFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
+
+  getDefaultFixedFontSize(...args: any[]): any {
+    return cbOrPromise(args, { pixelSize: 13, levelOfControl: 'controllable_by_this_extension' });
+  }
+  getDefaultFontSize(...args: any[]): any {
+    return cbOrPromise(args, { pixelSize: 16, levelOfControl: 'controllable_by_this_extension' });
+  }
+  getFont(...args: any[]): any {
+    return cbOrPromise(args, { fontId: 'sans-serif', levelOfControl: 'controllable_by_this_extension' });
+  }
+  getFontList(...args: any[]): any {
+    let list: Array<{ fontId: string; displayName: string }> = [];
+    try {
+      const fonts = (document as { fonts?: { entries?: () => Iterable<{ family: string }> } }).fonts;
+      const seen = new Set<string>();
+      if (fonts && typeof fonts.entries === 'function') {
+        for (const ff of fonts.entries()) {
+          if (!seen.has(ff.family)) {
+            seen.add(ff.family);
+            list.push({ fontId: ff.family, displayName: ff.family });
+          }
+        }
+      }
+      // Always include the standard families as a baseline.
+      for (const fam of ['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy']) {
+        if (!seen.has(fam)) list.push({ fontId: fam, displayName: fam });
+      }
+    } catch {
+      list = [
+        { fontId: 'sans-serif', displayName: 'Sans Serif' },
+        { fontId: 'serif', displayName: 'Serif' },
+        { fontId: 'monospace', displayName: 'Monospace' },
+      ];
+    }
+    return cbOrPromise(args, list);
+  }
+  getMinimumFontSize(...args: any[]): any {
+    return cbOrPromise(args, { pixelSize: 0, levelOfControl: 'controllable_by_this_extension' });
   }
 
-  clearDefaultFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.clearDefaultFontSize is not implemented');
-  }
-
-  clearFont(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.clearFont is not implemented');
-  }
-
-  clearMinimumFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.clearMinimumFontSize is not implemented');
-  }
-
-  getDefaultFixedFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.getDefaultFixedFontSize is not implemented');
-  }
-
-  getDefaultFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.getDefaultFontSize is not implemented');
-  }
-
-  getFont(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.getFont is not implemented');
-  }
-
-  getFontList(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.getFontList is not implemented');
-  }
-
-  getMinimumFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.getMinimumFontSize is not implemented');
-  }
-
-  setDefaultFixedFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.setDefaultFixedFontSize is not implemented');
-  }
-
-  setDefaultFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.setDefaultFontSize is not implemented');
-  }
-
-  setFont(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.setFont is not implemented');
-  }
-
-  setMinimumFontSize(..._args: any[]): any {
-    throw new Error('chrome.fontSettings.setMinimumFontSize is not implemented');
-  }
+  setDefaultFixedFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
+  setDefaultFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
+  setFont(...args: any[]): any { return cbOrPromise(args, undefined); }
+  setMinimumFontSize(...args: any[]): any { return cbOrPromise(args, undefined); }
 
   static readonly GenericFamily = {
     CURSIVE: "cursive",

@@ -1,4 +1,4 @@
-import type { ProfileData } from "./types";
+import type { ProfileData, ProfileAppearance } from "./types";
 import { PROFILE_VERSION } from "./constants";
 import { SettingsAPI } from "@apis/settings";
 
@@ -118,6 +118,31 @@ export class ProfileManager {
     }
 
     await this.profileStore.setItem(userID, data);
+    return true;
+  }
+
+  async renameProfile(oldId: string, newId: string): Promise<boolean> {
+    if (!oldId || !newId || oldId === newId) return false;
+    const store = this.getStore();
+    const oldData = await store.getItem<ProfileData>(oldId);
+    if (!oldData) return false;
+    const exists = await store.getItem(newId);
+    if (exists) return false; // name collision
+    await store.setItem(newId, oldData);
+    await store.removeItem(oldId);
+    const current = await store.getItem<string>("__current_profile__");
+    if (current === oldId) {
+      await store.setItem("__current_profile__", newId);
+    }
+    return true;
+  }
+
+  async setAppearance(userID: string, appearance: ProfileAppearance): Promise<boolean> {
+    const store = this.getStore();
+    const data = await store.getItem<ProfileData>(userID);
+    if (!data) return false;
+    data.appearance = appearance;
+    await store.setItem(userID, data);
     return true;
   }
 

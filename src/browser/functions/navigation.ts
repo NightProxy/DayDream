@@ -115,8 +115,10 @@ export class Navigation implements NavigationInterface {
       const newZoomLevel = this.zoomSteps[this.currentStep];
 
       if (typeof newZoomLevel === "number" && !isNaN(newZoomLevel)) {
+        const oldZoomLevel = this.zoomLevel;
         this.zoomLevel = newZoomLevel;
         this.scaleIframeContent();
+        this.dispatchZoomChanged(oldZoomLevel, newZoomLevel);
       } else {
         console.warn("Invalid zoom level at step", this.currentStep);
       }
@@ -135,11 +137,44 @@ export class Navigation implements NavigationInterface {
       const newZoomLevel = this.zoomSteps[this.currentStep];
 
       if (typeof newZoomLevel === "number" && !isNaN(newZoomLevel)) {
+        const oldZoomLevel = this.zoomLevel;
         this.zoomLevel = newZoomLevel;
         this.scaleIframeContent();
+        this.dispatchZoomChanged(oldZoomLevel, newZoomLevel);
       } else {
         console.warn("Invalid zoom level at step", this.currentStep);
       }
+    }
+  }
+
+  /**
+   * Dispatch `tabZoomChanged` CustomEvent on document so the Helium
+   * host (src/core/helium/host/tabs/events.ts) can fan it out as
+   * `chrome.tabs.onZoomChange` to extensions with the `tabs`
+   * permission. Payload mirrors Chrome's onZoomChange details:
+   *   { tabId, oldZoomFactor, newZoomFactor, zoomSettings }
+   * Best-effort: silently no-ops if no active iframe / tab id.
+   */
+  private dispatchZoomChanged(oldZoom: number, newZoom: number): void {
+    try {
+      const iframe = document.querySelector(
+        "iframe.active",
+      ) as HTMLIFrameElement | null;
+      const tabId = iframe?.getAttribute("data-tab-id");
+      if (!tabId) return;
+      const detail = {
+        tabId,
+        oldZoomFactor: oldZoom,
+        newZoomFactor: newZoom,
+        zoomSettings: {
+          mode: "automatic",
+          scope: "per-tab",
+          defaultZoomFactor: 1,
+        },
+      };
+      document.dispatchEvent(new CustomEvent("tabZoomChanged", { detail }));
+    } catch (err) {
+      console.warn("Failed to dispatch tabZoomChanged:", err);
     }
   }
 

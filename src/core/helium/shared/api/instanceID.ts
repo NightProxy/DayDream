@@ -10,24 +10,43 @@ export class ChromeInstanceID {
 
   public readonly onTokenRefresh: ChromeEvent = new ChromeEvent();
 
-  deleteID(..._args: any[]): any {
-    throw new Error('chrome.instanceID.deleteID is not implemented');
+  /**
+   * `chrome.instanceID.*` — Firebase instance IDs / token rotation.
+   * Same constraint as chrome.gcm — needs GCM infrastructure.
+   *
+   * We synthesize a per-extension stable ID derived from `ctx.id`.
+   * Tokens are returned as empty strings; extensions branching on
+   * truthy token pick the "no push" path.
+   */
+  deleteID(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
 
-  deleteToken(..._args: any[]): any {
-    throw new Error('chrome.instanceID.deleteToken is not implemented');
+  deleteToken(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve();
   }
 
-  getCreationTime(..._args: any[]): any {
-    throw new Error('chrome.instanceID.getCreationTime is not implemented');
+  getCreationTime(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(Date.now()); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(Date.now());
   }
 
-  getID(..._args: any[]): any {
-    throw new Error('chrome.instanceID.getID is not implemented');
+  getID(...args: any[]): any {
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(this.ctx.id); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve(this.ctx.id);
   }
 
-  getToken(..._args: any[]): any {
-    throw new Error('chrome.instanceID.getToken is not implemented');
+  getToken(...args: any[]): any {
+    // Empty token means "no push" — extensions retry or skip.
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+    if (cb) { try { cb(''); } catch { /* swallow */ } return undefined; }
+    return Promise.resolve('');
   }
 
 }

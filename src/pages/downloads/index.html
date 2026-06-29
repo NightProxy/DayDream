@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Downloads</title>
+    <script>
+      self.__ddxBase = (function () {
+        var p = location.pathname;
+        var i = p.indexOf("/internal/");
+        if (i !== -1) return p.substring(0, i + 1);
+        return new URL("./", location.href).pathname;
+      })();
+    </script>
+    <link rel="icon" type="icon/x-icon" href="../../res/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:image" content="../../res/logo.png" />
+    <link rel="preload" href="/src/css/pages/downloads.scss" as="style" />
+    <link rel="stylesheet" href="/src/css/pages/downloads.scss" />
+    <link rel="stylesheet" href="/src/css/internal.scss" />
+
+    <script type="module" src="/src/pages/downloads/index.tsx"></script>
+  </head>
+
+  <body class="bg-[var(--bg-2)] text-[var(--text)] antialiased">
+    <div class="min-h-dvh w-full relative overflow-hidden">
+      <main class="mx-auto max-w-5xl px-4 pt-24 pb-24">
+        <!-- Title bar -->
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div
+              class="backdrop-blur inline-flex items-center gap-2 rounded-2xl border border-[var(--white-10)] bg-[var(--bg-2)] px-6 py-3 shadow-[0_0_1px_var(--shadow-outer)]"
+            >
+              <i
+                data-lucide="download"
+                class="h-5 w-5 text-[var(--main)]"
+              ></i>
+              <span class="text-3xl tracking-widest text-[var(--text)] -mr-1"
+                >Downloads</span
+              >
+              <button
+                class="ml-2 grid place-items-center rounded-full h-7 w-7 text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+                data-tooltip="Clear all downloads"
+                aria-label="Clear all downloads"
+                id="dl-clear-all"
+              >
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search + filter row -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <div class="flex-1 relative">
+            <div
+              class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2"
+            >
+              <i data-lucide="search" class="h-4 w-4 text-[var(--proto)]"></i>
+            </div>
+            <input
+              id="dl-search"
+              class="w-full rounded-xl bg-[var(--bg-2)] pl-12 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text)]/40 ring-1 ring-inset ring-[var(--main-35a)] focus:outline-none focus:ring-2 focus:ring-[var(--main)] shadow-[0_0_1px_var(--shadow-outer)]"
+              placeholder="Search downloads..."
+              aria-label="Search downloads"
+              autocomplete="off"
+            />
+            <button
+              id="dl-search-clear"
+              class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]"
+              aria-label="Clear search"
+            >
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select
+              id="dl-filter-state"
+              class="rounded-xl bg-[var(--bg-2)] px-3 py-3 text-sm text-[var(--text)] ring-1 ring-inset ring-[var(--white-08)] focus:outline-none focus:ring-2 focus:ring-[var(--main)]"
+              aria-label="Filter by state"
+            >
+              <option value="all">All</option>
+              <option value="in_progress">In progress</option>
+              <option value="complete">Complete</option>
+              <option value="interrupted">Interrupted</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <section class="mt-6 dl-empty" id="dl-empty" hidden>
+          <div class="dl-empty-icon">
+            <i
+              data-lucide="folder-search"
+              class="h-6 w-6 text-[var(--proto)]"
+            ></i>
+          </div>
+          <h2 class="text-lg font-semibold text-[var(--text)]">
+            No downloads
+          </h2>
+          <p class="text-sm">
+            Downloads you start in DDX will appear here.
+          </p>
+        </section>
+
+        <!-- Active downloads section -->
+        <section id="dl-active" hidden>
+          <h3 class="dl-day-header">Active</h3>
+          <div class="dl-list" id="dl-active-list"></div>
+        </section>
+
+        <!-- History (completed + interrupted) -->
+        <section id="dl-history" hidden>
+          <h3 class="dl-day-header">History</h3>
+          <div class="dl-list" id="dl-history-list"></div>
+        </section>
+      </main>
+
+      <footer
+        class="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[var(--proto)]"
+      >
+        <span class="pointer-events-auto"
+          >Total:
+          <span id="dl-count" class="text-[var(--text)]/80">0</span></span
+        >
+        <nav class="pointer-events-auto flex items-center gap-4">
+          <a href="../newtab/" class="hover:text-[var(--text)]">New Tab</a>
+          <span>\</span>
+          <a href="../settings/" class="hover:text-[var(--text)]">Settings</a>
+        </nav>
+      </footer>
+    </div>
+
+    <script>
+      document.documentElement.classList.add("pre-anim");
+      window.addEventListener("load", () => {
+        document
+          .querySelectorAll("body *:not(.always-visible)")
+          .forEach((el) => {
+            el.style.transition = "opacity .1s ease .1s";
+            el.style.opacity = "1";
+            el.style.pointerEvents = "";
+          });
+        document.documentElement.classList.remove("pre-anim");
+      });
+    </script>
+  </body>
+</html>

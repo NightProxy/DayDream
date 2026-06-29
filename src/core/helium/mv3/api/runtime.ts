@@ -9,16 +9,15 @@ export class ChromeRuntime extends ChromeRuntimeBase {
   public readonly onUserScriptMessage: ChromeEvent = new ChromeEvent();
   public readonly onUserScriptConnect: ChromeEvent = new ChromeEvent();
 
-  // MV3-only. Chrome contract: `Promise<ExtensionContext[]>`. Extensions
-  // use this to enumerate offscreen documents / side panels / popups
-  // they own. Returning `[]` is the "nothing currently exists" case
-  // and is what extensions handle by creating a new context. Safe to
-  // no-op at the stub level — post-handshake the RPC overlay can
-  // provide a real answer if/when we wire one.
-  getContexts(...args: any[]): any {
-    const cb = typeof args[1] === 'function' ? args[1] : null;
-    if (cb) { try { cb([]); } catch { /* swallow */ } return undefined; }
-    return Promise.resolve([]);
+  // MV3-only. RPC-wired to the host's `runtime.getContexts` handler.
+  // Post-handshake the bootstrap's installRpcBindings overlays this
+  // stub with one that calls into the host (which enumerates the
+  // real spawned BG/popup/offscreen contexts for this extension).
+  // Pre-handshake calls now queue (per the new channelReady gate);
+  // this throw is purely defensive in case a caller reaches in
+  // before the overlay runs.
+  getContexts(..._args: any[]): any {
+    throw new Error('chrome.runtime.getContexts is not implemented (overlay not yet installed)');
   }
 
   static readonly PlatformArch = {

@@ -158,6 +158,39 @@ class Proxy implements ProxyInterface {
 			// proxy boot finishes, and the hook fires per-frame much later.
 			installDevToolsHook(this.controller, () => (window as any).devtools);
 
+			// Downloads subsystem — registers the default web provider
+			// AND installs the Scramjet `preresponse` hook that
+			// intercepts navigation-initiated downloads (Content-
+			// Disposition: attachment or non-inline MIME). External
+			// platforms can register additional providers via
+			// `window.downloadsManager.registerProvider(...)` after
+			// boot.
+			try {
+				const { installDownloadsSubsystem } = await import(
+					'@browser/downloads/install'
+				);
+				await installDownloadsSubsystem(
+					this.controller as unknown as Parameters<typeof installDownloadsSubsystem>[0],
+				);
+			} catch (e) {
+				console.warn('[proxy] failed to install downloads subsystem:', e);
+			}
+
+			// Web permissions subsystem — host-side prompt + Scramjet
+			// plugin that patches navigator.permissions / Notification /
+			// geolocation / mediaDevices in each iframe so DDX
+			// mediates per-origin grants via SitePermissionsStore.
+			try {
+				const { installSitePermissionsSubsystem } = await import(
+					'@browser/sitePermissions/install'
+				);
+				await installSitePermissionsSubsystem(
+					this.controller as unknown as Parameters<typeof installSitePermissionsSubsystem>[0],
+				);
+			} catch (e) {
+				console.warn('[proxy] failed to install sitePermissions subsystem:', e);
+			}
+
 			// Per-frame agent for NyxBridge — injects chobitsu into every non-Nyx
 			// proxied frame so CDP-backed handlers (cookies, screenshots, dialogs,
 			// input events, file uploads) work across tabs.

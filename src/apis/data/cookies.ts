@@ -77,13 +77,67 @@ export interface CookieJarLike {
   setCookies(cookieHeader: string, url: URL): void;
 }
 
+/**
+ * Cookie change cause — mirrors Chrome's `OnChangedCause` enum.
+ * We can only synthesize `explicit` (mutator-driven), `expired`
+ * (TTL passed by the time we observe the change), and `overwrite`
+ * (same key changed value). `evicted` is unused since DDX has no
+ * eviction policy.
+ */
+export type CookieChangeCause = 'explicit' | 'overwrite' | 'expired' | 'expired_overwrite' | 'evicted';
+
+export interface CookieChangeDelta {
+  removed: boolean;
+  cookie: DDXCookie;
+  cause: CookieChangeCause;
+}
+
+export type CookieChangeListener = (delta: CookieChangeDelta) => void;
+
 export class CookieAccessor {
+  private readonly listeners = new Set<CookieChangeListener>();
+
   constructor(private readonly proxy: Proxy) {}
 
   private getJar(): CookieJarLike {
     const j = this.proxy.getCookieJar();
     if (!j) throw new Error('CookieJar not available');
     return j as CookieJarLike;
+  }
+
+  /**
+   * Subscribe to cookie mutations. Listeners fire AFTER the write has
+   * been applied to the underlying jar (so a subsequent `getCookies`
+   * sees the new value). Returns an unsubscribe function.
+   *
+   * Two listener-emission paths:
+   *   1. `setCookie` / `removeCookie` on THIS CookieAccessor — emits
+   *      synchronously after the jar write succeeds. Cause is known
+   *      precisely (`explicit` or `overwrite`).
+   *   2. Cross-tab / SW-originated mutations — observed via the
+   *      Scramjet controller's BroadcastChannel (see
+   *      `installCookieEventListeners`). That path diffs the dump and
+   *      can only synthesize a best-effort cause.
+   */
+  onChange(listener: CookieChangeListener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  /**
+   * Public hook used by `installCookieEventListeners` (the
+   * broadcast-channel diff path) to fan out cross-tab changes. Avoid
+   * calling this from mutation methods — they self-emit via the
+   * private `emit` helper.
+   */
+  emitChange(delta: CookieChangeDelta): void {
+    this.emit(delta);
+  }
+
+  private emit(delta: CookieChangeDelta): void {
+    for (const fn of this.listeners) {
+      try { fn(delta); } catch (err) { console.warn('[helium/cookies] listener threw:', err); }
+    }
   }
 
   /**
@@ -131,6 +185,21 @@ export class CookieAccessor {
     if (typeof jar.setCookies !== 'function') {
       throw new Error('CookieJar.setCookies unavailable');
     }
+    // Snapshot the prior cookie at this (url, name) so we can tell
+    // explicit-write from overwrite. Only relevant if listeners
+    // present — skip the I/O cost otherwise.
+    const willEmit = this.listeners.size > 0;
+    const filterForLookup = {
+      url: opts.url,
+      ...(opts.name !== undefined ? { name: opts.name } : {}),
+    };
+    let prior: DDXCookie | null = null;
+    if (willEmit) {
+      try {
+        const fetched = await this.getCookies(filterForLookup);
+        prior = fetched[0] ?? null;
+      } catch { /* swallow */ }
+    }
     const header = this.buildSetCookieHeader(opts);
     try {
       jar.setCookies(header, new URL(opts.url));
@@ -138,11 +207,18 @@ export class CookieAccessor {
       console.warn('[helium/cookies] setCookies failed:', err);
       return null;
     }
-    const fetched = await this.getCookies({
-      url: opts.url,
-      ...(opts.name !== undefined ? { name: opts.name } : {}),
-    });
-    return fetched[0] ?? null;
+    const fetched = await this.getCookies(filterForLookup);
+    const next = fetched[0] ?? null;
+    if (willEmit && next) {
+      if (prior) {
+        // Overwrite: Chrome emits TWO events — first the old cookie
+        // removed (cause:overwrite), then the new cookie added
+        // (cause:explicit). We mirror that contract.
+        this.emit({ removed: true, cookie: prior, cause: 'overwrite' });
+      }
+      this.emit({ removed: false, cookie: next, cause: 'explicit' });
+    }
+    return next;
   }
 
   async removeCookie(opts: {
@@ -152,13 +228,42 @@ export class CookieAccessor {
   }): Promise<{ url: string; name: string; storeId: string } | null> {
     const jar = this.getJar();
     if (typeof jar.setCookies !== 'function') return null;
+    // Snapshot prior so we can include the removed cookie in the
+    // change event. Only do the lookup if there are listeners.
+    const willEmit = this.listeners.size > 0;
+    let prior: DDXCookie | null = null;
+    if (willEmit) {
+      try {
+        const fetched = await this.getCookies({ url: opts.url, name: opts.name });
+        prior = fetched[0] ?? null;
+      } catch { /* swallow */ }
+    }
     // Per RFC 6265 §3.1: setting Max-Age=0 expires the cookie immediately.
     // CookieJar.setCookies honors Max-Age<=0 by deleting the matching id.
     const setVal = `${opts.name}=; Max-Age=0; Path=/`;
     try {
       jar.setCookies(setVal, new URL(opts.url));
     } catch { /* ignore */ }
+    if (willEmit && prior) {
+      this.emit({ removed: true, cookie: prior, cause: 'explicit' });
+    }
     return { url: opts.url, name: opts.name, storeId: opts.storeId ?? '0' };
+  }
+
+  /**
+   * Snapshot the entire jar for diff-style change detection. Returns
+   * a Map keyed by a stable cookie identity (`domain|path|name`).
+   * Used by `installCookieEventListeners`'s diff-on-dirty path to
+   * surface cross-tab / SW-originated mutations as
+   * `chrome.cookies.onChanged` events.
+   */
+  async snapshot(): Promise<Map<string, DDXCookie>> {
+    const all = await this.getCookies({});
+    const m = new Map<string, DDXCookie>();
+    for (const c of all) {
+      m.set(`${c.domain}|${c.path}|${c.name}`, c);
+    }
+    return m;
   }
 
   private buildSetCookieHeader(opts: CookieSetOpts): string {

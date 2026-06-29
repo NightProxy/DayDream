@@ -2,9 +2,11 @@ import type { ExtensionContext } from '../extfs/types';
 import {
   ChromeAlarms,
   ChromeApp,
+  ChromeAudio,
   ChromeBookmarks,
   ChromeBrowserAction,
   ChromeBrowsingData,
+  ChromeCertificateProvider,
   ChromeClipboard,
   ChromeCommands,
   ChromeContentSettings,
@@ -13,19 +15,27 @@ import {
   ChromeDebugger,
   ChromeDeclarativeContent,
   ChromeDesktopCapture,
+  ChromeDocumentScan,
   ChromeDom,
   ChromeDownloads,
+  ChromeEnterprise,
   ChromeExtension,
+  ChromeFileSystemProvider,
   ChromeFontSettings,
   ChromeGcm,
   ChromeHistory,
   ChromeI18n,
   ChromeIdentity,
   ChromeIdle,
+  ChromeInput,
   ChromeInstanceID,
   ChromeManagement,
+  ChromeMenus,
+  ChromeNetworking,
   ChromeNotifications,
   ChromeOmnibox,
+  ChromePageAction,
+  ChromePlatformKeys,
   ChromePageCapture,
   ChromePermissions,
   ChromePower,
@@ -42,6 +52,8 @@ import {
   ChromeTopSites,
   ChromeTts,
   ChromeTtsEngine,
+  ChromeVpnProvider,
+  ChromeWallpaper,
   ChromeWebNavigation,
   ChromeWebRequest,
   ChromeWindows,
@@ -62,9 +74,11 @@ export class Chrome {
 
   public readonly alarms: ChromeAlarms;
   public readonly app: ChromeApp;
+  public readonly audio: ChromeAudio;
   public readonly bookmarks: ChromeBookmarks;
   public readonly browserAction: ChromeBrowserAction;
   public readonly browsingData: ChromeBrowsingData;
+  public readonly certificateProvider: ChromeCertificateProvider;
   public readonly clipboard: ChromeClipboard;
   public readonly commands: ChromeCommands;
   public readonly contentSettings: ChromeContentSettings;
@@ -73,19 +87,27 @@ export class Chrome {
   public readonly debugger: ChromeDebugger;
   public readonly declarativeContent: ChromeDeclarativeContent;
   public readonly desktopCapture: ChromeDesktopCapture;
+  public readonly documentScan: ChromeDocumentScan;
   public readonly dom: ChromeDom;
   public readonly downloads: ChromeDownloads;
+  public readonly enterprise: ChromeEnterprise;
   public readonly extension: ChromeExtension;
+  public readonly fileSystemProvider: ChromeFileSystemProvider;
   public readonly fontSettings: ChromeFontSettings;
   public readonly gcm: ChromeGcm;
   public readonly history: ChromeHistory;
   public readonly i18n: ChromeI18n;
   public readonly identity: ChromeIdentity;
   public readonly idle: ChromeIdle;
+  public readonly input: ChromeInput;
   public readonly instanceID: ChromeInstanceID;
   public readonly management: ChromeManagement;
+  public readonly menus: ChromeMenus;
+  public readonly networking: ChromeNetworking;
   public readonly notifications: ChromeNotifications;
   public readonly omnibox: ChromeOmnibox;
+  public readonly pageAction: ChromePageAction;
+  public readonly platformKeys: ChromePlatformKeys;
   public readonly pageCapture: ChromePageCapture;
   public readonly permissions: ChromePermissions;
   public readonly power: ChromePower;
@@ -102,6 +124,8 @@ export class Chrome {
   public readonly topSites: ChromeTopSites;
   public readonly tts: ChromeTts;
   public readonly ttsEngine: ChromeTtsEngine;
+  public readonly vpnProvider: ChromeVpnProvider;
+  public readonly wallpaper: ChromeWallpaper;
   public readonly webNavigation: ChromeWebNavigation;
   public readonly webRequest: ChromeWebRequest;
   public readonly windows: ChromeWindows;
@@ -109,9 +133,11 @@ export class Chrome {
   constructor(ctx: ExtensionContext) {
     this.alarms = new ChromeAlarms(ctx);
     this.app = new ChromeApp(ctx);
+    this.audio = new ChromeAudio(ctx);
     this.bookmarks = new ChromeBookmarks(ctx);
     this.browserAction = new ChromeBrowserAction(ctx);
     this.browsingData = new ChromeBrowsingData(ctx);
+    this.certificateProvider = new ChromeCertificateProvider(ctx);
     this.clipboard = new ChromeClipboard(ctx);
     this.commands = new ChromeCommands(ctx);
     this.contentSettings = new ChromeContentSettings(ctx);
@@ -120,19 +146,27 @@ export class Chrome {
     this.debugger = new ChromeDebugger(ctx);
     this.declarativeContent = new ChromeDeclarativeContent(ctx);
     this.desktopCapture = new ChromeDesktopCapture(ctx);
+    this.documentScan = new ChromeDocumentScan(ctx);
     this.dom = new ChromeDom(ctx);
     this.downloads = new ChromeDownloads(ctx);
+    this.enterprise = new ChromeEnterprise(ctx);
     this.extension = new ChromeExtension(ctx);
+    this.fileSystemProvider = new ChromeFileSystemProvider(ctx);
     this.fontSettings = new ChromeFontSettings(ctx);
     this.gcm = new ChromeGcm(ctx);
     this.history = new ChromeHistory(ctx);
     this.i18n = new ChromeI18n(ctx);
     this.identity = new ChromeIdentity(ctx);
     this.idle = new ChromeIdle(ctx);
+    this.input = new ChromeInput(ctx);
     this.instanceID = new ChromeInstanceID(ctx);
     this.management = new ChromeManagement(ctx);
+    this.menus = new ChromeMenus(ctx);
+    this.networking = new ChromeNetworking(ctx);
     this.notifications = new ChromeNotifications(ctx);
     this.omnibox = new ChromeOmnibox(ctx);
+    this.pageAction = new ChromePageAction(ctx);
+    this.platformKeys = new ChromePlatformKeys(ctx);
     this.pageCapture = new ChromePageCapture(ctx);
     this.permissions = new ChromePermissions(ctx);
     this.power = new ChromePower(ctx);
@@ -149,6 +183,8 @@ export class Chrome {
     this.topSites = new ChromeTopSites(ctx);
     this.tts = new ChromeTts(ctx);
     this.ttsEngine = new ChromeTtsEngine(ctx);
+    this.vpnProvider = new ChromeVpnProvider(ctx);
+    this.wallpaper = new ChromeWallpaper(ctx);
     this.webNavigation = new ChromeWebNavigation(ctx);
     this.webRequest = new ChromeWebRequest(ctx);
     this.windows = new ChromeWindows(ctx);

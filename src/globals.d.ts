@@ -44,6 +44,18 @@ declare global {
 		liveInject?: any;
 		codeInject?: any;
 		d: ShadowRoot;
+		// Downloads + site permissions subsystems (exposed by their
+		// respective install.ts files at boot — see
+		// src/browser/downloads/install.ts and
+		// src/browser/sitePermissions/install.ts).
+		downloadsManager?: import('@apis/downloads').DownloadsManager;
+		sitePermissionsStore?: import('@apis/sitePermissions').SitePermissionsStore;
+		// Optional UI controllers — added at boot if present.
+		downloadShelf?: import('@browser/downloads/shelf').DownloadShelf;
+		lockDropdown?: import('@browser/sitePermissions/lockDropdown').LockDropdown;
+		extensionToolbar?: import('@browser/extensions/toolbarButtons').ExtensionToolbarButtons;
+		// SiteDataManager + DnsResolver from earlier session
+		dnsResolver?: import('@apis/network/dns').DnsResolver;
 	}
 
 	interface SWConfig {

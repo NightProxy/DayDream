@@ -51,10 +51,7 @@ export const obfuscationConfig = {
   exclude: [
     "**/node_modules/**",
     `**/${routePaths.scramjet}/**`,
-    `**/${routePaths.epoxy}/**`,
     `**/${routePaths.libcurl}/**`,
-    `**/${routePaths.baremux}/**`,
-    `**/${routePaths.reflux}/**`,
     `**/core/inspect.js`,
     "**/ob-fonts.js",
     "**/poppins-obf*.json",
