@@ -5,8 +5,6 @@ node_modules/
 *.lockb
 *-lock.yaml
 dist/
-config.js
-database.sqlite
 .VSCodeCounter/
 plus-backend/
 .github/
