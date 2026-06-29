@@ -91,6 +91,10 @@ import {
   type RegisteredCommandsHandle,
 } from '@core/helium';
 import { CookieAccessor } from './data/cookies';
+import { installWebRequestHook } from '@core/helium/host/webRequest';
+import { openExtensionPopup } from '@browser/extensions/popupHost';
+import { ReadingListManager } from '@apis/readingList';
+import { getDdxGroupId, hashGroupId } from '@apis/nyxBridge/tabResolver';
 
 const CONTAINER_ID = '__helium_extensions__';
 const SEND_MESSAGE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -796,7 +800,6 @@ export class ExtensionManager {
       if (proxyAny.initReady) {
         await proxyAny.initReady;
       }
-      const { installWebRequestHook } = await import('@core/helium/host/webRequest');
       const controller = proxyAny.controller;
       if (controller) {
         installWebRequestHook(controller, {
@@ -2348,8 +2351,6 @@ export class ExtensionManager {
     } catch { /* swallow */ }
     const anchor = candidates[0] ?? document.body;
 
-    // Import lazily to avoid circular dep at module init.
-    const { openExtensionPopup } = await import('@browser/extensions/popupHost');
     openExtensionPopup({
       extId,
       ctx: s.ctx,
@@ -3327,7 +3328,6 @@ export class ExtensionManager {
         if (typeof opts.url !== 'string' || !opts.url) {
           throw new Error('chrome.readingList.addEntry requires url');
         }
-        const { ReadingListManager } = await import('@apis/readingList');
         const rm = ReadingListManager.getInstance();
         return rm.addEntry({
           url: opts.url,
@@ -3337,7 +3337,6 @@ export class ExtensionManager {
       },
       'chrome.readingList.query': async (_ctx, args) => {
         const filter = (args[0] ?? {}) as { url?: string; title?: string; hasBeenRead?: boolean };
-        const { ReadingListManager } = await import('@apis/readingList');
         const rm = ReadingListManager.getInstance();
         return rm.query(filter);
       },
@@ -3346,7 +3345,6 @@ export class ExtensionManager {
         if (typeof opts.url !== 'string' || !opts.url) {
           throw new Error('chrome.readingList.removeEntry requires url');
         }
-        const { ReadingListManager } = await import('@apis/readingList');
         const rm = ReadingListManager.getInstance();
         await rm.removeEntry({ url: opts.url });
         // Chrome returns undefined.
@@ -3361,7 +3359,6 @@ export class ExtensionManager {
         if (typeof opts.url !== 'string' || !opts.url) {
           throw new Error('chrome.readingList.updateEntry requires url');
         }
-        const { ReadingListManager } = await import('@apis/readingList');
         const rm = ReadingListManager.getInstance();
         return rm.updateEntry({
           url: opts.url,
@@ -3624,7 +3621,6 @@ export class ExtensionManager {
       'chrome.tabGroups.get': async (_ctx, args) => {
         const groupId = typeof args[0] === 'number' ? args[0] : -1;
         const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
-        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
         const ddxId = getDdxGroupId(groupId);
         if (!ddxId || !gm) {
           throw new Error(`No tab group with id ${groupId}`);
@@ -3648,7 +3644,6 @@ export class ExtensionManager {
         };
         const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
         const all = gm?.listGroups() ?? [];
-        const { hashGroupId } = await import('@apis/nyxBridge/tabResolver');
         return all
           .filter((g) => opts.collapsed === undefined || g.isCollapsed === opts.collapsed)
           .filter((g) => opts.color === undefined || g.color === opts.color)
@@ -3668,7 +3663,6 @@ export class ExtensionManager {
           color?: string;
           title?: string;
         };
-        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
         const ddxId = getDdxGroupId(groupId);
         const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
         if (!ddxId || !gm) {
@@ -3688,7 +3682,6 @@ export class ExtensionManager {
         const groupId = typeof args[0] === 'number' ? args[0] : -1;
         const moveProps = (args[1] ?? {}) as { index?: number; windowId?: number };
         const targetIndex = typeof moveProps.index === 'number' ? moveProps.index : 0;
-        const { getDdxGroupId } = await import('@apis/nyxBridge/tabResolver');
         const ddxId = getDdxGroupId(groupId);
         const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
         if (!ddxId || !gm) {
