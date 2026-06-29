@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx devserver.ts",
     "core:dev": "vite dev --host & tsx index.ts",
-    "build": "npm run obscura:bundle:iife && npm run controller:build && npm run helium-bootstrap:build && npm run neutron-worker:build && npm run mini-chrome:build && npm run devtools-agent:build && npm run devtools-worker-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json && vite build",
+    "build": "npm run neutron:build && npm run obscura:build && npm run obscura:bundle && npm run obscura:bundle:iife && npm run controller:build && npm run helium-bootstrap:build && npm run neutron-worker:build && npm run mini-chrome:build && npm run devtools-agent:build && npm run devtools-worker-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json && vite build",
+    "neutron:build": "cd neutron && npm run build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "start": "tsx index.ts",
