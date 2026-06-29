@@ -1,6 +1,6 @@
 import * as networkTypes from "@apis/platform/types";
 import { SettingsAPI } from "@apis/settings";
-import { Hostlist, Pathlist } from "./hosting.hostlist.uo";
+import { Hostlist, Pathlist } from "./hosting.hostlist";
 
 class NetworkAPI {
   private settings = new SettingsAPI();
