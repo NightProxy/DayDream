@@ -173,22 +173,25 @@ export default defineConfig({
       },
     },
   },
-  /*build: {
+  build: {
     emptyOutDir: true,
     target: ["es2020", "chrome80", "firefox78", "safari14"],
     minify: "terser",
     terserOptions: {
       compress: {
         arguments: true,
+        booleans_as_integers: false,
         drop_console: true,
         drop_debugger: true,
-        hoist_funs: false,
-        hoist_props: false,
+        ecma: 2020,
+        hoist_funs: true,
+        hoist_props: true,
         hoist_vars: false,
-        inline: 1,
+        inline: 2,
         join_vars: true,
+        keep_fargs: false,
         loops: true,
-        passes: 1,
+        passes: 3,
         pure_funcs: [
           "console.log",
           "console.info",
@@ -196,15 +199,18 @@ export default defineConfig({
           "console.warn",
           "console.error",
         ],
-        reduce_vars: false,
+        pure_getters: true,
+        reduce_funcs: true,
+        reduce_vars: true,
         sequences: true,
-        side_effects: false,
+        side_effects: true,
         switches: true,
+        toplevel: true,
         top_retain: [],
-        typeofs: false,
+        typeofs: true,
         unsafe: false,
-        unsafe_arrows: false,
-        unsafe_methods: false,
+        unsafe_arrows: true,
+        unsafe_methods: true,
         unsafe_proto: false,
         unused: true,
       },
@@ -216,6 +222,7 @@ export default defineConfig({
       format: {
         comments: false,
         beautify: false,
+        ecma: 2020,
         preserve_annotations: false,
       },
       maxWorkers: 4,
@@ -247,7 +254,37 @@ export default defineConfig({
           return `assets/${hash}.${ext}`;
         },
         manualChunks(id) {
-          if (id.includes("node_modules")) return "vendor-modules";
+          if (!id.includes("node_modules")) return;
+          // Heaviest singletons get their own chunks so the main entry
+          // doesn't have to wait for them and they cache independently.
+          if (id.includes("@mercuryworkshop/libcurl-transport"))
+            return "vendor-libcurl";
+          if (id.includes("@mercuryworkshop/epoxy-transport"))
+            return "vendor-epoxy";
+          if (
+            id.includes("@mercuryworkshop/scramjet") ||
+            id.includes("@mercuryworkshop/wisp-js") ||
+            id.includes("@mercuryworkshop/proxy-transports")
+          )
+            return "vendor-scramjet";
+          if (id.includes("node_modules/chii") || id.includes("node_modules/chobitsu"))
+            return "vendor-chii";
+          if (id.includes("node_modules/eruda")) return "vendor-eruda";
+          if (id.includes("@dnd-kit")) return "vendor-dnd";
+          if (id.includes("@jaames/iro")) return "vendor-iro";
+          if (id.includes("@nightnetwork")) return "vendor-night";
+          if (
+            id.includes("node_modules/react") ||
+            id.includes("node_modules/scheduler") ||
+            id.includes("node_modules/react-dom")
+          )
+            return "vendor-react";
+          if (id.includes("node_modules/lucide")) return "vendor-lucide";
+          if (id.includes("@terbiumos/tfs")) return "vendor-tfs";
+          if (id.includes("libcurl.js")) return "vendor-libcurljs";
+          if (id.includes("fflate")) return "vendor-fflate";
+          if (id.includes("basecoat-css")) return "vendor-basecoat";
+          return "vendor";
         },
       },
     },
@@ -262,7 +299,7 @@ export default defineConfig({
     minifySyntax: true,
     minifyWhitespace: true,
     target: "es2020",
-  },*/
+  },
   css: {
     modules: {
       generateScopedName: () => {

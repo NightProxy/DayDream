@@ -1,5 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { marketplaceAPI } from "./store/index.ts";
 import { plusAPI } from "./plus";
 
 async function APIRouter(app: FastifyInstance) {
@@ -39,7 +38,6 @@ async function APIRouter(app: FastifyInstance) {
     },
   );
 
-  await marketplaceAPI(app);
   plusAPI(app);
 }
 

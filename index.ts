@@ -10,7 +10,6 @@ import gradient from "gradient-string";
 import { version } from "./package.json";
 import { getPlatform } from "./srv/platform.ts";
 import routes from "./srv/router.ts";
-import { config } from "./config.js";
 
 const server = Fastify({
   logger: false,
@@ -53,8 +52,8 @@ await server.register(fastifyHelmet, {
 
 server.register(routes);
 
-const PORT: number = Number(process.env.PORT) || config.server?.port || 8080;
-const HOST: string = process.env.HOST || config.server?.host || "127.0.0.1";
+const PORT: number = Number(process.env.PORT) || 8080;
+const HOST: string = process.env.HOST || "127.0.0.1";
 
 try {
   await server.listen({ port: PORT, host: HOST });
@@ -96,42 +95,6 @@ try {
     console.log(
       `  ${chalk.bold(host("Platform:"))}                     ${platformUrl}`,
     );
-
-  if (HOST === "0.0.0.0") {
-    console.log(
-      "\n" +
-        chalk.yellow.bold(
-          "⚠️  WARNING: Server is listening on 0.0.0.0 (all network interfaces)",
-        ) +
-        "\n" +
-        chalk.yellow(
-          "   This means the server is accessible from other machines on your network.",
-        ) +
-        "\n" +
-        chalk.yellow("   For production deployments, ensure you have:") +
-        "\n" +
-        chalk.yellow("   • A reverse proxy (nginx, Caddy, etc.) configured") +
-        "\n" +
-        chalk.yellow("   • HTTPS enabled with valid certificates") +
-        "\n" +
-        chalk.yellow("   • Firewall rules to restrict access") +
-        "\n" +
-        chalk.yellow(
-          "   For local development, consider using host: '127.0.0.1' in config.js",
-        ) +
-        "\n",
-    );
-  } else if (HOST === "127.0.0.1" || HOST === "localhost") {
-    console.log(
-      "\n" +
-        chalk.green("✅ Server is running in local mode (127.0.0.1)") +
-        "\n" +
-        chalk.green(
-          "   Only accessible from this machine - safe for development.",
-        ) +
-        "\n",
-    );
-  }
 } catch (error) {
   server.log.error(error);
   process.exit(1);

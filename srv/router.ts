@@ -14,9 +14,6 @@ async function router(fastify: FastifyInstance) {
     index: ["index.html"],
     extensions: ["html"],
     setHeaders: (res, path) => {
-      if (path.includes("/res/g/")) {
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      }
       if (path.endsWith(".ttf") || path.endsWith(".woff2")) {
         res.setHeader("Cache-Control", "no-store"); // dont cache fonts because of font obfuscation and updates not working together
       }
