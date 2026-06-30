@@ -11,6 +11,10 @@ declare global {
 	interface Window {
 		__scramjet$config: SJConfig;
 		__scramjet$flags: SJFlags;
+		/** Set by src/terbium/boot.ts when running inside a Terbium TAPP — Wisp URL to use, takes precedence over settings. */
+		__ddxOverrideWisp?: string;
+		/** Set by src/terbium/boot.ts when running inside a Terbium TAPP — handle for the parent Terbium tb API. */
+		__terbium?: { tb: unknown };
 		__obscura: {
 			ready: boolean;
 			encode: (url: string) => string;

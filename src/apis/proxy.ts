@@ -95,29 +95,45 @@ class Proxy implements ProxyInterface {
 			this.transportVar =
 				(await this.settings.getItem('transports')) || 'libcurl';
 
-			const savedWisp = await this.settings.getItem('wisp');
-			if (savedWisp) {
-				this.wispUrl = savedWisp;
-				console.log(`[Proxy] Using saved WISP: ${this.wispUrl}`);
+			// Terbium TAPP: src/terbium/boot.ts may have set a synchronous
+			// override on window before this Proxy was constructed. Honor
+			// it unconditionally — Terbium's Wisp takes precedence over
+			// any saved value so the shared transport stays in sync.
+			const terbiumOverride =
+				typeof window !== 'undefined'
+					? window.__ddxOverrideWisp
+					: undefined;
+			if (typeof terbiumOverride === 'string' && terbiumOverride) {
+				this.wispUrl = terbiumOverride;
+				console.log(
+					`[Proxy] Using Terbium-provided WISP: ${this.wispUrl}`
+				);
+				await this.settings.setItem('wisp', terbiumOverride);
 			} else {
-				const serverHasWisp = await this.checkServerWisp();
-				if (serverHasWisp) {
-					this.wispUrl =
-						(location.protocol === 'https:' ? 'wss' : 'ws') +
-						'://' +
-						location.host +
-						'/wisp/';
-					await this.settings.setItem('wisp', this.wispUrl);
-					console.log(
-						`[Proxy] Using server /wisp/ endpoint: ${this.wispUrl}`
-					);
+				const savedWisp = await this.settings.getItem('wisp');
+				if (savedWisp) {
+					this.wispUrl = savedWisp;
+					console.log(`[Proxy] Using saved WISP: ${this.wispUrl}`);
 				} else {
-					const generated = this.generateWispServer();
-					this.wispUrl = generated;
-					await this.settings.setItem('wisp', generated);
-					console.log(
-						`[Proxy] No /wisp/ on server, generated: ${generated}`
-					);
+					const serverHasWisp = await this.checkServerWisp();
+					if (serverHasWisp) {
+						this.wispUrl =
+							(location.protocol === 'https:' ? 'wss' : 'ws') +
+							'://' +
+							location.host +
+							'/wisp/';
+						await this.settings.setItem('wisp', this.wispUrl);
+						console.log(
+							`[Proxy] Using server /wisp/ endpoint: ${this.wispUrl}`
+						);
+					} else {
+						const generated = this.generateWispServer();
+						this.wispUrl = generated;
+						await this.settings.setItem('wisp', generated);
+						console.log(
+							`[Proxy] No /wisp/ on server, generated: ${generated}`
+						);
+					}
 				}
 			}
 

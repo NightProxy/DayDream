@@ -51,6 +51,20 @@ class WispManager {
 		if (this.wispReady) return true;
 
 		try {
+			// Terbium TAPP: src/terbium/boot.ts posts `ddx:wisp-override`
+			// to the SW. The message handler in sw/index.ts caches the URL
+			// on `self.__ddxOverrideWisp`. Honor it before consulting
+			// settings — Terbium's Wisp takes precedence.
+			const override = (self as any).__ddxOverrideWisp;
+			if (typeof override === 'string' && override.length > 0) {
+				await this.settingsStore.setItem('wisp', override);
+				console.log(
+					`[DDXWorker] Using Terbium-provided WISP: ${override}`
+				);
+				this.wispReady = true;
+				return true;
+			}
+
 			let wispUrl = await this.settingsStore.getItem<string>('wisp');
 			console.log(`[DDXWorker] ensureWisp: current value = ${wispUrl}`);
 

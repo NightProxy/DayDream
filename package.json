@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx devserver.ts",
     "core:dev": "vite dev --host & tsx index.ts",
-    "build": "npm run neutron:build && npm run obscura:build && npm run obscura:bundle && npm run obscura:bundle:iife && npm run sw:build && npm run config:build && npm run controller:build && npm run helium-bootstrap:build && npm run neutron-worker:build && npm run mini-chrome:build && npm run devtools-agent:build && npm run devtools-worker-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json && vite build",
+    "prebuild:all": "npm run neutron:build && npm run obscura:build && npm run obscura:bundle && npm run obscura:bundle:iife && npm run sw:build && npm run config:build && npm run controller:build && npm run helium-bootstrap:build && npm run neutron-worker:build && npm run mini-chrome:build && npm run devtools-agent:build && npm run devtools-worker-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json",
+    "build": "npm run prebuild:all && vite build",
     "neutron:build": "cd neutron && npm run build",
     "preview": "vite preview",
     "format": "prettier --write .",
@@ -26,7 +27,10 @@
     "devtools-agent:build": "rolldown -c src/apis/devtools/agent/rolldown.config.ts",
     "devtools-worker-agent:build": "rolldown -c src/apis/devtools/worker-agent/rolldown.config.ts",
     "nyx-bridge:build": "rolldown -c src/apis/nyxBridge/client/rolldown.config.ts",
-    "nyx-bridge-agent:build": "rolldown -c src/apis/nyxBridge/agent/rolldown.config.ts"
+    "nyx-bridge-agent:build": "rolldown -c src/apis/nyxBridge/agent/rolldown.config.ts",
+    "terbium:build": "rolldown -c src/terbium/rolldown.config.ts",
+    "terbium:pack": "tsx srv/vite/terbium-tapp-pack.ts",
+    "build:tapp": "npm run prebuild:all && vite build --mode tapp && npm run terbium:build && npm run terbium:pack"
   },
   "devDependencies": {
     "@types/draggabilly": "^2.1.6",
@@ -96,5 +100,17 @@
     "sortablejs": "^1.15.6",
     "tsx": "^4.21.0",
     "uuid": "^11.1.0"
+  },
+  "terbium": {
+    "pkg-name": "daydream",
+    "display-name": "Daydream",
+    "developer": "Night Network",
+    "wmArgs": {
+      "title": { "text": "Daydream", "weight": 600 },
+      "size": { "width": 1200, "height": 800, "minWidth": 800, "minHeight": 500 },
+      "single": false,
+      "resizable": true,
+      "snapable": true
+    }
   }
 }

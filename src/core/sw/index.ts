@@ -356,6 +356,20 @@ swSelf.addEventListener('message', (event: MessageEventLike) => {
 				console.warn('[DDXWorker] applySwDnrUpdate failed:', err);
 			}
 			break;
+		case 'ddx:wisp-override': {
+			// Terbium TAPP: boot.ts posts the Wisp URL once it has resolved
+			// it from parent.window.tb. Cache on `self` so WispManager can
+			// read it synchronously inside ensureWisp().
+			const url = (data as { url?: unknown }).url;
+			if (typeof url === 'string' && url.length > 0) {
+				(self as any).__ddxOverrideWisp = url;
+				console.log(
+					'[DDXWorker] received Terbium Wisp override:',
+					url
+				);
+			}
+			break;
+		}
 		default:
 			console.log('[DDXWorker] Unknown message type:', data.type);
 			break;

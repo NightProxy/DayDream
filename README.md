@@ -138,6 +138,31 @@ git pull --force --allow-unrelated-histories
 
 For assistance, deployment methods, or to access links, join our [Discord Server](https://discord.night-x.com) or open a discussion on GitLab.
 
+## Terbium TAPP build
+
+DayDream can also be packaged as a self-contained [Terbium](https://github.com/TerbiumOS/web-v2) app (`.TAPP.zip`). The TAPP build shares Terbium's Wisp transport (so it doesn't open its own backend connection) and routes downloads through Terbium's VFS.
+
+```bash
+pnpm run build:tapp
+```
+
+This produces `dist-tapp/daydream.TAPP.zip` containing the full Daydream build, a generated `manifest.json`, the app icon (copied from `public/res/logo.png`), and the Terbium integration shims under `terbium/`.
+
+To install the TAPP inside a running Terbium instance, extract the zip into Terbium's filesystem and call from the Terbium console:
+
+```js
+// After extracting daydream.TAPP.zip to /fs/apps/daydream.tapp/
+await tb.launcher.addApp({
+  name: "Daydream",
+  icon: "/fs/apps/daydream.tapp/icon.png",
+  src: "/fs/apps/daydream.tapp/index.html"
+});
+```
+
+The standalone `pnpm run build` is unaffected — TAPP-specific build steps only run when the `build:tapp` script is invoked.
+
+TAPP-specific configuration (display name, window size, package name) lives under the `terbium` key in `package.json` and is the source of truth for the generated manifest. The app version is always read from the standard `package.json` `version` field.
+
 ## Contributing
 
 To contribute, fork the repository, implement your changes, and submit a pull request. Please test your code thoroughly before submission. For detailed contribution guidelines, refer to [CONTRIB.md](https://gitlab.com/nightnetwork/daydreamx/blob/main/CONTRIB.md).

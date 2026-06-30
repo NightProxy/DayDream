@@ -32,6 +32,7 @@ import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
 import { svgWrapperPlugin } from "./srv/vite/svg";
 import { relocatePagesPlugin } from "./srv/vite/relocate-pages";
+import { terbiumTappPlugin } from "./srv/vite/terbium-tapp";
 
 export default defineConfig({
   base: "./",
@@ -48,6 +49,7 @@ export default defineConfig({
     //vitePluginBundleObfuscator(obfuscationConfig as any),
     relocatePagesPlugin(),
     svgWrapperPlugin(),
+    terbiumTappPlugin(),
     {
       name: "strip-console-and-debugger",
       enforce: "post",
