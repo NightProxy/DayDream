@@ -1,4 +1,3 @@
-// src/pages/settings/sections/privacy.ts
 import { createIcons, icons } from "lucide";
 import { createRow } from "../components/row";
 import { createSubpage } from "../components/subpage";
@@ -170,7 +169,6 @@ function renderSiteSettings(container: HTMLElement) {
     title: "Site settings",
     parentSectionId: "privacy",
     render: async (body) => {
-      // Build the site-permissions UI shell.
       const controls = document.createElement("div");
       controls.className = "sp-controls";
       const searchInput = document.createElement("input");
@@ -205,7 +203,6 @@ function renderSiteSettings(container: HTMLElement) {
 
       createIcons({ icons });
 
-      // Wire the list to SitePermissionsStore.
       const sps: any = (window as any).sitePermissionsStore;
       if (!sps) {
         empty.style.display = "flex";
@@ -229,7 +226,6 @@ async function renderSitePermissionsList(
 ): Promise<void> {
   async function refresh() {
     const all: PermissionGrant[] = (await sps.listAll()) ?? [];
-    // Group by origin
     const byOrigin = new Map<string, PermissionGrant[]>();
     for (const g of all) {
       const arr = byOrigin.get(g.origin) ?? [];
@@ -299,13 +295,7 @@ async function renderSitePermissionsList(
   await refresh();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Network subpage (Task 14)
-// ─────────────────────────────────────────────────────────────────────────────
-
 type TransportId = "libcurl" | "epoxy" | "pulsar";
-// Capitalized labels per user request. Stored key remains lowercase for
-// runtime compatibility (Proxy / Scramjet expect "libcurl" | "epoxy" | "pulsar").
 const TRANSPORTS: Array<{ id: TransportId; label: string }> = [
   { id: "libcurl", label: "Libcurl" },
   { id: "epoxy", label: "Epoxy" },
@@ -313,15 +303,11 @@ const TRANSPORTS: Array<{ id: TransportId; label: string }> = [
 ];
 
 function getDefaultWispUrl(): string {
-  // Mirrors settingsOld defaultWispUrl. Resolves to the page-served origin's
-  // wisp endpoint.
   const proto = location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${location.host}/wisp/`;
 }
 
 function generateRandomNightWisp(): string {
-  // Same generator as settingsOld:368-372 — 16..32 char [a-z0-9] subdomain
-  // under nightwisp.me.cdn.cloudflare.net.
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const length = 16 + Math.floor(Math.random() * 17);
   let subdomain = "";
@@ -345,7 +331,6 @@ function renderNetwork(container: HTMLElement) {
       const stack = document.createElement("div");
       stack.className = "subpage-stack";
 
-      // ── Transport row (button + dropdown, no icons, capitalized) ─────────
       const transportRow = document.createElement("div");
       transportRow.className = "settings-row no-hover";
       const tStack = document.createElement("div");
@@ -374,11 +359,6 @@ function renderNetwork(container: HTMLElement) {
       transportRow.appendChild(tRight);
       stack.appendChild(transportRow);
 
-      // ── WISP server row (preset dropdown OR custom input mode) ───────────
-      // Two visual states share the same row:
-      //   1. preset:  [server name ▾] [Generate]
-      //   2. custom:  [text input        ] [Save] [Cancel]
-      // The transition is purely client-side; persistence happens on commit.
       const wispRow = document.createElement("div");
       wispRow.className = "settings-row no-hover";
       const wStack = document.createElement("div");
@@ -398,7 +378,6 @@ function renderNetwork(container: HTMLElement) {
       wRight.style.flexWrap = "wrap";
       wRight.style.justifyContent = "flex-end";
 
-      // Preset-mode controls
       const presetBtn = document.createElement("button");
       presetBtn.className = "settings-button ghost";
       presetBtn.style.maxWidth = "260px";
@@ -411,7 +390,6 @@ function renderNetwork(container: HTMLElement) {
       generateBtn.textContent = "Generate";
       generateBtn.title = "Generate a random Night-WISP server URL";
 
-      // Custom-mode controls
       const customInput = document.createElement("input");
       customInput.type = "text";
       customInput.className = "modal-input";
@@ -435,7 +413,6 @@ function renderNetwork(container: HTMLElement) {
       wispRow.appendChild(wRight);
       stack.appendChild(wispRow);
 
-      // ── Remote proxy URL row ─────────────────────────────────────────────
       const proxyRow = document.createElement("div");
       proxyRow.className = "settings-row no-hover";
       const pStack = document.createElement("div");
@@ -459,7 +436,6 @@ function renderNetwork(container: HTMLElement) {
       proxyRow.appendChild(pRight);
       stack.appendChild(proxyRow);
 
-      // ── Hint ─────────────────────────────────────────────────────────────
       const hint = document.createElement("div");
       hint.className = "row-sub";
       hint.style.padding = "0 16px 8px";
@@ -468,7 +444,6 @@ function renderNetwork(container: HTMLElement) {
 
       body.appendChild(stack);
 
-      // ── Wire up: load current values ─────────────────────────────────────
       const api = getSettingsAPI();
 
       let currentTransport: TransportId = "libcurl";
@@ -488,9 +463,6 @@ function renderNetwork(container: HTMLElement) {
         proxyInput.value = "";
       }
 
-      // Premium WISP servers — fetched lazily; only included when the user
-      // is authenticated. Mirrors settingsOld:228-251 but without legacy
-      // optgroup markup (our dropdown uses headers).
       type WispOption = { id: string; url: string; label: string };
       const defaultWispUrl = getDefaultWispUrl();
       const baseOptions: WispOption[] = [
@@ -512,7 +484,6 @@ function renderNetwork(container: HTMLElement) {
         console.warn("[settings/privacy/network] premium WISP load failed", err);
       }
 
-      // Resolve current label / state from stored value.
       let savedWisp = "";
       try {
         savedWisp = (await api.getItem<string>("wisp")) ?? "";
@@ -570,7 +541,6 @@ function renderNetwork(container: HTMLElement) {
         }
       };
 
-      // ── Preset dropdown ──────────────────────────────────────────────────
       presetBtn.addEventListener("click", () => {
         const entries: any[] = [];
         for (const opt of baseOptions) {
@@ -602,14 +572,12 @@ function renderNetwork(container: HTMLElement) {
         openSwitcherDropdown(presetBtn, entries);
       });
 
-      // ── Generate button ──────────────────────────────────────────────────
       generateBtn.addEventListener("click", async () => {
         const newWisp = generateRandomNightWisp();
         await commitWisp(newWisp);
         showInlineNotice(`Generated WISP: ${newWisp}`);
       });
 
-      // ── Custom-mode buttons ──────────────────────────────────────────────
       saveBtn.addEventListener("click", async () => {
         const value = customInput.value.trim();
         if (!value) {
@@ -627,12 +595,10 @@ function renderNetwork(container: HTMLElement) {
         else if (e.key === "Escape") { cancelBtn.click(); }
       });
 
-      // ── Transport dropdown (no icons, capitalized labels) ────────────────
       tBtn.addEventListener("click", () => {
         const entries = TRANSPORTS.map((t) => ({
           id: t.id,
           label: t.label,
-          // No iconOnly key — user-requested clean dropdown without icons.
           onClick: async () => {
             try {
               await api.setItem("transports", t.id);
@@ -648,9 +614,8 @@ function renderNetwork(container: HTMLElement) {
         }));
         openSwitcherDropdown(tBtn, entries);
       });
-      void currentTransport; // keep current binding for future hint logic
+      void currentTransport;
 
-      // ── Remote proxy input commit (with validation) ──────────────────────
       const proxyRegex = /^(socks5h:\/\/|socks5:\/\/|socks4:\/\/|http:\/\/|https:\/\/).+/i;
       const commitProxy = async () => {
         const value = proxyInput.value.trim();
@@ -672,7 +637,6 @@ function renderNetwork(container: HTMLElement) {
       proxyInput.addEventListener("change", () => { void commitProxy(); });
       proxyInput.addEventListener("blur", () => { void commitProxy(); });
 
-      // ── Live sync: other sections may write these keys ───────────────────
       const events = (() => {
         try { return getEventsAPI(); } catch { return null; }
       })();
@@ -680,7 +644,6 @@ function renderNetwork(container: HTMLElement) {
         try {
           const w = await api.getItem<string>("wisp");
           savedWisp = w ?? "";
-          // Only refresh the preset label if the user isn't mid-edit.
           if (customInput.style.display === "none") {
             presetBtn.textContent = resolveLabel(savedWisp);
           }
@@ -710,17 +673,10 @@ function renderNetwork(container: HTMLElement) {
   container.appendChild(sub);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Cloaking subpages (Task 15)
-// ─────────────────────────────────────────────────────────────────────────────
-
 function emitCloakChanged(): void {
   try { getEventsAPI().emit("cloak:changed", null); } catch { /* ignore */ }
 }
 
-// Read map for cloak toggles. Tab cloak (autoCloak) is stored as legacy
-// "true"/"false" strings in some code paths; treat string and boolean
-// equivalently. Falsy/undefined → defaultValue applies via createToggle.
 const cloakReadMap = (raw: unknown): boolean | undefined => {
   if (raw === true || raw === "true") return true;
   if (raw === false || raw === "false") return false;
@@ -778,8 +734,6 @@ function renderCloaking(container: HTMLElement) {
           settingKey: "autoCloak",
           defaultValue: false,
           readMap: cloakReadMap,
-          // Legacy code paths read "true"/"false" strings — keep the
-          // string form on write so older readers don't misinterpret.
           writeMap: (v) => (v ? "true" : "false"),
           onChange: () => { emitCloakChanged(); },
           searchUnit: {
@@ -833,7 +787,6 @@ function renderCloakingEditor(container: HTMLElement) {
       const stack = document.createElement("div");
       stack.className = "subpage-stack";
 
-      // ── Custom title row ─────────────────────────────────────────────────
       const titleRow = document.createElement("div");
       titleRow.className = "settings-row no-hover";
       const titleStack = document.createElement("div");
@@ -857,7 +810,6 @@ function renderCloakingEditor(container: HTMLElement) {
       titleRow.appendChild(titleRight);
       stack.appendChild(titleRow);
 
-      // ── Custom favicon row ───────────────────────────────────────────────
       const favRow = document.createElement("div");
       favRow.className = "settings-row no-hover";
       const favStack = document.createElement("div");
@@ -899,7 +851,6 @@ function renderCloakingEditor(container: HTMLElement) {
 
       body.appendChild(stack);
 
-      // ── Wire up ──────────────────────────────────────────────────────────
       const api = getSettingsAPI();
       try {
         const t = await api.getItem<string>("customTitle");
@@ -977,7 +928,6 @@ function renderPanicConfig(container: HTMLElement) {
       const stack = document.createElement("div");
       stack.className = "subpage-stack";
 
-      // ── Trigger keybind ──────────────────────────────────────────────────
       const kbRow = document.createElement("div");
       kbRow.className = "settings-row no-hover";
       const kbStack = document.createElement("div");
@@ -1001,7 +951,6 @@ function renderPanicConfig(container: HTMLElement) {
       kbRow.appendChild(kbRight);
       stack.appendChild(kbRow);
 
-      // ── Redirect URL ─────────────────────────────────────────────────────
       const urlRow = document.createElement("div");
       urlRow.className = "settings-row no-hover";
       const urlStack = document.createElement("div");
@@ -1025,7 +974,6 @@ function renderPanicConfig(container: HTMLElement) {
       urlRow.appendChild(urlRight);
       stack.appendChild(urlRow);
 
-      // ── Close all tabs first toggle ──────────────────────────────────────
       stack.appendChild(
         createToggle({
           label: "Close all tabs first",
@@ -1041,7 +989,6 @@ function renderPanicConfig(container: HTMLElement) {
         }).element,
       );
 
-      // ── Clear session data toggle ────────────────────────────────────────
       stack.appendChild(
         createToggle({
           label: "Clear session data",
@@ -1057,7 +1004,6 @@ function renderPanicConfig(container: HTMLElement) {
         }).element,
       );
 
-      // ── Test button ──────────────────────────────────────────────────────
       const testRow = document.createElement("div");
       testRow.className = "settings-row no-hover";
       const testStack = document.createElement("div");
@@ -1082,7 +1028,6 @@ function renderPanicConfig(container: HTMLElement) {
 
       body.appendChild(stack);
 
-      // ── Wire up ──────────────────────────────────────────────────────────
       const api = getSettingsAPI();
       try {
         const k = await api.getItem<string>("panicKeybind");
@@ -1132,7 +1077,6 @@ function renderPanicConfig(container: HTMLElement) {
               } catch (err) {
                 console.warn("[settings/privacy/panic] triggerPanic threw", err);
               }
-              // Fallback: navigate the parent window.
               try {
                 if (window.parent && window.parent.location) {
                   window.parent.location.href = fallbackUrl;

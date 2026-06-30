@@ -1,9 +1,3 @@
-// src/core/helium/host/tabs/events.ts
-//
-// Listens to the DDX tabCreated/tabClosed/tabSelected/tabMetaChanged/
-// tabMoved CustomEvents and fans them out to all extensions with the
-// `tabs` permission as chrome.tabs.onCreated/onRemoved/onActivated/
-// onUpdated/onMoved.
 
 import type { ExtensionManager } from '@apis/extensions';
 import type { TabInfo } from '@apis/nyxBridge/api';
@@ -77,13 +71,6 @@ export function installTabEventListeners(deps: TabEventDeps): () => void {
     );
   };
 
-  // `chrome.tabs.onZoomChange` — fired from `tabZoomChanged`
-  // CustomEvents. The event detail is:
-  //   { tabId, oldZoomFactor, newZoomFactor, zoomSettings? }
-  // matching Chrome's payload shape. Zoom is per-active-tab in DDX
-  // (zoom state lives on Navigation, applied to the active iframe),
-  // so we expect the dispatcher to know which tabId the zoom applies
-  // to and pass it through.
   const onZoomChanged = (e: Event): void => {
     const detail = (e as CustomEvent).detail as
       | {
@@ -121,14 +108,6 @@ export function installTabEventListeners(deps: TabEventDeps): () => void {
     );
   };
 
-  // `tabs.onUpdated` with `status: 'loading'` / `'complete'` —
-  // synthesized from the existing `tabNavigated` phases. Extensions
-  // that branch on status (e.g. wait for loading→complete before
-  // injecting a content script) need both transitions.
-  //   phase 'before'    → status: 'loading'
-  //   phase 'completed' → status: 'complete'
-  // The existing `tabMetaChanged` path also emits onUpdated but only
-  // with the final status; this one fires the in-flight transition.
   const onNavigated = (e: Event): void => {
     const detail = (e as CustomEvent).detail as
       | { tabId?: string; phase?: string; url?: string }

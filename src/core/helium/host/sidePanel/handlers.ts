@@ -1,16 +1,3 @@
-// src/core/helium/host/sidePanel/handlers.ts
-//
-// chrome.sidePanel.* host handlers (spec §25).
-//
-// Data-only stubs per the project decision: methods persist their
-// arguments to extfs and round-trip them on get*, but no UI slot is
-// rendered. `open()` is an explicit no-op (UI integration is deferred
-// to a follow-up spec).
-//
-// Persistence:
-//   - __helium_sidepanel__.json       global (per-extension) options
-//                                     + panel behavior
-//   - __helium_sidepanel_tabs__.json  per-tab option overrides
 
 import type { ExtensionContext } from '../../extfs/types';
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
@@ -36,7 +23,6 @@ interface StoredGlobal {
 
 interface StoredTabs {
 	version: 1;
-	// Keyed by stringified tabId. JSON cannot use numeric keys.
 	options: Record<string, SidePanelOptions>;
 }
 
@@ -137,8 +123,6 @@ export class SidePanelHandlers {
 		if (typeof arg.tabId === 'number') {
 			const tabs = await readTabs(ctx.id);
 			const perTab = tabs.options[String(arg.tabId)];
-			// Chrome semantics: tab-specific options shadow the global
-			// options; unset fields fall through to global.
 			const merged: SidePanelOptions = { ...global.options, ...(perTab ?? {}) };
 			merged.tabId = arg.tabId;
 			return merged;

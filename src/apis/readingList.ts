@@ -1,22 +1,3 @@
-// src/apis/readingList.ts
-//
-// Reading list store — backs `chrome.readingList.*` and any future
-// DDX Reading List UI page. Mirrors the HistoryManager / BookmarkManager
-// shape: singleton, SettingsAPI-persisted, change-event emission, generic
-// + typed listener APIs.
-//
-// Chrome's contract:
-//   addEntry({url, title, hasBeenRead}) → Promise<ReadingListEntry>
-//   query(info)                          → Promise<ReadingListEntry[]>
-//   removeEntry({url})                   → Promise<void>
-//   updateEntry({url, title?, hasBeenRead?}) → Promise<ReadingListEntry>
-//   onEntryAdded / onEntryUpdated / onEntryRemoved
-//
-// Entry shape:
-//   { url, title, hasBeenRead, creationTime, lastUpdateTime }
-//
-// Identity is the URL — duplicate URLs are NOT allowed; addEntry on an
-// existing URL throws (matches Chrome). To change a flag, use updateEntry.
 
 import { SettingsAPI } from './settings';
 

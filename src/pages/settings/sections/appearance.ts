@@ -1,21 +1,3 @@
-// src/pages/settings/sections/appearance.ts
-//
-// Appearance and behavior section — fully native rebuild.
-//
-// Main view:
-//   - Theme            (drill-down)
-//   - Background       (drill-down)
-//   - Use theme's bg   (inline toggle, key "theme:useThemeBackground", default true)
-//   - New tab page     (drill-down)
-//   - Home page        (inline URL input → key "homePage")
-//
-// Theme subpage inherits the original settingsOld experience:
-//   - Theme preset GRID (themeManager.generateThemePreview, not a dropdown)
-//   - Color target tabs (Accent / Background / Panel / Text / Border)
-//   - iro.js ColorPicker with Box + hue Slider
-//   - Hex / RGB / HSL inputs synced to the picker
-//   - Accent palette grid (or color-role grid) below
-//   - Reset row at the bottom
 
 import { createIcons, icons } from "lucide";
 import iro from "@jaames/iro";
@@ -28,9 +10,6 @@ import { getEventsAPI, getSettingsAPI, getTheming } from "../data/host";
 import { themeManager } from "@utils/themeManager";
 import type { SectionContext } from "./types";
 
-// Cross-call cleanup: each subpage / view registers detach functions here so
-// the next mount can tear down stale listeners. The index router calls
-// `unmount()` before re-rendering a section.
 let pendingCleanups: Array<() => void> = [];
 
 function registerCleanup(fn: () => void) {
@@ -46,8 +25,6 @@ export function unmount(): void {
 }
 
 export async function render(container: HTMLElement, ctx: SectionContext): Promise<void> {
-  // Defence-in-depth: even if the router didn't call our unmount, clear our
-  // own listener queue so we never double-register.
   unmount();
   container.innerHTML = "";
   if (ctx.subpage === "theme") return renderTheme(container);
@@ -55,10 +32,6 @@ export async function render(container: HTMLElement, ctx: SectionContext): Promi
   if (ctx.subpage === "new-tab-page" || ctx.subpage === "newtab") return renderNewTabPage(container);
   return renderMain(container);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main view (Task 18)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function renderMain(container: HTMLElement): void {
   const section = document.createElement("div");
@@ -167,7 +140,6 @@ function makeHomePageInput(): HTMLElement {
 
   const commit = async () => {
     let value = input.value.trim();
-    // Auto-prefix `https://` if a non-empty value lacks a scheme.
     if (value && !/^[a-z][a-z0-9+\-.]*:\/\//i.test(value) && !value.startsWith("//")) {
       value = `https://${value}`;
       input.value = value;
@@ -189,19 +161,6 @@ function emitBackgroundChanged(): void {
   try { getEventsAPI().emit("theme:background-change", null); } catch { /* ignore */ }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Theme subpage — inherited from settingsOld:
-//   - "Choose a Theme" preset GRID (themeManager.generateThemePreview)
-//   - "Customize Colors" with color-target tabs (Accent/Background/Panel/Text/Border)
-//   - iro.js ColorPicker (Box + hue Slider) + Hex/RGB/HSL inputs
-//   - Accent palette (or color-role grid) below the picker
-//   - Reset row at the bottom
-//
-// All persistence is routed through the existing Themeing events (preset-change,
-// color-change, color-role-change, property-change) so this UI is a thin
-// orchestration layer over the host theming module.
-// ─────────────────────────────────────────────────────────────────────────────
-
 const COLOR_TARGETS: Record<string, { property: string; aliases?: string[] }> = {
   accent: { property: "main-color", aliases: ["main"] },
   background: { property: "background-color", aliases: ["bg-2"] },
@@ -221,7 +180,6 @@ function renderTheme(container: HTMLElement): void {
       stack.className = "subpage-stack";
       body.appendChild(stack);
 
-      // Loading placeholder until host theming resolves.
       const loading = document.createElement("div");
       loading.className = "row-sub";
       loading.style.padding = "12px 4px";
@@ -237,7 +195,6 @@ function renderTheme(container: HTMLElement): void {
         return;
       }
 
-      // Load theme presets into themeManager so generateThemePreview() works.
       let themes: Record<string, any> = {};
       try {
         themes = await themeManager.loadThemes();
@@ -260,7 +217,6 @@ function renderTheme(container: HTMLElement): void {
       }
       themeManager.setCurrentTheme(currentTheme);
 
-      // ── "Theme Presets" card ─────────────────────────────────────────────
       const presetsCard = document.createElement("div");
       presetsCard.className = "appearance-card";
       const presetsTitle = document.createElement("h3");
@@ -278,7 +234,6 @@ function renderTheme(container: HTMLElement): void {
       themePresetGrid.className = "theme-preset-grid";
       presetsCard.appendChild(themePresetGrid);
 
-      // ── "Customize Colors" section (only for customizable themes) ────────
       const customSection = document.createElement("div");
       customSection.className = "appearance-card-section";
       const customTitle = document.createElement("h4");
@@ -286,7 +241,6 @@ function renderTheme(container: HTMLElement): void {
       customTitle.textContent = "Customize Colors";
       customSection.appendChild(customTitle);
 
-      // Color-target tabs
       const colorTargetTabs = document.createElement("div");
       colorTargetTabs.className = "color-target-tabs";
       let activeColorTarget = "accent";
@@ -306,7 +260,6 @@ function renderTheme(container: HTMLElement): void {
       }
       customSection.appendChild(colorTargetTabs);
 
-      // Customize-colors row: iro picker on left, palette + inputs on right
       const customizeRow = document.createElement("div");
       customizeRow.className = "customize-colors-row";
 
@@ -347,7 +300,6 @@ function renderTheme(container: HTMLElement): void {
 
       stack.appendChild(presetsCard);
 
-      // ── Reset row ────────────────────────────────────────────────────────
       stack.appendChild(
         createRow({
           icon: "rotate-ccw",
@@ -368,7 +320,6 @@ function renderTheme(container: HTMLElement): void {
         }),
       );
 
-      // ── Build theme preset grid ──────────────────────────────────────────
       const buildPresetGrid = () => {
         themePresetGrid.innerHTML = "";
         const entries = Object.entries(themes);
@@ -417,7 +368,6 @@ function renderTheme(container: HTMLElement): void {
         customSection.style.display = customizable ? "" : "none";
       };
 
-      // ── iro ColorPicker init ─────────────────────────────────────────────
       const initialColor = (await settingsApi.getItem<string>("themeColor")) || "rgba(141, 1, 255, 1)";
       const colorPicker = new (iro as any).ColorPicker(colorPickerEl, {
         width: 240,
@@ -473,7 +423,6 @@ function renderTheme(container: HTMLElement): void {
         emitColorForTarget(colorPicker.color.rgbaString);
       });
 
-      // ── Color-target tab handlers ────────────────────────────────────────
       colorTargetTabs.querySelectorAll(".color-target-tab").forEach((tab) => {
         tab.addEventListener("click", async () => {
           const target = (tab as HTMLElement).dataset.target;
@@ -500,7 +449,6 @@ function renderTheme(container: HTMLElement): void {
         accentPalette.style.display = "";
       };
 
-      // ── Accent palette / color-role grid ─────────────────────────────────
       const renderAccentArea = () => {
         accentColorGrid.innerHTML = "";
         const colorRoles = themeManager.getThemeColorRoles(currentTheme);
@@ -549,9 +497,6 @@ function renderTheme(container: HTMLElement): void {
         return value || null;
       };
 
-      // ── Listen for external theme changes (e.g. command palette) ─────────
-      // Registered through `registerCleanup` so re-opening the Theme
-      // subpage doesn't stack additional handlers on the singleton eventsAPI.
       if (events) {
         const onGlobalUpdate = (event: any) => {
           if (!event.detail) return;
@@ -650,10 +595,6 @@ function openResetModal(theming: Awaited<ReturnType<typeof getTheming>>): void {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Background subpage (Task 20)
-// ─────────────────────────────────────────────────────────────────────────────
-
 function renderBackground(container: HTMLElement): void {
   container.innerHTML = "";
   const sub = createSubpage({
@@ -665,30 +606,18 @@ function renderBackground(container: HTMLElement): void {
       stack.className = "subpage-stack";
       body.appendChild(stack);
 
-      // Hidden file input — shared by both the hero "Replace" button and a
-      // future drag-drop hook. Kept off-screen so the visual layout owns the
-      // affordance.
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = "image/*";
       fileInput.style.display = "none";
       stack.appendChild(fileInput);
 
-      // Hero shell — layout/colour live in SCSS (.settings-bg-hero) so
-      // children can rely on stable parent width even if a redraw is queued.
       const hero = document.createElement("div");
       hero.className = "settings-bg-hero";
       stack.appendChild(hero);
 
       const api = getSettingsAPI();
 
-      // drawHero is async (it reads from settings + theming). Because the
-      // events that trigger it (`theme:background-change`, the file-input
-      // change handler, etc.) can fire faster than the await chain
-      // resolves, we use a monotonic generation token to discard the tail
-      // of any superseded run BEFORE it mutates `hero`. Without this guard
-      // N concurrent invocations would each clear (synchronously) then
-      // each append at resolution — producing 2N children in `hero`.
       let drawGen = 0;
       const drawHero = async () => {
         const gen = ++drawGen;
@@ -707,10 +636,6 @@ function renderBackground(container: HTMLElement): void {
         const themeName = theming?.themes?.[currentThemeId]?.name ?? currentThemeId;
         const themeBg = theming?.themes?.[currentThemeId]?.["background-image"] ?? null;
 
-        // Build the new tree off-DOM, then swap it in in a single
-        // synchronous step. Removes the "clear → await → append" window
-        // that previously let concurrent runs leak extra children into
-        // the live hero.
         const next = document.createDocumentFragment();
 
         const thumb = document.createElement("div");
@@ -780,8 +705,6 @@ function renderBackground(container: HTMLElement): void {
 
         next.appendChild(info);
 
-        // Final guard — if another draw started between the second await
-        // resolving and now, give up.
         if (gen !== drawGen) return;
         hero.replaceChildren(next);
       };
@@ -810,14 +733,11 @@ function renderBackground(container: HTMLElement): void {
           showInlineNotice("Failed to read the selected file.", { kind: "error" });
         };
         reader.readAsDataURL(file);
-        // Reset so the same file can be picked again later.
         fileInput.value = "";
       });
 
       await drawHero();
 
-      // "Use theme's background image" toggle — same key/default as the
-      // shortcut on the main view; gates the theme preset's bg-image only.
       stack.appendChild(
         createToggle({
           icon: "image-down",
@@ -835,11 +755,6 @@ function renderBackground(container: HTMLElement): void {
         }).element,
       );
 
-      // Stay in sync with external changes — and register cleanup so
-      // listeners don't accumulate across subpage visits. Without this the
-      // singleton eventsAPI grows a new handler each time the user opens
-      // Background, and each handler captures its own (detached) `hero`,
-      // turning routine event flow into a write storm against orphaned DOM.
       const events = (() => {
         try { return getEventsAPI(); } catch { return null; }
       })();
@@ -859,18 +774,6 @@ function renderBackground(container: HTMLElement): void {
   container.appendChild(sub);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// New tab page subpage (Task 21)
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// Key naming notes:
-//   - `newtabShowShortcuts` is read by src/pages/newtab/index.tsx (uses a
-//     string "false" check). We keep that exact key, and write the legacy
-//     string form so older readers keep working.
-//   - The other three toggles (greeting, search bar, Night+ banner) don't
-//     yet have consumers in the newtab page; the toggles still persist
-//     under deterministic keys so consumers can adopt them later.
-
 function renderNewTabPage(container: HTMLElement): void {
   container.innerHTML = "";
   const sub = createSubpage({
@@ -881,9 +784,6 @@ function renderNewTabPage(container: HTMLElement): void {
       const stack = document.createElement("div");
       stack.className = "subpage-stack";
 
-      // `newtabShowShortcuts` is stored as "true"/"false" strings by the
-      // newtab page (it does `=== 'false'` comparisons). Map both directions
-      // so this toggle stays bit-compatible with the existing reader.
       stack.appendChild(
         createToggle({
           icon: "grid-3x3",

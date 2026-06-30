@@ -92,10 +92,6 @@ class Protocols implements ProtoInterface {
 		page: string,
 		customUrl?: string
 	): Promise<void> {
-		// User setting overrides any extension override. If an
-		// extension override is active and the user sets a custom
-		// newtab, the user wins (matches Chrome's "user control
-		// always" UX).
 		this.extensionOverrides.newtab = null;
 		if (page === 'custom' && customUrl) {
 			this.register('ddx', 'newtab', customUrl, true);
@@ -118,22 +114,6 @@ class Protocols implements ProtoInterface {
 			this.register('ddx', 'home', resolvePath('internal/newtab'), false);
 		}
 	}
-
-	// --- Extension URL Overrides --------------------------------------
-	//
-	// `chrome_url_overrides.{newtab,bookmarks,history}` support. An
-	// extension can claim one of these slots; we route the matching
-	// `ddx://X` URL to the extension's served HTML instead of the
-	// default `internal/<X>` page.
-	//
-	// State here is just the "currently active override URL" per slot.
-	// The lifecycle (pending/confirm/decline/declined-list) lives in
-	// `apis/extensions/urlOverrides.ts`; we're the renderer that
-	// applies its decisions to the route table.
-	//
-	// Precedence: explicit user setting > extension override > default.
-	// `updateNewtabProtocol` clears the extension's newtab slot when
-	// the user picks a custom newtab, so the user always wins.
 
 	private extensionOverrides: { newtab: string | null; bookmarks: string | null; history: string | null } = {
 		newtab: null,
@@ -160,9 +140,6 @@ class Protocols implements ProtoInterface {
 	 */
 	async clearExtensionOverride(kind: 'newtab' | 'bookmarks' | 'history'): Promise<void> {
 		this.extensionOverrides[kind] = null;
-		// Restore the default. For newtab specifically, we have to
-		// respect the user's `newtabPage` setting (custom/blank/default)
-		// which the user may have set independently.
 		if (kind === 'newtab') {
 			const page = await this.settings.getItem('newtabPage');
 			const customUrl = await this.settings.getItem('newtabCustomUrl');
@@ -175,9 +152,6 @@ class Protocols implements ProtoInterface {
 			}
 			return;
 		}
-		// bookmarks and history have no settings story today — restore
-		// to the wildcard-default behavior by registering an explicit
-		// entry pointing at `internal/<kind>`.
 		this.register('ddx', kind, resolvePath(`internal/${kind}`), false);
 	}
 
@@ -343,7 +317,6 @@ class Protocols implements ProtoInterface {
 				'iframe.active'
 			) as HTMLIFrameElement | null;
 
-			// Pass the active iframe so processUrl uses its per-frame prefix.
 			const processedUrl =
 				(await this.processUrl(url, iframe ?? undefined)) ||
 				resolvePath('internal/error/');
@@ -353,9 +326,6 @@ class Protocols implements ProtoInterface {
 				console.log('[Protocols] Setting iframe src to:', processedUrl);
 				const navTabId =
 					iframe.getAttribute('data-tab-id') || 'unknown';
-				// Phase 'before': fire prior to mutating iframe.src so
-				// listeners that want to observe navigation intent (and
-				// potentially veto in future versions) can do so.
 				const beforeDetail = {
 					tabId: navTabId,
 					url: processedUrl,
@@ -372,7 +342,6 @@ class Protocols implements ProtoInterface {
 				iframe.setAttribute('src', processedUrl);
 				this.logging.createLog(`Navigated to: ${processedUrl}`);
 
-				// Phase 'committed': URL has been applied to the iframe.
 				const committedDetail = {
 					tabId: navTabId,
 					url: processedUrl,

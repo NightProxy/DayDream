@@ -27,19 +27,6 @@ function resolveHandle(id: string): unknown {
   return handleStore.get(id);
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Callback marker handling.
-//
-// The worker can't postMessage function args (DataCloneError), so it
-// substitutes each function with `{ __callback__: id }` before sending.
-// On this side we:
-//   1. Walk method-call args and replace each marker with a real function
-//      that, when invoked, posts back into the worker via the regular
-//      postMessage channel (Neutron.postToWorker).
-//   2. Serialize the call-site arguments (Event objects, DOM nodes,
-//      primitives) into a structured-clone-safe payload before posting.
-// ─────────────────────────────────────────────────────────────────────────
-
 const CALLBACK_MARKER_KEY = '__callback__';
 const CALLBACK_INVOKE_TYPE = 'helium.cb';
 
@@ -73,12 +60,10 @@ function serializeForWorker(value: unknown): unknown {
   if (t === 'string' || t === 'number' || t === 'boolean' || t === 'bigint') return value;
   if (t === 'function' || t === 'symbol') return undefined;
 
-  // DOM Node? Store under a handle, return the marker.
   if (typeof (value as { nodeType?: unknown }).nodeType === 'number') {
     return { __handle: storeHandle(value) };
   }
 
-  // DOM Event? Project to a plain object preserving useful fields.
   if (typeof Event !== 'undefined' && value instanceof Event) {
     return projectEvent(value);
   }
@@ -87,7 +72,6 @@ function serializeForWorker(value: unknown): unknown {
     return value.map(serializeForWorker);
   }
 
-  // Plain object? Walk it.
   if (Object.getPrototypeOf(value) === Object.prototype) {
     const out: Record<string, unknown> = {};
     for (const k of Object.keys(value as Record<string, unknown>)) {
@@ -96,9 +80,6 @@ function serializeForWorker(value: unknown): unknown {
     return out;
   }
 
-  // Last resort: try structured-clone-ability via a probe. Anything
-  // that fails (Map keyed on a DOM node, Proxy with throwing traps,
-  // etc.) is dropped to null rather than crashing the whole callback.
   try {
     return structuredClone(value);
   } catch {
@@ -137,7 +118,6 @@ function projectEvent(ev: Event): Record<string, unknown> {
     } catch { /* getter threw — skip */ }
   }
 
-  // Target / currentTarget / relatedTarget become DOM handles.
   const target = (ev as unknown as { target?: unknown }).target;
   if (target) out.target = serializeForWorker(target);
   const currentTarget = (ev as unknown as { currentTarget?: unknown }).currentTarget;
@@ -145,7 +125,6 @@ function projectEvent(ev: Event): Record<string, unknown> {
   const relatedTarget = (ev as unknown as { relatedTarget?: unknown }).relatedTarget;
   if (relatedTarget) out.relatedTarget = serializeForWorker(relatedTarget);
 
-  // Subclass-specific fields.
   const ctorName = (ev.constructor && ev.constructor.name) || '';
   const extraKeys = EVENT_SUBCLASS_KEYS[ctorName];
   if (extraKeys) {
@@ -157,7 +136,6 @@ function projectEvent(ev: Event): Record<string, unknown> {
     }
   }
 
-  // CustomEvent.detail — best-effort serialize.
   if (ctorName === 'CustomEvent') {
     try {
       out.detail = serializeForWorker((ev as CustomEvent).detail);
@@ -203,43 +181,23 @@ function substituteOne(value: unknown, neutron: Neutron): unknown {
 }
 
 export function runNeutron(ctx: any, scriptKey: string, scriptBody: string): void {
-  // The bundled worker source as a Blob URL — Worker constructor
-  // accepts a URL. The bundle is an IIFE, so the worker must be
-  // constructed as a CLASSIC worker (not module).
   const blob = new Blob([neutronWorkerSrc], { type: 'text/javascript' });
   const workerUrl = URL.createObjectURL(blob);
 
-  // SKIP window-ready: this instance lives in the HOST realm. The
-  // worker's chrome.* methods route here via Neutron handlers — no
-  // postMessage round-trip needed.
   const chromeInstance = new ChromeMiniInstance(ctx, scriptKey, { skipRegistration: true });
 
-  // Async-method bridge: worker `send({ type: 'chrome.<method>', args })`,
-  // host runs through chromeInstance, replies.
   const neutron = new Neutron({
     workerUrl,
     workerOptions: { type: 'classic' },
     bootstrap: { ctx, scriptKey, scriptBody },
   });
 
-  // Register the worker as an inspectable target so the
-  // ddx://extensions "Inspect views" UI can offer DevTools on it. The
-  // scriptKey shape is `${extId}:${context}:${file}:${runAt}:${world}`
-  // (see injector.ts); we derive a stable per-(tab, script) targetId
-  // from it. The current tab id is best-effort — content scripts run
-  // inside proxied tab iframes and don't carry a tab id of their own.
-  // We pull it from the page URL we can observe and store the scriptKey
-  // as both label and id source.
   try {
     const w = window as {
       extDevtools?: import('@apis/devtools/extensionManager').ExtensionDevToolsManager;
       tabs?: { activeTabId?: string | null };
     };
     if (w.extDevtools) {
-      // The worker reference lives on the Neutron instance; expose it.
-      // Neutron's `worker` field is private — we use a non-null assertion
-      // through the bracket-property hatch since `runNeutron` is the
-      // only call site that needs it.
       const workerRef = (neutron as unknown as { worker: Worker }).worker;
       if (workerRef) {
         const tabId = w.tabs?.activeTabId ?? 'unknown';
@@ -266,7 +224,6 @@ export function runNeutron(ctx: any, scriptKey: string, scriptBody: string): voi
     console.warn('[helium/content/iso/neutron-worker] register content-script target failed:', err);
   }
 
-  // chrome.* async methods (storage, tabs, sendMessage)
   neutron.on('chrome.runtime.sendMessage', async (req) => {
     return chromeInstance.runtime.sendMessage(...(req['args'] as unknown[]));
   });
@@ -283,7 +240,6 @@ export function runNeutron(ctx: any, scriptKey: string, scriptBody: string): voi
   neutron.on('chrome.tabs.create', async (req) =>
     chromeInstance.tabs.create(...(req['args'] as unknown[])));
 
-  // DOM bridge
   neutron.on('dom.property-get', async (req) => {
     const [handle, prop] = req['args'] as [string, string];
     const el = resolveHandle(handle);
@@ -320,7 +276,6 @@ export function runNeutron(ctx: any, scriptKey: string, scriptBody: string): voi
     return r;
   });
 
-  // Cleanup on page hide
   window.addEventListener('pagehide', () => {
     try { void neutron.terminate(); } catch { /* ignore */ }
     try { URL.revokeObjectURL(workerUrl); } catch { /* ignore */ }

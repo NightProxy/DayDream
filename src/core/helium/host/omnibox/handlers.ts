@@ -1,8 +1,3 @@
-// src/core/helium/host/omnibox/handlers.ts
-//
-// chrome.omnibox.* handlers. Only `setDefaultSuggestion` is a real
-// method; the rest of the surface is events (fired from the omnibox UI
-// dispatcher into the registered extension via fireEventOn).
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { OmniboxRegistry } from './registry';

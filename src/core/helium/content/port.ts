@@ -75,7 +75,6 @@ export class PortRouter {
       return;
     }
 
-    // Cross-extension perm check
     if (ownerExtId !== targetExtId) {
       const ec = (targetSpawned.ctx.manifest as any).externally_connectable;
       const ids = ec?.ids;
@@ -93,12 +92,10 @@ export class PortRouter {
     };
     this.ports.set(portId, port);
 
-    // Tell BG about the new port
     targetSpawned.channel.sendEvent('chrome.runtime.onConnect-port', [{
       portId, name, sender: { id: ownerExtId },
     }]);
 
-    // Ack CS
     try {
       source.postMessage({ __helium_cs__: 'port-opened', pendingId, portId }, '*');
     } catch { /* ignore */ }
@@ -107,9 +104,7 @@ export class PortRouter {
   private handleMsg(data: any, source: Window): void {
     const port = this.ports.get(data.portId);
     if (!port || port.closed) return;
-    // Determine direction
     if (source === port.ownerWindow) {
-      // CS → BG
       port.targetSpawned.channel.sendEvent('chrome.runtime.port-msg', [{
         portId: port.portId, message: data.message,
       }]);
@@ -130,7 +125,6 @@ export class PortRouter {
     this.ports.delete(portId);
     this.decExt(port.ownerExtId);
 
-    // Notify counterpart
     try {
       port.ownerWindow.postMessage({ __helium_cs__: 'port-close', portId }, '*');
     } catch { /* ignore */ }
@@ -190,29 +184,18 @@ export class PortRouter {
       return -1;
     }
     const portId = this.nextPortId++;
-    // Synthesize a HostPort entry. ownerWindow = target CS window
-    // (where the port lives); "BG-→CS" port-msg events from the BG
-    // side will be forwarded via forwardBgToCs to this window.
     const port: HostPort = {
       portId,
       ownerExtId: initiatorExtId,
       ownerWindow: targetWin,
       ownerScriptKey: 'bg-initiated',
       targetExtId: initiatorExtId,
-      // Synthesize a SpawnedRef-shaped object pointing back at the
-      // initiator's channel so CS-→BG port-msg works.
       targetSpawned: { ctx: { id: initiatorExtId } as unknown as SpawnedRef['ctx'], entry: {} as SpawnedRef['entry'], channel: initiatorChannel as unknown as SpawnedRef['channel'] },
       closed: false,
     };
     this.ports.set(portId, port);
-    void frameId; // frameId-specific routing TBD; for now broadcasts
-                  // to the top frame.
+    void frameId;
     try {
-      // `port-incoming` matches the existing CS-side handler at
-      // mini-chrome-instance.ts:417 which constructs a CS-side Port
-      // and dispatches `chrome.runtime.onConnect`. The `extId` keys
-      // into the per-window instances map (BG-initiated ports target
-      // the initiator's own content-script instance).
       targetWin.postMessage({
         __helium_cs__: 'port-incoming',
         extId: initiatorExtId,
@@ -257,7 +240,6 @@ export class PortRouter {
       this.decExt(initiatorExtId);
       return -1;
     }
-    // Cross-extension permission gate (same logic as handleConnect:79-87)
     if (initiatorExtId !== targetExtId) {
       const ec = (targetSpawned.ctx.manifest as { externally_connectable?: { ids?: string[] } }).externally_connectable;
       const ids = ec?.ids;
@@ -267,12 +249,6 @@ export class PortRouter {
       }
     }
     const portId = this.nextPortId++;
-    // For BG-→BG, the "ownerWindow" concept doesn't apply (BG isn't a
-    // regular window we postMessage to). Both sides route via
-    // channel.sendEvent. We set ownerWindow to the host window as a
-    // non-null placeholder; forwardBgToCs is never called for these
-    // (BG messages flow through `chrome.runtime.port-msg` events on
-    // each side's channel, not window.postMessage).
     const port: HostPort = {
       portId,
       ownerExtId: initiatorExtId,

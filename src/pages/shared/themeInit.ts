@@ -34,23 +34,6 @@ export class InternalPageTheme {
 
       await this.applyCurrentTheme();
 
-      // ORDER MATTERS — reassertUserBackground MUST run before any class
-      // observer or parent-mirror call. It populates `cachedUserBg`,
-      // which the MutationObserver in watchBackgroundImageClass uses to
-      // decide whether to defensively re-add the class after a strip.
-      // If we ran an observer first and a strip happened before the
-      // cache was populated, the observer would see `cachedUserBg = null`
-      // and let the strip stand — exactly the cold-load bug that left
-      // every internal page black until manual toggle.
-      //
-      // Sequence:
-      //   1. reassertUserBackground — read userBg, paint body inline,
-      //      add class, populate cache.
-      //   2. watchBackgroundImageClass — start local <html> observer
-      //      with cache already set, so first defensive re-add works.
-      //   3. observeBackgroundImageClass + syncBackgroundImageClass —
-      //      parent-mirror is now safe (only ADDs class per fix to
-      //      syncBackgroundImageClass below; never removes).
       await this.reassertUserBackground();
       this.watchBackgroundImageClass();
       this.observeBackgroundImageClass();
@@ -84,15 +67,10 @@ export class InternalPageTheme {
       this.cachedUserBg =
         userBg && typeof userBg === "string" ? userBg : null;
       if (this.cachedUserBg) {
-        // Same paint shape as Themeing.setBackgroundImage()'s /internal/
-        // branch so anything else reading our inline styles sees the
-        // canonical layout.
         document.body.style.backgroundImage = `url("${this.cachedUserBg}")`;
         document.body.style.backgroundSize = "cover";
         document.body.style.backgroundPosition = "center";
         document.body.style.backgroundRepeat = "no-repeat";
-        // scroll, not fixed — Chromium iframe fixed-bg repaint bug. See
-        // matching note in theming.ts:722 and internal.scss:61.
         document.body.style.backgroundAttachment = "scroll";
         document.documentElement.classList.add("has-background-image");
       }
@@ -207,11 +185,6 @@ export class InternalPageTheme {
     this.events.addEventListener("theme:background-change", async () => {
       console.log(`[${window.location.pathname}] Background change detected`);
       await this.theming.setBackgroundImage();
-      // Keep the observer's cached value fresh — user just uploaded,
-      // removed, or replaced the wallpaper. Without this, watchBackground
-      // ImageClass() would either re-assert a stale URL after removal or
-      // refuse to re-assert after a fresh upload (cachedUserBg = null
-      // means "no defensive re-add").
       await this.reassertUserBackground();
     });
   }
@@ -241,32 +214,6 @@ export class InternalPageTheme {
 
   private syncBackgroundImageClass(): void {
     // ★ THE ROOT CAUSE OF THE COLD-LOAD WALLPAPER BUG ★
-    //
-    // Originally this function MIRRORED the parent's class state — if the
-    // parent had `.has-background-image`, the iframe got it; if not, the
-    // iframe lost it. This was wrong by design: the host shell at "/" is
-    // NOT an /internal/ page, and `theming.ts:724` gates the class-add to
-    // /internal/ pathnames only. So the host's <html> NEVER receives the
-    // class. So `parentEl.classList.contains("has-background-image")` was
-    // ALWAYS false. So every iframe init unconditionally STRIPPED the
-    // class via the else branch — typically just after `theming.init()`
-    // had successfully added it — leaving every internal page black on
-    // cold load until the user toggled the bg setting (which triggered a
-    // fresh paint via setBackgroundImage that won the race).
-    //
-    // Symptom this caused: wallpaper flashed for ~50ms then disappeared
-    // on every cold load of every internal page (newtab, history,
-    // settings, downloads, etc.). The previous fix rounds all guarded
-    // setBackgroundImage's remove branch — which was the wrong path.
-    // This function bypasses setBackgroundImage entirely and pokes
-    // classList.remove directly. No guards, no events, no awaiting.
-    //
-    // The fix: never mirror REMOVAL. The iframe's own InternalPageTheme
-    // (via setBackgroundImage, which now has its own stillHasUserBg
-    // guard) is the only authority for removing its own class. The
-    // parent-mirror only exists so that if the host eventually toggles
-    // its OWN class (e.g. for some future host-shell wallpaper feature),
-    // it can propagate ADDs to iframes. Removals stay local.
     try {
       const parentEl = window.parent.document.documentElement;
       if (parentEl.classList.contains("has-background-image")) {

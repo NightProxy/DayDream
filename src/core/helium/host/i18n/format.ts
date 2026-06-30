@@ -1,4 +1,3 @@
-// src/core/helium/host/i18n/format.ts
 
 import type { MessageEntry } from './negotiate';
 

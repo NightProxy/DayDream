@@ -1,9 +1,3 @@
-// src/apis/nyxBridge/channel.ts
-//
-// Wraps RequestResponseChannel (src/apis/eventsBridge.ts:344). Adds:
-//  - handshake routing for __handshake.* methods
-//  - sessionId verification for all other methods
-//  - per-tab serialized queue (per the spec "block background" rule)
 
 import { RequestResponseChannel } from '../eventsBridge';
 import type { Handshake } from './handshake';
@@ -40,18 +34,7 @@ export class NyxChannel {
 		this.channel = new RequestResponseChannel({
 			reqMarker: opts.reqMarker ?? '__nyx_req',
 			resMarker: opts.resMarker ?? '__nyx_res',
-			// NyxAI lives inside a scramjet-proxied iframe. The default
-			// reply transport calls `source.postMessage(payload, '*')`,
-			// which crashes inside scramjet's Window.postMessage wrapper
-			// ("Cannot read properties of undefined (reading 'url')").
-			// Wrap the payload in the scramjet envelope so the proxied
-			// frame's wrapper unpacks it and delivers `$scramjet$data`
-			// as the visible `event.data`. The client-side message
-			// listener (see runtime.ts) sees the unwrapped form.
 			replyTransport: (source, wrapped) => {
-				// Cross-realm send. Scramjet's postMessage wrapper
-				// crashes when invoked from the host realm — see
-				// frameDispatch.ts for the full rationale and fallback.
 				const detail = (wrapped as { __nyx_res?: unknown }).__nyx_res;
 				dispatchEventToFrame(source as Window | null, '__nyx_res', detail);
 			},
@@ -105,10 +88,6 @@ export class NyxChannel {
 			iframe,
 		});
 		if (!res.ok) this.err(res.code, res.reason);
-		// Fire the post-handshake hook (used by NyxBridge to drain any
-		// pending prefill payloads — `?` from DDX's omnibox, etc.).
-		// Defer with queueMicrotask so the client receives our
-		// `{ok:true}` BEFORE the prefill event hits its window.
 		if (this.opts.onHandshakeComplete) {
 			const cb = this.opts.onHandshakeComplete;
 			const src = source as Window;
@@ -143,8 +122,6 @@ export class NyxChannel {
 		try {
 			return await this.opts.dispatchMethod(method, args);
 		} catch (e: any) {
-			// Re-throw with a `.code` so the patched RequestResponseChannel
-			// (eventsBridge.ts) serializes the error as {code, message}.
 			this.err((e?.code as ErrorCode) ?? 'cdp_error', e?.message ?? String(e));
 		}
 	}

@@ -38,7 +38,6 @@ function deferralBlock(runAt: string): string {
     document.addEventListener('DOMContentLoaded', __run__, { once: true });
   }`;
   }
-  // document_idle (default)
   return `
   if (document.readyState === 'complete') {
     __run__();
@@ -63,9 +62,6 @@ export function buildJsWrapper(opts: JsWrapperOpts): string {
   const topFrameLit = opts.topFrameOnly ? 'true' : 'false';
 
   if (opts.world === 'ISOLATED') {
-    // ISOLATED-world wrappers pass the script body AS A STRING into
-    // the isolation runtime, which constructs a realm/worker, builds
-    // a chrome instance there, and evaluates the body inside.
     const bodyLit = JSON.stringify(opts.scriptBody);
     return `(function() {
   if (${topFrameLit} && window !== window.top) return;
@@ -84,8 +80,6 @@ export function buildJsWrapper(opts: JsWrapperOpts): string {
 })();`;
   }
 
-  // MAIN world: extension code runs inline in the page realm with a
-  // chrome global from the mini-chrome factory.
   return `(function() {
   if (${topFrameLit} && window !== window.top) return;
   var __ctx__ = ${ctxJson};

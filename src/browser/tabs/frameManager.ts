@@ -36,28 +36,12 @@ export class TabFrameManager {
 		iframe.setAttribute('data-tab-id', tabId);
 		iframe.setAttribute('data-split-placement', placement);
 
-		// Tabs that need a per-frame Scramjet plugin (e.g. extension
-		// newtab overrides — the HeliumExtensionPlugin synthesises
-		// responses for `<extId>.ddx`) go through a different path:
-		//
-		//   - `createFrame(iframe, { plugins })` installs the plugin
-		//     into the Frame's request hook (plugins can only be
-		//     attached at construction time).
-		//   - `frame.go(url)` is used instead of `iframe.setAttribute('src', ...)`.
-		//     Setting src directly bypasses Scramjet's URL rewriter
-		//     AND the SW path, so the browser does a real DNS lookup
-		//     for `<extId>.ddx` → ERR_NAME_NOT_RESOLVED. `frame.go`
-		//     runs the URL through Scramjet's encoder, the SW catches
-		//     it, the SW invokes the plugin, the plugin sees the
-		//     original URL and serves from extfs.
 		const hasPlugins = !!(opts?.plugins && opts.plugins.length > 0);
 		const proxyHandle = hasPlugins
 			? await this.tabs.proxy.createFrame(iframe, { plugins: opts!.plugins! })
 			: await this.tabs.proxy.createFrame(iframe);
 
 		if (hasPlugins) {
-			// frame.go honours the plugin chain. Don't pre-resolve via
-			// processUrl — the plugin expects the original URL.
 			try {
 				const frame = proxyHandle as { go?: (u: string) => void };
 				if (typeof frame.go === 'function') {

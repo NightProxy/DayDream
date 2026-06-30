@@ -1,17 +1,3 @@
-// src/core/helium/host/dnr/manifest.ts
-//
-// Parse the `declarative_net_request.rule_resources` block out of a
-// manifest. Schema (Chrome MV3):
-//
-//   "declarative_net_request": {
-//     "rule_resources": [
-//       { "id": "ruleset_1", "enabled": true, "path": "rules.json" },
-//       { "id": "ruleset_2", "enabled": false, "path": "rules2.json" }
-//     ]
-//   }
-//
-// We do best-effort coercion; entries missing `id` or `path` are
-// skipped. Returns an empty array if the block is absent.
 
 import type { ExtensionContext } from '../../extfs/types';
 

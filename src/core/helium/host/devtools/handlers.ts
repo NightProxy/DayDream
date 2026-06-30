@@ -1,19 +1,3 @@
-// src/core/helium/host/devtools/handlers.ts
-//
-// Aggregate chrome.devtools.* handlers. Composes PanelsHandlers,
-// InspectedWindowHandlers, NetworkHandlers, and resolves the
-// per-extension inspected tabId via the DevtoolsPageHost.
-//
-// Gating: chrome.devtools.* methods carry HANDLER_PERMISSIONS = null
-// (no manifest permission), but each call MUST originate from an
-// extension whose manifest declares `devtools_page` AND whose
-// devtools_page iframe is currently spawned (i.e., devtools is open
-// for at least one tab). We enforce both checks here.
-//
-// inspectedWindow.eval / .reload / .tabId: the BG-side caller does
-// NOT pass a tabId; we resolve it from DevtoolsPageHost.getInspectedTabId
-// keyed on ctx.id. If the extension has multiple devtools_page
-// instances (one per tab), v1 picks the first — see page.ts.
 
 import type { ExtensionContext } from '../../extfs/types';
 import { InspectedWindowHandlers } from './inspectedWindow';
@@ -75,13 +59,6 @@ export class DevtoolsHandlers {
 		this.network = new NetworkHandlers();
 	}
 
-	// --- Routing wrappers ---------------------------------------------
-	//
-	// Each wrapper:
-	//   1. Verifies the extension has an active devtools_page (gate).
-	//   2. Resolves the inspected tabId from DevtoolsPageHost.
-	//   3. Prepends tabId to args before delegating to the namespace.
-
 	panelsCreate = async (
 		ctx: ExtensionContext,
 		args: unknown[],
@@ -135,7 +112,6 @@ export class DevtoolsHandlers {
 		if (n === null) {
 			throw new DevtoolsNotAvailableError('chrome.devtools.inspectedWindow.eval');
 		}
-		// Prepend tabId to args before delegating.
 		return this.inspectedWindow.eval(ctx, [n, ...args]);
 	};
 
@@ -166,8 +142,6 @@ export class DevtoolsHandlers {
 		this.requireDevtools(ctx, 'chrome.devtools.network.getHAR');
 		return this.network.getHAR(ctx, args);
 	};
-
-	// --- Event fan-out wiring (called from ExtensionManager) ---------
 
 	/**
 	 * Hook for webRequest.onCompleted → chrome.devtools.network.onRequestFinished.
@@ -209,8 +183,6 @@ export class DevtoolsHandlers {
 			}
 		}
 	}
-
-	// --- internals ---------------------------------------------------
 
 	private requireDevtools(ctx: ExtensionContext, method: string): void {
 		const m = ctx.manifest as { devtools_page?: string };

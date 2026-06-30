@@ -34,7 +34,7 @@ import { openExtensionPopup } from './popupHost';
 import type { ExtensionContext } from '@core/helium';
 
 const PIN_SETTINGS_KEY = 'pinnedExtensions';
-const ICON_CACHE_LIMIT = 64; // small bound; far more than typical extension counts
+const ICON_CACHE_LIMIT = 64;
 
 interface ActionSnapshot {
   title?: string;
@@ -114,10 +114,6 @@ export class ExtensionToolbarButtons {
    */
   install(): boolean {
     if (this.mounted) return true;
-    // DDX renders inside a Shadow DOM; `window.d` is the shadow root
-    // (set in src/index.ts, used throughout @browser/items.ts etc.).
-    // Falling back to document.querySelector finds nothing inside the
-    // shadow, so the toolbar buttons would silently no-op.
     const shadow = (window as { d?: ShadowRoot | Document }).d ?? document;
     const root = shadow.querySelector('.urlbar-ring');
     if (!root) return false;
@@ -140,7 +136,6 @@ export class ExtensionToolbarButtons {
     this.slot = slot;
     this.mounted = true;
 
-    // Wire lifecycle hooks.
     this.bindEvents();
     this.scheduleRender();
     return true;
@@ -149,15 +144,12 @@ export class ExtensionToolbarButtons {
   private bindEvents(): void {
     const extMgr = this.getExtMgr();
 
-    // Re-render on tab activation (per-tab snapshot may differ).
     document.addEventListener('tabSelected', () => this.scheduleRender());
 
-    // Re-render on action-state mutations.
     if (extMgr?.actionHandlers?.onChange) {
       this.unsubActions = extMgr.actionHandlers.onChange(() => this.scheduleRender());
     }
 
-    // Re-render on install/uninstall/enable/disable.
     if (extMgr?.on) {
       const rerender = (): void => {
         this.pinnedCache = null;
@@ -219,7 +211,6 @@ export class ExtensionToolbarButtons {
       return;
     }
 
-    // Pinned set is small; cache to avoid re-reading on every render.
     if (this.pinnedCache === null) {
       this.pinnedCache = await loadPinned();
     }
@@ -227,9 +218,6 @@ export class ExtensionToolbarButtons {
     const running = extMgr.getRunning();
     const activeTabIdNum = await this.getActiveTabIdNum();
 
-    // Decide which extensions get a toolbar button:
-    //   - Browser-action: pinned AND has manifest.action / browser_action
-    //   - Page-action: pageActionIsShown(extId, activeTabIdNum) == true
     type ButtonSpec = {
       ext: ExtensionInfo;
       manifest: ManifestShape;
@@ -262,8 +250,6 @@ export class ExtensionToolbarButtons {
       }
     }
 
-    // Render. Build fresh DOM each pass — cheap given typical N=0-3,
-    // and avoids stale event listeners.
     this.slot.innerHTML = '';
     for (const spec of buttons) {
       this.slot.appendChild(this.buildButton(spec, activeTabIdNum));
@@ -282,7 +268,6 @@ export class ExtensionToolbarButtons {
     activeTabIdNum: number | undefined,
   ): HTMLButtonElement {
     const { ext, manifest, snap, iconPath, kind } = spec;
-    // `popup` is read by handleClick(spec) — destructured there.
     const btn = document.createElement('button');
     btn.setAttribute('data-action-ext-id', ext.id);
     btn.setAttribute('data-action-kind', kind);
@@ -313,7 +298,6 @@ export class ExtensionToolbarButtons {
       btn.style.background = 'transparent';
     });
 
-    // Icon (with async data-URL resolution + cache).
     const iconWrap = document.createElement('div');
     Object.assign(iconWrap.style, {
       width: '18px',
@@ -350,7 +334,6 @@ export class ExtensionToolbarButtons {
     }
     btn.appendChild(iconWrap);
 
-    // Badge overlay.
     if (snap.badgeText) {
       const badge = document.createElement('div');
       badge.textContent = snap.badgeText;
@@ -373,7 +356,6 @@ export class ExtensionToolbarButtons {
       btn.appendChild(badge);
     }
 
-    // Click handler.
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (snap.enabled === false) return;
@@ -392,7 +374,6 @@ export class ExtensionToolbarButtons {
     try {
       const url = await extMgr.getIconDataUrl(extId, iconPath);
       if (url) {
-        // Bound cache so a runaway setIcon loop doesn't blow up memory.
         if (this.iconCache.size > ICON_CACHE_LIMIT) {
           const firstKey = this.iconCache.keys().next().value;
           if (firstKey) this.iconCache.delete(firstKey);
@@ -418,8 +399,6 @@ export class ExtensionToolbarButtons {
     const extMgr = this.getExtMgr();
     if (!extMgr) return;
 
-    // Grant activeTab for the current tab so the click counts as a
-    // user-gesture activation (mirrors menuManager.onExtensionRowClick).
     if (activeTabIdNum !== undefined && extMgr.grantActiveTab) {
       try { extMgr.grantActiveTab(spec.ext.id, activeTabIdNum); } catch (err) { console.warn(err); }
     }
@@ -438,11 +417,6 @@ export class ExtensionToolbarButtons {
       return;
     }
 
-    // No popup — fire the appropriate onClicked event with the
-    // active tab info. browserAction uses `chrome.action.onClicked`
-    // (MV3 unified) or `chrome.browserAction.onClicked` (MV2); we
-    // fire BOTH so listeners on either path receive it. pageAction
-    // uses `chrome.pageAction.onClicked`.
     let tabInfo: unknown;
     const w = window as {
       nyxBridge?: { tabResolver?: { info?: (n: number) => unknown } };
@@ -495,7 +469,6 @@ function resolveIconPath(manifest: ManifestShape, override: unknown): string | n
 }
 
 function pickFromIconMap(map: Record<string, string>): string | null {
-  // Prefer 16/32 for toolbar — actual rendered size is 18px.
   for (const size of ['32', '24', '16', '48', '64', '128']) {
     const v = map[size];
     if (typeof v === 'string') return v;
@@ -518,7 +491,6 @@ function fallbackIcon(): SVGElement {
   svg.style.color = 'var(--text, rgba(255,255,255,0.8))';
   svg.style.opacity = '0.7';
   const path = document.createElementNS(ns, 'path');
-  // A simplified "puzzle piece" outline.
   path.setAttribute(
     'd',
     'M19 7.85c-.05.32.06.65.29.88l1.57 1.57c.47.47.7 1.09.7 1.7s-.23 1.23-.7 1.7l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.22c.45.16.85.5.92.96a.98.98 0 0 1-.28.84l-1.61 1.61c-.47.47-1.09.7-1.7.7-.62 0-1.24-.24-1.71-.71l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.46-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88L2.7 14.32a2.4 2.4 0 0 1-.7-1.71c0-.62.23-1.24.7-1.71L4.23 9.4c.24-.24.58-.36.92-.31.51.08.88.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92l1.53-1.52A2.4 2.4 0 0 1 12 2c.62 0 1.24.24 1.7.71l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.46.18-.9.53-.97 1.02Z',

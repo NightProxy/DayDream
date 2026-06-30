@@ -1,10 +1,3 @@
-// src/core/helium/host/runtime/handlers.ts
-//
-// chrome.runtime.* methods that aren't already implemented by ExtensionManager.
-// The "core" `runtime.sendMessage` still lives in ExtensionManager because
-// it shares the spawned-context map and channel; these handlers cover the
-// remaining surface (extension-introspection, getBackgroundPage, reload,
-// uninstall URL, options page, native messaging stubs).
 
 import type { ExtensionContext } from '../../extfs/types';
 import { writeExtensionFile } from '../../extfs';

@@ -30,10 +30,6 @@ export { parseManifest } from './manifest';
 export { deriveExtensionId } from './id';
 
 const ZIP_MAGIC = 0x04034b50;
-// All CRX files (v2/v3/v4) carry the same magic "Cr24" — only the
-// 4-byte version field at offset 4 differentiates them. See
-// `crx.ts` for the full rationale (earlier docs incorrectly claimed
-// CRX2/3 had distinct magics).
 const CRX_MAGIC = 0x34327243;
 
 const DEFAULT_MAX_FILE = 50 * 1024 * 1024;

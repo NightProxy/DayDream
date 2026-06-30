@@ -1,4 +1,3 @@
-// packages/shared/src/unpack/__sanity__/run.ts
 import { deriveExtensionId } from '../id';
 
 const failures: string[] = [];
@@ -58,8 +57,6 @@ async function main(): Promise<void> {
   await expect('parses CRX3 envelope and reports zipBody', () => {
     const header = new Uint8Array(12 + 8 + 8);
     const view = new DataView(header.buffer);
-    // All CRX versions share magic 0x34327243 ("Cr24"); the version
-    // field at offset 4 disambiguates.
     view.setUint32(0, 0x34327243, true);
     view.setUint32(4, 3, true);
     view.setUint32(8, 8, true);

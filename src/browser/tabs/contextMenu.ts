@@ -1,7 +1,6 @@
 import type { TabsInterface } from './types';
 import { injectExtensionMenus, type ContextMenuClickInfo } from '@core/helium/host/contextMenus';
 
-// Minimal shape of the host ExtensionManager surface we use for injection.
 interface ExtManagerLike {
 	contextMenusRegistry?: import('@core/helium/host/contextMenus').ContextMenuRegistry;
 	fireEventOn?: (extId: string, method: string, args: unknown[]) => void;
@@ -110,7 +109,6 @@ export class TabContextMenu {
 			)
 		);
 
-		// Edge-style split-view controls.
 		const isInSplit = !!tab.splitPartnerId;
 
 		if (isInSplit) {
@@ -140,8 +138,6 @@ export class TabContextMenu {
 				)
 			);
 		} else if (!tab.isPinned) {
-			// Collect candidate partners: any other tab not pinned and not
-			// already in a split.
 			const candidates = this.tabs.tabs.filter(
 				t =>
 					t.id !== tabId &&
@@ -150,7 +146,6 @@ export class TabContextMenu {
 			);
 
 			if (candidates.length === 1) {
-				// Only one possible partner — single-click action.
 				const partner = candidates[0];
 				const partnerTitle =
 					partner.title ||
@@ -187,7 +182,6 @@ export class TabContextMenu {
 					)
 				);
 			} else if (candidates.length > 1) {
-				// Multiple candidates — show a hover submenu listing each.
 				const splitSubmenu = this.tabs.ui.createElement(
 					'div',
 					{ class: 'relative group' },
@@ -944,7 +938,6 @@ export class TabContextMenu {
 			)
 		);
 
-		// Extension contextMenus injection (tab context).
 		try {
 			let tabIdNum: number | undefined;
 			const w = window as { nyx?: { tabResolver?: { toNum?: (id: string) => number; info?: (n: number) => unknown } } };

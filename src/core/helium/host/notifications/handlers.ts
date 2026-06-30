@@ -1,8 +1,3 @@
-// src/core/helium/host/notifications/handlers.ts
-//
-// chrome.notifications.* host handlers. Wrap Nightmare's
-// NotificationManager. onClicked / onClosed / onButtonClicked
-// are fired via the ExtensionManager's fireEventOn helper.
 
 import type { ExtensionContext } from '../../extfs/types';
 import type {
@@ -11,10 +6,7 @@ import type {
 } from '@pkgs/Nightmare/notifications';
 
 export interface NotificationsHandlerDeps {
-  // Resolves the NotificationManager. Lazy so we don't crash if Nightmare
-  // hasn't constructed yet at handler-construction time.
   getManager: () => NotificationManager | null;
-  // Fire chrome event on the originating extension.
   fireEventOn: (extId: string, method: string, args: unknown[]) => void;
 }
 
@@ -39,9 +31,7 @@ interface ChromeCreateOptions {
 let nextAutoId = 0;
 
 export class NotificationsHandlers {
-  // Track which IDs belong to which extension so we can fire events
-  // back to the right channel.
-  private byId = new Map<string, string>(); // notifId -> extId
+  private byId = new Map<string, string>();
 
   constructor(private readonly deps: NotificationsHandlerDeps) {}
 
@@ -59,7 +49,6 @@ export class NotificationsHandlers {
 
     const mgr = this.deps.getManager();
     if (!mgr) {
-      // No UI manager yet — return the id anyway so callers don't crash.
       this.byId.set(id, ctx.id);
       return id;
     }
@@ -111,8 +100,6 @@ export class NotificationsHandlers {
     const mgr = this.deps.getManager();
     return mgr ? mgr.getPermissionLevel() : 'granted';
   };
-
-  // ── helpers ────────────────────────────────────────────────────
 
   private toNormalized(opts: ChromeCreateOptions): NotificationOptions {
     const out: NotificationOptions = {

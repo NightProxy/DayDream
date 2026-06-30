@@ -11,15 +11,8 @@ const pending = new Map<number, {
   reject: (e: Error) => void;
 }>();
 
-// Per-page instance registry: keyed by extId, holds every chrome
-// instance constructed for content scripts of that extension.
-// Used to fan inbound `event` messages from the host to the right
-// instance(s).
 const instances = new Map<string, Set<ChromeMiniInstance>>();
 
-// Per-extension token for the host to address this window.
-// One token per (extId, this window). Generated lazily on first
-// instance construction per (extId).
 const windowTokens = new Map<string, string>();
 
 function tokenFor(extId: string): string {
@@ -84,7 +77,7 @@ class Port {
 }
 
 const ports = new Map<number, Port>();
-const pendingPorts = new Map<number, Port>(); // keyed by pendingPortId before host assigns real portId
+const pendingPorts = new Map<number, Port>();
 let nextPendingPortId = 0;
 
 function callHostFor(
@@ -115,15 +108,6 @@ function callHostFor(
   });
 }
 
-// Wraps a Promise-returning chrome.* method so that when the caller
-// passes a callback function as the LAST argument, the wrapper invokes
-// the callback with the resolved value (or undefined on rejection) and
-// returns undefined — matching Chrome's MV2 callback contract. When no
-// callback is supplied, returns the Promise (MV3 behavior).
-//
-// Note: callHostFor never rejects (it resolves(undefined) on error and
-// stores the error on instance.runtime.lastError), so the wrapper
-// observes either a value or undefined from the underlying call.
 function makeCallbackAware(
   impl: (...args: unknown[]) => Promise<unknown>,
 ): (...args: unknown[]) => Promise<unknown> | undefined {
@@ -147,7 +131,6 @@ function createPort(
   extId: string,
   args: unknown[],
 ): Port {
-  // Signatures: connect(connectInfo?) or connect(extensionId, connectInfo?)
   let targetExtId = extId;
   let name = '';
   if (typeof args[0] === 'string') {
@@ -187,7 +170,6 @@ export class ChromeMiniInstance {
 
     if (!opts?.skipRegistration) {
       registerInstance(this.extId, this);
-      // Send window-ready once per (extId, this window).
       const token = tokenFor(this.extId);
       window.top!.postMessage({
         __helium_cs__: 'window-ready',
@@ -210,7 +192,6 @@ export class ChromeMiniInstance {
       id: ctx.id,
       getURL: (path: string) => `${baseUrl}/${(path || '').replace(/^\/+/, '')}`,
       getManifest: () => ctx.manifest,
-      // sendMessage takes variadic chrome args; callback-aware
       sendMessage: makeCallbackAware((...args: unknown[]) =>
         callHostFor(this, this.extId, 'chrome.runtime.sendMessage', args),
       ),
@@ -291,19 +272,10 @@ export function unregisterAll(): void {
   windowTokens.clear();
 }
 
-// Inbound message router — host posts rpc-resp, event, port-msg,
-// port-close, port-error, port-opened.
-//
-// Also handles BG→CS chrome.tabs.sendMessage routing (Task 10):
-// the host posts `__helium_bg_to_cs__: 'msg'`, we dispatch to every
-// registered ChromeMiniInstance's onMessage event, collect replies via
-// a synthetic sendResponse, and post `__helium_bg_to_cs__: 'reply'`
-// back to the source.
 window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
 
-  // BG→CS path (no scramjet envelope, comes from window.top postMessage)
   const bg = data as { __helium_bg_to_cs__?: string };
   if (bg.__helium_bg_to_cs__ === 'msg') {
     const m = data as {
@@ -323,7 +295,6 @@ window.addEventListener('message', (e) => {
       } catch { /* ignore */ }
       return;
     }
-    // Synthesize sendResponse — first call wins; subsequent calls are no-ops.
     let replied = false;
     const sendResponse = (resp: unknown): void => {
       if (replied) return;
@@ -344,14 +315,12 @@ window.addEventListener('message', (e) => {
       if (replied) break;
     }
     if (!replied && !anyAsync) sendResponse(undefined);
-    // 30s timeout fallback
     if (!replied) {
       setTimeout(() => { if (!replied) sendResponse(undefined); }, 30_000);
     }
     return;
   }
 
-  // Unwrap scramjet envelope if present
   const raw = data as any;
   const m = raw.__helium_cs__
     ? raw
@@ -391,7 +360,7 @@ window.addEventListener('message', (e) => {
     case 'port-msg': {
       const port = ports.get(m.portId);
       if (!port) return;
-      if (port.disconnected) return; // race: local already disconnected
+      if (port.disconnected) return;
       port.onMessage._dispatch([m.message]);
       return;
     }
@@ -409,15 +378,10 @@ window.addEventListener('message', (e) => {
       port.disconnected = true;
       if (m.pendingId !== undefined) pendingPorts.delete(m.pendingId);
       if (m.portId !== undefined) ports.delete(m.portId);
-      // Surface as lastError on the next chrome.* call (port has no
-      // direct lastError surface). For now, just disconnect.
       port.onDisconnect._dispatch([]);
       return;
     }
     case 'port-incoming': {
-      // Host is forwarding a port from an inbound runtime.connect to
-      // this window. Construct a local Port, fire onConnect on every
-      // chrome instance for this extension.
       const port = new Port(m.name ?? '');
       port.portId = m.portId;
       ports.set(m.portId, port);

@@ -170,13 +170,6 @@ class NewTabShortcuts {
 								},
 								['DayDream']
 							),
-							/*this.ui.createElement(
-								'em',
-								{
-									class: 'text-3xl font-bold tracking-widest text-[var(--main)] -ml-1'
-								},
-								['X']
-							),*/
 							this.ui.createElement(
 								'button',
 								{
@@ -879,10 +872,6 @@ class NewTabShortcuts {
 			return;
 		}
 
-		// Modal is constructed lazily on first click. night-auth's CDN
-		// bundle is ~1.2 MB; dynamic-importing it inside the click handler
-		// keeps it out of the newtab boot critical path and only pays the
-		// cost when the user actually opens the sign-in flow.
 		let nightLoginPromise: Promise<{ show: () => void } | null> | null =
 			null;
 		const ensureNightLogin = () => {
@@ -919,22 +908,7 @@ class NewTabShortcuts {
 						theme: 'system',
 						backdropBlur: '8px',
 						API_URL: resolvePath('api/plus'),
-						// Modal references /bg.png, /nightlogo.png etc. at
-						// runtime — empty assetUrl resolves them against
-						// the served origin root, where srv/vite/copy.ts
-						// puts them.
 						assetUrl: '',
-						// night-auth 1.2.3 contract (confirmed via runtime
-						// log): the modal writes the JWT to
-						// localStorage['access_token'] itself and then
-						// fires onSuccess(undefined) as a "login complete,
-						// go read it" hook. We copy from there into DDX's
-						// canonical SettingsAPI nightplus.json store. The
-						// localStorage stash is left in place — it's the
-						// modal's IPC mechanism, not a competing store,
-						// and wiping it could break other modal flows
-						// (e.g. the "Connected successfully!" already-
-						// signed-in branch checks localStorage on open).
 						onSuccess: async () => {
 							let token: string | null = null;
 							try {

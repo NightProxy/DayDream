@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/handlers/dom.ts
-//
-// dom.* handlers. Read methods come first; interact methods are appended
-// in Task 5.3.
 
 import { register } from './index';
 import { getDoc, resolveRef, isVisible, snapshotElements } from './_dom_helpers';
@@ -26,9 +22,6 @@ register('dom.readPage', async (ctx, args: [TabTarget, { interactiveOnly?: boole
 		: [args as TabTarget, undefined];
 	const iframe = ctx.tabResolver.resolveIframe(target.tabId);
 	const doc = getDoc(iframe);
-	// Same safety as webNavigation.getFrame: decode the proxied URL
-	// so consumers see the real site URL, not scramjet gibberish, and
-	// the read can't throw on cross-origin contentWindow access.
 	const url = decodeIframeUrl(iframe, ctx.proxy as Parameters<typeof decodeIframeUrl>[1]) || iframe.src;
 	let title = '';
 	try { title = doc.title ?? ''; } catch { /* cross-origin */ }
@@ -106,8 +99,6 @@ register('dom.openOrClosedShadowRoot', async (ctx, args) => {
 	if (!root || !ctx.handleStore) return null;
 	return ctx.handleStore.create(target.tabId, root as Element);
 });
-
-// ── Interact handlers ───────────────────────────────────────────────
 
 import { DDXError } from '../types';
 

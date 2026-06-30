@@ -1,7 +1,3 @@
-// src/core/helium/host/webNavigation/filter.ts
-//
-// Chrome event filter evaluator. Supports {url: [filterCondition[]]}
-// per https://developer.chrome.com/docs/extensions/reference/api/events#filtered.
 
 export interface UrlFilter {
   hostContains?: string;

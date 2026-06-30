@@ -75,9 +75,6 @@ export interface PanelHandle {
 
 const DEFAULT_HEIGHT = 300;
 
-// Monotonically increasing panel IDs across the lifetime of the page.
-// Chrome's chrome.devtools.panels.create returns a stable numeric id;
-// callers may persist it for the session, so we keep it global.
 let nextPanelId = 1;
 
 function applyTabStyling(tab: HTMLDivElement, active: boolean): void {
@@ -177,9 +174,6 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 		resizeHandle,
 		tabStrip,
 		get devtoolsIframe(): HTMLIFrameElement {
-			// Backwards-compat: callers expect a reference to the chii
-			// iframe regardless of which extension panel is currently
-			// focused.
 			return chiiEntry.iframe;
 		},
 		isActive: true,
@@ -237,8 +231,6 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 
 			handle.panels.push(entry);
 
-			// Late-mount iframe URL — either via caller hook (for
-			// Scramjet-plugged frames) or direct .src.
 			if (opts.mountIframe) {
 				try {
 					const result = opts.mountIframe(iframe, opts.iframeSrc);
@@ -308,7 +300,6 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 			}
 			handle.panels = remaining;
 			if (removedActive && remaining.length > 0) {
-				// Re-focus the chii panel by default.
 				handle.setActive(remaining[0]!.id);
 			}
 		},
@@ -326,7 +317,6 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 		},
 	};
 
-	// Click on chii tab also switches via setActive (for symmetry / event firing).
 	chiiTabEl.addEventListener('click', () => {
 		handle.setActive(chiiEntry.id);
 	});

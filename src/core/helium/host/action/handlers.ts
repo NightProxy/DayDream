@@ -1,11 +1,3 @@
-// src/core/helium/host/action/handlers.ts
-//
-// State methods for chrome.action.* / chrome.browserAction.* / chrome.pageAction.*.
-//
-// Per-extension state is persisted to `__helium_action__.json`. Per-tab
-// overrides shadow the global value. UI integration is left to a future
-// task (Task 25); these handlers only manage state + expose it via
-// getEffectiveSnapshot().
 
 import type { ExtensionContext } from '../../extfs/types';
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
@@ -43,14 +35,6 @@ function defaultState(): ActionState {
  */
 function seedFromManifest(extId: string): ActionState {
   const state = defaultState();
-  // We don't have direct access to the manifest here — the manifest
-  // is loaded by getExtension(). The persisted state file (if any)
-  // already encodes whatever the extension has set since install,
-  // and it wins. Manifest defaults are only seeded the first time.
-  // For now, return the bare default; the proper hookup would be in
-  // installFromBytes (which would call a setter that writes the
-  // manifest-derived defaults). Tracked as a follow-up — the
-  // existing code path doesn't have manifest access here.
   void extId;
   return state;
 }
@@ -129,7 +113,6 @@ export class ActionHandlers {
       };
     },
   ): Promise<void> {
-    // Don't overwrite if persisted state already exists.
     try {
       const existing = await readExtensionFile(extId, '__helium_action__.json');
       if (existing && existing.byteLength > 0) return;
@@ -146,8 +129,6 @@ export class ActionHandlers {
     if (typeof action.default_popup === 'string') {
       state.global.popup = action.default_popup;
     }
-    // Seed `iconPath` from manifest default_icon. Both string and
-    // Record<size, path> are valid IconSpec values.
     if (typeof action.default_icon === 'string') {
       state.global.iconPath = action.default_icon;
     } else if (action.default_icon && typeof action.default_icon === 'object') {
@@ -288,16 +269,12 @@ export class ActionHandlers {
       await opener.openActionPopup(ctx.id);
       return;
     }
-    // No host-side popup-opener registered; this can happen during
-    // very early init. Throw the original error so callers can
-    // detect "not available right now."
     throw new Error('chrome.action.openPopup: no host-side popup opener available');
   };
   getUserSettings = async (_ctx: ExtensionContext, _args: unknown[]): Promise<unknown> => ({
     isOnToolbar: true,
   });
 
-  // pageAction-specific:
   pageActionShow = async (ctx: ExtensionContext, args: unknown[]): Promise<void> => {
     const tabId = args[0] as number;
     let set = this.pageActionShown.get(ctx.id);
@@ -311,7 +288,6 @@ export class ActionHandlers {
     this.fire(ctx.id, tabId);
   };
 
-  // Helpers exposed to the toolbar UI (Task 25):
   pageActionIsShown(extId: string, tabId: number): boolean {
     return this.pageActionShown.get(extId)?.has(tabId) === true;
   }
@@ -329,16 +305,6 @@ export class ActionHandlers {
     this.fire(extId);
   }
 }
-
-// ----------------------------------------------------------------------
-// chrome.action.setIcon imageData handling.
-//
-// Chrome's contract:
-//   chrome.action.setIcon({ imageData: ImageData | { [size]: ImageData } })
-// converts ImageData buffers to icon resources. We persist icons as a
-// path string (URL) or a Record<size, path>, so we convert each
-// ImageData to a data URL via OffscreenCanvas.
-// ----------------------------------------------------------------------
 
 interface ImageDataLike {
   data: Uint8ClampedArray | number[];
@@ -367,10 +333,6 @@ async function imageDataToDataURL(
     const canvas = new OffscreenCanvas(raw.width, raw.height);
     const ctx2d = canvas.getContext('2d');
     if (!ctx2d) return undefined;
-    // ImageData's data arg is typed as `ImageDataArray` (an
-    // ArrayBuffer-backed Uint8ClampedArray) — pass a fresh copy
-    // backed by a plain ArrayBuffer so the type checker accepts it
-    // regardless of how the caller allocated `raw.data`.
     const buf = new Uint8ClampedArray(
       raw.data instanceof Uint8ClampedArray
         ? raw.data
@@ -401,12 +363,10 @@ async function imageDataToDataURL(
 async function imageDataToIconSpec(
   imageData: unknown,
 ): Promise<IconSpec | undefined> {
-  // Single ImageData (Chrome's first overload).
   if (isImageDataLike(imageData)) {
     const url = await imageDataToDataURL(imageData);
     return url ? url : undefined;
   }
-  // Multi-size record { '16': ImageData, '32': ImageData, ... }
   if (imageData && typeof imageData === 'object') {
     const entries = Object.entries(imageData as Record<string, unknown>);
     const out: Record<string, string> = {};

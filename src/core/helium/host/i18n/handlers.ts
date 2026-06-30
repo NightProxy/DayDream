@@ -1,4 +1,3 @@
-// src/core/helium/host/i18n/handlers.ts
 
 import type { ExtensionContext } from '../../extfs/types';
 import { negotiateLocale, loadMessages } from './negotiate';

@@ -51,8 +51,6 @@ export class TabClosedStack {
 	push(tabInfo: TabData | undefined): void {
 		if (!tabInfo) return;
 
-		// Don't track internal pages or empty tabs. Reopening "newtab" or
-		// "about:blank" adds noise without value.
 		const url = this.resolveUrl(tabInfo);
 		if (!url || this.shouldSkip(url)) return;
 
@@ -67,7 +65,6 @@ export class TabClosedStack {
 
 		this.stack.push(record);
 
-		// Evict oldest entries past the cap.
 		if (this.stack.length > this.maxSize) {
 			this.stack.splice(0, this.stack.length - this.maxSize);
 		}
@@ -99,9 +96,6 @@ export class TabClosedStack {
 	}
 
 	private resolveUrl(tabInfo: TabData): string {
-		// Prefer the live iframe URL (post-redirect, post-history) decoded
-		// back to the user-meaningful form. Fall back to tabInfo.url which
-		// is the originally-requested URL (already plain in the common case).
 		const fromIframe = decodeIframeUrl(tabInfo.iframe, this.tabs.proxy);
 		if (fromIframe && fromIframe !== 'about:blank') return fromIframe;
 		return tabInfo.url
@@ -114,8 +108,6 @@ export class TabClosedStack {
 		if (url === 'about:blank') return true;
 		if (url.startsWith('ddx://newtab')) return true;
 		if (url.startsWith('ddx://home')) return true;
-		// Other internal pages (settings, history, bookmarks) ARE worth
-		// reopening — keep them.
 		return false;
 	}
 }

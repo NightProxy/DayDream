@@ -4,7 +4,6 @@ import { createRow } from "../components/row";
 import { getProfiles, openInNewTab } from "../data/host";
 import type { SectionContext } from "./types";
 
-// FAQ entries — body() builds the DOM tree.
 type FAQItem = { q: string; body: (root: HTMLElement) => void };
 
 function makeLink(text: string, href: string): HTMLAnchorElement {
@@ -118,7 +117,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   h2.textContent = "About DDX";
   section.appendChild(h2);
 
-  // Hero
   const hero = document.createElement("div");
   hero.className = "about-hero";
   hero.style.display = "flex";
@@ -126,9 +124,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   hero.style.gap = "16px";
   hero.style.marginBottom = "16px";
   const logo = document.createElement("img");
-  // Path: /res/logo.png is served from the public root (see existing index.html
-  // line 15 favicon ref). From inside the iframe at /internal/settings/, an
-  // absolute "/res/logo.png" should resolve correctly.
   logo.src = "/res/logo.png";
   logo.alt = "DayDream X";
   logo.width = 64;
@@ -160,7 +155,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   hero.appendChild(heroText);
   section.appendChild(hero);
 
-  // Statistics
   const stats = await getStats();
   const statsCard = document.createElement("div");
   statsCard.className = "about-card";
@@ -186,7 +180,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   });
   section.appendChild(statsCard);
 
-  // Credits
   const credits = document.createElement("div");
   credits.className = "about-card";
   const c1 = document.createElement("div");
@@ -212,7 +205,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   });
   section.appendChild(credits);
 
-  // Links rows
   const links = [
     { icon: "message-circle", label: "Discord community", url: "https://discord.night-x.com" },
     { icon: "git-branch", label: "GitLab repository", url: "https://gitlab.com/nightnetwork/daydreamx" },
@@ -224,11 +216,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
       icon: l.icon,
       label: l.label,
       right: { kind: "chevron" },
-      // Both ddx:// internal pages (terms, privacy) and external https
-      // URLs (Discord, GitLab) route through the same helper. It opens
-      // a new browser tab via the host Tabs API for either scheme.
-      // Previously the ddx:// branch did `location.href = url` which
-      // only navigated this iframe and broke the link entirely.
       onClick: () => { void openInNewTab(l.url); },
       searchUnit: {
         id: `about/link/${l.label}`,
@@ -238,7 +225,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
     }));
   }
 
-  // FAQ accordion
   const faqHeader = document.createElement("div");
   faqHeader.className = "settings-subheader";
   faqHeader.textContent = "FAQ";
@@ -271,7 +257,6 @@ export async function render(container: HTMLElement, ctx?: SectionContext): Prom
   createIcons({ icons });
 
   if (autoOpenAll) {
-    // Scroll FAQ subheader into view
     faqHeader.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }

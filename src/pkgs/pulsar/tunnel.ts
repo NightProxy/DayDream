@@ -1,8 +1,3 @@
-// Pulsar tunnel: WebSocket-like adapter on top of an RTCDataChannel
-// (for use as libcurl.js custom transport), plus the factory the
-// `libcurl.transport` setter expects.
-//
-// Vendored from @abndnce/pulsar-client.
 
 import { SOCKET_PREFIX } from './constants';
 import { waitForDataChannelOpen } from './webrtc';

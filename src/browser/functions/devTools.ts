@@ -66,7 +66,6 @@ export class DevTools implements DevToolsInterface {
       document.body.appendChild(script);
     `;
 
-    // Set up message listener with timeout
     const messagePromise = new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
         window.removeEventListener("message", messageHandler);
@@ -101,7 +100,6 @@ export class DevTools implements DevToolsInterface {
       window.addEventListener("message", messageHandler);
     });
 
-    // Execute the injection via proxy.eval and check if it succeeded
     console.log("[DevTools.injectErudaScript] Calling proxy.eval with code");
     try {
       const success = await window.proxy.eval(window.SWconfig, iframe, code);
@@ -222,7 +220,6 @@ export class DevTools implements DevToolsInterface {
       return;
     }
 
-    // Basic validation: skip about:blank and similar non-content frames
     const frameSrc = iframe.src || "";
     const forbiddenSrcs = ["about:blank", "", "a%60owt8bnalk", "a`owt8bnalk"];
     if (forbiddenSrcs.includes(frameSrc)) {
@@ -264,7 +261,6 @@ export class DevTools implements DevToolsInterface {
       );
     }
 
-    // Reset state on iframe navigation
     try {
       iframe.contentWindow?.addEventListener(
         "unload",

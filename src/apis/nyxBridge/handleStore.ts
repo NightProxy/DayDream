@@ -1,10 +1,3 @@
-// src/apis/nyxBridge/handleStore.ts
-//
-// Registry of ElementHandle objects returned by dom.querySelector and
-// webNavigation.waitForSelector. Element references are held weakly so
-// detached/GC'd elements naturally invalidate. Phase 5 will extend
-// HandleStoreLike usage across the dom.* handlers; Phase 4 introduces
-// just enough to support waitForSelector.
 
 import type { TabId, ElementHandle } from './api';
 

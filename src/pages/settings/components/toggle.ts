@@ -36,7 +36,6 @@ const defaultRead = (raw: unknown): boolean | undefined => {
 };
 
 export function createToggle(opts: ToggleOptions): ToggleHandle {
-  // Reuses existing .settings-row layout (matches createRow visually)
   const row = document.createElement("div");
   row.className = "settings-row no-hover";
   if (opts.id) row.id = opts.id;
@@ -78,17 +77,12 @@ export function createToggle(opts: ToggleOptions): ToggleHandle {
   right.appendChild(switchLabel);
   row.appendChild(right);
 
-  // Initial load
   const reader = opts.readMap ?? defaultRead;
   const writer = opts.writeMap ?? ((v) => v);
   const defaultValue = opts.defaultValue ?? false;
 
   let value = defaultValue;
   if (opts.settingKey) {
-    // Disable input during initial load so a user click can't race with
-    // the async getItem and get clobbered when the stored value resolves.
-    // Don't touch the disabled state if opts.disabled is already set —
-    // that's a caller-owned condition and gets restored by enable() later.
     const appliedLoadDisable = !opts.disabled;
     if (appliedLoadDisable) {
       input.disabled = true;
@@ -122,8 +116,6 @@ export function createToggle(opts: ToggleOptions): ToggleHandle {
         const api = getSettingsAPI();
         await api.setItem(opts.settingKey, writer(value));
       } catch (err) {
-        // Persistence failed — revert UI to previous state so the on-screen
-        // toggle reflects what is actually on disk, and surface the error.
         console.warn(`[toggle] write ${opts.settingKey} failed`, err);
         value = prev;
         input.checked = prev;

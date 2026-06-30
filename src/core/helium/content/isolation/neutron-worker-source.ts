@@ -21,20 +21,6 @@ import {
   type CallSync,
 } from './dom-proxy';
 
-// ─────────────────────────────────────────────────────────────────────────
-// Worker-side callback registry.
-//
-// When a content script passes a function across the worker→host boundary
-// (e.g. `document.addEventListener('click', fn)`), the function cannot be
-// structured-cloned through postMessage. Instead we register it locally,
-// hand the host a `{ __callback__: id }` marker, and the host substitutes a
-// shim function that, when invoked, posts back here via the regular
-// postMessage channel so we can look the callback up and call it.
-//
-// Callbacks live forever — there's no GC signal because both sides can
-// hold strong refs. For ISOLATED content scripts (one worker per script,
-// torn down on page unload) this is fine: the registry dies with the worker.
-// ─────────────────────────────────────────────────────────────────────────
 const callbackRegistry = new Map<number, (...a: unknown[]) => unknown>();
 let nextCallbackId = 0;
 
@@ -59,24 +45,13 @@ function bootWorker(bootstrap: { ctx: any; scriptKey: string; scriptBody: string
   const { ctx, scriptBody } = bootstrap;
 
   const callSync: CallSync = (op, args) => {
-    // For method-call we need to swap any function args for callback
-    // markers so postMessage doesn't choke trying to structured-clone
-    // them. Other ops (property-get/set/has) don't carry user-supplied
-    // functions, so the walk is a no-op for them, but doing it
-    // uniformly keeps the wire format consistent.
     const encoded = op === 'method-call' ? encodeCallbacks(args, registerCallback) : args;
     return send({ type: `dom.${op}`, args: encoded }, true);
   };
 
-  // Persistent listener for host→worker callback invocations and other
-  // helium-tagged out-of-band messages. The init listener above is
-  // `{ once: true }`, so we install this AFTER init has consumed its
-  // message and won't intercept anything else.
   self.addEventListener('message', (e: MessageEvent) => {
     const data = e.data;
 
-    // Callback invocation: host calling a function the worker previously
-    // registered via the __callback__ marker.
     if (isCallbackInvocation(data)) {
       const fn = callbackRegistry.get(data.id);
       if (!fn) {
@@ -92,9 +67,6 @@ function bootWorker(bootstrap: { ctx: any; scriptKey: string; scriptBody: string
       return;
     }
 
-    // DevTools attach: host hands us the worker-flavoured chobitsu agent
-    // and asks us to eval it. The agent installs its own message
-    // listener afterwards for CDP traffic (worker-in / worker-out).
     if (
       data &&
       typeof data === 'object' &&
@@ -116,7 +88,6 @@ function bootWorker(bootstrap: { ctx: any; scriptKey: string; scriptBody: string
         return;
       }
       try {
-        // Indirect eval so the agent source runs at worker-global scope.
         (0, eval)(att.src);
         const boot = (self as unknown as {
           __ddxDevtoolsWorkerAgentBoot__?: (init: unknown) => void;
@@ -135,7 +106,6 @@ function bootWorker(bootstrap: { ctx: any; scriptKey: string; scriptBody: string
     }
   });
 
-  // Build chrome global
   const chrome = {
     runtime: {
       id: ctx.id,
@@ -182,50 +152,17 @@ function bootWorker(bootstrap: { ctx: any; scriptKey: string; scriptBody: string
     callSync,
   );
 
-  // Install globals
   (globalThis as any).chrome = chrome;
   (globalThis as any).document = documentProxy;
   (globalThis as any).window = windowProxy;
   installDomConstructorStubs();
 
-  // Evaluate the script body
   try {
     new Function('chrome', '"use strict";\n' + scriptBody)(chrome);
   } catch (err) {
     console.error('[helium/content/iso/neutron-worker] script error:', err);
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// DOM constructor stubs
-//
-// Web Workers don't expose DOM constructors (HTMLDocument, HTMLElement,
-// Node, etc.) because workers have no DOM. Real-world content scripts
-// — uBlock Origin, AdGuard, jQuery, lodash's `isElement`, basically
-// everything — reference these constructors for `instanceof` checks,
-// `typeof` guards, or prototype patching. Without stubs they throw
-// `ReferenceError: HTMLDocument is not defined` and the entire script
-// aborts before doing anything useful.
-//
-// Strategy:
-//   - Install a no-op class for each common DOM constructor.
-//   - Override `Symbol.hasInstance` so `x instanceof HTMLDocument` looks
-//     at our DOM proxy's `__handle` (set by createDomProxy) to decide.
-//     For now we do a coarse prefix match — good enough for the common
-//     "is this the document object?" / "is this a window?" patterns.
-//     Anything more precise would need a synchronous RPC per check,
-//     which is too expensive. Returning `false` for an unknown handle
-//     is safe: content scripts treat a `false` instanceof the same way
-//     as "not a DOM object", which is true from their perspective.
-//   - `.prototype` is a plain object — prototype-patching code stores
-//     monkey-patches there but they'll never be called because real
-//     DOM nodes live in the host realm. This is acceptable: the patch
-//     is a no-op rather than a crash.
-//
-// Type list pulled from the Window IDL types that content scripts most
-// frequently reference. Add to this list if more turn up in real
-// extensions.
-// ─────────────────────────────────────────────────────────────────────────
 
 const HANDLE_KEY = '__handle';
 
@@ -247,20 +184,13 @@ function getHandle(v: unknown): string | undefined {
  * `_document_` because we add that mapping below.
  */
 function makeDomCtor(name: string, handleMatchers: string[]): unknown {
-  // Use a real class so `typeof X === 'function'` and `X.prototype`
-  // is a normal object. We never expect anyone to call `new X()` —
-  // if they do, they'll get an instance whose prototype chain leads
-  // back to our stub. That's fine.
   const ctor = class {} as unknown as {
     new (): unknown;
     prototype: Record<string, unknown>;
   };
-  // Name it via Object.defineProperty so `ctor.name === 'HTMLDocument'`
-  // for any introspection code that pivots on constructor names.
   try {
     Object.defineProperty(ctor, 'name', { value: name, configurable: true });
   } catch { /* readonly in strict envs — ignore */ }
-  // Override hasInstance to handle our proxy objects.
   Object.defineProperty(ctor, Symbol.hasInstance, {
     value: (instance: unknown) => {
       const h = getHandle(instance);
@@ -277,24 +207,15 @@ function makeDomCtor(name: string, handleMatchers: string[]): unknown {
 
 function installDomConstructorStubs(): void {
   const g = globalThis as Record<string, unknown>;
-  // Document family. Our document proxy carries handle '_document_'.
-  // Aliases that some scripts test for: HTMLDocument (legacy), Document.
   const Document = makeDomCtor('Document', ['_document_', 'document']);
   if (g.Document === undefined) g.Document = Document;
-  // HTMLDocument is an alias for Document in modern browsers (still
-  // a separate constructor in WebIDL but shares prototype methods).
   if (g.HTMLDocument === undefined) g.HTMLDocument = makeDomCtor('HTMLDocument', ['_document_', 'document']);
   if (g.XMLDocument === undefined) g.XMLDocument = makeDomCtor('XMLDocument', ['_document_', 'xml']);
   if (g.DocumentFragment === undefined) g.DocumentFragment = makeDomCtor('DocumentFragment', ['fragment']);
   if (g.ShadowRoot === undefined) g.ShadowRoot = makeDomCtor('ShadowRoot', ['shadow']);
 
-  // Window family. Our window proxy carries handle '_window_'.
   if (g.Window === undefined) g.Window = makeDomCtor('Window', ['_window_', 'window']);
 
-  // Node hierarchy. We don't track DOM node sub-types in our handle
-  // strings yet, so all of these have empty matchers — `instanceof`
-  // returns false for any DOM-proxy. That's still better than throwing
-  // ReferenceError and lets `typeof Node === 'function'` succeed.
   if (g.Node === undefined) g.Node = makeDomCtor('Node', []);
   if (g.Element === undefined) g.Element = makeDomCtor('Element', []);
   if (g.HTMLElement === undefined) g.HTMLElement = makeDomCtor('HTMLElement', []);
@@ -307,9 +228,6 @@ function installDomConstructorStubs(): void {
   if (g.ProcessingInstruction === undefined) g.ProcessingInstruction = makeDomCtor('ProcessingInstruction', []);
   if (g.DocumentType === undefined) g.DocumentType = makeDomCtor('DocumentType', []);
 
-  // Common HTMLElement subclasses that extension scripts test for.
-  // Most uBlock Origin / AdGuard / privacy-extension matchers go
-  // through these. List is non-exhaustive — add more as needed.
   const HTML_TAGS = [
     'HTMLAnchorElement', 'HTMLAreaElement', 'HTMLAudioElement', 'HTMLBaseElement',
     'HTMLBodyElement', 'HTMLBRElement', 'HTMLButtonElement', 'HTMLCanvasElement',
@@ -333,9 +251,6 @@ function installDomConstructorStubs(): void {
     if (g[tag] === undefined) g[tag] = makeDomCtor(tag, []);
   }
 
-  // Event types — scripts often build/check Event instances. Same
-  // strategy as above: stub constructor, empty matcher (instanceof
-  // returns false), but the constructor exists so guards pass.
   const EVENT_TYPES = [
     'Event', 'CustomEvent', 'UIEvent', 'MouseEvent', 'KeyboardEvent',
     'WheelEvent', 'FocusEvent', 'InputEvent', 'TouchEvent', 'PointerEvent',
@@ -347,7 +262,6 @@ function installDomConstructorStubs(): void {
     if (g[evt] === undefined) g[evt] = makeDomCtor(evt, []);
   }
 
-  // Misc DOM types that turn up in instanceof checks.
   const MISC = [
     'EventTarget', 'NodeList', 'HTMLCollection', 'NamedNodeMap',
     'DOMTokenList', 'CSSStyleDeclaration', 'StyleSheet', 'CSSStyleSheet',

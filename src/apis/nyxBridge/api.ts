@@ -1,12 +1,4 @@
-// src/apis/nyxBridge/api.ts
-//
-// THE ddx.* CONTRACT. Edit this file to add/remove/rename methods.
-// Both the host handler implementations and the injected client runtime
-// derive from these types. If a method is declared here, the host MUST
-// implement it. If a namespace is declared here, the client runtime
-// auto-exposes it.
 
-// ── Shared types ────────────────────────────────────────────────────
 
 export type TabId = number;
 
@@ -83,20 +75,12 @@ export interface DDXErrorShape {
 	message: string;
 }
 
-// Forward-compat event shape (Helium / chrome.* style).
-// In v1 the dispatch path is a no-op; events are declared so that
-// future push-event support and a future chrome.* polyfill can attach
-// directly without changing the surface.
 export interface ChromeEventLike<F extends (...args: any[]) => void> {
 	addListener(cb: F): void;
 	removeListener(cb: F): void;
 	hasListener(cb: F): boolean;
 	hasListeners(): boolean;
 }
-
-// Supporting types referenced from the namespaces below. These mirror
-// their Chrome counterparts (see src/core/helium/mv3/api/*
-// for the full Chrome shapes — we keep only the fields v1 actually uses).
 
 export interface RegisteredContentScript {
 	id: string;
@@ -186,8 +170,6 @@ export interface UserProfile {
 	name?: string;
 	email?: string;
 }
-
-// ── Namespaces ──────────────────────────────────────────────────────
 
 export interface DDXTabs {
 	query(q: { active?: boolean; url?: string | string[]; title?: string }): Promise<TabInfo[]>;
@@ -299,8 +281,6 @@ export interface DDXCookies {
 	readonly onChanged: ChromeEventLike<(info: { cookie: Cookie; cause: string; removed: boolean }) => void>;
 }
 
-// PageStorageArea targets the PAGE's web storage (not extension storage).
-// Naming mirrors chrome.storage so the future polyfill is structurally close.
 export interface PageStorageArea {
 	get(target: TabTarget, keys?: string | string[] | null): Promise<Record<string, unknown>>;
 	set(target: TabTarget, items: Record<string, unknown>): Promise<void>;
@@ -405,78 +385,50 @@ export interface DDX {
 	readonly host: DDXHost;
 }
 
-// ── Wire-format registry ────────────────────────────────────────────
-//
-// METHOD_REGISTRY is a flat list of "namespace.method" strings.
-// Both the host channel (to validate incoming methods) and the client
-// runtime (to build window.ddx) iterate over this. Adding a method:
-// (1) declare it on the relevant interface, (2) append the dotted name
-// here, (3) add a handler entry in handlers/index.ts.
-
 export const METHOD_REGISTRY = [
-	// tabs
 	'tabs.query', 'tabs.get', 'tabs.getCurrent', 'tabs.create', 'tabs.update',
 	'tabs.remove', 'tabs.duplicate', 'tabs.reload', 'tabs.goBack', 'tabs.goForward',
 	'tabs.captureVisibleTab', 'tabs.sendMessage',
 	'tabs.move', 'tabs.group', 'tabs.ungroup', 'tabs.hardReload',
-	// scripting
 	'scripting.executeScript', 'scripting.insertCSS', 'scripting.removeCSS',
 	'scripting.registerContentScripts', 'scripting.unregisterContentScripts',
 	'scripting.getRegisteredContentScripts', 'scripting.updateContentScripts',
-	// dom (read)
 	'dom.readPage', 'dom.querySelector', 'dom.querySelectorAll',
 	'dom.getText', 'dom.getAttribute', 'dom.getValue',
 	'dom.getOuterHTML', 'dom.getInnerHTML', 'dom.boundingBox', 'dom.isVisible',
 	'dom.openOrClosedShadowRoot',
-	// dom (interact)
 	'dom.click', 'dom.dblclick', 'dom.hover', 'dom.type', 'dom.press',
 	'dom.select', 'dom.check', 'dom.uncheck', 'dom.focus', 'dom.blur',
 	'dom.scroll', 'dom.dragAndDrop', 'dom.uploadFile',
-	// input
 	'input.keyboard.down', 'input.keyboard.up', 'input.keyboard.press', 'input.keyboard.type',
 	'input.mouse.move', 'input.mouse.down', 'input.mouse.up', 'input.mouse.click', 'input.mouse.wheel',
-	// webNavigation
 	'webNavigation.getFrame', 'webNavigation.getAllFrames',
 	'webNavigation.waitForLoad', 'webNavigation.waitForNavigation',
 	'webNavigation.waitForSelector', 'webNavigation.waitForFunction',
-	// cookies
 	'cookies.get', 'cookies.getAll', 'cookies.set', 'cookies.remove', 'cookies.getAllCookieStores',
-	// storage (page-targeted)
 	'storage.local.get', 'storage.local.set', 'storage.local.remove',
 	'storage.local.clear', 'storage.local.getKeys',
 	'storage.session.get', 'storage.session.set', 'storage.session.remove',
 	'storage.session.clear', 'storage.session.getKeys',
-	// history
 	'history.search', 'history.addUrl', 'history.deleteUrl', 'history.deleteRange',
 	'history.deleteAll', 'history.getVisits',
-	// bookmarks
 	'bookmarks.get', 'bookmarks.getChildren', 'bookmarks.getRecent',
 	'bookmarks.getTree', 'bookmarks.getSubTree', 'bookmarks.search',
 	'bookmarks.create', 'bookmarks.move', 'bookmarks.update',
 	'bookmarks.remove', 'bookmarks.removeTree',
-	// windows
 	'windows.getCurrent', 'windows.getLastFocused', 'windows.getAll',
 	'windows.get', 'windows.create', 'windows.remove', 'windows.update',
-	// debugger
 	'debugger.attach', 'debugger.detach', 'debugger.sendCommand', 'debugger.getTargets',
-	// search
 	'search.query',
-	// dialogs
 	'dialogs.handleNext',
-	// runtime
 	'runtime.getURL', 'runtime.getManifest', 'runtime.getPlatformInfo',
-	// auth
 	'auth.getPlusToken', 'auth.getUser',
 	'auth.setToken', 'auth.clearToken',
-	// host
 	'host.version', 'host.capabilities', 'host.setDefaultTimeout',
 ] as const;
 
 export type MethodName = (typeof METHOD_REGISTRY)[number];
 
-// Reserved event paths. The client runtime stubs these as no-op
-// addListener/removeListener objects so NyxAI can register handlers
-// without errors; v1 never dispatches them.
 export const RESERVED_EVENT_PATHS = [
 	'tabs.onCreated', 'tabs.onUpdated', 'tabs.onActivated', 'tabs.onRemoved', 'tabs.onMoved',
 	'webNavigation.onBeforeNavigate', 'webNavigation.onCommitted',
@@ -489,5 +441,4 @@ export const RESERVED_EVENT_PATHS = [
 
 export type ReservedEventPath = (typeof RESERVED_EVENT_PATHS)[number];
 
-// Protocol version. Bump on breaking changes to the wire format.
 export const PROTOCOL_VERSION = '1.0';

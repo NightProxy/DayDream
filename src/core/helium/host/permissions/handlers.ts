@@ -1,17 +1,3 @@
-// src/core/helium/host/permissions/handlers.ts
-//
-// chrome.permissions.* host handlers (spec §22).
-//
-// - getAll: union of manifest-declared perms + persisted optional grants.
-// - contains: predicate over the union of declared + optional grants.
-// - request: prompts the user (via Nightmare's permissionPrompt), and
-//   on approval persists the granted optional perms to extfs. Fires
-//   chrome.permissions.onAdded.
-// - remove: drops items from the persisted optional grants and fires
-//   chrome.permissions.onRemoved.
-//
-// Tasks/specs do not implement runtime revocation of MANIFEST-declared
-// perms (Chrome behavior); only optional grants are mutable here.
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { PermissionPrompt } from '@pkgs/Nightmare/permissionPrompt';
@@ -124,12 +110,6 @@ export class PermissionsHandlers {
 
 		if (reqPerms.length === 0 && reqOrigins.length === 0) return true;
 
-		// Validate that every requested permission appears in the
-		// manifest's optional_permissions / optional_host_permissions
-		// (Chrome semantics — request() may only ask for things the
-		// manifest opted into). Items already granted (in manifest
-		// permissions, host_permissions, or previously approved
-		// optional grants) are auto-allowed.
 		const optionalDecl = new Set(manifestOptionalPermissions(ctx));
 		const optionalHostDecl = new Set(manifestOptionalHostPermissions(ctx));
 		const granted = await this.getAll(ctx, []);
@@ -163,7 +143,6 @@ export class PermissionsHandlers {
 
 		const prompt = this.deps.getPrompt();
 		if (!prompt) {
-			// No UI available; default-deny to match secure-fail.
 			console.warn(
 				`[helium/permissions] request: Nightmare permission prompt unavailable; denying for ${ctx.id}`,
 			);
@@ -203,8 +182,6 @@ export class PermissionsHandlers {
 			: [];
 		if (remPerms.length === 0 && remOrigins.length === 0) return true;
 
-		// Cannot remove manifest-required permissions; only optional grants
-		// are removable.
 		const declared = new Set(manifestPermissions(ctx));
 		const declaredHosts = new Set(manifestHostPermissions(ctx));
 		for (const p of remPerms) {

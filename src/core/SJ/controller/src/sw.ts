@@ -55,10 +55,6 @@ class ControllerReference {
 					const ids: string[] = [];
 					const promises: Promise<string>[] = [];
 
-					// Navigation fetches (document/iframe) deliver cookies via the inject
-					// script's embedded cookieJar dump — the destination page doesn't have
-					// inject.ts loaded yet to ack, so awaiting would deadlock. Broadcast
-					// so any already-loaded clients can update their jars, but don't wait.
 					const isNavigation =
 						options?.destination === "document" ||
 						options?.destination === "iframe";
@@ -76,16 +72,11 @@ class ControllerReference {
 						if (!isNavigation) {
 							promises.push(
 								new Promise<string>((resolve) => {
-									// Resolve with the id so we know which client replied.
 									cookieResolvers[id] = () => resolve(id);
 								})
 							);
 						}
 					}
-					// Wait for the first client to acknowledge the cookie sync.
-					// Using Promise.any (not Promise.all) so that extra SW clients created by
-					// window.open (e.g. test popup windows) don't cause timeouts — only the
-					// main controller client needs to respond.
 					if (promises.length > 0) {
 						let timeoutId: ReturnType<typeof setTimeout> | undefined;
 						let responded = false;
@@ -116,11 +107,7 @@ class ControllerReference {
 									.catch(() => {}),
 							]);
 						} finally {
-							// Clear the timeout so it doesn't fire spuriously after the
-							// race has already been won by Promise.any.
 							if (timeoutId !== undefined) clearTimeout(timeoutId);
-							// Clean up any pending resolvers so clients that never
-							// responded don't leak entries in cookieResolvers.
 							for (const id of ids) {
 								delete cookieResolvers[id];
 							}
@@ -219,8 +206,6 @@ addEventListener("activate", (event: ExtendableEvent) => {
 	event.waitUntil(clients.claim());
 });
 
-// the only way to know if a service worker has suddenly died is if this code runs again
-// notify all clients to send over their messageports again
 setTimeout(async () => {
 	console.log("service worker activated, notifying clients to revive");
 	for (const client of await clients.matchAll()) {

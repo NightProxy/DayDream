@@ -1,19 +1,3 @@
-// src/core/helium/host/offscreen/handlers.ts
-//
-// `chrome.offscreen.*` host handlers.
-//
-// Chrome's contract: an MV3 extension can spawn ONE hidden DOM
-// context at a time (an "offscreen document") to perform tasks that
-// require a Document but don't fit in a service worker — DOM
-// parsing, Web Audio, MediaRecorder, MathML, etc. The document is
-// served from the extension's own origin and gets a full chrome.*
-// surface.
-//
-// DDX impl: same as BG/popup/options — spawn a hidden Scramjet
-// frame with HeliumExtensionPlugin and wire it through the standard
-// auxiliary-view handshake (ExtensionManager.wireAuxiliaryViewChannel).
-// The offscreen doc thus joins the extension's RPC mesh and can
-// runtime.sendMessage to the BG without further work.
 
 import type { ExtensionContext } from '../../extfs/types';
 
@@ -38,7 +22,6 @@ interface OffscreenEntry {
 }
 
 export class OffscreenHandlers {
-  // Chrome's rule: one offscreen doc per extension. Keyed by extId.
   private readonly docs = new Map<string, OffscreenEntry>();
 
   constructor(private readonly deps: OffscreenDeps) {}
@@ -67,9 +50,6 @@ export class OffscreenHandlers {
     if (typeof opts.url !== 'string' || opts.url.length === 0) {
       throw new Error('chrome.offscreen.createDocument requires a url');
     }
-    // Chrome's "only one at a time" rule. We could allow multiple
-    // and re-key on full URL, but matching Chrome exactly avoids
-    // surprises.
     if (this.docs.has(ctx.id)) {
       throw new Error('Only a single offscreen document may be created');
     }
@@ -84,16 +64,12 @@ export class OffscreenHandlers {
       throw new Error(`createDocument: no plugin for ${ctx.id}`);
     }
 
-    // IMPORTANT ORDER: wire the channel BEFORE frame.go so the
-    // handshake listener catches the load event. Same pattern as
-    // popupHost.ts.
     this.deps.wireAuxiliaryViewChannel(ctx, iframe, { isBackground: false });
 
     let frame: { go: (url: string) => void };
     try {
       frame = await this.deps.proxy.createFrame(iframe, { plugins: [plugin] });
     } catch (err) {
-      // Clean up the half-spawned iframe.
       try { iframe.remove(); } catch { /* ignore */ }
       throw err;
     }

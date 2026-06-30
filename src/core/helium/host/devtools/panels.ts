@@ -1,19 +1,3 @@
-// src/core/helium/host/devtools/panels.ts
-//
-// chrome.devtools.panels.* host handlers.
-//
-// Surface (per spec §24.2):
-//   - panels.create(title, iconPath, pagePath, callback)
-//       → spawns a new panel iframe in every open DevToolsSession;
-//         returns the numeric panelId. If no session is open, buffers
-//         the request and replays it on the next devtools-opened
-//         event (Chrome's documented "deferred panel" behavior).
-//   - ExtensionPanel.onShown / onHidden (fired from the panel host
-//       via session.addExtensionPanel — see apis/devtools/panel.ts).
-//   - panels.elements.createSidebarPane              — STUB
-//   - panels.sources.createSidebarPane               — STUB
-//   - panels.setOpenResourceHandler                  — STUB
-//   - ExtensionPanel.createStatusBarButton           — STUB (on BG side)
 
 import type { DevToolsManager } from '@apis/devtools';
 import type { AddPanelOpts } from '@apis/devtools';
@@ -92,11 +76,6 @@ export class PanelsHandlers {
 
 		const sessions = mgr.listSessions();
 		if (sessions.length === 0) {
-			// No open devtools — Chrome buffers the panel for when
-			// devtools opens. Allocate a synthetic id from a private
-			// negative range so the BG-side caller has something stable
-			// to identify the panel by in subsequent on{Shown,Hidden}
-			// fan-out, then queue the descriptor.
 			const syntheticId = this.nextSyntheticId--;
 			const queue = this.pending.get(ctx.id) ?? [];
 			queue.push({ syntheticId, ctx, title, iconUrl, iframeSrc });
@@ -171,8 +150,6 @@ export class PanelsHandlers {
 		return firstPanelId ?? -1;
 	}
 
-	// --- Stubs --------------------------------------------------------
-
 	elementsCreateSidebarPane = async (
 		_ctx: ExtensionContext,
 		_args: unknown[],
@@ -188,8 +165,6 @@ export class PanelsHandlers {
 		_args: unknown[],
 	): Promise<void> => undefined;
 
-	// --- internals ----------------------------------------------------
-
 	private async resolveIconDataUrl(
 		ctx: ExtensionContext,
 		iconPath: string,
@@ -200,9 +175,6 @@ export class PanelsHandlers {
 			const bytes = await readExtensionFile(ctx.id, rel);
 			if (!bytes) return '';
 			const mime = contentTypeFromPath(rel);
-			// Force a tight ArrayBuffer copy so Blob accepts the BlobPart
-			// even when the underlying buffer type is SharedArrayBuffer
-			// (which can happen depending on the upstream lib types).
 			const ab = new ArrayBuffer(bytes.byteLength);
 			new Uint8Array(ab).set(bytes);
 			const blob = new Blob([ab], { type: mime });
@@ -229,9 +201,6 @@ export class PanelsHandlers {
 		proxy: ReturnType<PanelsDeps['getProxy']>,
 	): Promise<void> {
 		if (!proxy) {
-			// No Scramjet proxy — fall back to raw iframe load. Extension
-			// scripts will fail to fetch their own files, but at least
-			// the iframe attaches to the DOM.
 			console.warn(
 				'[helium/devtools] panels.create: no proxy available, raw load',
 			);

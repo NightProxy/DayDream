@@ -65,7 +65,6 @@ export function addDynamicRegistration(
     list = [];
     dynamicRegistrations.set(extId, list);
   }
-  // Replace if id matches
   const existing = list.findIndex((r) => r.id === id);
   if (existing >= 0) list[existing] = { id, rule };
   else list.push({ id, rule });

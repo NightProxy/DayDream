@@ -2,9 +2,9 @@ import { createIcons, icons } from "lucide";
 import { settingsSearch } from "./settingsSearch";
 
 export interface SubpageOptions {
-  parentLabel: string;       // e.g. "Privacy and security"
-  title: string;             // e.g. "Site settings"
-  parentSectionId: string;   // which section's hash to return to
+  parentLabel: string;
+  title: string;
+  parentSectionId: string;
   render: (container: HTMLElement) => void | Promise<void>;
 }
 
@@ -36,9 +36,6 @@ export function createSubpage(opts: SubpageOptions): HTMLElement {
   body.className = "settings-subpage-body";
   root.appendChild(body);
 
-  // Subpage owns search scope while mounted — scope to parent section id
-  // so units registered within this sub-page (with sectionId === parentSectionId)
-  // are the only ones the search bar filters against.
   settingsSearch.scope(opts.parentSectionId);
 
   Promise.resolve(opts.render(body)).then(() => {

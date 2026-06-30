@@ -88,7 +88,6 @@ export class Omnibox {
 			console.warn('[omnibox] address bar has no parent — cannot anchor dropdown');
 			return;
 		}
-		// The parent is `<div class="relative w-full flex-1 urlbar-ring">` — already position:relative
 		parent.appendChild(this.dropdown);
 	}
 
@@ -153,7 +152,6 @@ export class Omnibox {
 		this.currentMode = result.mode;
 		this.currentRows = [];
 		this.selectedRowId = null;
-		// chrome.omnibox.onInputStarted: fire once per entry into extension mode.
 		if (result.mode === 'extension' && result.extension) {
 			if (this.currentExtensionKeyword !== result.extension.keyword) {
 				this.currentExtensionKeyword = result.extension.keyword;
@@ -165,7 +163,6 @@ export class Omnibox {
 				}
 			}
 		} else if (this.currentExtensionKeyword) {
-			// User left extension mode — fire onInputCancelled on the last ext.
 			try {
 				(window as { extensions?: { fireEventOn?: (id: string, m: string, a: unknown[]) => void } }).extensions
 					?.fireEventOn?.(this.findExtIdForKeyword(this.currentExtensionKeyword) ?? '', 'chrome.omnibox.onInputCancelled', []);
@@ -183,8 +180,6 @@ export class Omnibox {
 	}
 
 	private findExtIdForKeyword(_kw: string): string | null {
-		// We don't track the extId across dispatches separately — read
-		// from the registry. Returns null silently on miss.
 		const reg = (window as { extensions?: { omniboxRegistry?: { matchPrefix?: (i: string) => { extId: string } | null } } }).extensions?.omniboxRegistry;
 		const m = reg?.matchPrefix?.(_kw);
 		return m?.extId ?? null;
@@ -199,10 +194,6 @@ export class Omnibox {
 				this.currentRows = [];
 				return;
 			}
-			// Single-row "Ask Nyx" affordance. Selecting routes through
-			// dispatchPrefillAndNavigate, which queues the prompt on
-			// the nyxBridge and navigates the active tab to ddx://ai —
-			// NyxAI consumes the prefill on handshake completion.
 			this.dropdown.innerHTML = ai.renderAskNyxPrimary(prompt);
 			this.attachRowListeners();
 			this.currentRows = [{
@@ -278,13 +269,7 @@ export class Omnibox {
 					console.warn('[omnibox] fireEventOn failed:', err);
 				}
 			};
-			// Subscribe to OmniboxRegistry change notifications so
-			// async-suggest payloads from the extension's `suggest()`
-			// callback trigger a re-render the moment they arrive at
-			// the host (no polling, no timeout). Token ensures stale
-			// subscriptions from prior renders are no-ops.
 			const rerenderToken = ++this.extensionRerenderToken;
-			// Clean up the prior subscription, if any.
 			if (this.extensionRegistryUnsub) {
 				try { this.extensionRegistryUnsub(); } catch { /* noop */ }
 				this.extensionRegistryUnsub = null;
@@ -336,7 +321,6 @@ export class Omnibox {
 				onNavigate: (url) => this.navigateActive(url),
 			});
 			if (!result.primaryRow) {
-				// Unknown bang — fall through to default-mode rendering by re-dispatching.
 				this.currentMode = 'default';
 				await this.render();
 				return;
@@ -384,7 +368,6 @@ export class Omnibox {
 			}
 			return;
 		}
-		// Other modes (Tasks C2-C5) will populate this.dropdown.innerHTML directly.
 		this.dropdown.innerHTML = `
 			<div class="px-3 py-2 text-sm text-[var(--proto)]">Mode: ${this.currentMode} (rendering coming in Phase C)</div>
 		`;
@@ -451,7 +434,7 @@ export class Omnibox {
 	private attachRowListeners(): void {
 		this.dropdown.querySelectorAll<HTMLDivElement>('.omnibox-row').forEach((el) => {
 			el.addEventListener('mousedown', (ev) => {
-				ev.preventDefault(); // keep input focus
+				ev.preventDefault();
 				const id = el.dataset.rowId;
 				if (!id) return;
 				const row = this.currentRows.find((r) => r.id === id);
@@ -481,8 +464,6 @@ export class Omnibox {
 	}
 
 	private shouldKeepOpenAfterSelect(): boolean {
-		// AI mode rewrites the dropdown into a streaming response panel after
-		// the user picks the "Ask AI" row. Closing here would hide the panel.
 		return this.currentMode === 'ai';
 	}
 

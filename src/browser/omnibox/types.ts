@@ -3,7 +3,6 @@ export type OmniboxMode = 'closed' | 'default' | 'command' | 'engine' | 'bang' |
 export interface DispatchResult {
 	mode: OmniboxMode;
 	payload?: string;
-	// When mode === 'extension', this holds the extension match info.
 	extension?: {
 		extId: string;
 		keyword: string;

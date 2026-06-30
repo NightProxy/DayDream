@@ -60,15 +60,11 @@ export function injectBootstrapIntoBackgroundPage(
     `<meta name="helium-ctx" content="${escapeAttr(ctxB64)}">\n` +
     `<script src="__helium_bootstrap__.js"></script>\n`;
 
-  // Try to inject after <head> (handles `<head>`, `<head >`,
-  // `<HEAD>`, attributes).
   const headOpenRe = /<head\b[^>]*>/i;
   if (headOpenRe.test(html)) {
     return html.replace(headOpenRe, match => `${match}\n${injected}`);
   }
 
-  // No <head>: prepend one. If there's an <html> tag, slot it inside;
-  // otherwise prepend at the very top.
   const htmlOpenRe = /<html\b[^>]*>/i;
   const synthHead = `<head>\n${injected}</head>\n`;
   if (htmlOpenRe.test(html)) {

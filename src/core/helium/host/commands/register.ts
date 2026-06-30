@@ -1,15 +1,3 @@
-// src/core/helium/host/commands/register.ts
-//
-// Per-extension keybind + command-palette registration.
-//
-// On spawn, ExtensionManager calls registerCommandsForExtension to:
-//   - Pull `manifest.commands` entries
-//   - Add a CommandRegistry entry (visible in `>` command palette mode)
-//   - Attempt to install a keyboard shortcut via the host KeyboardManager.
-//     User keybinds always win on conflict (we log + skip).
-//
-// Returns a disposer that removes both the registry entry and the
-// installed key handler (best-effort).
 
 import type { ExtensionContext } from '../../extfs/types';
 
@@ -29,7 +17,6 @@ interface ManifestCommandsShape {
   commands?: Record<string, Omit<CommandSpec, 'name'>>;
 }
 
-// Subset of the CommandRegistry API we need (avoid circular dep / wider coupling).
 export interface CommandRegistryLike {
   register: (cmd: {
     id: string;
@@ -43,7 +30,6 @@ export interface CommandRegistryLike {
   }) => () => void;
 }
 
-// Subset of KeybindManager — for the conflict check.
 export interface KeybindManagerLike {
   getConflicts: (
     testConfig: {
@@ -59,15 +45,6 @@ export interface KeybindManagerLike {
   ) => string[];
 }
 
-// Subset of KeyboardManager.
-//
-// Note the return type: `addKeyboardShortcut` is expected to return a
-// disposer that removes the registered listener. Older versions
-// returned void (the listener leaked on extension kill); the host
-// now expects a disposer. If a host KeyboardManager implementation
-// returns void, registerCommandsForExtension downgrades the listener
-// to "leak on kill" and surfaces a one-time console warning so the
-// owner can audit. See dispose() below.
 export interface KeyboardManagerLike {
   addKeyboardShortcut: (
     combo: { alt?: boolean; ctrl?: boolean; shift?: boolean; key: string },
@@ -79,9 +56,6 @@ export interface RegisterCommandsDeps {
   commandRegistry?: CommandRegistryLike | undefined;
   keybindManager?: KeybindManagerLike | undefined;
   keyboardManager?: KeyboardManagerLike | undefined;
-  // Fires chrome.commands.onCommand on this extension with the given
-  // command name + current active tab info (UI integration: the caller
-  // supplies a getActiveTabInfo() resolver).
   fireOnCommand: (extId: string, commandName: string) => void;
 }
 
@@ -90,9 +64,6 @@ export interface RegisteredCommandsHandle {
   commandNames: string[];
 }
 
-// Module-scoped one-shot guard so we only warn once per process when a
-// host KeyboardManager fails to return a disposer. Logging the same
-// line for every (extId, command) pair would be noisy.
 let warnedAboutLeakingKeybinds = false;
 
 export function registerCommandsForExtension(
@@ -113,7 +84,6 @@ export function registerCommandsForExtension(
     const spec: CommandSpec = { name, ...(raw ?? {}) };
     names.push(name);
 
-    // 1. Palette entry (always safe — well-understood path).
     if (deps.commandRegistry) {
       try {
         const id = `ext-${extId}-${name}`;
@@ -135,16 +105,6 @@ export function registerCommandsForExtension(
       }
     }
 
-    // 2. Keyboard shortcut binding (best-effort).
-    //
-    // Documented behaviour: the palette entry above is always
-    // available; the keybind layer is best-effort and only installs
-    // when both `keybindManager` (for conflict detection) and
-    // `keyboardManager` (for the actual listener registration) are
-    // provided at call time. If they aren't (e.g. ExtensionManager
-    // was constructed before window.keybinds / window.keyboardManager
-    // were wired), users still reach the command via the `>` command
-    // palette.
     const parsed = parseSuggestedKey(spec.suggested_key);
     if (parsed && deps.keybindManager && deps.keyboardManager) {
       try {
@@ -219,8 +179,6 @@ function pickShortcut(sk: CommandSpec['suggested_key'] | undefined): string | un
 function parseSuggestedKey(sk: CommandSpec['suggested_key'] | undefined): ParsedShortcut | null {
   const raw = pickShortcut(sk);
   if (!raw) return null;
-  // Chrome shortcut format: "Ctrl+Shift+Y", "MacCtrl+B", "Command+1", "Alt+L".
-  // Translate to DDX KeybindConfig shape.
   const parts = raw.split('+').map((p) => p.trim());
   const out: ParsedShortcut = { key: '' };
   for (const p of parts) {
@@ -229,7 +187,7 @@ function parseSuggestedKey(sk: CommandSpec['suggested_key'] | undefined): Parsed
     else if (lower === 'alt' || lower === 'option') out.alt = true;
     else if (lower === 'shift') out.shift = true;
     else if (lower === 'command' || lower === 'meta' || lower === 'cmd') out.meta = true;
-    else out.key = p; // last non-modifier token is the key
+    else out.key = p;
   }
   if (!out.key) return null;
   return out;

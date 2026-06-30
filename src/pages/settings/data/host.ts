@@ -1,23 +1,3 @@
-// Host-API accessor helpers for the settings iframe.
-//
-// The settings page is loaded inside an <iframe> (auto-routed by
-// srv/vite/routes.ts → /internal/settings/). The host browser at
-// src/index.ts attaches APIs like window.profiles, window.proxy,
-// window.eventsAPI, window.settings, etc. From inside the iframe these
-// live on window.parent — and they may not be attached yet when the
-// iframe first boots.
-//
-// This module centralizes access by polling window.parent for each API
-// (with a 3 s timeout) so callers don't have to repeat the boilerplate
-// or accidentally read from their own iframe's window (where nothing
-// was ever attached).
-//
-// Naming note: the host attaches the SettingsAPI instance as
-// `window.settings` (see src/index.ts:233), not `window.settingsAPI`.
-// `getSettingsAPI()` reads from `host.settings` to match runtime.
-// Similarly `globalTheming` is attached via `(window as any).globalTheming`
-// in src/utils/global/theming.ts:807 and is not declared on the Window
-// interface, so we widen the type below with HostWindow.
 
 import type { ProfilesAPI } from "@apis/profiles/ProfilesAPI";
 import type { Proxy } from "@apis/proxy";
@@ -28,7 +8,6 @@ import type { EventSystem } from "@apis/events";
 import type { SettingsAPI } from "@apis/settings";
 
 const HOST_TIMEOUT_MS = 3000;
-// 25ms ≈ 1.5 frames @ 60Hz; up to ~120 polls within the 3s budget
 const POLL_INTERVAL_MS = 25;
 
 type HostWindow = Window & {
@@ -91,8 +70,6 @@ export function getEventsAPI(): EventSystem {
 
 /** Direct sync getter — settingsAPI is always present once the host has booted. */
 export function getSettingsAPI(): SettingsAPI {
-	// Host attaches as `window.settings` (src/index.ts:233), not
-	// `window.settingsAPI`. Read from the actual runtime location.
 	if (!host.settings) throw new Error("[host] settings not initialized");
 	return host.settings;
 }
@@ -128,9 +105,6 @@ export async function openInNewTab(url: string): Promise<void> {
 			await host.tabs.createTab(url);
 			return;
 		}
-		// Fallback: window.open with a fully-qualified URL works for
-		// https links even when tabs API is absent (e.g. during early
-		// boot or in degraded environments).
 		if (/^https?:\/\//i.test(url)) {
 			window.open(url, "_blank", "noopener,noreferrer");
 		} else {

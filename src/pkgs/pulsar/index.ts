@@ -1,13 +1,3 @@
-// Pulsar ProxyTransport client.
-//
-// Implements the ProxyTransport interface from @mercuryworkshop/proxy-transports
-// so it can be passed to scramjet-controller `setTransport()` exactly like
-// LibcurlClient or EpoxyClient.
-//
-// Pulsar is a WebRTC-Direct based transport: the browser connects directly
-// to a Pulsar server (just an IP + UDP port, no signalling), then opens
-// per-destination data channels that carry raw TCP. We tunnel libcurl.js
-// over those data channels for full TLS-from-browser HTTPS proxying.
 
 import type {
 	ProxyTransport,
@@ -62,7 +52,6 @@ export default class PulsarClient implements ProxyTransport {
 			return;
 		}
 
-		// Tear down stale state
 		if (conn) {
 			try {
 				await conn.close();
@@ -86,8 +75,6 @@ export default class PulsarClient implements ProxyTransport {
 		console.log('[Pulsar] connected');
 
 		const factory = libcurlTransport(fresh.pc);
-		// libcurl.js calls `new api.transport(url)` for custom transports.
-		// Wrap in a constructor-shaped function so libcurl is happy.
 		libcurl.transport = function (this: unknown, url: string) {
 			return factory(url);
 		} as unknown as typeof WebSocket;
@@ -113,7 +100,6 @@ export default class PulsarClient implements ProxyTransport {
 
 		if (!this.session) this.session = new libcurl.HTTPSession();
 
-		// libcurl.js takes headers as an object map, not [k,v] pairs.
 		const headersObj: Record<string, string> = {};
 		for (const [key, value] of headers) {
 			const lower = key.toLowerCase();

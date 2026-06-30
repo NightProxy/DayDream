@@ -80,10 +80,6 @@ class Proxy implements ProxyInterface {
 	set searchEngines(reg: SearchEngineRegistry) { this._searchEngines = reg; }
 	get searchVar(): string { return this.searchEngines.getDefault().urlTemplate; }
 	private activeTransport: string = 'libcurl';
-	// `controllerConfig` and `scramjetFlags` are assigned synchronously in
-	// the constructor before the async IIFE runs, but TS's flow analysis
-	// can't trace assignments across the closure boundary, so use the
-	// definite-assignment assertion (matches the other fields above).
 	private controllerConfig!: SJConfig;
 	private scramjetFlags!: SJFlags;
 	constructor(Controller: any, SW: any, config: SJConfig, flags: SJFlags) {
@@ -135,36 +131,12 @@ class Proxy implements ProxyInterface {
 			});
 			await this.controller.wait();
 
-			// Install the cross-frame events bridge. This wraps
-			// `controller.createFrame` so every proxied frame gets a
-			// host-side message receiver attached at boot, AND ensures
-			// host-originated `eventsAPI.emit()` broadcasts can be sent
-			// to proxied frames without crashing scramjet's postMessage
-			// wrapper. See `src/apis/eventsBridge.ts` for the design.
 			installEventsBridge(this.controller);
 
-			// Install the per-site script injector. This wires the
-			// `scriptInjectionRegistry` into Scramjet's per-frame
-			// `interface.getInjectScripts` so any registered entries
-			// are prepended into <head> of matched proxied documents,
-			// before the page's own scripts run. Entries are registered
-			// elsewhere (see `src/apis/scriptInjection/` for the API).
 			installScriptInjector(this.controller);
 
-			// Install the devtools agent injector. Per-frame agent loads only
-			// for tabs that have DevTools open (manager.isEnabledForTab).
-			// Pass a getter so the manager is resolved lazily — index.tsx
-			// may construct `window.devtools` either before or after the
-			// proxy boot finishes, and the hook fires per-frame much later.
 			installDevToolsHook(this.controller, () => (window as any).devtools);
 
-			// Downloads subsystem — registers the default web provider
-			// AND installs the Scramjet `preresponse` hook that
-			// intercepts navigation-initiated downloads (Content-
-			// Disposition: attachment or non-inline MIME). External
-			// platforms can register additional providers via
-			// `window.downloadsManager.registerProvider(...)` after
-			// boot.
 			try {
 				const { installDownloadsSubsystem } = await import(
 					'@browser/downloads/install'
@@ -176,10 +148,6 @@ class Proxy implements ProxyInterface {
 				console.warn('[proxy] failed to install downloads subsystem:', e);
 			}
 
-			// Web permissions subsystem — host-side prompt + Scramjet
-			// plugin that patches navigator.permissions / Notification /
-			// geolocation / mediaDevices in each iframe so DDX
-			// mediates per-origin grants via SitePermissionsStore.
 			try {
 				const { installSitePermissionsSubsystem } = await import(
 					'@browser/sitePermissions/install'
@@ -191,21 +159,12 @@ class Proxy implements ProxyInterface {
 				console.warn('[proxy] failed to install sitePermissions subsystem:', e);
 			}
 
-			// Per-frame agent for NyxBridge — injects chobitsu into every non-Nyx
-			// proxied frame so CDP-backed handlers (cookies, screenshots, dialogs,
-			// input events, file uploads) work across tabs.
 			try {
 				const { installNyxBridgeHook } = await import('./nyxBridge/hookInstaller');
 				const { NYX_ORIGINS_DEFAULT } = await import('./nyxBridge/handshake');
 				installNyxBridgeHook({
 					controller: this.controller,
 					allowlist: NYX_ORIGINS_DEFAULT,
-					// Resolve the real (decoded) URL from a scramjet Frame
-					// object. Without this, the agent's nyx-origin skip
-					// check sees the scramjet-encoded URL
-					// (http://localhost:5173/assets/res/...) instead of
-					// the real NyxAI origin, so the agent ends up
-					// injected into NyxAI itself.
 					resolveRealUrl: (frame: any) => {
 						const el = frame?.element as
 							| HTMLIFrameElement
@@ -326,7 +285,6 @@ class Proxy implements ProxyInterface {
 	}
 
 	getPrefixByFrame(target: HTMLIFrameElement | string): string | null {
-		//tricky and jank logic to get the prefix for a frame for v2, because new prefix system can't be predicited or adjusted
 		const element = this.resolveFrameElement(target);
 		if (!element) return null;
 		const frames = this.controller.frames;
@@ -428,7 +386,6 @@ class Proxy implements ProxyInterface {
 			prefix ??= this.getPrefixByFrame(element) ?? undefined;
 		}
 
-		// Last-resort fallbacks
 		if (!prefix) {
 			prefix =
 				this.controller?.prefix ||
@@ -440,8 +397,6 @@ class Proxy implements ProxyInterface {
 		if (idx === -1) return null;
 		const tail = url.slice(idx + prefix.length);
 
-		// Split off ?query and #hash so the codec only sees the pure encoded
-		// path segment. Scramjet places `?` before `#`, mirror that order.
 		const hashIdx = tail.indexOf('#');
 		const beforeHash = hashIdx === -1 ? tail : tail.slice(0, hashIdx);
 		const hashPart = hashIdx === -1 ? '' : tail.slice(hashIdx);
@@ -452,16 +407,8 @@ class Proxy implements ProxyInterface {
 		const queryPart = queryIdx === -1 ? '' : beforeHash.slice(queryIdx);
 
 		const decoded = this.decodeUrl(encoded);
-		// If decode failed (returned input unchanged) we still want to give
-		// callers something best-effort, but reattaching query+hash to a
-		// not-actually-decoded blob would be misleading. Return the decoded
-		// payload + reattached query/hash only when decode actually changed
-		// the input.
 		if (decoded === encoded) return decoded;
 
-		// Reattach query/hash if the decoded URL doesn't already carry them
-		// (Obscura's decoded output IS the original URL, which may itself
-		// already contain `?...#...`).
 		let out = decoded;
 		if (queryPart && !out.includes('?')) out += queryPart;
 		else if (queryPart) out += queryPart.replace(/^\?/, '&');
@@ -515,10 +462,6 @@ class Proxy implements ProxyInterface {
 	}
 
 	async TransportMapping(): Promise<Record<any, any>> {
-		// Kept for backwards compatibility with any external callers. The
-		// shared transport module (src/core/shared/transport.ts) is the
-		// real source of truth — `buildTransportConfig` and `fetch` both
-		// route through it.
 		return {
 			epoxy: {
 				constructor: EpoxyClient,
@@ -598,11 +541,6 @@ class Proxy implements ProxyInterface {
 
 	async registerSW(swConfig: Record<any, any>) {
 		if ('serviceWorker' in navigator) {
-			// In v2, a single SW at the root base path handles all routing
-			// (including scramjet via $scramjetController.shouldRoute/route).
-			// Registering a narrower scope (e.g. /assets/) would create a
-			// stale, conflicting registration that intercepts proxy URLs
-			// without our routing logic. Always use the root scope.
 			const scpe: string = basePath;
 			console.log('[Proxy] Registering service worker with scope:', scpe);
 			await navigator.serviceWorker.register(swConfig.file, {
@@ -663,19 +601,16 @@ class Proxy implements ProxyInterface {
 		swConfigSettings: Record<any, any>,
 		iframe?: HTMLIFrameElement | null
 	): string {
-		// v2: try per-frame prefix first
 		if (iframe) {
 			const framePrefix = this.getPrefixByFrame(iframe);
 			if (framePrefix) return framePrefix;
 		}
 
-		// v2 fallback: controller has only one frame? use it
 		const frames = this.controller?.frames;
 		if (frames && frames.length === 1 && frames[0]?.prefix) {
 			return frames[0].prefix;
 		}
 
-		// Last resort - the base scramjet prefix from config (v1 / no frame yet)
 		return swConfigSettings.config.prefix;
 	}
 
@@ -708,7 +643,6 @@ class Proxy implements ProxyInterface {
 			return;
 		}
 
-		// v2: prefer Frame.go for proper URL rewriting
 		const navigated = await this.navigateFrame(
 			activeIframe,
 			this.search(url)
@@ -718,7 +652,6 @@ class Proxy implements ProxyInterface {
 			return;
 		}
 
-		// Fallback: manual prefix + codec encode (only if frame isn't registered)
 		const prefix = this.resolveEncodingPrefix(
 			swConfigSettings,
 			activeIframe
@@ -796,8 +729,6 @@ class Proxy implements ProxyInterface {
 			throw new Error('[Proxy.fetch] Transport is unavailable');
 		}
 
-		// Be forgiving of bare hostnames / search terms — fall back to
-		// the configured search engine, same as before.
 		let remote: URL;
 		try {
 			remote = new URL(url);
@@ -805,9 +736,6 @@ class Proxy implements ProxyInterface {
 			remote = new URL(this.search(url));
 		}
 
-		// Redirect-following, header normalisation, and Response shape
-		// are all owned by the shared transport module so the SW gets
-		// identical behavior.
 		return transportFetch(transport, remote, {
 			method,
 			body: body ?? null,
@@ -867,19 +795,7 @@ class Proxy implements ProxyInterface {
 		}
 
 		try {
-			/*if (activeProxy === "uv") {
-        console.log("[Proxy.eval] Using UV eval");
-        const uvEval = (frame.contentWindow as any)?.__uv$eval;
-        if (!uvEval) {
-          console.error(
-            "[Proxy.eval] UV eval function not found on contentWindow",
-          );
-          return false;
-        }
-        uvEval(code);
-        console.log("[Proxy.eval] UV eval succeeded");
-        return true;
-      } else*/ if (activeProxy === 'sj') {
+ if (activeProxy === 'sj') {
 				console.log('[Proxy.eval] Using Scramjet eval');
 				const contentWindow = frame.contentWindow;
 				if (!contentWindow) {

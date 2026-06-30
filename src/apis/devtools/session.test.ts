@@ -45,7 +45,6 @@ describe('DevToolsSession', () => {
 		(proxiedWin as any).postMessage = vi.fn();
 		session.attachProxiedWindow(proxiedWin);
 
-		// Dispatch a frame-ready envelope from the "proxied" window
 		const evt = new MessageEvent('message', {
 			source: proxiedWin,
 			data: {
@@ -62,8 +61,6 @@ describe('DevToolsSession', () => {
 			},
 		});
 		window.dispatchEvent(evt);
-		// We can't easily observe internal multiplexer state from here, but
-		// confirm no throw and that detach works too.
 		const evt2 = new MessageEvent('message', {
 			source: proxiedWin,
 			data: {
@@ -120,8 +117,6 @@ describe('DevToolsSession', () => {
 		const proxiedWin = proxied.contentWindow as Window;
 		session.attachProxiedWindow(proxiedWin);
 		session.detachProxiedWindow(proxiedWin);
-		// Now subsequent messages from that window should not be processed.
-		// Since we can't see internal state, just confirm no throw.
 		const evt = new MessageEvent('message', {
 			source: proxiedWin,
 			data: {

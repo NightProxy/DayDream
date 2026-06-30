@@ -1,36 +1,3 @@
-// src/core/helium/host/declarativeContent/handlers.ts
-//
-// chrome.declarativeContent — host-side rule store + matcher engine.
-//
-// Lifecycle:
-//   1. Extension BG calls `chrome.declarativeContent.onPageChanged.addRules([{conditions: [PageStateMatcher({...})], actions: [...]}])`.
-//   2. The DeclarativeEvent class (shared) stores rules locally AND
-//      relays them to the host via a synthetic RPC call (added in this
-//      patch — see `_host_declarative_addRules`).
-//   3. Host stores per-(extId) rules. On every tabNavigated 'committed'
-//      event AND every tabSelected, the host evaluates each extension's
-//      rules against the (tabId, url) pair:
-//        - `pageUrl` condition: matched via the existing UrlFilter
-//          evaluator (`host/webNavigation/filter.ts`).
-//        - `css` condition: probed by an executeScript that calls
-//          `document.querySelector(selector)` for each selector,
-//          returning a boolean. Results are cached per (tabId, url,
-//          selector) until the URL changes.
-//   4. If all conditions match, actions fire:
-//        - `ShowAction` / `ShowPageAction` → call ActionHandlers
-//          `pageActionShow(extId, tabId)`.
-//        - `SetIcon` → ActionHandlers `setIcon` with the per-tab
-//          override.
-//        - `RequestContentScript` → not supported (would require
-//          dynamic script injection on the fly; the existing
-//          chrome.scripting.executeScript path is the better choice
-//          for that and isn't declarative).
-//
-// Why this is worth doing: declarativeContent is one of the few "smart
-// page-action" APIs. Extensions like uBlock, password managers, and
-// "show icon only on certain sites" patterns rely on it. Without it
-// they fall back to imperative tabs.onUpdated polling which costs
-// more.
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { UrlFilter } from '../webNavigation/filter';
@@ -49,9 +16,7 @@ interface DeclarativeAction {
     | 'declarativeContent.ShowPageAction'
     | 'declarativeContent.SetIcon'
     | 'declarativeContent.RequestContentScript';
-  // For SetIcon
   imageData?: unknown;
-  // For RequestContentScript
   js?: string[];
   css?: string[];
   allFrames?: boolean;
@@ -135,11 +100,10 @@ export class DeclarativeContentHandlers {
         if (matched) {
           anyMatched = true;
           this.applyActions(extId, tabId, rule.actions);
-          break; // first-matching-rule-wins per ext
+          break;
         }
       }
       if (!anyMatched) {
-        // No rule matched — revert any previously-applied show.
         const applied = this.appliedShowState.get(extId);
         if (applied?.has(tabId)) {
           this.deps.pageActionHide(extId, tabId);
@@ -157,14 +121,10 @@ export class DeclarativeContentHandlers {
     if (!rule.conditions || rule.conditions.length === 0) return false;
     for (const cond of rule.conditions) {
       if (cond.instanceType !== 'declarativeContent.PageStateMatcher') continue;
-      // pageUrl gate
       if (cond.pageUrl) {
         const ok = matchesEventFilter({ url: [cond.pageUrl] }, url);
         if (!ok) continue;
       }
-      // css gate — probe via deps.probeCss. Best-effort: if probe
-      // throws or times out we treat as non-match (consistent with
-      // Chrome's "selector not found" semantics).
       if (cond.css && cond.css.length > 0) {
         try {
           const ok = await this.deps.probeCss(tabId, cond.css);
@@ -173,7 +133,6 @@ export class DeclarativeContentHandlers {
           continue;
         }
       }
-      // All gates passed for this condition.
       return true;
     }
     return false;
@@ -198,8 +157,6 @@ export class DeclarativeContentHandlers {
           }
           break;
         case 'declarativeContent.RequestContentScript':
-          // Intentionally NOT implemented — extensions should use
-          // chrome.scripting.executeScript for dynamic injection.
           console.warn(
             `[declarativeContent] RequestContentScript is not supported for ${extId}; use chrome.scripting instead`,
           );

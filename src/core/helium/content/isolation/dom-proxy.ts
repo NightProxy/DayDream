@@ -16,11 +16,6 @@ export function isHandle(v: unknown): v is DomHandle {
   return !!v && typeof v === 'object' && '__handle' in (v as object);
 }
 
-// Wire marker used by the host to signal "this property is a function — call
-// it via `method-call`". Must be a plain string key because the marker
-// crosses the Neutron SAB boundary via JSON.stringify, which silently drops
-// symbol-keyed properties. The host side (see neutron-worker.ts and the
-// shadowrealm/pseudo bridge) emits `{ __method__: true, name }`.
 const METHOD_MARKER_KEY = '__method__';
 
 interface MethodMarker {
@@ -32,12 +27,6 @@ function isMethodMarker(v: unknown): v is MethodMarker {
   return !!v && typeof v === 'object' && (v as Record<string, unknown>)[METHOD_MARKER_KEY] === true;
 }
 
-// Wire marker for "this argument is a callback function registered in the
-// worker under this opaque id". When the host applies a method whose args
-// contain this marker, it substitutes a real function that, when invoked,
-// posts `{ type: 'helium.cb', id, args }` back to the worker so the
-// worker can dispatch into its callback registry. Same plain-key constraint
-// as METHOD_MARKER_KEY: must survive JSON.stringify across the Neutron SAB.
 export const CALLBACK_MARKER_KEY = '__callback__';
 
 export interface CallbackMarker {
@@ -52,9 +41,6 @@ export function isCallbackMarker(v: unknown): v is CallbackMarker {
   );
 }
 
-// Wire envelope the host uses to invoke a worker-resident callback. Travels
-// host→worker via the regular postMessage channel (Neutron.postToWorker),
-// NOT via the synchronous SAB reply channel.
 export const CALLBACK_INVOKE_TYPE = 'helium.cb';
 
 export interface CallbackInvocation {
@@ -146,11 +132,6 @@ export function createDomProxy(handle: DomHandle, callSync: CallSync): unknown {
       if (isHandle(result)) return createDomProxy(result, callSync);
       if (isMethodMarker(result)) {
         return (...args: unknown[]) => {
-          // Hand raw args to callSync. The runtime's callSync impl
-          // (see worker source) is responsible for swapping function
-          // values in `args` for `{ __callback__: id }` markers
-          // before they cross the postMessage/SAB boundary; this
-          // proxy stays agnostic of registration state.
           const r = callSync('method-call', [target.__handle, prop, args]);
           if (isHandle(r)) return createDomProxy(r, callSync);
           return r;

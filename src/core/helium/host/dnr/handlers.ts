@@ -1,16 +1,3 @@
-// src/core/helium/host/dnr/handlers.ts
-//
-// chrome.declarativeNetRequest.* host handlers (per spec §18).
-//
-// Methods:
-//   updateDynamicRules, getDynamicRules
-//   updateSessionRules, getSessionRules
-//   updateEnabledRulesets, getEnabledRulesets
-//   getAvailableStaticRules
-//   setExtensionActionOptions (stub stored on this handler instance)
-//   getMatchedRules (stub returns empty rulesMatchedInfo)
-//   isRegexSupported
-//   testMatchOutcome
 
 import type { ExtensionContext } from '../../extfs/types';
 import {
@@ -40,7 +27,6 @@ export interface DnrHandlersFacadeDeps {
 export class DnrHandlers {
   private readonly storage: DnrStorage;
   private readonly facade: DnrHandlersFacadeDeps | null;
-  // setExtensionActionOptions stub state.
   private readonly actionOpts: Map<
     string,
     { tabUpdate?: unknown; displayActionCountAsBadgeText?: boolean }
@@ -50,8 +36,6 @@ export class DnrHandlers {
     this.storage = storage;
     this.facade = facade;
   }
-
-  // --- dynamic --------------------------------------------------
 
   updateDynamicRules = async (
     ctx: ExtensionContext,
@@ -71,8 +55,6 @@ export class DnrHandlers {
     return this.storage.getDynamicRules(ctx.id);
   };
 
-  // --- session --------------------------------------------------
-
   updateSessionRules = async (
     ctx: ExtensionContext,
     args: unknown[],
@@ -90,8 +72,6 @@ export class DnrHandlers {
   ): Promise<Rule[]> => {
     return this.storage.getSessionRules(ctx.id);
   };
-
-  // --- static / enabled rulesets --------------------------------
 
   updateEnabledRulesets = async (
     ctx: ExtensionContext,
@@ -166,8 +146,6 @@ export class DnrHandlers {
     return;
   };
 
-  // --- extension action options (stub) --------------------------
-
   setExtensionActionOptions = async (
     ctx: ExtensionContext,
     args: unknown[],
@@ -178,8 +156,6 @@ export class DnrHandlers {
     };
     this.actionOpts.set(ctx.id, opts);
   };
-
-  // --- diagnostic / matched rules ------------------------------
 
   /**
    * Returns the rule matches recorded by the facade's circular buffer
@@ -212,8 +188,6 @@ export class DnrHandlers {
     };
   };
 
-  // --- regex helper --------------------------------------------
-
   isRegexSupported = async (
     _ctx: ExtensionContext,
     args: unknown[],
@@ -223,14 +197,12 @@ export class DnrHandlers {
       isCaseSensitive?: boolean;
       requireCapturing?: boolean;
     };
-    void opts.requireCapturing; // unused in v1
+    void opts.requireCapturing;
     if (typeof opts.regex !== 'string') {
       return { isSupported: false, reason: 'regex is required' };
     }
     return engineIsRegexSupported(opts.regex, opts.isCaseSensitive);
   };
-
-  // --- testMatchOutcome ----------------------------------------
 
   testMatchOutcome = async (
     ctx: ExtensionContext,
@@ -263,10 +235,6 @@ export class DnrHandlers {
     if (Array.isArray(opts.responseHeaders)) {
       req.responseHeaders = opts.responseHeaders;
     }
-    // Thread the ruleset id of each rule through compileRule so the
-    // CompiledRule.rulesetId field can be reported below. Static
-    // rulesets keep their manifest id; dynamic and session rules use
-    // the reserved `_dynamic` / `_session` labels.
     const tagged = this.storage.getAllActiveRulesWithSource(ctx.id);
     const rules = tagged.map(({ rule, rulesetId }) => compileRule(rule, rulesetId));
     const result = evalRules(rules, req, { extOrigin: ctx.origin });

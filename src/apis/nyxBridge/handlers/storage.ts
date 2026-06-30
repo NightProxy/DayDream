@@ -1,10 +1,3 @@
-// src/apis/nyxBridge/handlers/storage.ts
-//
-// Storage operations target the PAGE's localStorage/sessionStorage
-// (not extension storage). Direct same-origin access via Scramjet —
-// no CDP needed. The "storage" namespace name mirrors chrome.storage's
-// shape so a future polyfill maps cleanly, but the semantics differ
-// (page-targeted, not extension-targeted).
 
 import { register } from './index';
 import { DDXError } from '../types';

@@ -1,4 +1,3 @@
-// Shared types for settings section modules.
 export interface SectionContext {
   subpage?: string;
 }

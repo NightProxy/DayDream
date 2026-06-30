@@ -1,24 +1,10 @@
-// src/core/helium/host/dnr/storage.ts
-//
-// Per-extension persistence + in-memory layers for DNR rules.
-//
-//   - Static rulesets: declared in manifest.declarative_net_request
-//                      .rule_resources; loaded from extfs at spawn,
-//                      cached in-memory. The set of enabled rulesets
-//                      is persisted in __helium_dnr_enabled__.json.
-//   - Dynamic rules: persisted in __helium_dnr_dynamic__.json.
-//                    Survive extension restarts.
-//   - Session rules: in-memory Map; cleared on kill().
-//
-// All write APIs use update-style semantics: caller passes
-// `{ addRules?, removeRuleIds? }`, we apply atomically and persist.
 
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
 import type { Rule } from './engine';
 
 const DYNAMIC_FILE = '__helium_dnr_dynamic__.json';
 const ENABLED_FILE = '__helium_dnr_enabled__.json';
-const STATIC_FILE_MAX = 1_000_000; // safety bound
+const STATIC_FILE_MAX = 1_000_000;
 
 interface DynamicFile {
   version: 1;
@@ -31,15 +17,10 @@ interface EnabledFile {
 }
 
 export class DnrStorage {
-  // extId → ruleset id → rules
   private readonly staticByExt: Map<string, Map<string, Rule[]>> = new Map();
-  // extId → dynamic rules
   private readonly dynamicByExt: Map<string, Rule[]> = new Map();
-  // extId → session rules
   private readonly sessionByExt: Map<string, Rule[]> = new Map();
-  // extId → enabled ruleset ids
   private readonly enabledByExt: Map<string, Set<string>> = new Map();
-  // extId → manifest ruleset descriptors {id, path}
   private readonly manifestRulesetsByExt: Map<
     string,
     Array<{ id: string; path: string; enabled: boolean }>
@@ -55,7 +36,6 @@ export class DnrStorage {
   ): Promise<void> {
     this.manifestRulesetsByExt.set(extId, rulesetDescriptors);
 
-    // Static rulesets: read each file (best-effort).
     const map = new Map<string, Rule[]>();
     for (const desc of rulesetDescriptors) {
       const rules = await this.readStaticFile(extId, desc.path);
@@ -63,7 +43,6 @@ export class DnrStorage {
     }
     this.staticByExt.set(extId, map);
 
-    // Enabled rulesets: persisted file overrides manifest defaults.
     const enabled = await this.readEnabledFile(extId);
     if (enabled) {
       this.enabledByExt.set(extId, new Set(enabled));
@@ -75,25 +54,19 @@ export class DnrStorage {
       this.enabledByExt.set(extId, def);
     }
 
-    // Dynamic rules.
     const dyn = await this.readDynamicFile(extId);
     this.dynamicByExt.set(extId, dyn);
 
-    // Session rules always start empty.
     this.sessionByExt.set(extId, []);
   }
 
   clearForExt(extId: string): void {
-    // Clear in-memory layers; persisted files stay on disk so
-    // dynamic rules and enabled-set survive across kill().
     this.staticByExt.delete(extId);
     this.dynamicByExt.delete(extId);
     this.sessionByExt.delete(extId);
     this.enabledByExt.delete(extId);
     this.manifestRulesetsByExt.delete(extId);
   }
-
-  // --- dynamic --------------------------------------------------
 
   getDynamicRules(extId: string): Rule[] {
     return this.dynamicByExt.get(extId) ?? [];
@@ -120,8 +93,6 @@ export class DnrStorage {
     await this.writeDynamicFile(extId, next);
   }
 
-  // --- session --------------------------------------------------
-
   getSessionRules(extId: string): Rule[] {
     return this.sessionByExt.get(extId) ?? [];
   }
@@ -145,8 +116,6 @@ export class DnrStorage {
     }
     this.sessionByExt.set(extId, next);
   }
-
-  // --- static / enabled rulesets --------------------------------
 
   getAvailableStaticRules(extId: string, rulesetId: string): Rule[] {
     return this.staticByExt.get(extId)?.get(rulesetId) ?? [];
@@ -241,8 +210,6 @@ export class DnrStorage {
     }
     return out;
   }
-
-  // --- file I/O -------------------------------------------------
 
   private async readStaticFile(extId: string, path: string): Promise<Rule[]> {
     const bytes = await readExtensionFile(extId, path);

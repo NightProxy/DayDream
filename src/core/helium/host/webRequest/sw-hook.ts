@@ -1,31 +1,3 @@
-// src/core/helium/host/webRequest/sw-hook.ts
-//
-// SW-level webRequest + DNR fallback.
-//
-// Most extension-relevant traffic flows through Scramjet-proxied
-// frames (see plugin.ts). But some requests bypass Scramjet:
-//   - DDX UI fetches (chrome-extension-style assets)
-//   - Restored endpoints (server-routed)
-//   - Worker fetches before the controller is installed
-//
-// For those, the SW receives the FetchEvent. We can run a thinned
-// DNR evaluator locally as long as the SW has been given the rules
-// to evaluate.
-//
-// Push direction: main page (ExtensionManager) → SW. Whenever
-// dnrEngine.invalidate(extId) fires, the main page broadcasts the
-// updated rule set via `swSelf.postMessage`:
-//
-//   { type: 'helium-dnr-update',
-//     extId: string,
-//     rules: Rule[],
-//     hasDnrPermission: boolean }
-//
-// SW listens for that message and updates its in-memory cache.
-//
-// This file exports BOTH the SW-side handler (evaluateSwLevelRules)
-// AND the main-page-side broadcaster (pushRulesToSw). They both
-// live here to keep the wire-format definition single-sourced.
 
 import {
   compileRule,
@@ -36,8 +8,6 @@ import {
 } from '../dnr/engine';
 import { inferResourceType } from './events';
 
-// --- Wire format ----------------------------------------------
-
 export const SW_DNR_UPDATE_MESSAGE_TYPE = 'helium-dnr-update';
 
 export interface SwDnrUpdateMessage {
@@ -45,12 +15,8 @@ export interface SwDnrUpdateMessage {
   extId: string;
   rules: Rule[];
   extOrigin: string;
-  // If false, the SW should drop the entry (e.g. extension uninstalled
-  // or permission revoked).
   hasDnrPermission: boolean;
 }
-
-// --- SW-side: in-memory cache + evaluator --------------------
 
 const swCompiled: Map<
   string,
@@ -120,8 +86,6 @@ export async function evaluateSwLevelRules(event: {
   const initiator = event.request.referrer || undefined;
   if (initiator) req.initiator = initiator;
 
-  // Iterate every extension's compiled rules. Block/redirect from any
-  // wins (per the same precedence as the main-page facade).
   let allowResult: 'allow' | 'allowAllRequests' | null = null;
   let blockResult = false;
   let redirectUrl: string | null = null;
@@ -153,7 +117,6 @@ export async function evaluateSwLevelRules(event: {
         }
         break;
       case 'modifyHeaders':
-        // SW-level modifyHeaders: noop for v1.
         break;
     }
   }
@@ -171,16 +134,12 @@ export async function evaluateSwLevelRules(event: {
   return null;
 }
 
-// --- Main-page side: broadcaster -----------------------------
-
 /**
  * Send a DNR rule update from the main page to the SW. If no
  * controller is registered yet, the call is dropped silently — the
  * SW won't have anything to evaluate either way.
  */
 export function pushRulesToSw(msg: SwDnrUpdateMessage): void {
-  // Note: navigator.serviceWorker may be undefined in some test
-  // environments; guard.
   const nsw = (navigator as Navigator & {
     serviceWorker?: { controller?: { postMessage: (m: unknown) => void } };
   }).serviceWorker;
@@ -212,7 +171,6 @@ export function buildSwDnrUpdate(
   };
 }
 
-// Diagnostic / test helper.
 export function _swCachedCount(): number {
   return swCompiled.size;
 }

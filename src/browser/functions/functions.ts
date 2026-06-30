@@ -23,7 +23,7 @@ class Functions implements FuncInterface {
   settings: SettingsAPI;
   profiles: ProfilesAPI;
   proto: Protocols;
-  nightmarePlugins: any | null; // i hate doing this, but its odd
+  nightmarePlugins: any | null;
   windowing: Windowing;
   events: EventSystem;
   devToggle: boolean;
@@ -305,10 +305,6 @@ class Functions implements FuncInterface {
 
   toggleChiiInspect = (): void => {
     const w = window as any;
-    // Resolve tabId from the active iframe element rather than relying
-    // on `window.tabs.activeTabId`, which isn't reliably populated in
-    // every selection path (split tabs, restore, etc.). Every managed
-    // iframe carries `data-tab-id` (see frameManager.ts).
     let activeTabId: string | null = w.tabs?.activeTabId ?? null;
     if (!activeTabId) {
       const iframe = document.querySelector(

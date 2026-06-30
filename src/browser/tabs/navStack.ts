@@ -36,7 +36,7 @@ export interface NavEntry {
 
 interface PerTabState {
 	stack: NavEntry[];
-	cursor: number; // index of the current entry; -1 means stack is empty
+	cursor: number;
 }
 
 const MAX_PER_TAB = 100;
@@ -112,14 +112,12 @@ export class TabNavStack {
 
 		const currentEntry = state.stack[state.cursor];
 		if (currentEntry && currentEntry.url === url) {
-			// Same URL — treat as refresh / metadata update.
 			currentEntry.title = title;
 			currentEntry.favicon = favicon ?? currentEntry.favicon;
 			currentEntry.timestamp = Date.now();
 			return;
 		}
 
-		// Truncate any forward entries if we're not at the tip.
 		if (state.cursor < state.stack.length - 1) {
 			state.stack.splice(state.cursor + 1);
 		}
@@ -127,7 +125,6 @@ export class TabNavStack {
 		state.stack.push({ url, title, favicon, timestamp: Date.now() });
 		state.cursor = state.stack.length - 1;
 
-		// Bound the stack.
 		if (state.stack.length > MAX_PER_TAB) {
 			const overflow = state.stack.length - MAX_PER_TAB;
 			state.stack.splice(0, overflow);
@@ -225,9 +222,6 @@ export class TabNavStack {
 			return false;
 		}
 
-		// Cursor updates lazily via iframeLoaded; but for direct .go() calls
-		// the native History may dispatch loaded events that don't carry our
-		// expected payload. Adjust the cursor optimistically.
 		state.cursor = targetCursor;
 		return true;
 	}

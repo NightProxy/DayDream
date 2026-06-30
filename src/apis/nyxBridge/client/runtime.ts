@@ -1,10 +1,3 @@
-// src/apis/nyxBridge/client/runtime.ts
-//
-// Source of the script injected into NyxAI iframes. Bundled to an IIFE
-// by client/rolldown.config.ts. The IIFE wrapper at inject time supplies
-// HOST_MARKER as a closure constant. We expose a `buildClientRuntime`
-// function for unit testing — production simply calls `bootClient()` at
-// the bottom of the file.
 
 import { METHOD_REGISTRY, RESERVED_EVENT_PATHS } from '../api';
 
@@ -73,22 +66,12 @@ export function buildClientRuntime(target: RuntimeTarget): void {
 		}
 	}
 
-	// Path 1: postMessage-based replies (used by tests / non-scramjet
-	// realms where the host can safely call `iframe.contentWindow.
-	// postMessage`).
 	target.addMessageListener((ev) => {
 		const data = (ev?.data as any) ?? null;
 		const res = data?.[RES_MARKER];
 		if (res) deliverReply(res);
 	});
 
-	// Path 2: CustomEvent-based replies (used in production scramjet-
-	// proxied frames where scramjet's `postMessage` wrapper crashes when
-	// called from outside the proxied realm — see channel.ts
-	// replyTransport for the full story). The host dispatches an
-	// `__nyx_res` CustomEvent directly onto this window from the host
-	// realm. The `detail` payload is the same shape we'd have received
-	// under `event.data.__nyx_res` via postMessage.
 	if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
 		window.addEventListener(RES_MARKER, (ev: Event) => {
 			const detail = (ev as CustomEvent).detail;
@@ -139,12 +122,6 @@ export function buildClientRuntime(target: RuntimeTarget): void {
 			const r2 = await rpc('__handshake.complete', { sessionId: r1.sessionId, token });
 			sessionId = r1.sessionId;
 			const detail = { capabilities: r2.capabilities, plusAuth: r2.plusAuth, sessionId };
-			// Stash the ready state on window so consumers that subscribe
-			// AFTER the event has fired can still detect it. Without this,
-			// any code that registers `addEventListener('ddx:ready', ...)`
-			// after handshake completes never resolves — the event has
-			// already fired and gone. NyxAI's MessageSender hits this when
-			// it lazy-checks the bridge on the first user turn.
 			try {
 				(target as { __ddxReady?: unknown }).__ddxReady = detail;
 				if (typeof (globalThis as any).window !== 'undefined' && (globalThis as any).window !== target) {
@@ -179,15 +156,9 @@ export function bootClient(): void {
 		dispatchEvent: (e) => window.dispatchEvent(new CustomEvent(e.type, { detail: e.detail })),
 	};
 	buildClientRuntime(target);
-	// CRITICAL: buildClientRuntime sets target.ddx — but NyxAI consumes
-	// window.ddx (and so does our own type declaration). Mirror it.
-	// Without this, isBridgeAvailable() returns false and agentic mode
-	// silently disables.
 	(window as { ddx?: unknown }).ddx = target.ddx;
 }
 
-// Auto-boot in production. The conditional check prevents boot during
-// unit tests (no __NYX_HOST_MARKER) and during SSR (no window).
 if (typeof window !== 'undefined' && (globalThis as any).__NYX_HOST_MARKER) {
 	bootClient();
 }

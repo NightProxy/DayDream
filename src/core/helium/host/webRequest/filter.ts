@@ -1,23 +1,3 @@
-// src/core/helium/host/webRequest/filter.ts
-//
-// chrome.webRequest filter matching. A subscriber registers via
-// `addListener(listener, filter, extraInfoSpec?)`; we apply the
-// filter at dispatch time to skip non-matching listeners cheaply.
-//
-// Filter shape (per spec §17):
-//   {
-//     urls: string[],              // Required match patterns
-//     types?: ResourceType[],
-//     tabId?: number,
-//     windowId?: number,
-//   }
-//
-// Subset matching:
-//   - `urls`: at least one pattern must match the request URL via
-//     `matchUrlPattern` (the same matcher used for content scripts).
-//   - `types`: request resource type ∈ set (if present).
-//   - `tabId` / `windowId`: exact match if present; -1 means "any
-//     non-tab request" (we treat undefined as "no filter").
 
 import { matchUrlPattern } from '../../extfs/war';
 
@@ -58,9 +38,6 @@ export function matchesRequest(
   filter: RequestFilter,
   request: FilterableRequest,
 ): boolean {
-  // `urls` is required by the chrome contract; if it's empty, the
-  // listener matches every URL (Chrome behaviour). The spec calls
-  // out `<all_urls>` as the default. Be permissive.
   if (filter.urls && filter.urls.length > 0) {
     let any = false;
     for (const p of filter.urls) {

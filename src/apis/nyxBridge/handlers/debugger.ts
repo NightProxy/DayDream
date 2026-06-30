@@ -1,8 +1,3 @@
-// src/apis/nyxBridge/handlers/debugger.ts
-//
-// CDP escape hatch. Mirrors chrome.debugger. attach/detach are no-ops
-// because hookInstaller already attaches an agent to every non-Nyx
-// frame; sendCommand passes through to ctx.cdp.
 
 import { register } from './index';
 import { DDXError } from '../types';

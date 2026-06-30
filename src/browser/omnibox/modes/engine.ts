@@ -15,14 +15,12 @@ export interface EngineModeResult {
 
 export function renderEngineMode(deps: EngineModeDeps): EngineModeResult {
 	const { query } = deps;
-	// Parse "<key> <rest>" — split on first whitespace.
 	const m = query.match(/^([A-Za-z0-9._-]+)(?:\s+(.*))?$/);
 	if (m) {
 		const key = m[1];
 		const rest = m[2];
 		const engine = deps.searchEngines.findByAt(key);
 		if (engine && rest !== undefined && rest.length > 0) {
-			// Preview row
 			return {
 				primaryRow: {
 					id: `eng-preview-${engine.id}`,
@@ -34,7 +32,6 @@ export function renderEngineMode(deps: EngineModeDeps): EngineModeResult {
 			};
 		}
 		if (engine && (rest === undefined || rest.length === 0)) {
-			// User typed @<known-key> alone
 			return {
 				primaryRow: {
 					id: `eng-key-${engine.id}`,
@@ -47,7 +44,6 @@ export function renderEngineMode(deps: EngineModeDeps): EngineModeResult {
 			};
 		}
 	}
-	// Otherwise show the picker — all engines with `at` populated, filtered by partial key
 	const engines = deps.searchEngines.list().filter((e: SearchEngine) => !!e.at);
 	const filtered = query
 		? engines.filter((e) => (e.at ?? '').toLowerCase().startsWith(query.toLowerCase()))

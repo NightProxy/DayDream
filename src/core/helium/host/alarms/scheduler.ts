@@ -1,17 +1,9 @@
-// src/core/helium/host/alarms/scheduler.ts
-//
-// AlarmScheduler — singleton timer manager for chrome.alarms.
-//
-// Persists per-extension alarms in extfs (`__helium_alarms__.json`).
-// On boot, replays + reschedules. On create/clear, mutates the timer
-// table + persists. On fire, dispatches chrome.alarms.onAlarm via the
-// `fire` callback and reschedules if periodic.
 
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
 
 export interface Alarm {
   name: string;
-  scheduledTime: number;        // ms timestamp
+  scheduledTime: number;
   periodInMinutes?: number;
 }
 
@@ -24,8 +16,8 @@ const MIN_PERIOD_MS = 30_000;
 const STORE_PATH = '__helium_alarms__.json';
 
 export class AlarmScheduler {
-  private readonly timers = new Map<string, ReturnType<typeof setTimeout>>(); // key: `${extId}:${name}`
-  private readonly alarms = new Map<string, Map<string, Alarm>>();             // extId -> name -> Alarm
+  private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly alarms = new Map<string, Map<string, Alarm>>();
   private readonly fire: (extId: string, alarm: Alarm) => void;
 
   constructor(fire: (extId: string, alarm: Alarm) => void) {
@@ -64,7 +56,7 @@ export class AlarmScheduler {
     const alarm: Alarm = period !== undefined
       ? { name, scheduledTime, periodInMinutes: period }
       : { name, scheduledTime };
-    await this.clear(extId, name); // replace existing
+    await this.clear(extId, name);
     let map = this.alarms.get(extId);
     if (!map) { map = new Map(); this.alarms.set(extId, map); }
     map.set(name, alarm);
@@ -128,7 +120,6 @@ export class AlarmScheduler {
       try { this.fire(extId, alarm); } catch (err) {
         console.error('[helium/alarms] fire callback threw:', err);
       }
-      // Reschedule if periodic
       if (alarm.periodInMinutes !== undefined) {
         const periodMs = Math.max(MIN_PERIOD_MS, alarm.periodInMinutes * 60_000);
         const next: Alarm = { ...alarm, scheduledTime: Date.now() + periodMs };

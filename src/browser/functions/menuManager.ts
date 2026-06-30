@@ -4,10 +4,6 @@ import { Nightmare as UI } from "@pkgs/Nightmare";
 import { openExtensionPopup } from "@browser/extensions/popupHost";
 import { SettingsAPI } from "@apis/settings";
 
-// Minimal shape we need from the ExtensionManager. The full type lives
-// in @apis/extensions; we don't import it directly to keep this module
-// loosely coupled (the manager is attached to `window.extensions` at
-// runtime).
 interface ExtensionEntry {
   id: string;
   name: string;
@@ -37,7 +33,6 @@ interface ExtensionManagerLike {
     event: "installed" | "uninstalled" | "enabled" | "disabled",
     listener: (id: string) => void,
   ) => void;
-  // ActionHandlers exposes getEffectiveSnapshot for badge text/popup.
   actionHandlers?: {
     getEffectiveSnapshot(extId: string, tabId?: number): {
       title?: string;
@@ -51,8 +46,6 @@ interface ExtensionManagerLike {
   };
 }
 
-// Per-extension UI prefs (pinned to toolbar). Stored in
-// /data/extension-prefs.json via SettingsAPI; keyed by extension id.
 const PIN_SETTINGS_KEY = "pinnedExtensions";
 let prefsApi: SettingsAPI | null = null;
 function getPrefsApi(): SettingsAPI {
@@ -82,17 +75,10 @@ export class MenuManager implements MenuInterface {
   private items: Items;
   private ui: UI;
 
-  // Refresh trigger — set when the menu rerenders mid-session due to
-  // installed/uninstalled/enabled/disabled events.
   private refreshContent: (() => void) | null = null;
   private extEventsBound = false;
 
   constructor(items: Items, ui: UI, _nightmarePlugins: unknown = null) {
-    // _nightmarePlugins is accepted for backwards-compat with the
-    // constructor signature in functions.ts; the extensions menu now
-    // builds its own floating popover rather than going through
-    // Nightmare's SideMenu (which has CSS scoping issues with the
-    // shadow root).
     this.items = items;
     this.ui = ui;
   }
@@ -166,8 +152,6 @@ export class MenuManager implements MenuInterface {
    *   └─────────────────────────────────┘
    */
   extensionsMenu(button: HTMLButtonElement): void {
-    // Bind to ExtensionManager lifecycle events once so we can re-render
-    // the menu in-place when extensions install/uninstall/enable/disable.
     const extMgr = (window as { extensions?: ExtensionManagerLike }).extensions;
     if (extMgr?.on && !this.extEventsBound) {
       const rerender = () => {
@@ -180,7 +164,6 @@ export class MenuManager implements MenuInterface {
       this.extEventsBound = true;
     }
 
-    // Toggle on click; close on outside click.
     button.addEventListener("click", (e) => {
       e.stopPropagation();
       const existing = document.querySelector(".helium-ext-popover");
@@ -200,8 +183,6 @@ export class MenuManager implements MenuInterface {
     const rect = button.getBoundingClientRect();
     Object.assign(popover.style, {
       position: "fixed",
-      // Anchor to right edge of button (button is in left sidebar, so
-      // the menu appears to the right of it).
       left: `${rect.right + 8}px`,
       top: `${rect.top}px`,
       width: "340px",
@@ -220,13 +201,11 @@ export class MenuManager implements MenuInterface {
       transition: "opacity .12s ease, transform .12s ease",
     } satisfies Partial<CSSStyleDeclaration>);
 
-    // If the popover would overflow the viewport bottom, push it up.
     requestAnimationFrame(() => {
       const popoverRect = popover.getBoundingClientRect();
       if (popoverRect.bottom > window.innerHeight - 12) {
         popover.style.top = `${Math.max(12, window.innerHeight - popoverRect.height - 12)}px`;
       }
-      // If too far right, flip to the left of the button.
       if (popoverRect.right > window.innerWidth - 12) {
         popover.style.left = `${Math.max(12, rect.left - popoverRect.width - 8)}px`;
       }
@@ -234,7 +213,6 @@ export class MenuManager implements MenuInterface {
       popover.style.transform = "translateY(0)";
     });
 
-    // Title bar
     const titleBar = document.createElement("div");
     Object.assign(titleBar.style, {
       padding: "14px 16px 8px",
@@ -245,7 +223,6 @@ export class MenuManager implements MenuInterface {
     titleBar.textContent = "Extensions";
     popover.appendChild(titleBar);
 
-    // "Manage extensions" button (per user: at the TOP)
     const manageRow = document.createElement("button");
     Object.assign(manageRow.style, {
       display: "flex",
@@ -276,7 +253,6 @@ export class MenuManager implements MenuInterface {
     attachHoverBg(manageRow);
     popover.appendChild(manageRow);
 
-    // List container
     const listEl = document.createElement("div");
     listEl.style.padding = "4px 0";
     popover.appendChild(listEl);
@@ -332,8 +308,6 @@ export class MenuManager implements MenuInterface {
     void renderList();
 
     document.body.appendChild(popover);
-    // Add outside-click listener AFTER the current event finishes
-    // (otherwise the button's click event that opened us would close us).
     setTimeout(() => {
       document.addEventListener("click", outsideClick);
     }, 0);
@@ -345,7 +319,6 @@ export class MenuManager implements MenuInterface {
     if (extMgr.listAllWithManifest) {
       try { return await extMgr.listAllWithManifest(); } catch { /* fall back */ }
     }
-    // Fallback: only running extensions.
     return extMgr.getRunning().map((s) => ({
       id: s.id,
       name: (s.ctx.manifest.name as string | undefined) ?? s.id,
@@ -376,10 +349,6 @@ export class MenuManager implements MenuInterface {
     const actionSnap = extMgr?.actionHandlers?.getEffectiveSnapshot(ext.id, undefined);
     const displayName = manifest.name ?? ext.name;
     const iconPath = resolveIconPath(manifest, actionSnap?.iconPath);
-    // Extension assets live on `https://<id>.ddx/` (Scramjet origin)
-    // which the host page can't reach directly. Resolve via the
-    // ExtensionManager's getIconDataUrl helper, which inlines the
-    // bytes as a data: URL.
     const popup = actionSnap?.popup ?? manifest.action?.default_popup ?? manifest.browser_action?.default_popup ?? null;
     const badgeText = actionSnap?.badgeText ?? "";
     const badgeBg = actionSnap?.badgeBgColor ?? "#666";
@@ -399,7 +368,6 @@ export class MenuManager implements MenuInterface {
       ].join(""),
     }) as HTMLDivElement;
 
-    // Main click area (icon + name + sublabel) → run/popup
     const clickArea = this.ui.createElement("button", {
       class: "extensions-menu-row-main",
       style: [
@@ -412,7 +380,6 @@ export class MenuManager implements MenuInterface {
         this.onExtensionRowClick(ext, popup, extMgr, sidemenu, clickArea),
     }) as HTMLButtonElement;
 
-    // Icon
     const iconWrap = this.ui.createElement("div", {
       style: [
         "position:relative;width:24px;height:24px;flex-shrink:0;",
@@ -422,11 +389,10 @@ export class MenuManager implements MenuInterface {
     }) as HTMLDivElement;
 
     if (iconPath && extMgr?.getIconDataUrl) {
-      // Start with a placeholder; swap to the data URL once it resolves.
       const placeholder = fallbackIconSvg();
       iconWrap.appendChild(placeholder);
       extMgr.getIconDataUrl(ext.id, iconPath).then((dataUrl) => {
-        if (!dataUrl) return; // keep placeholder
+        if (!dataUrl) return;
         const img = this.ui.createElement("img", {
           style: "width:100%;height:100%;object-fit:contain;",
           alt: "",
@@ -460,7 +426,6 @@ export class MenuManager implements MenuInterface {
 
     clickArea.appendChild(iconWrap);
 
-    // Name + sublabel
     const textCol = this.ui.createElement("div", {
       style: "flex:1;min-width:0;",
     }) as HTMLDivElement;
@@ -491,7 +456,6 @@ export class MenuManager implements MenuInterface {
     clickArea.appendChild(textCol);
     row.appendChild(clickArea);
 
-    // Pin button
     const pinBtn = this.ui.createElement("button", {
       class: "extensions-menu-pin",
       style: [
@@ -514,14 +478,11 @@ export class MenuManager implements MenuInterface {
     pinBtn.appendChild(iconSvg(isPinned ? "pin-filled" : "pin", 15));
     attachHoverBg(pinBtn);
     row.appendChild(pinBtn);
-    // Notify the toolbar buttons component so it picks up the pin
-    // change immediately (it caches the pin set otherwise).
     pinBtn.addEventListener("click", () => {
       const tb = (window as { extensionToolbar?: { markPinsDirty?: () => void } }).extensionToolbar;
       tb?.markPinsDirty?.();
     });
 
-    // Overflow menu (⋯)
     const moreBtn = this.ui.createElement("button", {
       class: "extensions-menu-more",
       style: [
@@ -557,9 +518,6 @@ export class MenuManager implements MenuInterface {
     const extMgr = (window as { extensions?: ExtensionManagerLike }).extensions;
     const manifest = ext.manifest as { homepage_url?: string };
 
-    // Build a small floating menu near the anchor button. We use a
-    // local <div> rather than Nightmare's sidemenu to avoid closing
-    // the parent extensions menu.
     const existing = document.querySelector(".extensions-row-menu");
     if (existing) existing.remove();
 
@@ -655,7 +613,6 @@ export class MenuManager implements MenuInterface {
 
     document.body.appendChild(menu);
 
-    // Dismiss on outside click
     const dismiss = (e: MouseEvent) => {
       if (!menu.contains(e.target as Node)) {
         menu.remove();
@@ -673,7 +630,6 @@ export class MenuManager implements MenuInterface {
     rowEl: HTMLElement,
   ): void {
     if (!ext.enabled) return;
-    // Grant activeTab for the current active tab.
     const w = window as {
       tabs?: { activeTabId?: string | null };
       nyx?: { tabResolver?: { toNum?: (id: string) => number; info?: (n: number) => unknown } };
@@ -703,7 +659,6 @@ export class MenuManager implements MenuInterface {
         console.warn("[menuManager] openExtensionPopup failed:", err);
       }
     } else {
-      // No popup — fire chrome.action.onClicked with the active tab info.
       let tabInfo: unknown = undefined;
       if (tabIdNum !== undefined && w.nyx?.tabResolver?.info) {
         try { tabInfo = w.nyx.tabResolver.info(tabIdNum); } catch { /* ignore */ }
@@ -717,10 +672,6 @@ export class MenuManager implements MenuInterface {
     sidemenu.closeMenu();
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────
 
 /**
  * Approximate Edge's per-extension "access" sub-label based on the
@@ -746,7 +697,6 @@ function describeAccess(manifest: {
 }
 
 function friendlyHost(pattern: string): string {
-  // *://*.example.com/* → example.com
   const m = pattern.match(/^[*a-z]+:\/\/(?:\*\.)?([^/*]+)/i);
   return m && m[1] ? m[1] : pattern;
 }

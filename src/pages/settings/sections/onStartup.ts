@@ -1,9 +1,6 @@
-// src/pages/settings/sections/onStartup.ts
 import { SettingsAPI } from "@apis/settings";
 import { settingsSearch } from "../components/settingsSearch";
 
-// These keys match the OLD settings page (settingsOld/index.tsx ~L1174) so the
-// user's existing startup preference carries over across the redesign.
 const STORAGE_KEY = "startupBehavior";
 const URL_KEY = "startupCustomUrl";
 
@@ -103,7 +100,6 @@ export async function render(container: HTMLElement): Promise<void> {
     group.appendChild(row);
   }
 
-  // Custom URL input — placed AFTER the radio group, in its own wrapper, shown only when current === "custom"
   customWrap = document.createElement("div");
   customWrap.className = "startup-custom-input";
   customWrap.style.display = current === "custom" ? "block" : "none";

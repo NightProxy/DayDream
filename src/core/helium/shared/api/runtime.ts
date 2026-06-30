@@ -50,14 +50,6 @@ export class ChromeRuntimeBase {
   public readonly onInstalled: ChromeEvent = new ChromeEvent();
   public readonly onStartup: ChromeEvent = new ChromeEvent();
 
-  // --- MUST-IMPLEMENT (kept throwing in stub; overlaid post-handshake) ---
-  //
-  // These methods cannot return a sensible default without a real
-  // backend connection. They are in RPC_BINDINGS and get overlaid by
-  // `installRpcBindings()` after the handshake. Pre-handshake calls
-  // will still throw — but Chrome would also reject those, so the
-  // throw is contractually fine.
-
   /**
    * BG-initiated `chrome.runtime.connect`. Opens a Port to another
    * extension (or self when extensionId omitted).
@@ -85,7 +77,6 @@ export class ChromeRuntimeBase {
     throw new Error('chrome.runtime.sendMessage is not implemented');
   }
 
-  // --- ALREADY-IMPLEMENTED (real impls; no stub) ---
   getManifest(): ChromeManifest | FirefoxManifest {
     return this.ctx.manifest;
   }
@@ -94,14 +85,7 @@ export class ChromeRuntimeBase {
     return `https://${this.ctx.origin}/${rel}`;
   }
 
-  // --- NO-OP-EMPTY (return a sensible default for fire-and-forget callers) ---
-  //
-  // Pre-handshake: returns synthesized data so extensions can branch
-  // on it without crashing. Post-handshake: RPC_BINDINGS overlay
-  // forwards the call to the host's real handler.
   getPlatformInfo(...args: any[]): any {
-    // Best-effort detection from navigator. Most extensions just
-    // need to know "is this linux/mac/win" for asset selection.
     const ua = (typeof navigator !== 'undefined' ? navigator.userAgent : '') || '';
     let os: string = 'linux';
     if (/Windows/.test(ua)) os = 'win';
@@ -115,56 +99,31 @@ export class ChromeRuntimeBase {
     return Promise.resolve(info);
   }
   requestUpdateCheck(...args: any[]): any {
-    // Chrome contract: resolves with `{status, version?}`. Tell every
-    // caller "no update" — Helium doesn't have a Chrome-Web-Store
-    // update channel, so this is the honest answer.
     const result = { status: 'no_update' };
     const cb = typeof args[0] === 'function' ? args[0] : null;
     if (cb) { try { cb(result); } catch { /* swallow */ } return undefined; }
     return Promise.resolve(result);
   }
   sendNativeMessage(...args: any[]): any {
-    // Native messaging isn't implementable in a browser-in-browser.
-    // Resolve with undefined and let extensions handle the "no
-    // response" path via runtime.lastError checks. Some support
-    // password managers that gracefully fall back to non-native.
     const cb = typeof args[2] === 'function' ? args[2] : null;
     if (cb) { try { cb(undefined); } catch { /* swallow */ } return undefined; }
     return Promise.resolve(undefined);
   }
 
-  // --- NO-OP-RESOLVED-PROMISE (void Chrome contract; safe to silently succeed) ---
-  //
-  // These are pure side-effect APIs. The caller never reads a return.
-  // Pre-handshake: ignored locally. Post-handshake: RPC overlay (where
-  // present) forwards to the host so the side effect can actually
-  // happen.
   openOptionsPage(...args: any[]): any {
     const cb = typeof args[0] === 'function' ? args[0] : null;
     if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
     return Promise.resolve();
   }
   reload(..._args: any[]): any {
-    // No callback in Chrome; just void. Post-handshake the RPC overlay
-    // calls `extensionManager.respawn(extId)`.
     return undefined;
   }
   setUninstallURL(...args: any[]): any {
-    // Chrome's contract: `Promise<void>` (MV3) or callback with zero args
-    // (MV2). Real extensions (Privacy Badger, uBlock, LastPass, Honey,
-    // Bitwarden) call this at top-level BG init and discard the return.
-    // Throwing here breaks their entire init — replacing it with a
-    // no-op is exactly what they expect.
     const cb = typeof args[1] === 'function' ? args[1] : null;
     if (cb) { try { cb(); } catch { /* swallow */ } return undefined; }
     return Promise.resolve();
   }
 
-  // --- KEEP-AS-NOOP (ChromeOS-kiosk-only in real Chrome; no-op here) ---
-  //
-  // Originally throwing; flipped to no-op so the few extensions that
-  // call them defensively at top-level don't crash. DDX has no
-  // OS-restart concept — calls are intentionally silent.
   restart(..._args: any[]): undefined {
     return undefined;
   }
@@ -271,8 +230,6 @@ function makeDeadPort(name: string): {
     postMessage: (_msg: unknown): void => { /* dropped */ },
     disconnect: (): void => { /* already dead */ },
   };
-  // Fire onDisconnect on next microtask so listeners attached in the
-  // same sync block as connect() observe the disconnect.
   queueMicrotask(() => {
     for (const fn of disconnectListeners) {
       try { fn(port); } catch (err) {

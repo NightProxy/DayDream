@@ -1,4 +1,3 @@
-// src/core/helium/host/alarms/handlers.ts
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { Alarm, AlarmScheduler } from './scheduler';

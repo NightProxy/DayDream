@@ -1,14 +1,3 @@
-// src/pages/settings/sections/searchEngine.ts
-//
-// Search engine section (round 2 — native rebuild).
-//
-// Main view: 3 rows
-//   - Default search engine (inline current-engine label + Change dropdown)
-//   - Search suggestions (createToggle, key "searchSuggestions", default true)
-//   - Manage search engines & bangs (drill-down to Manage subpage)
-//
-// Manage subpage: native bangs table built on `SearchEngineRegistry` directly.
-// No more legacy `m.initializeSearchEnginesUI()` piggyback.
 
 import { settingsSearch } from "../components/settingsSearch";
 import { createRow } from "../components/row";
@@ -36,7 +25,6 @@ function renderMain(container: HTMLElement): void {
   h2.textContent = "Search engine";
   section.appendChild(h2);
 
-  // Default engine row — inline current-engine label + Change dropdown.
   const engineRow = document.createElement("div");
   engineRow.className = "settings-row no-hover";
   const stack = document.createElement("div");
@@ -76,7 +64,6 @@ function renderMain(container: HTMLElement): void {
 
   void wireEngineRow(nameEl, changeBtn);
 
-  // Search suggestions toggle — uses the canonical createToggle now.
   section.appendChild(
     createToggle({
       icon: "lightbulb",
@@ -93,7 +80,6 @@ function renderMain(container: HTMLElement): void {
     }).element,
   );
 
-  // Manage drill-down
   section.appendChild(
     createRow({
       icon: "settings",
@@ -200,7 +186,6 @@ function renderEngineTable(body: HTMLElement, registry: SearchEngineRegistry): v
     );
   }
 
-  // Add button
   const addBtn = document.createElement("button");
   addBtn.className = "settings-button";
   addBtn.textContent = "+ Add search engine";
@@ -208,7 +193,6 @@ function renderEngineTable(body: HTMLElement, registry: SearchEngineRegistry): v
   addBtn.addEventListener("click", () => openEngineEditor(null, registry, body));
   body.appendChild(addBtn);
 
-  // Reset button
   const resetBtn = document.createElement("button");
   resetBtn.className = "settings-button ghost";
   resetBtn.textContent = "Reset to defaults";
@@ -243,7 +227,6 @@ function renderEngineRow(
   const row = document.createElement("div");
   row.className = "settings-row";
 
-  // Radio
   const radio = document.createElement("input");
   radio.type = "radio";
   radio.name = "default-engine";
@@ -274,7 +257,6 @@ function renderEngineRow(
   const right = document.createElement("div");
   right.className = "row-right";
 
-  // Pill for built-in
   if (engine.builtIn) {
     const pill = document.createElement("span");
     pill.className = "ddx-row-pill";
@@ -282,14 +264,12 @@ function renderEngineRow(
     right.appendChild(pill);
   }
 
-  // Edit
   const editBtn = document.createElement("button");
   editBtn.className = "settings-button ghost";
   editBtn.textContent = "Edit";
   editBtn.addEventListener("click", () => openEngineEditor(engine, registry, body));
   right.appendChild(editBtn);
 
-  // Delete (user-added only)
   if (!engine.builtIn) {
     const delBtn = document.createElement("button");
     delBtn.className = "settings-button ghost";
@@ -322,7 +302,6 @@ function openEngineEditor(
   registry: SearchEngineRegistry,
   body: HTMLElement,
 ): void {
-  // Build body element manually (modal expects HTMLElement, not callback).
   const bodyEl = document.createElement("div");
 
   const make = (labelText: string, placeholder: string): HTMLInputElement => {

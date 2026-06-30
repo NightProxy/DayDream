@@ -1,26 +1,3 @@
-// src/apis/sitePermissions/host.ts
-//
-// Host-side coordinator for Web Platform permission prompts.
-//
-// Listens on `window` for `__ddxSitePermission` postMessage requests
-// from proxied iframes. Each request is `{type, name, origin, reqId}`.
-// We resolve the current state:
-//   - 'granted' → reply yes
-//   - 'denied'  → reply no
-//   - 'prompt'  → show Nightmare modal, persist user's choice
-//                  (unless user picks "this time only"), reply
-//
-// Permission name → user-facing label:
-//   geolocation  → "Use your location"
-//   notifications→ "Show notifications"
-//   camera       → "Use your camera"
-//   microphone   → "Use your microphone"
-//   midi         → "Access MIDI devices"
-//   ...
-//
-// We anchor the prompt to the active tab (no per-iframe anchor — DDX
-// shows one prompt at a time). Concurrent requests for the SAME
-// (origin, name) are coalesced.
 
 import { SitePermissionsStore } from '../sitePermissions';
 
@@ -98,7 +75,6 @@ export function installSitePermissionsHost(): () => void {
       | { $scramjet$messagetype: string; $scramjet$data?: PermissionRequestMessage }
       | null;
     if (!raw || typeof raw !== 'object') return;
-    // Unwrap Scramjet's window-postMessage envelope if present.
     const data = (raw as { __ddxSitePermission?: true }).__ddxSitePermission
       ? (raw as PermissionRequestMessage)
       : (raw as { $scramjet$messagetype?: string; $scramjet$data?: PermissionRequestMessage })
@@ -116,7 +92,6 @@ export function installSitePermissionsHost(): () => void {
     let result: 'granted' | 'denied' | 'prompt';
     try {
       if (data.__query) {
-        // Read-only: never prompt.
         const store = SitePermissionsStore.getInstance();
         result = await store.getState(data.origin, data.name);
       } else {
@@ -131,10 +106,6 @@ export function installSitePermissionsHost(): () => void {
       reqId: data.reqId,
       state: result,
     };
-    // Post back to the iframe's contentWindow. The iframe's own
-    // `message` listener also has to unwrap if Scramjet's inbound
-    // wrap-handler kicks in — we handle that on the page side by
-    // accepting both raw and wrapped envelopes.
     try {
       source.postMessage(reply, '*');
     } catch (err) {
@@ -157,10 +128,8 @@ async function resolveOne(origin: string, name: string): Promise<'granted' | 'de
     if (state === 'granted') return 'granted';
     if (state === 'denied') return 'denied';
 
-    // Need to prompt.
     const nightmare = (window as { nightmare?: NightmareLike }).nightmare;
     if (!nightmare?.permissionPrompt?.ask) {
-      // No prompt UI available — default to denied for safety.
       console.warn(
         '[sitePerms/host] no permission prompt UI available; defaulting to denied',
       );

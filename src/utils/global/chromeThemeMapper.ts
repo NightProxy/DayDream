@@ -55,18 +55,15 @@ export function chromeManifestToThemePreset(
     "accent-colors": deriveAccentPalette(accent, tints.buttons),
   };
 
-  // NTP background image
   const ntpBg = images.theme_ntp_background;
   if (ntpBg && fileMap.has(ntpBg)) {
     const bytes = fileMap.get(ntpBg)!;
     preset["background-image"] = `data:${mimeOf(ntpBg)};base64,${base64Encode(bytes)}`;
   }
 
-  // Tints
   if (tints.buttons) preset["main-color"] = applyChromeHsvDelta(preset["main-color"]!, tints.buttons);
   if (tints.frame) preset["background-color"] = applyChromeHsvDelta(preset["background-color"]!, tints.frame);
 
-  // Warn for unmappable fields
   const unmappable: string[] = [];
   if (images.theme_frame) unmappable.push("theme_frame");
   if (images.theme_toolbar) unmappable.push("theme_toolbar");

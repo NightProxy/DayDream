@@ -108,7 +108,6 @@ export function postEventToIframe(
 			target.postMessage(message, '*');
 		}
 	} catch (error) {
-		// Best-effort delivery. Log once for visibility but do not throw.
 		console.warn(
 			'[eventsBridge] postMessage to iframe failed (continuing):',
 			error
@@ -143,7 +142,6 @@ function attachProxiedReceiver(proxiedWindow: Window): void {
 				new CustomEvent(eventName, { detail: payload ?? {} })
 			);
 		} catch (error) {
-			// Proxied window may have been torn down between hook and dispatch.
 			console.warn(
 				'[eventsBridge] receiver dispatch failed (continuing):',
 				error
@@ -188,14 +186,6 @@ export function installEventsBridge(controller: any): void {
 		return;
 	}
 
-	// We need to tap init.post on EVERY frame the controller creates,
-	// including frames that pre-existed this call. The cleanest scramjet
-	// pattern is a Plugin tapping the per-frame hook from inside a
-	// controller-level callback, but the controller doesn't expose a
-	// "frame created" event. Pragmatic alternative: wrap createFrame so
-	// every new frame gets the hook installed at creation time, and
-	// install on any already-existing frames once.
-
 	const installOnFrame = (frame: any) => {
 		try {
 			const postHook = frame?.hooks?.init?.post;
@@ -228,10 +218,6 @@ export function installEventsBridge(controller: any): void {
 
 	installed = true;
 }
-
-// ============================================================================
-// Page→host RPC primitive — RequestResponseChannel
-// ============================================================================
 
 /**
  * Page→host request/response channel built on `window.postMessage`.
@@ -389,18 +375,8 @@ export class RequestResponseChannel {
 	}
 
 	private async onMessage(event: MessageEvent): Promise<void> {
-		// Ignore messages posted by the host to itself. Without this,
-		// any code running on the host page could spoof a request.
 		if (event.source === window) return;
 
-		// Unwrap scramjet's `$scramjet$messagetype` envelope if present.
-		// When a proxied page calls `window.parent.postMessage(...)`,
-		// scramjet's `Window.postMessage` proxy in the proxied realm
-		// wraps the message into `{$scramjet$messagetype, $scramjet$origin,
-		// $scramjet$data}` before posting. The host therefore sees the
-		// wrapped form, not the raw payload. We unwrap if we see the
-		// sentinel; otherwise the message is from a non-proxied source
-		// (internal pages, host code, tests) and we use it as-is.
 		const raw = event?.data as Record<string, unknown> | null | undefined;
 		if (!raw || typeof raw !== 'object') return;
 		const data =
@@ -471,11 +447,5 @@ function defaultReplyTransport(
 	wrapped: Record<string, unknown>
 ): void {
 	if (!source) return;
-	// MessageEventSource is a union (Window | MessagePort | ServiceWorker).
-	// We're always replying to a Window in practice (iframes), so cast
-	// and pass '*' targetOrigin. May throw inside scramjet's wrapper on
-	// proxied pages — callers that need robustness should provide a
-	// custom `replyTransport` (see CaptchaBridge for the canonical
-	// example).
 	(source as Window).postMessage(wrapped, '*');
 }

@@ -1,8 +1,3 @@
-// src/apis/nyxBridge/handlers/cookies.ts
-//
-// Cookie operations via CDP Network.{get,set,delete}Cookies. All
-// operations target the current active tab; cross-tab cookie reads
-// are not supported in v1.
 
 import { register } from './index';
 import { DDXError } from '../types';

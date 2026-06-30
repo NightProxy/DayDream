@@ -21,8 +21,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UnpackedExtension } from '../shared/unpack';
 import type { ChromeManifest } from '../shared/unpack/types';
 
-// Mock the store BEFORE importing install so the install module picks
-// up the mocked exports.
 vi.mock('./store', () => {
   type IndexEntry = {
     id: string;
@@ -37,7 +35,6 @@ vi.mock('./store', () => {
   type Index = { version: 1; extensions: IndexEntry[] };
 
   return {
-    // Stubs whose behavior the individual tests override via mockImpl.
     readIndex: vi.fn(async (): Promise<Index> => ({ version: 1, extensions: [] })),
     writeIndex: vi.fn(async (_idx: Index): Promise<void> => {}),
     writeExtensionFile: vi.fn(async (
@@ -54,11 +51,6 @@ vi.mock('./store', () => {
   };
 });
 
-// Imports come AFTER the mock so the install module picks up the
-// mocked store exports. ESM module hoisting keeps vi.mock at the top
-// of the file regardless of where it textually appears, but
-// declaring them after the vi.mock line is the convention used by the
-// rest of the repo.
 import { installExtension } from './install';
 import * as store from './store';
 
@@ -89,9 +81,6 @@ function makeUnpacked(overrides: Partial<UnpackedExtension> = {}): UnpackedExten
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // By default, readExtensionFileRaw returns the bytes that were last
-  // written for the same path — enough to satisfy the install path's
-  // manifest verification round-trip.
   const lastWrites = new Map<string, Uint8Array>();
   (store.writeExtensionFile as ReturnType<typeof vi.fn>).mockImplementation(
     async (id: string, rel: string, bytes: Uint8Array) => {
@@ -102,11 +91,6 @@ beforeEach(() => {
     async (id: string, rel: string) => lastWrites.get(`${id}::${rel}`) ?? null,
   );
 
-  // Default readIndex / writeIndex round-trip: readIndex returns
-  // whatever was last passed to writeIndex (with an initial empty
-  // index). Tests can override these with mockResolvedValueOnce /
-  // mockImplementationOnce when they need to drive a specific
-  // scenario like "preserve previousEnabled across reinstall".
   let lastIndex: { version: 1; extensions: Array<Record<string, unknown>> } = {
     version: 1,
     extensions: [],
@@ -127,7 +111,6 @@ describe('installExtension — resilience', () => {
     expect(entry.id).toBe(ID);
     expect(entry.name).toBe('Test Extension');
     expect(entry.enabled).toBe(true);
-    // writeIndex was called with our entry
     expect(store.writeIndex).toHaveBeenCalledTimes(1);
     const written = (store.writeIndex as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(written.extensions).toHaveLength(1);
@@ -135,8 +118,6 @@ describe('installExtension — resilience', () => {
   });
 
   it('still succeeds when removeExtensionTree throws EEXIST', async () => {
-    // Simulate the OPFS bug where a "stuck" rmdir surfaces as
-    // "file already exists" — the exact symptom the user reported.
     (store.removeExtensionTree as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       Object.assign(new Error('file already exists'), { code: 'EEXIST', name: 'EEXIST' }),
     );
@@ -144,16 +125,11 @@ describe('installExtension — resilience', () => {
     const entry = await installExtension(makeUnpacked());
     expect(entry.id).toBe(ID);
     expect(entry.name).toBe('Test Extension');
-    // Verify writeExtensionFile and writeIndex were called despite the
-    // cleanup failure.
     expect(store.writeExtensionFile).toHaveBeenCalled();
     expect(store.writeIndex).toHaveBeenCalledTimes(1);
   });
 
   it('wraps per-file write errors with the offending path', async () => {
-    // First call to writeExtensionFile (background.js) fails — manifest
-    // write would be later in the loop, but the install should abort
-    // with a path-tagged error before getting there.
     (store.writeExtensionFile as ReturnType<typeof vi.fn>).mockImplementationOnce(
       async (_id: string, _rel: string, _bytes: Uint8Array) => {
         const err = new Error('disk full');
@@ -167,7 +143,6 @@ describe('installExtension — resilience', () => {
   });
 
   it('wraps manifest write failure with manifest.json in the message', async () => {
-    // Let non-manifest writes succeed, but the manifest write fails.
     let callCount = 0;
     (store.writeExtensionFile as ReturnType<typeof vi.fn>).mockImplementation(
       async (_id: string, rel: string) => {
@@ -184,16 +159,10 @@ describe('installExtension — resilience', () => {
     await expect(installExtension(makeUnpacked())).rejects.toThrow(
       /failed to write manifest\.json/,
     );
-    // Sanity: the non-manifest file write was attempted before the
-    // manifest write.
     expect(callCount).toBeGreaterThan(1);
   });
 
   it('preserves the previousEnabled flag across reinstall', async () => {
-    // Override the default in-memory index with one that already has
-    // our extension marked as disabled. The default mockImplementation
-    // in beforeEach mirrors what writeIndex wrote, so we just need to
-    // seed it before installExtension runs by writing a stub entry.
     (store.writeIndex as ReturnType<typeof vi.fn>).mock.calls.length = 0;
     let lastIndex: { version: 1; extensions: Array<Record<string, unknown>> } = {
       version: 1,

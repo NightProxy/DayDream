@@ -1,4 +1,3 @@
-// src/apis/nyxBridge/handlers/webNavigation.ts
 
 import { register, type HandlerContext } from './index';
 import { DDXError } from '../types';
@@ -80,7 +79,6 @@ register('webNavigation.waitForLoad', async (ctx, args: [TabTarget, { timeout?: 
 	const timeout = opts?.timeout ?? DEFAULT_TIMEOUT_MS;
 	const url = await pollUntil(() => {
 		const doc = iframe.contentDocument;
-		// readyState read can also throw cross-origin; guard it.
 		let ready: string | undefined;
 		try { ready = doc?.readyState; } catch { ready = undefined; }
 		if (ready === 'complete') return safeIframeUrl(iframe, ctx) || '<unknown>';
@@ -124,10 +122,7 @@ register('webNavigation.waitForSelector', async (ctx, args: [TabTarget, string, 
 			return null;
 		}
 		if (state === 'detached') {
-			// "detached" means wait until the selector no longer matches; we
-			// return a sentinel because the predicate must yield a truthy
-			// result and we have no element to yield.
-			if (!e) return doc.documentElement; // sentinel
+			if (!e) return doc.documentElement;
 			return null;
 		}
 		return null;

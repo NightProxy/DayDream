@@ -7,9 +7,6 @@ export { ChromeContextMenus } from './contextMenus';
 export { ChromeCookies } from './cookies';
 export { ChromeMenus } from './menus';
 export { ChromePageAction } from './pageAction';
-// ChromeOS-only stubs — declared so chrome.X is non-undefined; all
-// methods throw a clear "ChromeOS-only" error. See chromeOsStubs.ts
-// for the rationale and full list.
 export {
   ChromeAudio,
   ChromeCertificateProvider,
@@ -49,11 +46,6 @@ export { ChromeWebNavigation } from './webNavigation';
 export { ChromeWebRequest } from './webRequest';
 export { ChromeWindows } from './windows';
 
-// Base classes for the 11 divergent namespaces. These are produced by
-// Tasks 3-7 of the shared-API refactor plan
-// (docs/superpowers/plans/2026-06-24-helium-shared-api-refactor.md).
-// Uncomment each export as the corresponding file lands.
-//
 export { ChromeStorageBase } from './storage';
 export { ChromeTabsBase } from './tabs';
 export { ChromeRuntimeBase } from './runtime';

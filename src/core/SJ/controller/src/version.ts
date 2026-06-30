@@ -1,17 +1,6 @@
 // @ts-nocheck
 declare const SCRAMJET_EXPECTED_VERSION: string;
 
-// Hardcoded local controller version.
-//
-// Upstream injects this via a `CONTROLLER_VERSION` build-time constant
-// (rspack DefinePlugin). Our rolldown bundle could mirror that, but the
-// literal is just as good and removes one moving part: every consumer
-// of the controller IIFE sees the same string regardless of which
-// rolldown config built it.
-//
-// The `-dd` suffix marks this as a DDX-modified local build, distinct
-// from the upstream `0.0.11` release shape — useful when reading
-// `$scramjetController.VERSION` in the console.
 export const VERSION = '0.0.11-dd';
 
 function assertVersionMatch(

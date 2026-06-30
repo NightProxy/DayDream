@@ -22,11 +22,10 @@ export class ChromePower {
   }
 
   async requestKeepAwake(...args: any[]): Promise<void> {
-    // First arg is 'display' | 'system'. We treat both as screen lock.
     const _level = typeof args[0] === 'string' ? args[0] : 'display';
     void _level;
     try {
-      if (this.lock) return; // already held
+      if (this.lock) return;
       const wl = (navigator as { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock;
       if (!wl) {
         console.warn('[helium/power] Wake Lock API unavailable');

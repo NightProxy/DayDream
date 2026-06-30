@@ -1,26 +1,3 @@
-// src/core/helium/host/debugger/index.ts
-//
-// chrome.debugger session management. Each `debugger.attach({tabId})`
-// creates an isolated DebuggerSession owning:
-//   - The target identity (tabId)
-//   - A subscription on the host CdpHelper for that tab's events
-//   - Detach + onDetach + onEvent dispatch
-//
-// Sessions are keyed by (extensionId, tabId). One extension can hold
-// at most one active session per tab (matches Chrome's contract:
-// re-attaching to an already-attached tab from the same extension
-// throws). Cross-extension contention behaves like Chrome's
-// "[extName] takes over debugger" — first attach wins, subsequent
-// attaches from different extensions fail. We track the "winning"
-// extension per tab in a small `debuggees` map.
-//
-// CDP event fan-out:
-//   The nyxBridge CdpHelper drops unpaired CDP events today. We hook
-//   into its `handleAgentMessage` path by registering as an
-//   `onCdpEvent` observer (added in the same patch). When an event
-//   arrives for a tab that has an active session, we dispatch
-//   `chrome.debugger.onEvent` on that session's extension with
-//   `(source, method, params)`.
 
 import type { CdpHelper } from '@apis/nyxBridge/cdp';
 
@@ -76,7 +53,7 @@ export class DebuggerHandlers {
   }
 
   attach(extId: string, target: { tabId?: number }, requiredVersion?: string): void {
-    void requiredVersion; // Chrome wants ≥1.3 — we always satisfy it.
+    void requiredVersion;
     if (typeof target?.tabId !== 'number') {
       throw new Error('chrome.debugger.attach: target.tabId is required');
     }

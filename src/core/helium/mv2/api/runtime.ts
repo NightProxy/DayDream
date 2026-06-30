@@ -6,23 +6,6 @@ export class ChromeRuntime extends ChromeRuntimeBase {
     super(ctx);
   }
 
-  // MV2-only methods. All three are safe no-ops at the stub level
-  // because:
-  //
-  // - getBackgroundPage: callback receives a Window. We have no
-  //   accessible reference (the BG iframe lives in another realm),
-  //   but Chrome's behaviour on "no persistent BG" is to invoke the
-  //   callback with `null` — which is exactly what we do. Extensions
-  //   that depend on the page reference have a `null`-check fallback
-  //   path; the few that don't shouldn't be calling this anyway.
-  //
-  // - getPackageDirectoryEntry: an obsolete File API; almost no
-  //   popular extension touches it. Resolve with undefined so the
-  //   rare caller doesn't crash.
-  //
-  // - getVersion: synthesize from the manifest. The version is
-  //   already in `ctx.manifest.version`, so this is trivial.
-
   getBackgroundPage(...args: any[]): any {
     const cb = typeof args[0] === 'function' ? args[0] : null;
     if (cb) { try { cb(null); } catch { /* swallow */ } return undefined; }

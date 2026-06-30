@@ -1,4 +1,3 @@
-// src/core/helium/host/webNavigation/handlers.ts
 
 import type { ExtensionContext } from '../../extfs/types';
 import {

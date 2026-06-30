@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/handlers/_dom_helpers.ts
-//
-// Shared helpers for dom.* handlers — DOM access, selector building,
-// visibility checks, page snapshot for readPage.
 
 import { DDXError } from '../types';
 import type { ElementHandle, TabTarget } from '../api';

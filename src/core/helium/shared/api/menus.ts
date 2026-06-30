@@ -26,8 +26,6 @@ export class ChromeMenus {
   }
 
   public readonly onClicked: ChromeEvent = new ChromeEvent();
-  // Firefox extras — declared so extensions can `addListener` without
-  // throwing, but DDX has no menu-show/menu-hide observers wired.
   public readonly onShown: ChromeEvent = new ChromeEvent();
   public readonly onHidden: ChromeEvent = new ChromeEvent();
 
@@ -64,7 +62,6 @@ export class ChromeMenus {
     return;
   }
 
-  // Mirror enums from contextMenus so consumers see them on either path.
   static readonly ContextType = {
     ACTION: 'action',
     ALL: 'all',

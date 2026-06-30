@@ -16,9 +16,6 @@ export class TabMetaWatcher {
 	private async initHistoryManager() {
 		try {
 			const { HistoryManager } = await import('@apis/history');
-			// Use the shared singleton; multiple HistoryManager instances would
-			// each open their own OPFS handle to /data/history.json and race
-			// each other (EIO on concurrent writes).
 			this.historyManager = HistoryManager.getInstance();
 			await this.historyManager.loadFromStorage();
 		} catch (error) {
@@ -97,9 +94,6 @@ export class TabMetaWatcher {
 			console.warn('Could not update title:', e);
 		}
 
-		// Decode up-front so history always gets a clean URL even when
-		// updateAddressBar's early-return path (user is typing in the address
-		// bar) hands back the raw scramjet URL.
 		const decodedFromIframe = locHref
 			? decodeProxiedUrl(locHref, this.tabs.proxy)
 			: null;
@@ -115,9 +109,6 @@ export class TabMetaWatcher {
 					locHref,
 					tabId
 				);
-				// Trust whichever value is more decoded. updateAddressBar may
-				// return raw locHref when the address bar is focused; in that
-				// case we keep our up-front decode.
 				if (
 					fromAddressBar &&
 					fromAddressBar !== locHref &&
@@ -182,10 +173,6 @@ export class TabMetaWatcher {
 		locHref: string,
 		tabId: string
 	): Promise<string> => {
-		// Don't clobber the user's in-progress typing in the address bar.
-		// Even though we still return a "best effort" URL, the caller
-		// (updateTabMeta) only trusts our return value when it's clearly
-		// decoded.
 		if (
 			this.tabs.items.addressBar &&
 			document.activeElement === this.tabs.items.addressBar
@@ -202,8 +189,6 @@ export class TabMetaWatcher {
 
 		const tabRef = this.tabs.getTabById(tabId);
 
-		// First chance: the path itself maps to an internal/protocol URL
-		// (e.g. /internal/newtab → ddx://newtab).
 		const internalCheck = await this.tabs.proto.getInternalURL(
 			liveURL.pathname
 		);
@@ -220,16 +205,12 @@ export class TabMetaWatcher {
 			return nextVal;
 		}
 
-		// Centralized decode (active iframe → registered frames → SWconfig).
-		// Preserves the hash if `decodeProxiedUrl` lost it (the per-frame
-		// `extractEncodedUrl` codec may not include it).
 		let decoded = decodeProxiedUrl(locHref, this.tabs.proxy);
 		const hash = liveURL.hash || '';
 		if (hash && decoded && !decoded.includes('#')) {
 			decoded = decoded + hash;
 		}
 
-		// Second chance: decoded path maps to a protocol URL.
 		const maybeInternal = await this.tabs.proto.getInternalURL(decoded);
 		let nextVal: string;
 		if (
@@ -280,10 +261,6 @@ export class TabMetaWatcher {
 
 		if (faviconUrl) {
 			try {
-				// Decode through the central helper so favicon resolution
-				// works regardless of whether the URL came in as a
-				// per-frame-prefixed scramjet URL or a global-prefix legacy
-				// URL.
 				const decodedUrl = decodeProxiedUrl(
 					faviconUrl,
 					this.tabs.proxy

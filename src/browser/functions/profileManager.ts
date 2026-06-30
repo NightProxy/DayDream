@@ -15,7 +15,7 @@ export class ProfileManager implements ProfileManagerInterface {
   private items: Items;
   private proto: Protocols;
   private ui: UI;
-  private nightmarePlugins: any | null; // i hate doing this, but its odd
+  private nightmarePlugins: any | null;
   private modalUtilities: ModalUtilities;
 
   constructor(

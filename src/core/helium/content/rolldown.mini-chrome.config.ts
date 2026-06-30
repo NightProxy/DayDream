@@ -1,4 +1,3 @@
-// src/core/helium/content/rolldown.mini-chrome.config.ts
 /**
  * Builds the helium-mini-chrome IIFE bundle that runs in every
  * Helium-instrumented proxied page. Bundles mini-chrome.ts plus its

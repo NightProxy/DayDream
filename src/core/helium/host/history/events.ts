@@ -1,4 +1,3 @@
-// src/core/helium/host/history/events.ts
 
 import type { ExtensionManager } from '@apis/extensions';
 import { HistoryManager, type HistoryEntry } from '@apis/history';

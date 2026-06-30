@@ -43,7 +43,6 @@ export class ChromeInstanceID {
   }
 
   getToken(...args: any[]): any {
-    // Empty token means "no push" — extensions retry or skip.
     const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
     if (cb) { try { cb(''); } catch { /* swallow */ } return undefined; }
     return Promise.resolve('');

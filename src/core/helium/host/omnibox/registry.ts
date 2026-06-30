@@ -1,8 +1,3 @@
-// src/core/helium/host/omnibox/registry.ts
-//
-// Per-extension omnibox keyword + default suggestion. Read from
-// `manifest.omnibox.keyword` at spawn; mutated by
-// chrome.omnibox.setDefaultSuggestion.
 
 export interface DefaultSuggestion {
   description: string;
@@ -31,7 +26,7 @@ export type OmniboxRegistryChangeListener = (extId: string) => void;
 
 export class OmniboxRegistry {
   private byExtId = new Map<string, OmniboxEntry>();
-  private byKeyword = new Map<string, string>(); // keyword -> extId
+  private byKeyword = new Map<string, string>();
   private listeners = new Set<OmniboxRegistryChangeListener>();
 
   /**
@@ -59,8 +54,6 @@ export class OmniboxRegistry {
     const m = manifest as ManifestOmniboxShape;
     const kw = m.omnibox?.keyword;
     if (!kw || typeof kw !== 'string' || kw.length === 0) return null;
-    // If keyword already registered by another extension, last wins
-    // (similar to Chrome's behavior).
     const existing = this.byKeyword.get(kw);
     if (existing && existing !== extId) {
       console.warn(`[helium/omnibox] keyword "${kw}" already registered by ${existing}; ${extId} wins`);

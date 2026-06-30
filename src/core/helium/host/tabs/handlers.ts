@@ -1,8 +1,3 @@
-// src/core/helium/host/tabs/handlers.ts
-//
-// chrome.tabs.* host handlers. Most methods delegate straight to the
-// NyxBridge dispatch; sendMessage uses a BG→CS postMessage protocol
-// to deliver messages into the page realm (see Task 10).
 
 import {
   dispatch as nyxDispatch,
@@ -20,7 +15,6 @@ export class TabsHandlers {
   private readonly pendingReplies = new Map<number, PendingReply>();
 
   constructor(private readonly nyxCtx: NyxHandlerContext) {
-    // Listen for BG→CS replies posted back by mini-chrome.
     window.addEventListener('message', (e) => {
       const data = e.data as
         | { __helium_bg_to_cs__?: string; reqId?: number; response?: unknown }
@@ -81,8 +75,6 @@ export class TabsHandlers {
   ungroup = async (_ctx: ExtensionContext, args: unknown[]): Promise<unknown> =>
     nyxDispatch(this.nyxCtx, 'tabs.ungroup', args[0]);
 
-  // --- Stub / not-fully-supported methods ---
-
   detectLanguage = async (_ctx: ExtensionContext, _args: unknown[]): Promise<string> => 'und';
 
   discard = async (_ctx: ExtensionContext, args: unknown[]): Promise<unknown> =>
@@ -116,7 +108,7 @@ export class TabsHandlers {
   sendMessage = async (ctx: ExtensionContext, args: unknown[]): Promise<unknown> => {
     const tabId = args[0] as number;
     const message = args[1];
-    void args[2]; // options.frameId — v1 ignored
+    void args[2];
 
     let iframe: HTMLIFrameElement;
     try {

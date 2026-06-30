@@ -1,18 +1,3 @@
-// src/pkgs/Nightmare/permissionPrompt.ts
-//
-// Modal dialog used by chrome.permissions.request to obtain user
-// approval before granting optional permissions to an extension.
-//
-// Usage:
-//   const ok = await ui.permissionPrompt.ask({
-//     extensionName: 'My Ext',
-//     permissions: ['tabs', 'storage'],
-//     origins: ['https://example.com/*'],
-//   });
-//
-// Returns a Promise<boolean> that resolves true on Allow, false on
-// Deny / dismiss. Styles are inlined so the prompt has no external
-// stylesheet dependency.
 
 export interface PermissionPromptRequest {
 	extensionName: string;
@@ -230,8 +215,6 @@ export class PermissionPrompt {
 			document.addEventListener('keydown', keyHandler);
 
 			document.body.appendChild(backdrop);
-			// Focus the Allow button so Enter confirms; but the modal
-			// should not steal focus too aggressively. Defer one tick.
 			setTimeout(() => { try { allowBtn.focus(); } catch { /* ignore */ } }, 0);
 		});
 	}

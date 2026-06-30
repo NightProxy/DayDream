@@ -55,8 +55,6 @@ class ChromeSystemCpu {
       archName: navUserAgentArch(),
       modelName: 'unknown',
       features: [] as string[],
-      // Per-CPU usage stats. Chrome populates idle/kernel/user/total
-      // counters; we have no way to read those, so all zeros.
       processors: Array.from({ length: n }, () => ({
         usage: { user: 0, kernel: 0, idle: 0, total: 0 },
       })),
@@ -87,7 +85,6 @@ class ChromeSystemDisplay {
       bounds: { left: 0, top: 0, width: w, height: h },
       overscan: { left: 0, top: 0, right: 0, bottom: 0 },
       workArea: { left: 0, top: 0, width: w, height: h },
-      // displayZoomFactor / hasTouchSupport etc. are optional.
       displayZoomFactor: dpr,
       hasTouchSupport: false,
       hasAccelerometerSupport: false,
@@ -108,7 +105,6 @@ class ChromeSystemDisplay {
     return Promise.resolve([]);
   }
 
-  // ChromeOS-kiosk-only methods. No-op everywhere else.
   clearTouchCalibration(): void { /* no-op */ }
   completeCustomTouchCalibration(): void { /* no-op */ }
   enableUnifiedDesktop(): void { /* no-op */ }
@@ -178,8 +174,6 @@ export class ChromeSystemStorageBase {
   public readonly onAttached: ChromeEvent = new ChromeEvent();
 
   ejectDevice(...args: any[]): any {
-    // We don't manage external storage; always return NO_SUCH_DEVICE
-    // — extensions handle this gracefully (it's a documented outcome).
     const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
     if (cb) { try { cb('no_such_device'); } catch { /* swallow */ } return undefined; }
     return Promise.resolve('no_such_device');

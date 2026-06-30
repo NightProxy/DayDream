@@ -26,10 +26,6 @@
  * realistic harness is available.
  */
 
-// NB: import from specific source files, NOT from the host/* barrels
-// or from the ../../extfs barrel — the latter transitively imports
-// HeliumExtensionPlugin → ../bootstrap → dist-loader → `?raw` import
-// which tsx cannot resolve outside the rolldown bundle.
 import {
   compileUrlFilter,
   compileRule,
@@ -105,34 +101,10 @@ function mkRule(over: Partial<Rule>): Rule {
   };
 }
 
-// ─── Minimal CookieJar mock ────────────────────────────────────────────
-//
-// We can't import the real CookieJar from scramjet/* under tsx (it uses
-// the package's internal `@/shared/snapshot` path alias that doesn't
-// resolve outside the scramjet build). Instead we mirror the parts of
-// its contract that CookieAccessor actually depends on:
-//
-//   - dump() returns JSON.stringify of a Record<id, Cookie>, where id is
-//     `${domain}@${path}@${name}` and Cookie has fields
-//     {name, value, domain (leading-dot), hostOnly, path, secure,
-//      httpOnly, sameSite, expires?: epoch-ms number}.
-//   - setCookies(setCookieHeader, url) parses a Set-Cookie header,
-//     normalizes the domain (adds leading dot, falls back to url.hostname),
-//     defaults path/sameSite, applies Max-Age=0 → delete, and stores by id.
-//
-// This is intentionally minimal: no quirks-mode parsing, no __Secure-/
-// __Host- prefix enforcement, no maxAge→expires conversion when maxAge>0
-// (we only need maxAge<=0 → delete for removeCookie tests). If the
-// accessor ever depends on those, expand the mock.
-//
-// Anything we test here that's parser-/normalization-specific is
-// verified against the SAME logic the real CookieJar applies, derived by
-// reading scramjet/packages/core/src/shared/cookie.ts.
-
 interface MockCookie {
   name: string;
   value: string;
-  domain: string;          // leading "."
+  domain: string;
   hostOnly: boolean;
   path: string;
   secure?: boolean;
@@ -145,7 +117,6 @@ class MockCookieJar implements CookieJarLike {
   private cookies: Record<string, MockCookie> = {};
 
   setCookies(header: string, url: URL): void {
-    // Each `header` may be a single Set-Cookie value; we parse one.
     const parts = header.split(';').map((s) => s.trim()).filter(Boolean);
     if (parts.length === 0) return;
     const first = parts.shift()!;
@@ -209,7 +180,6 @@ class MockCookieJar implements CookieJarLike {
 }
 
 function mkAccessor(jar: CookieJarLike): CookieAccessor {
-  // CookieAccessor only invokes proxy.getCookieJar(); a stub Proxy is fine.
   const stubProxy = { getCookieJar: () => jar } as unknown as Proxy;
   return new CookieAccessor(stubProxy);
 }
@@ -228,9 +198,6 @@ function mkCtx(id: string): ExtensionContext {
 }
 
 async function main(): Promise<void> {
-  // ───────────────────────────────────────────────────────────
-  // DNR urlFilter compiler
-  // ───────────────────────────────────────────────────────────
   console.log('dnr/engine.ts — compileUrlFilter');
 
   await expect('compileUrlFilter: domain anchor matches host suffix', () => {
@@ -303,9 +270,6 @@ async function main(): Promise<void> {
     assertEq(compileUrlFilter('', false), null, 'empty');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // DNR engine evalRules — action precedence
-  // ───────────────────────────────────────────────────────────
   console.log('dnr/engine.ts — evalRules');
 
   await expect('evalRules: returns null when no rule matches', () => {
@@ -405,9 +369,6 @@ async function main(): Promise<void> {
     assertTrue(out !== null && out.kind === 'upgradeScheme', 'upgradeScheme kind');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // DNR ruleMatches negative cases
-  // ───────────────────────────────────────────────────────────
   console.log('dnr/engine.ts — ruleMatches');
 
   await expect('ruleMatches: resourceTypes restricts', () => {
@@ -442,9 +403,6 @@ async function main(): Promise<void> {
     assertTrue(ruleMatches(r, mkRequest({ method: 'POST' })), 'post matches (case-insensitive)');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // DNR isRegexSupported
-  // ───────────────────────────────────────────────────────────
   console.log('dnr/engine.ts — isRegexSupported');
 
   await expect('isRegexSupported: valid regex returns isSupported=true', () => {
@@ -458,9 +416,6 @@ async function main(): Promise<void> {
     assertTrue(typeof r.reason === 'string', 'reason populated');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // webNavigation filter
-  // ───────────────────────────────────────────────────────────
   console.log('webNavigation/filter.ts — matchesEventFilter');
 
   await expect('matchesEventFilter: no filter matches all', () => {
@@ -530,9 +485,6 @@ async function main(): Promise<void> {
     assertFalse(matchesEventFilter({ url: [{ hostEquals: 'x' }] }, 'not a url'), 'invalid url rejected');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // webRequest filter
-  // ───────────────────────────────────────────────────────────
   console.log('webRequest/filter.ts — matchesRequest');
 
   const baseReq = {
@@ -570,9 +522,6 @@ async function main(): Promise<void> {
     assertFalse(matchesRequest({ urls: ['<all_urls>'], windowId: 8 }, req), 'mismatch');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // i18n formatMessage
-  // ───────────────────────────────────────────────────────────
   console.log('i18n/format.ts — formatMessage');
 
   await expect('formatMessage: undefined entry returns empty string', () => {
@@ -626,27 +575,8 @@ async function main(): Promise<void> {
     assertEq(formatMessage(e, ['Alice']), 'Hello Alice', 'mixed');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // Alarms scheduler — NOT exercised here.
-  //
   // NOTE(helium-t1-3): documented sanity-test gap. AlarmScheduler
-  // imports the `../../extfs` barrel for readExtensionFile/writeExtensionFile;
-  // that barrel transitively imports the HeliumExtensionPlugin which
-  // pulls bootstrap/dist-loader.ts (with its `?raw` import that tsx
-  // cannot resolve at sanity-test runtime). The scheduler's pure-logic
-  // surface is intentionally narrow (it just wraps setTimeout +
-  // extfs writes), so this gap is acceptable for sanity. Behavior
-  // is exercised by the chrome.alarms integration tests once a
-  // browser + bundled bootstrap is available.
-  //
-  // A future cleanup could refactor scheduler.ts to accept an
-  // FS-shaped dependency in its constructor (DI) so it could be
-  // unit-tested here with a stub backend; tracked but not blocking.
-  // ───────────────────────────────────────────────────────────
 
-  // ───────────────────────────────────────────────────────────
-  // Runtime buildMessageSender
-  // ───────────────────────────────────────────────────────────
   console.log('runtime/sender.ts — buildMessageSender');
 
   await expect('buildMessageSender: BG callerExtId path', () => {
@@ -697,9 +627,6 @@ async function main(): Promise<void> {
     assertEq(sender.tab, undefined, 'no tab');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // Runtime dispatchOnMessage
-  // ───────────────────────────────────────────────────────────
   console.log('runtime/dispatch.ts — dispatchOnMessage');
 
   await expect('dispatchOnMessage: empty listeners returns handled=false', async () => {
@@ -744,7 +671,6 @@ async function main(): Promise<void> {
   await expect('dispatchOnMessage: listener throwing does not abort dispatch', async () => {
     const l1: OnMessageListener = () => { throw new Error('boom'); };
     const l2: OnMessageListener = (_m, _s, sendResponse) => { sendResponse('ok'); };
-    // Swallow expected console.error from dispatch
     const origErr = console.error;
     console.error = () => {};
     try {
@@ -766,10 +692,6 @@ async function main(): Promise<void> {
   });
 
   await expect('dispatchOnMessage: late sendResponse from non-true listener ignored', async () => {
-    // Per Chrome contract, sendResponse called after listener returned
-    // a non-true value is a no-op. We can't observe non-delivery
-    // directly here, but we can verify return-true is required for
-    // async delivery.
     const listener: OnMessageListener = (_m, _s, sendResponse) => {
       setTimeout(() => sendResponse('late'), 5);
       return undefined;
@@ -779,9 +701,6 @@ async function main(): Promise<void> {
     assertEq(r.response, undefined, 'response empty');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // DNR engine — compileRule defaults
-  // ───────────────────────────────────────────────────────────
   console.log('dnr/engine.ts — compileRule');
 
   await expect('compileRule: default priority is 1', () => {
@@ -820,15 +739,6 @@ async function main(): Promise<void> {
     assertEq(JSON.stringify(c.initiatorDomains), JSON.stringify(['example.com']), 'alias works');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // CookieAccessor (apis/data/cookies.ts)
-  //
-  // Uses a MockCookieJar that faithfully mirrors scramjet's CookieJar
-  // contract: dump() returns JSON.stringify(Record<id, Cookie>) and
-  // setCookies(header, url) parses a Set-Cookie header. We verify the
-  // accessor reads, filters, writes, and removes cookies in the
-  // chrome.cookies.* shape.
-  // ───────────────────────────────────────────────────────────
   console.log('apis/data/cookies.ts — CookieAccessor');
 
   await expect('CookieAccessor.getCookies: empty jar returns []', async () => {
@@ -892,8 +802,6 @@ async function main(): Promise<void> {
     assertEq(out.length, 1, 'one match');
     assertEq(out[0]!.session, false, 'not session');
     assertTrue(out[0]!.expirationDate !== undefined, 'expirationDate set');
-    // Allow ±2s for Date.parse() round-trip rounding (Expires uses
-    // second-precision UTC strings).
     const drift = Math.abs((out[0]!.expirationDate ?? 0) - future);
     assertTrue(drift <= 2, `expirationDate within 2s of input (drift=${drift})`);
   });
@@ -911,16 +819,13 @@ async function main(): Promise<void> {
   await expect('CookieAccessor.getCookies: filter by url (host + scheme)', async () => {
     const jar = new MockCookieJar();
     const acc = mkAccessor(jar);
-    // Host-only on example.com
     await acc.setCookie({ url: 'https://example.com/', name: 'host', value: 'h', path: '/', secure: true });
-    // Domain cookie (.other.com)
     await acc.setCookie({ url: 'https://other.com/', name: 'd', value: 'd', domain: 'other.com', path: '/' });
 
     const matchExample = await acc.getCookies({ url: 'https://example.com/' });
     assertEq(matchExample.length, 1, 'example.com gets host cookie');
     assertEq(matchExample[0]!.name, 'host', 'host cookie');
 
-    // Secure cookie shouldn't surface on http:
     const http = await acc.getCookies({ url: 'http://example.com/' });
     assertEq(http.length, 0, 'secure cookie blocked on http');
 
@@ -985,8 +890,6 @@ async function main(): Promise<void> {
   });
 
   await expect('CookieAccessor.getCookies: malformed dump degrades gracefully', async () => {
-    // Jar that returns garbage rather than valid JSON. Swallow expected
-    // console.warn from the accessor's defensive parse.
     const garbageJar: CookieJarLike = {
       dump: () => 'not json at all',
       setCookies: () => {},
@@ -1018,7 +921,6 @@ async function main(): Promise<void> {
     const out = await acc.getCookies({ name: 'k' });
     assertEq(out.length, 1, 'one match');
     const c: DDXCookie = out[0]!;
-    // Every Chrome cookie field must be present and well-typed:
     assertEq(typeof c.name, 'string', 'name string');
     assertEq(typeof c.value, 'string', 'value string');
     assertEq(typeof c.domain, 'string', 'domain string');
@@ -1033,9 +935,6 @@ async function main(): Promise<void> {
     assertEq(c.storeId, '0', 'storeId default');
   });
 
-  // ───────────────────────────────────────────────────────────
-  // Summary
-  // ───────────────────────────────────────────────────────────
   console.log('');
   if (failures.length === 0) {
     console.log('all sanity checks passed');

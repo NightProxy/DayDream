@@ -106,8 +106,6 @@ const SEND_MESSAGE_TIMEOUT_MS = 5 * 60 * 1000;
  * — checked at ExtensionManager construction.
  */
 const HANDLER_PERMISSIONS: Record<string, string | null> = {
-  // chrome.storage.local / sync (existing) — extended with session,
-  // managed, and getBytesInUse in Task 14.
   'chrome.storage.local.get':    'storage',
   'chrome.storage.local.set':    'storage',
   'chrome.storage.local.remove': 'storage',
@@ -140,8 +138,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.runtime.connectNative':            null,
   'chrome.runtime.sendNativeMessage':        null,
 
-  // chrome.extension.* (Task 34, MV2 surface). All unrestricted —
-  // getBackgroundPage's MV-version check lives inside the handler.
   'chrome.extension.getBackgroundPage':        null,
   'chrome.extension.getViews':                 null,
   'chrome.extension.getURL':                   null,
@@ -156,14 +152,10 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.scripting.getRegisteredContentScripts':    'scripting',
   'chrome.scripting.updateContentScripts':           'scripting',
 
-  // MV2 chrome.tabs script/CSS injection (adapt to chrome.scripting at
-  // runtime). Permission-gated under the legacy MV2 "tabs" permission
-  // — extensions that worked on real Chrome MV2 will work here.
   'chrome.tabs.executeScript':                       'tabs',
   'chrome.tabs.insertCSS':                           'tabs',
   'chrome.tabs.removeCSS':                           'tabs',
 
-  // tabs (Task 9)
   'chrome.tabs.query':           'tabs',
   'chrome.tabs.get':             'tabs',
   'chrome.tabs.getCurrent':      'tabs',
@@ -188,7 +180,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.tabs.toggleReaderMode': 'tabs',
   'chrome.tabs.sendMessage':     'tabs',
 
-  // windows (Task 11) — all unrestricted
   'chrome.windows.get':            null,
   'chrome.windows.getCurrent':     null,
   'chrome.windows.getLastFocused': null,
@@ -197,14 +188,12 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.windows.update':         null,
   'chrome.windows.remove':         null,
 
-  // alarms (Task 12)
   'chrome.alarms.create':   'alarms',
   'chrome.alarms.get':      'alarms',
   'chrome.alarms.getAll':   'alarms',
   'chrome.alarms.clear':    'alarms',
   'chrome.alarms.clearAll': 'alarms',
 
-  // bookmarks (Task 16)
   'chrome.bookmarks.get':         'bookmarks',
   'chrome.bookmarks.getChildren': 'bookmarks',
   'chrome.bookmarks.getRecent':   'bookmarks',
@@ -217,7 +206,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.bookmarks.remove':      'bookmarks',
   'chrome.bookmarks.removeTree':  'bookmarks',
 
-  // history (Task 17)
   'chrome.history.search':      'history',
   'chrome.history.getVisits':   'history',
   'chrome.history.addUrl':      'history',
@@ -225,24 +213,20 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.history.deleteRange': 'history',
   'chrome.history.deleteAll':   'history',
 
-  // cookies (Task 18)
   'chrome.cookies.get':                'cookies',
   'chrome.cookies.getAll':             'cookies',
   'chrome.cookies.set':                'cookies',
   'chrome.cookies.remove':             'cookies',
   'chrome.cookies.getAllCookieStores': 'cookies',
 
-  // i18n (Task 15) — unrestricted
   'chrome.i18n.getMessage':         null,
   'chrome.i18n.getUILanguage':      null,
   'chrome.i18n.getAcceptLanguages': null,
   'chrome.i18n.detectLanguage':     null,
 
-  // webNavigation (Task 19)
   'chrome.webNavigation.getFrame':     'webNavigation',
   'chrome.webNavigation.getAllFrames': 'webNavigation',
 
-  // action / browserAction / pageAction (Task 20) — all unrestricted
   'chrome.action.setTitle': null,
   'chrome.action.getTitle': null,
   'chrome.action.setPopup': null,
@@ -283,17 +267,14 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.pageAction.getPopup': null,
   'chrome.pageAction.setIcon': null,
 
-  // commands (Task 21) — getAll only; onCommand is event-only.
   'chrome.commands.getAll': null,
 
-  // notifications (Task 22)
   'chrome.notifications.create':             'notifications',
   'chrome.notifications.update':             'notifications',
   'chrome.notifications.clear':              'notifications',
   'chrome.notifications.getAll':             'notifications',
   'chrome.notifications.getPermissionLevel': 'notifications',
 
-  // contextMenus + alias menus (Task 23)
   'chrome.contextMenus.create':    'contextMenus',
   'chrome.contextMenus.update':    'contextMenus',
   'chrome.contextMenus.remove':    'contextMenus',
@@ -303,19 +284,10 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.menus.remove':    'contextMenus',
   'chrome.menus.removeAll': 'contextMenus',
 
-  // omnibox (Task 24) — setDefaultSuggestion only; events fired by UI.
   'chrome.omnibox.setDefaultSuggestion': null,
 
-  // webRequest (Task 28) — only the direct method; the event surface
-  // (addListener/removeListener/hasListener) is handled via the
-  // Event Subscription RPC (`__helium_event_subscribe__` etc.) and
-  // doesn't appear here.
   'chrome.webRequest.handlerBehaviorChanged': 'webRequest',
 
-  // declarativeNetRequest (Task 29). All rule-manipulation methods
-  // require `declarativeNetRequest`; getMatchedRules additionally
-  // requires `declarativeNetRequestFeedback`. Helper methods
-  // (isRegexSupported, testMatchOutcome) require the base perm.
   'chrome.declarativeNetRequest.updateDynamicRules':       'declarativeNetRequest',
   'chrome.declarativeNetRequest.getDynamicRules':          'declarativeNetRequest',
   'chrome.declarativeNetRequest.updateSessionRules':       'declarativeNetRequest',
@@ -331,9 +303,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.declarativeNetRequest.isRegexSupported':         'declarativeNetRequest',
   'chrome.declarativeNetRequest.testMatchOutcome':         'declarativeNetRequest',
 
-  // chrome.devtools.* (Task 32). All `null` — gating is by the
-  // manifest `devtools_page` field + devtools-open state, enforced in
-  // DevtoolsHandlers.requireDevtools().
   'chrome.devtools.panels.create':                                   null,
   'chrome.devtools.panels.elements.createSidebarPane':               null,
   'chrome.devtools.panels.sources.createSidebarPane':                null,
@@ -344,23 +313,17 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.devtools.inspectedWindow.getResources':                    null,
   'chrome.devtools.network.getHAR':                                  null,
 
-  // chrome.permissions.* (Task 35). All unrestricted — manifest gating
-  // (optional_permissions / optional_host_permissions) lives in
-  // PermissionsHandlers.request().
   'chrome.permissions.getAll':   null,
   'chrome.permissions.contains': null,
   'chrome.permissions.request':  null,
   'chrome.permissions.remove':   null,
 
-  // chrome.sidePanel.* (Task 36)
   'chrome.sidePanel.setOptions':       'sidePanel',
   'chrome.sidePanel.getOptions':       'sidePanel',
   'chrome.sidePanel.setPanelBehavior': 'sidePanel',
   'chrome.sidePanel.getPanelBehavior': 'sidePanel',
   'chrome.sidePanel.open':             'sidePanel',
 
-  // chrome.downloads.* stubs (Task 37). All gated by 'downloads' so a
-  // permission audit catches extensions that forgot to declare it.
   'chrome.downloads.download':          'downloads',
   'chrome.downloads.search':            'downloads',
   'chrome.downloads.pause':             'downloads',
@@ -374,7 +337,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.downloads.acceptDanger':      'downloads',
   'chrome.downloads.setShelfEnabled':   'downloads',
 
-  // chrome.identity.* stubs (Task 38). All gated by 'identity'.
   'chrome.identity.getAuthToken':             'identity',
   'chrome.identity.getProfileUserInfo':       'identity',
   'chrome.identity.launchWebAuthFlow':        'identity',
@@ -383,8 +345,6 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.identity.getAccounts':              'identity',
   'chrome.identity.getRedirectURL':           'identity',
 
-  // chrome.management.* (Task 39). All gated by 'management' except
-  // getSelf which is always allowed (Chrome semantics).
   'chrome.management.getAll':                          'management',
   'chrome.management.get':                             'management',
   'chrome.management.getSelf':                         null,
@@ -398,31 +358,23 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.management.setLaunchType':                   'management',
   'chrome.management.generateAppForLink':              'management',
 
-  // chrome.idle (Task: idle support)
   'chrome.idle.queryState':            'idle',
   'chrome.idle.setDetectionInterval':  'idle',
 
-  // chrome.runtime.getContexts (MV3) — auto-granted
   'chrome.runtime.getContexts':        null,
 
-  // chrome.offscreen (MV3)
   'chrome.offscreen.createDocument':  'offscreen',
   'chrome.offscreen.closeDocument':   'offscreen',
   'chrome.offscreen.hasDocument':     'offscreen',
 
-  // chrome.search (auto-granted, mostly used for keyword-driven new
-  // tabs)
   'chrome.search.query':              null,
 
-  // chrome.sessions
   'chrome.sessions.getDevices':         'sessions',
   'chrome.sessions.getRecentlyClosed':  'sessions',
   'chrome.sessions.restore':            'sessions',
 
-  // chrome.topSites — auto-granted; reads from HistoryManager
   'chrome.topSites.get':                null,
 
-  // chrome.browsingData — same scope-key as Chrome
   'chrome.browsingData.remove':         'browsingData',
   'chrome.browsingData.removeAppcache': 'browsingData',
   'chrome.browsingData.removeCache':       'browsingData',
@@ -440,34 +392,23 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.browsingData.removeWebSQL':    'browsingData',
   'chrome.browsingData.settings':        'browsingData',
 
-  // chrome.tabGroups (MV3) — DDX already groups tabs internally
   'chrome.tabGroups.get':    'tabGroups',
   'chrome.tabGroups.move':   'tabGroups',
   'chrome.tabGroups.query':  'tabGroups',
   'chrome.tabGroups.update': 'tabGroups',
 
-  // chrome.readingList (MV3) — backed by ReadingListManager
-  // (`src/apis/readingList.ts`). Requires `readingList` manifest perm
-  // per Chrome's contract.
   'chrome.readingList.addEntry':    'readingList',
   'chrome.readingList.query':       'readingList',
   'chrome.readingList.removeEntry': 'readingList',
   'chrome.readingList.updateEntry': 'readingList',
 
-  // chrome.dns (MV3) — best-effort DNS resolver hook for the future
-  // network stack. Requires no manifest permission (matches Chrome's
-  // public surface — no such perm exists on the platform).
   'chrome.dns.resolve':             null,
 
-  // chrome.debugger — per-extension CDP sessions. Requires the
-  // `debugger` manifest permission to mirror Chrome's gate.
   'chrome.debugger.attach':         'debugger',
   'chrome.debugger.detach':         'debugger',
   'chrome.debugger.sendCommand':    'debugger',
   'chrome.debugger.getTargets':     'debugger',
 
-  // chrome.declarativeContent — synthetic RPC keys for the
-  // onPageChanged rule store. Requires `declarativeContent` perm.
   'chrome.declarativeContent.addRules':    'declarativeContent',
   'chrome.declarativeContent.removeRules': 'declarativeContent',
   'chrome.declarativeContent.getRules':    'declarativeContent',
@@ -508,7 +449,6 @@ const KNOWN_API_PERMS = [
   'system.storage',
   'system.display',
   'readingList',
-  // chrome.dns has no manifest permission keyword (matches Chrome).
   'debugger',
   'declarativeContent',
 ];
@@ -554,13 +494,9 @@ export class ExtensionManager {
   private contentScriptRelay: ContentScriptRelay | null = null;
   private portRouter: PortRouter | null = null;
   private scriptingHandlers: ScriptingHandlers | null = null;
-  // activeTab grants: extId -> set of tabIds where this extension was
-  // granted activeTab access. Granted via user gesture (toolbar click,
-  // contextMenus, commands) and cleared when the tab navigates or closes.
   private readonly activeTabGrants: Map<string, Set<number>> = new Map();
   private activeTabListenersInstalled = false;
 
-  // Per-namespace host handlers (Tasks 9-20). All non-null after init().
   private tabsHandlers: TabsHandlers | null = null;
   private windowsHandlers: WindowsHandlers | null = null;
   private alarmsHandlers: AlarmsHandlers | null = null;
@@ -574,37 +510,26 @@ export class ExtensionManager {
   private webNavigationHandlers: WebNavigationHandlers | null = null;
   public actionHandlers: ActionHandlers | null = null;
 
-  // Phase 2 (Tasks 21-25) handlers/registries.
   private commandsHandlers: CommandsHandlers | null = null;
   private notificationsHandlers: NotificationsHandlers | null = null;
   private contextMenusHandlers: ContextMenusHandlers | null = null;
   public contextMenusRegistry: ContextMenuRegistry | null = null;
   private omniboxHandlers: OmniboxHandlers | null = null;
   public omniboxRegistry: OmniboxRegistry | null = null;
-  // Track per-extension command registrations so we can dispose on kill.
   private commandsRegistrations: Map<string, RegisteredCommandsHandle> = new Map();
 
-  // Phase 3 (Tasks 26-30) — network interception.
   public webRequestRegistry: WebRequestRegistry | null = null;
   private webRequestHandlers: WebRequestHandlers | null = null;
-  // Per-extension cleanup for the webRequest event RPC handlers.
   private readonly webRequestRpcCleanups: Map<string, () => void> = new Map();
   public dnrStorage: DnrStorage | null = null;
   private dnrHandlers: DnrHandlers | null = null;
   public dnrEngine: DnrEngineFacadeImpl | null = null;
 
-  // Phase 4 (Task 32) — chrome.devtools.* host handlers + per-(ext, tab)
-  // devtools_page iframe registry.
   private devtoolsHandlers: DevtoolsHandlers | null = null;
   public devtoolsPageHost: DevtoolsPageHost | null = null;
 
-  // Per-extension popup iframe registry. Populated by popupHost.ts via
-  // registerPopupWindow / unregisterPopupWindow. Used by
-  // chrome.extension.getViews({ type: 'popup' }).
   private readonly popupWindows: Map<string, Set<Window>> = new Map();
 
-  // Phase 6 (Tasks 35-39) — permissions, sidePanel, downloads, identity,
-  // management. All but management/permissions are bare-bones stubs.
   private permissionsHandlers: PermissionsHandlers | null = null;
   private sidePanelHandlers: SidePanelHandlers | null = null;
   private downloadsHandlers: DownloadsHandlers | null = null;
@@ -615,29 +540,18 @@ export class ExtensionManager {
   private debuggerHandlers: DebuggerHandlers | null = null;
   private declarativeContentHandlers: DeclarativeContentHandlers | null = null;
 
-  // Event-listener cleanups returned by each install*EventListeners().
   private readonly eventCleanups: Array<() => void> = [];
 
-  // In-memory storage areas (Task 14).
   private readonly sessionStorage: Map<string, Record<string, unknown>> = new Map();
   private readonly managedStorageCache: Map<string, Record<string, unknown> | null> = new Map();
 
-  // Icon data: URL cache for UI consumers (extensions page + dropdown
-  // menu). Key shape: `${extId}::${relativePath}`. `null` is a valid
-  // value (means "tried and failed, don't retry"). Invalidated on
-  // uninstall.
   private readonly iconCache: Map<string, string | null> = new Map();
 
-  // `chrome_url_overrides` coordinator. Wired post-construction via
-  // setUrlOverrides() so the constructor signature stays stable. When
-  // null (e.g. tests, early-init), install/remove hooks are no-ops.
   private urlOverrides: import('./extensions/urlOverrides').ExtensionUrlOverridesAPI | null = null;
 
   constructor(proxy: Proxy, nyxCtx: NyxHandlerContext) {
     this.proxy = proxy;
     this.nyxCtx = nyxCtx;
-    // Assert every handler has a permission mapping. Catches the
-    // "added a new handler but forgot to gate it" footgun.
     for (const method of Object.keys(this.handlerImpls())) {
       if (!(method in HANDLER_PERMISSIONS)) {
         throw new Error(
@@ -698,7 +612,6 @@ export class ExtensionManager {
 
     this.installActiveTabListeners();
 
-    // ── Per-namespace handlers (Tasks 9-20) ─────────────────────────
     this.tabsHandlers = new TabsHandlers(this.nyxCtx);
     this.windowsHandlers = new WindowsHandlers(this.nyxCtx);
     this.alarmScheduler = new AlarmScheduler((extId, alarm) => {
@@ -721,9 +634,6 @@ export class ExtensionManager {
       getPopupWindows: (extId) => {
         const set = this.popupWindows.get(extId);
         if (!set) return [];
-        // Filter out detached windows (e.g. popup iframe removed from
-        // the DOM without unregistering). Defensive — popupHost should
-        // call unregister, but iframes that error out may skip it.
         return Array.from(set).filter((w) => {
           try { return !!w.document; } catch { return false; }
         });
@@ -738,10 +648,6 @@ export class ExtensionManager {
     this.historyHandlers = new HistoryHandlers();
     const cookieAccessor = new CookieAccessor(this.proxy);
     this.cookiesHandlers = new CookiesHandlers(cookieAccessor);
-    // Wire SiteDataManager singleton with the shared cookie accessor so
-    // chrome.browsingData and the lock-icon "Clear site data" UX can
-    // remove cookies properly. Import is dynamic to avoid pulling the
-    // module into the boot bundle when no clearing path is hit.
     void import('@apis/siteData').then(({ SiteDataManager }) => {
       SiteDataManager.getInstance({ cookieAccessor }).setCookieAccessor(cookieAccessor);
     });
@@ -749,11 +655,9 @@ export class ExtensionManager {
     this.webNavigationHandlers = new WebNavigationHandlers(this.nyxCtx);
     this.actionHandlers = new ActionHandlers();
 
-    // ── Phase 2 handlers (Tasks 21-25) ──────────────────────────────
     this.commandsHandlers = new CommandsHandlers();
     this.notificationsHandlers = new NotificationsHandlers({
       getManager: () => {
-        // Nightmare lives on window.nightmare or window.ui — best-effort lookup.
         const w = window as {
           nightmare?: { notifications?: import('@pkgs/Nightmare/notifications').NotificationManager };
           ui?: { notifications?: import('@pkgs/Nightmare/notifications').NotificationManager };
@@ -767,7 +671,6 @@ export class ExtensionManager {
     this.omniboxRegistry = new OmniboxRegistry();
     this.omniboxHandlers = new OmniboxHandlers(this.omniboxRegistry);
 
-    // ── Phase 3 (Tasks 26-30) — network interception ───────────────
     this.webRequestRegistry = new WebRequestRegistry();
     this.webRequestHandlers = new WebRequestHandlers();
     this.dnrStorage = new DnrStorage();
@@ -786,12 +689,6 @@ export class ExtensionManager {
       getMatchedRulesFor: (extId, filter) =>
         this.dnrEngine!.getMatchedRulesFor(extId, filter),
     });
-    // Install the Scramjet plugin hook on the proxy controller, with
-    // the DNR engine wired in. Hook is idempotent. The proxy's
-    // initReady gates controller readiness — wait for it so we don't
-    // race the async controller construction. The installer wraps
-    // controller.createFrame, so it MUST be called before the first
-    // spawn() (which calls proxy.createFrame).
     try {
       const proxyAny = this.proxy as unknown as {
         initReady?: Promise<unknown>;
@@ -805,17 +702,7 @@ export class ExtensionManager {
         installWebRequestHook(controller, {
           registry: this.webRequestRegistry,
           dnr: this.dnrEngine,
-          // TabResolver lets each emitted RequestDetails carry the
-          // real DDX tab id (resolved from frame.element). Without
-          // it, tabId is always -1 and tab-pinned listener filters
-          // collapse.
           tabResolver: this.nyxCtx.tabResolver,
-          // Phase 4 (Task 32): forward every response to devtools
-          // network handlers for fan-out to devtools_page subscribers.
-          // Closure reads `this.devtoolsHandlers` at fire time — it's
-          // null right now (installed below) but set before any
-          // request fires (init() completes synchronously up to the
-          // spawn loop).
           onResponseObserver: (details) => {
             const dh = this.devtoolsHandlers;
             if (!dh) return;
@@ -850,13 +737,6 @@ export class ExtensionManager {
       console.warn('[ExtensionManager] webRequest hook install failed:', err);
     }
 
-    // ── Phase 4 (Task 32) — chrome.devtools.* ─────────────────────
-    //
-    // We construct the devtools handlers + page host even if no
-    // extension declares devtools_page (cheap; per-call gating is in
-    // DevtoolsHandlers.requireDevtools). Wiring the hooks for
-    // devtools open/close and webRequest/webNavigation event fan-out
-    // happens here so the handler is ready before any extension boots.
     this.devtoolsPageHost = new DevtoolsPageHost({
       proxy: this.proxy,
       tabIdToNum: (ddxId) => this.nyxCtx.tabResolver.toNum(ddxId),
@@ -875,8 +755,6 @@ export class ExtensionManager {
       pageHost: this.devtoolsPageHost,
       numToDdxTabId: (n) => this.nyxCtx.tabResolver.toDdxId(n),
       reloadTab: async (ddxTabId, bypassCache) => {
-        // Route via the chrome.tabs.reload host handler so we reuse
-        // the bypassCache → hardReload mapping.
         const tabsH = this.tabsHandlers;
         if (!tabsH) return;
         const n = this.nyxCtx.tabResolver.toNum(ddxTabId);
@@ -904,26 +782,7 @@ export class ExtensionManager {
     });
     this.eventCleanups.push(this.installDevtoolsLifecycleHooks());
 
-    // ── Phase 6 (Tasks 35-39) — permissions, sidePanel, stubs, management.
-    //
     // NOTE(helium-t1-3): the host handlers constructed below
-    // (PermissionsHandlers, SidePanelHandlers, ManagementHandlers,
-    // etc.) are wired into the runtime RPC switch in this file. They
-    // are reachable today via:
-    //   1. The content-script relay path, which dispatches arbitrary
-    //      chrome.<ns>.<method> names through ExtensionBridgeChannel,
-    //      and
-    //   2. Direct ExtensionBridgeChannel.request callers.
-    //
-    // The matching per-extension chrome.* wrappers under
-    // src/core/helium/shared/api/{permissions,management,...}.ts that
-    // run in the BG realm are intentionally not yet promoted to first-
-    // class entries in RPC_BINDINGS (src/core/helium/bootstrap/
-    // client.ts); those wrappers still throw "not implemented" for
-    // methods that have a host handler available. Adding the wrappers
-    // is mechanical (route name → RPC_BINDINGS entry) and tracked as
-    // a follow-up audit so we can land the relevant API surface in a
-    // single coherent pass once the host handler shapes have settled.
     this.permissionsHandlers = new PermissionsHandlers({
       getPrompt: () => {
         const w = window as {
@@ -950,12 +809,6 @@ export class ExtensionManager {
       createExtensionPlugin: (extId) => this.createExtensionPlugin(extId),
       wireAuxiliaryViewChannel: (ctx, iframe, opts) => this.wireAuxiliaryViewChannel(ctx, iframe, opts ?? { isBackground: false }),
     });
-    // chrome.debugger session manager. CdpHelper is the same instance
-    // nyxBridge uses for its own debugger surface; this gives extension
-    // debugger.* sessions a distinct identity (per (extId, tabId)) while
-    // sharing the underlying per-tab CDP transport. Event observer hook
-    // dispatches unpaired CDP events to whichever extension currently
-    // holds a session on each tab.
     {
       const cdp = (this.nyxCtx as unknown as { cdp?: import('./nyxBridge/cdp').CdpHelper }).cdp;
       if (cdp) {
@@ -968,10 +821,6 @@ export class ExtensionManager {
             this.debuggerHandlers?.onCdpEvent(tabId, method, params);
           }),
         );
-        // Fire chrome.debugger.onDetach with 'target_closed' when a
-        // tab closes while still attached. We listen on the same
-        // `tabClosed` CustomEvent that host/tabs/events.ts uses for
-        // chrome.tabs.onRemoved fan-out.
         const onTabClosed = (e: Event): void => {
           const detail = (e as CustomEvent).detail as { tabId?: string } | undefined;
           if (!detail?.tabId) return;
@@ -988,15 +837,8 @@ export class ExtensionManager {
       }
     }
 
-    // chrome.declarativeContent matcher engine. Subscribes to
-    // tabNavigated (URL-change) events and re-evaluates each
-    // extension's PageStateMatcher rules. ShowAction triggers
-    // pageActionShow on the underlying ActionHandlers — which the
-    // toolbar buttons component already picks up via its
-    // `pageActionIsShown` poll.
     this.declarativeContentHandlers = new DeclarativeContentHandlers({
       pageActionShow: (extId, tabId) => {
-        // Use the real handler so persistence + onChange listeners fire.
         const ah = this.actionHandlers;
         if (!ah) return;
         const ctx = this.spawned.get(extId)?.ctx;
@@ -1018,19 +860,11 @@ export class ExtensionManager {
         void ah.setIcon(ctx, [{ tabId, imageData }]);
       },
       probeCss: async (tabId, selectors) => {
-        // Best-effort probe via chrome.scripting.executeScript.
-        // We can't import that handler module from here without
-        // circular issues — fall back to a no-op `false` if not
-        // available. (CSS-condition rules then never match; pageUrl-
-        // only rules still work.)
         try {
           const tabResolver = this.nyxCtx.tabResolver;
           const iframe = tabResolver.resolveIframe(tabId);
           const win = iframe?.contentWindow as Window | null;
           if (!win) return false;
-          // Best-effort: synchronously evaluate the selectors in the
-          // target window. Uses (win as any).eval which Scramjet
-          // patches per-realm. If any selector matches, return true.
           const expr = `[${selectors.map((s) => JSON.stringify(s)).join(',')}].some(function(s){try{return document.querySelector(s)!=null}catch{return false}})`;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return Boolean((win as any).eval(expr));
@@ -1040,9 +874,6 @@ export class ExtensionManager {
       },
     });
 
-    // Re-evaluate rules on every tabNavigated (committed phase)
-    // and every tabSelected. We use `committed` over `before` so
-    // the URL is the post-redirect canonical value.
     {
       const reeval = (e: Event): void => {
         const detail = (e as CustomEvent).detail as { tabId?: string; phase?: string } | undefined;
@@ -1071,7 +902,6 @@ export class ExtensionManager {
       }),
     );
 
-    // Install event listeners (fanout from DDX/CustomEvents to spawned extensions).
     this.eventCleanups.push(
       installTabEventListeners({
         extMgr: this,
@@ -1104,7 +934,6 @@ export class ExtensionManager {
       }
     }
     console.log(`[helium/extfs/dbg] [ExtensionManager.init] after spawn loop: ${this.spawned.size} extension(s) running`);
-    // Restore persisted alarms after spawn.
     for (const id of this.spawned.keys()) {
       try {
         await this.alarmScheduler.restoreForExt(id);
@@ -1116,22 +945,9 @@ export class ExtensionManager {
 
   async installFromBytes(bytes: Uint8Array): Promise<ExtensionIndexEntry> {
     console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] called with ${bytes.byteLength} bytes`);
-    // We don't know the extension ID until after unpack, so we have to
-    // unpack first. Then we serialize on the resulting ID — re-installs
-    // of the same extension wait for the previous one to settle before
-    // touching the same TFS path. Without this, two concurrent installs
-    // of the same CRX race each other writing manifest.json, leaving it
-    // truncated or zero-length on disk (the original symptom that broke
-    // boot for the user).
     const unpacked = await unpackExtension(bytes);
     console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] unpack OK: id=${unpacked.id} format=${unpacked.format} files=${unpacked.files.size} name="${unpacked.manifest.name}"`);
 
-    // `minimum_chrome_version`: extensions can declare the minimum
-    // Chromium milestone they need. We don't have a real Chrome
-    // version to compare against, but we expose a "DDX is built on
-    // Chrome 120-ish" baseline. Reject installs that ask for newer
-    // than that so the user gets an error instead of a silently
-    // broken extension at runtime.
     const minVer = (unpacked.manifest as { minimum_chrome_version?: string }).minimum_chrome_version;
     if (typeof minVer === 'string') {
       const major = Number.parseInt(minVer.split('.')[0] ?? '0', 10);
@@ -1146,10 +962,6 @@ export class ExtensionManager {
     if (prior) {
       console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] chaining onto prior install for id=${unpacked.id}`);
     }
-    // Chrome theme manifests carry a top-level `theme` object and no
-    // executable code. They must skip spawn() — there's nothing to run
-    // in a background frame and Scramjet would just fail to find an
-    // HTML entry. Detected once here and reused below.
     const isTheme = (() => {
       try {
         return !!(unpacked.manifest as any).theme && typeof (unpacked.manifest as any).theme === "object";
@@ -1170,11 +982,6 @@ export class ExtensionManager {
           await this.spawn({ entry, manifest: unpacked.manifest, context: ctx });
           console.log(`[helium/extfs/dbg] [ExtensionManager.installFromBytes] spawn OK for ${entry.id}`);
         } catch (err) {
-          // Spawn failures (e.g., Scramjet hiccups) must not corrupt
-          // the install — files are already on disk, the entry is in
-          // the index. Log and continue so the caller still gets the
-          // ExtensionIndexEntry back; user can retry spawn via
-          // setEnabled or app restart.
           console.warn(
             `[ExtensionManager] spawn after install failed for ${entry.id}:`,
             err,
@@ -1188,9 +995,6 @@ export class ExtensionManager {
           { reason: 'install' },
         ]);
       }
-      // Surface `chrome_url_overrides` to the coordinator. Best-effort:
-      // failure here doesn't affect install success — at worst the
-      // user has to manually toggle the override later.
       if (this.urlOverrides) {
         try {
           await this.urlOverrides.onExtensionInstalled(entry.id, unpacked.manifest);
@@ -1201,9 +1005,6 @@ export class ExtensionManager {
           );
         }
       }
-      // Chrome theme manifests: register the preset with the theming
-      // subsystem. Dynamic import to keep the module graph lazy and
-      // avoid pulling theming into bootstrap.
       try {
         const { chromeThemeAdapter, ChromeThemeAdapter } = await import("./extensions/chromeThemes");
         if (ChromeThemeAdapter.isThemeManifest(unpacked.manifest)) {
@@ -1219,8 +1020,6 @@ export class ExtensionManager {
       return entry;
     };
 
-    // Chain onto the previous in-flight install for this same id (if
-    // any). Catch the prior's rejection to avoid propagating it.
     const next: Promise<ExtensionIndexEntry> = prior
       ? prior.then(run, run)
       : run();
@@ -1228,8 +1027,6 @@ export class ExtensionManager {
     try {
       return await next;
     } finally {
-      // Clear the lock only if it still points at THIS run (a newer
-      // install may have already chained on and replaced it).
       if (this.installLocks.get(unpacked.id) === next) {
         this.installLocks.delete(unpacked.id);
       }
@@ -1245,17 +1042,11 @@ export class ExtensionManager {
   private installLocks = new Map<string, Promise<ExtensionIndexEntry>>();
 
   async uninstall(id: string): Promise<void> {
-    // Capture whether this is a Chrome theme manifest BEFORE the
-    // extfs tree disappears — getExtension() reads manifest.json off
-    // disk and we need that data to drive the theming cleanup hook.
     let wasTheme = false;
     try {
       const got = await getExtension(id);
       wasTheme = !!(got?.manifest as any)?.theme;
     } catch { /* ignore — best effort */ }
-    // kill() is already defensive (each step is wrapped). The remaining
-    // failure surface is the extfs operation — surface that as a real
-    // error message rather than [object Object] or similar.
     try {
       await this.kill(id);
     } catch (err) {
@@ -1264,8 +1055,6 @@ export class ExtensionManager {
     try {
       await fsUninstall(id);
     } catch (err) {
-      // Re-throw as a real Error with a useful message so the page UI
-      // surfaces something readable.
       const msg = err instanceof Error
         ? err.message
         : typeof err === 'object' && err !== null && 'message' in err
@@ -1275,7 +1064,6 @@ export class ExtensionManager {
     }
     this.clearIconCache(id);
     this.emit('uninstalled', id);
-    // After kill+fsUninstall, drop any URL override the extension owned.
     if (this.urlOverrides) {
       try {
         await this.urlOverrides.onExtensionRemoved(id);
@@ -1286,10 +1074,6 @@ export class ExtensionManager {
         );
       }
     }
-    // Chrome theme cleanup: drop the preset from the extension theme
-    // store and revert if it was active. Only do this when the manifest
-    // we saw on disk had a `theme` field — non-theme extensions never
-    // touched the theme store.
     try {
       const { chromeThemeAdapter } = await import("./extensions/chromeThemes");
       if (wasTheme) await chromeThemeAdapter.onExtensionRemoved(id);
@@ -1305,11 +1089,6 @@ export class ExtensionManager {
       const all = await loadExtensionsAtBoot();
       const target = all.find((e) => e.entry.id === id);
       if (target) {
-        // Spawn failures mustn't poison the enable toggle — the flag is
-        // already flipped in the index, the UI has updated, and a
-        // transient proxy/Scramjet hiccup shouldn't roll any of that
-        // back. Mirror the swallowing pattern in installFromBytes;
-        // users can retry by toggling off+on or restarting.
         try {
           await this.spawn(target);
           this.fireEventOn(id, 'chrome.runtime.onStartup', []);
@@ -1324,9 +1103,6 @@ export class ExtensionManager {
     } else {
       await this.kill(id);
       this.emit('disabled', id);
-      // Disabling an extension clears any URL override it owns; the
-      // active slot reverts to the default page (or the next pending
-      // extension, if any).
       if (this.urlOverrides) {
         try {
           await this.urlOverrides.onExtensionRemoved(id);
@@ -1338,9 +1114,6 @@ export class ExtensionManager {
         }
       }
     }
-    // Chrome theme: enable/disable just re-emits the list-changed event
-    // so consumers can re-render; disabling an active theme reverts to
-    // the default theme inside the adapter.
     try {
       const { chromeThemeAdapter } = await import("./extensions/chromeThemes");
       if (enabled) await chromeThemeAdapter.onExtensionEnabled(id);
@@ -1406,12 +1179,6 @@ export class ExtensionManager {
         continue;
       }
       console.log(`[helium/extfs/dbg] [ExtensionManager.listAllWithManifest] ${entry.id}: NOT spawned, reading manifest from disk...`);
-      // Disabled extension: read manifest from extfs. If the read or
-      // parse fails we STILL surface the entry — using the cached
-      // metadata from the index — so the user can see and uninstall a
-      // broken extension. Previously a failed manifest read silently
-      // dropped the row from the UI, leaving the user unable to remove
-      // it short of clearing OPFS by hand.
       let manifest: Record<string, unknown> | null = null;
       try {
         const bytes = await readExtensionFile(entry.id, 'manifest.json');
@@ -1431,10 +1198,6 @@ export class ExtensionManager {
         manifestVersion: entry.manifestVersion,
         enabled: entry.enabled,
         origin: `${entry.id}.ddx`,
-        // Synthesize a minimal manifest from the index metadata when the
-        // on-disk file is unreadable. The fields here mirror what
-        // toViewModel() in the extensions page consumes, so the card
-        // still renders with name/version even for a broken extension.
         manifest: manifest ?? {
           name: entry.name,
           version: entry.version,
@@ -1484,8 +1247,6 @@ export class ExtensionManager {
       const bytes = await readExtensionFile(extId, rel);
       if (bytes && bytes.byteLength > 0) {
         const mime = contentTypeFromPath(rel);
-        // Copy to a fresh ArrayBuffer to satisfy strict Blob() typings
-        // (the underlying buffer may be SharedArrayBuffer-typed).
         const ab = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(ab).set(bytes);
         const blob = new Blob([ab], { type: mime });
@@ -1527,13 +1288,6 @@ export class ExtensionManager {
     this.listeners.get(event)?.delete(listener);
   }
 
-  // --- activeTab grants ---
-  //
-  // chrome.activeTab is granted at the moment of a user gesture
-  // (toolbar click, contextMenus selection, keyboard shortcut) for the
-  // currently-active tab. It expires when the tab navigates or closes,
-  // and is cleared whenever this manager observes those events.
-
   grantActiveTab(extId: string, tabId: number): void {
     let set = this.activeTabGrants.get(extId);
     if (!set) {
@@ -1564,8 +1318,6 @@ export class ExtensionManager {
     document.addEventListener('tabClosed', handler);
   }
 
-  // --- internal ---
-
   private ensureContainer(): HTMLDivElement {
     if (this.container) return this.container;
     let el = document.getElementById(CONTAINER_ID) as HTMLDivElement | null;
@@ -1595,25 +1347,8 @@ export class ExtensionManager {
 
     container.appendChild(iframe);
 
-    // Standard channel wiring: MessageChannel + ExtensionBridgeChannel
-    // + RPC handler install + handshake on iframe load. Shared with
-    // popupHost / future options-page hosts so popups also get a fully
-    // functional `chrome.*` API surface (without this, popup.html runs
-    // in a realm with no chrome global and no host RPC reachability).
     const channel = this.wireAuxiliaryViewChannel(ctx, iframe, { isBackground: true });
 
-    // ── Task 33: MV-aware iframe entry URL ──────────────────────────
-    //
-    // MV2 manifest.background may specify either `page` (HTML file) or
-    // `scripts` (list of JS files). Per spec §27:
-    //   - MV2 + background.page: load the page directly; extfs/plugin
-    //     rewrites the HTML to inject bootstrap + helium-ctx meta tag
-    //     (see injectBootstrapIntoBackgroundPage in extfs/plugin.ts).
-    //   - MV2 + background.scripts: load synthetic entry HTML; the
-    //     `__helium_entry__` handler in extfs/plugin.ts wraps each
-    //     script in <script> tags after bootstrap (buildEntryHtml +
-    //     collectScriptTags already handle this).
-    //   - MV2 without bg / MV3: load synthetic entry (existing behavior).
     let frameUrl: string;
     const m = loaded.manifest as { manifest_version?: 2 | 3; background?: { page?: string; scripts?: string[] } };
     if (m.manifest_version === 2) {
@@ -1621,12 +1356,9 @@ export class ExtensionManager {
         const page = m.background.page.replace(/^\/+/, '');
         frameUrl = `https://${ctx.origin}/${page}`;
       } else {
-        // background.scripts OR no background → synthetic entry.
-        // extfs/plugin's collectScriptTags() detects scripts array.
         frameUrl = `https://${ctx.origin}/__helium_entry__`;
       }
     } else {
-      // MV3: existing behavior (service_worker via synthetic entry).
       frameUrl = `https://${ctx.origin}/__helium_entry__`;
     }
     frame.go(frameUrl);
@@ -1640,11 +1372,6 @@ export class ExtensionManager {
       plugin,
     });
 
-    // Register the BG iframe as an inspectable target so the
-    // ddx://extensions "Inspect views" UI can offer DevTools on it.
-    // The manager may not be installed yet during early init (e.g.,
-    // a hydrated extension spawns before src/index.ts finishes wiring
-    // window.extDevtools) — best-effort.
     try {
       const w = window as {
         extDevtools?: import('@apis/devtools/extensionManager').ExtensionDevToolsManager;
@@ -1664,14 +1391,12 @@ export class ExtensionManager {
       console.warn(`[ExtensionManager] target-registry register failed for ${ctx.id}:`, err);
     }
 
-    // Content scripts last — these are pure FS reads + registry mutations.
     try {
       await installContentScripts(loaded.entry.id, loaded.context, loaded.manifest);
     } catch (err) {
       console.warn(`[ExtensionManager] content-script install failed for ${loaded.entry.id}:`, err);
     }
 
-    // Phase 3 per-extension DNR setup (Task 29).
     if (this.dnrStorage) {
       try {
         const rulesets = parseManifestRulesets(ctx);
@@ -1686,13 +1411,10 @@ export class ExtensionManager {
       }
     }
 
-    // Phase 2 per-extension hooks (Tasks 21, 23, 24).
     try {
       const deps: import('@core/helium').RegisterCommandsDeps = {
         fireOnCommand: (extId, cmdName) => this.dispatchCommandOnCommand(extId, cmdName),
       };
-      // window.commands is the CommandRegistry; window.functions etc.
-      // hold keybindManager / keyboardManager.
       const w = window as {
         commands?: import('@core/helium').CommandRegistryLike;
         keybinds?: import('@core/helium').KeybindManagerLike;
@@ -1717,10 +1439,6 @@ export class ExtensionManager {
       console.warn(`[ExtensionManager] contextMenus restore failed for ${ctx.id}:`, err);
     }
 
-    // Seed action state from manifest defaults (default_state /
-    // default_title / default_popup). Honors `action` (MV3) and
-    // `browser_action` (MV2). Only applies on first install — if a
-    // persisted state file already exists, it wins.
     try {
       await this.actionHandlers?.seedFromManifest(
         ctx.id,
@@ -1730,9 +1448,6 @@ export class ExtensionManager {
       console.warn(`[ExtensionManager] action seed failed for ${ctx.id}:`, err);
     }
 
-    // Phase 4 (Task 32): if devtools is already open for some tab and
-    // this extension declares devtools_page, spawn the per-tab
-    // devtools_page iframe now.
     const dtManifest = ctx.manifest as { devtools_page?: string };
     if (dtManifest.devtools_page && this.devtoolsPageHost) {
       try {
@@ -1784,9 +1499,6 @@ export class ExtensionManager {
       const detail = (e as CustomEvent).detail as { tabId?: string } | undefined;
       if (!detail?.tabId) return;
       void this.onDevtoolsOpened(detail.tabId);
-      // Materialize any panels that callers buffered before the first
-      // devtools session opened for this tab. Idempotent: a no-op when
-      // no pending entries exist.
       try {
         this.devtoolsHandlers?.panels.flushPending();
       } catch (err) {
@@ -1803,8 +1515,6 @@ export class ExtensionManager {
       if (!detail?.tabId) return;
       this.devtoolsPageHost?.despawnAllForTab(detail.tabId);
       const w = window as { devtools?: import('@apis/devtools').DevToolsManager };
-      // Remove all extension panels (the session may already be torn
-      // down by the time tabClosed fires, so this is just belt+braces).
       for (const s of this.spawned.values()) {
         try { w.devtools?.removeExtensionPanelsAll(s.id); } catch { /* ignore */ }
       }
@@ -1846,10 +1556,8 @@ export class ExtensionManager {
   public onDevtoolsClosed(ddxTabId: string): void {
     if (!this.devtoolsPageHost) return;
     this.devtoolsPageHost.despawnAllForTab(ddxTabId);
-    // Also drop any extension panels we registered for this tab.
     const w = window as { devtools?: import('@apis/devtools').DevToolsManager };
     if (w.devtools) {
-      // Session has already received an onClose / panel teardown — no-op.
       void w.devtools;
     }
   }
@@ -1878,7 +1586,6 @@ export class ExtensionManager {
       try {
         const num = w.nyx.tabResolver.toNum(activeTabId);
         tabInfo = w.nyx.tabResolver.info(num);
-        // Special command names — also fire action onClicked.
         if (commandName === '_execute_action' || commandName === '_execute_browser_action' || commandName === '_execute_page_action') {
           this.grantActiveTab(extId, num);
           this.fireEventOn(extId, 'chrome.action.onClicked', [tabInfo]);
@@ -1893,10 +1600,6 @@ export class ExtensionManager {
   }
 
   private async kill(id: string): Promise<void> {
-    // Be defensive — uninstall must continue even if individual cleanup
-    // steps fail. Wrap each in its own try/catch so one throwing step
-    // doesn't strand the rest (e.g., a broken Scramjet frame must not
-    // prevent the extfs index from being cleared).
     const safe = (label: string, fn: () => unknown): void => {
       try { fn(); } catch (err) {
         console.warn(`[ExtensionManager] kill(${id}): ${label} threw:`, err);
@@ -2044,9 +1747,6 @@ export class ExtensionManager {
     const channel = new ExtensionBridgeChannel(hostPort);
     this.installHandlers(ctx, channel);
 
-    // BG-only: subscribe webRequest events through this channel. The
-    // cleanup is owned by ExtensionManager (kill() runs it). Popups
-    // don't host webRequest listeners — those are BG-realm-only.
     if (opts.isBackground && this.webRequestRegistry) {
       const dispose = installWebRequestEventRpc(
         channel,
@@ -2056,9 +1756,6 @@ export class ExtensionManager {
       this.webRequestRpcCleanups.set(ctx.id, dispose);
     }
 
-    // Port routing (chrome.runtime.connect). The handler is defensive:
-    // any extension realm CAN initiate a port, so popup-→CS port
-    // forwarding could also flow through here in principle.
     channel.setEventHandler((method, args) => {
       if (method === 'chrome.runtime.port-msg-bg-to-cs') {
         const info = args[0] as { portId: number; message: unknown };
@@ -2070,10 +1767,6 @@ export class ExtensionManager {
         this.portRouter?.closePort(info.portId, 'bg-initiated');
         return;
       }
-      // chrome.omnibox.onInputChanged's `suggest` callback fires this
-      // event with the list of suggestions the extension wants shown.
-      // Forward to the omnibox UI registry which knows how to render
-      // them in the active dropdown.
       if (method === 'chrome.omnibox.suggestions-out') {
         const suggestions = args[0];
         try {
@@ -2129,8 +1822,6 @@ export class ExtensionManager {
           return false;
         }
         receive(extPort);
-        // After a successful handshake, start observing for nested
-        // iframes in this document. Best-effort — failures are non-fatal.
         try {
           this.observeNestedIframes(ctx, iframe);
         } catch (err) {
@@ -2149,9 +1840,6 @@ export class ExtensionManager {
       }
     };
 
-    // Case 1: iframe already loaded (e.g. it's a nested iframe whose
-    // parent's load event fired AFTER ours did). readyState is
-    // 'complete' when the document and all sub-resources finish.
     try {
       const doc = iframe.contentDocument;
       if (doc && doc.readyState === 'complete') {
@@ -2162,7 +1850,6 @@ export class ExtensionManager {
       // origin, but if it does we fall through to the load listener.
     }
 
-    // Case 2: iframe not yet loaded — wait for load.
     iframe.addEventListener(
       'load',
       () => {
@@ -2192,42 +1879,20 @@ export class ExtensionManager {
     if (!doc) return;
 
     const wireIfNew = (el: HTMLIFrameElement): void => {
-      // Dedupe: tag wired iframes so MutationObserver re-fires don't
-      // double-wire. The dataset attribute is on the iframe element,
-      // which is in the outer document — same realm as us, no
-      // proxy traps.
       if (el.dataset.heliumNestedWired === '1') return;
 
-      // Same-origin gate. Extension's effective origin is `<id>.ddx`
-      // (via scramjet). We compare against the src URL. Relative URLs
-      // (most common case) resolve against the iframe's document
-      // base, which IS the extension origin, so they pass. Absolute
-      // URLs to web content (e.g. https://example.com/foo) get
-      // skipped.
       let srcUrl: URL;
       try {
         srcUrl = new URL(el.src || el.getAttribute('src') || '', doc.baseURI);
       } catch {
         return;
       }
-      // Extension scramjet-proxied URLs may have the form
-      // `https://<extid>.ddx/...` directly, OR be scramjet-prefixed
-      // (which lives under the host's own origin). The simplest
-      // accurate check: does the URL host match this extension's
-      // synthetic origin (the part scramjet sees on the wire)?
-      // OR is the URL host same-origin with the document we're
-      // scanning? Both indicate "this iframe is a sibling realm in
-      // the same extension."
       const isExtOrigin = srcUrl.host === ctx.origin;
       const isSameDocOrigin = srcUrl.origin === doc.location.origin;
       if (!isExtOrigin && !isSameDocOrigin) return;
 
       el.dataset.heliumNestedWired = '1';
 
-      // Recurse: wire this nested iframe with its own channel +
-      // handlers. wireAuxiliaryViewChannel handles the load-vs-loaded
-      // race via attachHandshakeWhenReady, so it's safe whether the
-      // nested iframe is already loaded or not.
       try {
         this.wireAuxiliaryViewChannel(ctx, el, { isBackground: false });
       } catch (err) {
@@ -2238,15 +1903,11 @@ export class ExtensionManager {
       }
     };
 
-    // Initial scan: any iframes already present at handshake time.
     const existing = doc.querySelectorAll('iframe');
     for (let i = 0; i < existing.length; i++) {
       wireIfNew(existing[i] as HTMLIFrameElement);
     }
 
-    // Watch for iframes added later. Extensions like uBlock Origin
-    // create their inner iframe via JS after the outer popup loads
-    // some state. We need to catch those too.
     try {
       const obs = new MutationObserver((mutations) => {
         for (const m of mutations) {
@@ -2255,7 +1916,6 @@ export class ExtensionManager {
             if (node instanceof HTMLIFrameElement) {
               wireIfNew(node);
             } else if (node instanceof Element) {
-              // The added node might be a wrapper containing iframes.
               const sub = node.querySelectorAll?.('iframe');
               if (sub) {
                 for (let j = 0; j < sub.length; j++) {
@@ -2332,20 +1992,11 @@ export class ExtensionManager {
     if (!popupPath) {
       throw new Error(`Extension ${extId} declares no default_popup`);
     }
-    // Find an anchor element. Best case: the extension's own toolbar
-    // icon (rendered by ExtensionToolbarButtons inside the urlbar-ring).
-    // Falls back to the extensions menu trigger button at the
-    // navbar's puzzle icon. DOM lookups go through `window.d`
-    // (the shadow root) because the browser shell renders inside a
-    // ShadowRoot.
     const candidates: HTMLElement[] = [];
     try {
       const shadow = (window as { d?: ShadowRoot | Document }).d ?? document;
-      // Per-extension toolbar buttons carry data-action-ext-id.
       const tb = shadow.querySelector(`[data-action-ext-id="${extId}"]`) as HTMLElement | null;
       if (tb) candidates.push(tb);
-      // Extensions menu trigger — the navbar's puzzle button uses
-      // data-component="extensions" (see src/browser/render.ts:167).
       const menuTrigger = shadow.querySelector('[data-component="extensions"]') as HTMLElement | null;
       if (menuTrigger) candidates.push(menuTrigger);
     } catch { /* swallow */ }
@@ -2458,9 +2109,6 @@ export class ExtensionManager {
       });
     }
 
-    // BG-initiated port opening. Special-cased (not in
-    // handlerImpls) because they don't gate on permissions and they
-    // need direct access to `channel` to wire bidirectional dispatch.
     channel.registerHandler('__helium_bg_connect_tab__', async (req) => {
       const opts = (req.args?.[0] ?? {}) as { tabId?: number; name?: string; frameId?: number };
       if (!this.portRouter || typeof opts.tabId !== 'number') {
@@ -2530,7 +2178,6 @@ export class ExtensionManager {
       return h;
     };
     return {
-      // storage (local/sync) + session/managed (Task 14)
       'chrome.storage.local.get':    (ctx, args) => this.storageGet(ctx, args),
       'chrome.storage.local.set':    (ctx, args) => this.storageSet(ctx, args, 'local'),
       'chrome.storage.local.remove': (ctx, args) => this.storageRemove(ctx, args, 'local'),
@@ -2552,7 +2199,6 @@ export class ExtensionManager {
       'chrome.storage.managed.get':           (ctx, args) => this.storageManagedGet(ctx, args),
       'chrome.storage.managed.getBytesInUse': (ctx, args) => this.storageManagedGetBytesInUse(ctx, args),
 
-      // runtime (existing + Task 13)
       'chrome.runtime.sendMessage':  (ctx, args) => this.runtimeSendMessage(ctx, args),
       'chrome.runtime.getBackgroundPage':         (ctx, args) => r(this.runtimeHandlers).getBackgroundPage(ctx, args),
       'chrome.runtime.getPlatformInfo':           (ctx, args) => r(this.runtimeHandlers).getPlatformInfo(ctx, args),
@@ -2564,14 +2210,12 @@ export class ExtensionManager {
       'chrome.runtime.connectNative':             (ctx, args) => r(this.runtimeHandlers).connectNative(ctx, args),
       'chrome.runtime.sendNativeMessage':         (ctx, args) => r(this.runtimeHandlers).sendNativeMessage(ctx, args),
 
-      // chrome.extension.* (Task 34) — MV2 introspection surface.
       'chrome.extension.getBackgroundPage':        (ctx, args) => eh(this.extensionHandlers).getBackgroundPage(ctx, args),
       'chrome.extension.getViews':                 (ctx, args) => eh(this.extensionHandlers).getViews(ctx, args),
       'chrome.extension.getURL':                   (ctx, args) => eh(this.extensionHandlers).getURL(ctx, args),
       'chrome.extension.isAllowedIncognitoAccess': (ctx, args) => eh(this.extensionHandlers).isAllowedIncognitoAccess(ctx, args),
       'chrome.extension.isAllowedFileSchemeAccess':(ctx, args) => eh(this.extensionHandlers).isAllowedFileSchemeAccess(ctx, args),
 
-      // scripting (existing)
       'chrome.scripting.executeScript':
         (ctx, args) => this.scriptingHandlers!.executeScript(ctx, args),
       'chrome.scripting.insertCSS':
@@ -2585,12 +2229,6 @@ export class ExtensionManager {
       'chrome.scripting.getRegisteredContentScripts':
         (ctx, args) => this.scriptingHandlers!.getRegisteredContentScripts(ctx, args),
       'chrome.scripting.updateContentScripts':
-        // updateContentScripts = unregister + register the same set of
-        // ids. ScriptingHandlers doesn't have it directly, so we
-        // synthesize from its register/unregister primitives. Callers
-        // supply an array of partial RegisteredContentScript objects
-        // (same shape as registerContentScripts, but `id` must already
-        // exist).
         async (ctx, args) => {
           const scripts = (args[0] ?? []) as Array<{ id: string }>;
           const ids = scripts.map((s) => s.id).filter((id) => typeof id === 'string');
@@ -2600,23 +2238,8 @@ export class ExtensionManager {
           await this.scriptingHandlers!.registerContentScripts(ctx, [scripts]);
         },
 
-      // MV2 chrome.tabs.executeScript / insertCSS / removeCSS adapters.
-      //
-      // MV2 signature: chrome.tabs.executeScript(tabId, details, cb)
-      //   details = { code | file, allFrames?, frameId?, matchAboutBlank?, runAt? }
-      // MV3 signature: chrome.scripting.executeScript({target:{tabId,allFrames,frameIds}, files | func | args, world?})
-      //
-      // We translate args here so the same underlying ScriptingHandlers
-      // serve both Manifest versions. MV2 callers see the same return
-      // shape they expect: an array with one entry per frame.
-      //
-      // Caveat: MV2's `code: string` (raw JS string) is implemented by
-      // wrapping it in a `function() { eval(code) }` and passing to
-      // scripting.executeScript as `func`. This preserves runAt /
-      // world semantics.
       'chrome.tabs.executeScript':
         async (ctx, args) => {
-          // MV2 has two call forms: (details) or (tabId, details).
           let tabId: number | undefined;
           let details: { code?: string; file?: string; allFrames?: boolean; frameId?: number; runAt?: string };
           if (typeof args[0] === 'number') {
@@ -2637,8 +2260,6 @@ export class ExtensionManager {
             }]);
           }
           if (typeof details.code === 'string' && details.code.length > 0) {
-            // Wrap code as a function so scripting.executeScript can run it.
-            // The wrapper preserves the original code as-is (no transform).
             const fnSrc = `function(){${details.code}}`;
             return this.scriptingHandlers!.executeScript(ctx, [{
               target: mv3Target,
@@ -2706,7 +2327,6 @@ export class ExtensionManager {
           throw new Error('chrome.tabs.removeCSS requires code or file');
         },
 
-      // tabs (Task 9)
       'chrome.tabs.query':           (ctx, args) => t(this.tabsHandlers).query(ctx, args),
       'chrome.tabs.get':             (ctx, args) => t(this.tabsHandlers).get(ctx, args),
       'chrome.tabs.getCurrent':      (ctx, args) => t(this.tabsHandlers).getCurrent(ctx, args),
@@ -2731,7 +2351,6 @@ export class ExtensionManager {
       'chrome.tabs.toggleReaderMode': (ctx, args) => t(this.tabsHandlers).toggleReaderMode(ctx, args),
       'chrome.tabs.sendMessage':     (ctx, args) => t(this.tabsHandlers).sendMessage(ctx, args),
 
-      // windows (Task 11)
       'chrome.windows.get':            (ctx, args) => w(this.windowsHandlers).get(ctx, args),
       'chrome.windows.getCurrent':     (ctx, args) => w(this.windowsHandlers).getCurrent(ctx, args),
       'chrome.windows.getLastFocused': (ctx, args) => w(this.windowsHandlers).getLastFocused(ctx, args),
@@ -2740,14 +2359,12 @@ export class ExtensionManager {
       'chrome.windows.update':         (ctx, args) => w(this.windowsHandlers).update(ctx, args),
       'chrome.windows.remove':         (ctx, args) => w(this.windowsHandlers).remove(ctx, args),
 
-      // alarms (Task 12)
       'chrome.alarms.create':   (ctx, args) => a(this.alarmsHandlers).create(ctx, args),
       'chrome.alarms.get':      (ctx, args) => a(this.alarmsHandlers).get(ctx, args),
       'chrome.alarms.getAll':   (ctx, args) => a(this.alarmsHandlers).getAll(ctx, args),
       'chrome.alarms.clear':    (ctx, args) => a(this.alarmsHandlers).clear(ctx, args),
       'chrome.alarms.clearAll': (ctx, args) => a(this.alarmsHandlers).clearAll(ctx, args),
 
-      // bookmarks (Task 16)
       'chrome.bookmarks.get':         (ctx, args) => b(this.bookmarksHandlers).get(ctx, args),
       'chrome.bookmarks.getChildren': (ctx, args) => b(this.bookmarksHandlers).getChildren(ctx, args),
       'chrome.bookmarks.getRecent':   (ctx, args) => b(this.bookmarksHandlers).getRecent(ctx, args),
@@ -2760,7 +2377,6 @@ export class ExtensionManager {
       'chrome.bookmarks.remove':      (ctx, args) => b(this.bookmarksHandlers).remove(ctx, args),
       'chrome.bookmarks.removeTree':  (ctx, args) => b(this.bookmarksHandlers).removeTree(ctx, args),
 
-      // history (Task 17)
       'chrome.history.search':      (ctx, args) => hi(this.historyHandlers).search(ctx, args),
       'chrome.history.getVisits':   (ctx, args) => hi(this.historyHandlers).getVisits(ctx, args),
       'chrome.history.addUrl':      (ctx, args) => hi(this.historyHandlers).addUrl(ctx, args),
@@ -2768,24 +2384,20 @@ export class ExtensionManager {
       'chrome.history.deleteRange': (ctx, args) => hi(this.historyHandlers).deleteRange(ctx, args),
       'chrome.history.deleteAll':   (ctx, args) => hi(this.historyHandlers).deleteAll(ctx, args),
 
-      // cookies (Task 18)
       'chrome.cookies.get':                (ctx, args) => c(this.cookiesHandlers).get(ctx, args),
       'chrome.cookies.getAll':             (ctx, args) => c(this.cookiesHandlers).getAll(ctx, args),
       'chrome.cookies.set':                (ctx, args) => c(this.cookiesHandlers).set(ctx, args),
       'chrome.cookies.remove':             (ctx, args) => c(this.cookiesHandlers).remove(ctx, args),
       'chrome.cookies.getAllCookieStores': (ctx, args) => c(this.cookiesHandlers).getAllCookieStores(ctx, args),
 
-      // i18n (Task 15)
       'chrome.i18n.getMessage':         (ctx, args) => i(this.i18nHandlers).getMessage(ctx, args),
       'chrome.i18n.getUILanguage':      (ctx, args) => i(this.i18nHandlers).getUILanguage(ctx, args),
       'chrome.i18n.getAcceptLanguages': (ctx, args) => i(this.i18nHandlers).getAcceptLanguages(ctx, args),
       'chrome.i18n.detectLanguage':     (ctx, args) => i(this.i18nHandlers).detectLanguage(ctx, args),
 
-      // webNavigation (Task 19)
       'chrome.webNavigation.getFrame':     (ctx, args) => wn(this.webNavigationHandlers).getFrame(ctx, args),
       'chrome.webNavigation.getAllFrames': (ctx, args) => wn(this.webNavigationHandlers).getAllFrames(ctx, args),
 
-      // action + browserAction + pageAction (Task 20)
       'chrome.action.setTitle':                (ctx, args) => ah(this.actionHandlers).setTitle(ctx, args),
       'chrome.action.getTitle':                (ctx, args) => ah(this.actionHandlers).getTitle(ctx, args),
       'chrome.action.setPopup':                (ctx, args) => ah(this.actionHandlers).setPopup(ctx, args),
@@ -2802,7 +2414,6 @@ export class ExtensionManager {
       'chrome.action.isEnabled':               (ctx, args) => ah(this.actionHandlers).isEnabled(ctx, args),
       'chrome.action.openPopup':               (ctx, args) => ah(this.actionHandlers).openPopup(ctx, args),
       'chrome.action.getUserSettings':         (ctx, args) => ah(this.actionHandlers).getUserSettings(ctx, args),
-      // browserAction aliases
       'chrome.browserAction.setTitle':                (ctx, args) => ah(this.actionHandlers).setTitle(ctx, args),
       'chrome.browserAction.getTitle':                (ctx, args) => ah(this.actionHandlers).getTitle(ctx, args),
       'chrome.browserAction.setPopup':                (ctx, args) => ah(this.actionHandlers).setPopup(ctx, args),
@@ -2819,7 +2430,6 @@ export class ExtensionManager {
       'chrome.browserAction.isEnabled':               (ctx, args) => ah(this.actionHandlers).isEnabled(ctx, args),
       'chrome.browserAction.openPopup':               (ctx, args) => ah(this.actionHandlers).openPopup(ctx, args),
       'chrome.browserAction.getUserSettings':         (ctx, args) => ah(this.actionHandlers).getUserSettings(ctx, args),
-      // pageAction
       'chrome.pageAction.show':     (ctx, args) => ah(this.actionHandlers).pageActionShow(ctx, args),
       'chrome.pageAction.hide':     (ctx, args) => ah(this.actionHandlers).pageActionHide(ctx, args),
       'chrome.pageAction.setTitle': (ctx, args) => ah(this.actionHandlers).setTitle(ctx, args),
@@ -2828,38 +2438,28 @@ export class ExtensionManager {
       'chrome.pageAction.getPopup': (ctx, args) => ah(this.actionHandlers).getPopup(ctx, args),
       'chrome.pageAction.setIcon':  (ctx, args) => ah(this.actionHandlers).setIcon(ctx, args),
 
-      // commands (Task 21)
       'chrome.commands.getAll': (ctx, args) => cm(this.commandsHandlers).getAll(ctx, args),
 
-      // notifications (Task 22)
       'chrome.notifications.create':             (ctx, args) => nh(this.notificationsHandlers).create(ctx, args),
       'chrome.notifications.update':             (ctx, args) => nh(this.notificationsHandlers).update(ctx, args),
       'chrome.notifications.clear':              (ctx, args) => nh(this.notificationsHandlers).clear(ctx, args),
       'chrome.notifications.getAll':             (ctx, args) => nh(this.notificationsHandlers).getAll(ctx, args),
       'chrome.notifications.getPermissionLevel': (ctx, args) => nh(this.notificationsHandlers).getPermissionLevel(ctx, args),
 
-      // contextMenus (Task 23)
       'chrome.contextMenus.create':    (ctx, args) => cmh(this.contextMenusHandlers).create(ctx, args),
       'chrome.contextMenus.update':    (ctx, args) => cmh(this.contextMenusHandlers).update(ctx, args),
       'chrome.contextMenus.remove':    (ctx, args) => cmh(this.contextMenusHandlers).remove(ctx, args),
       'chrome.contextMenus.removeAll': (ctx, args) => cmh(this.contextMenusHandlers).removeAll(ctx, args),
-      // menus.* alias — same impls.
       'chrome.menus.create':    (ctx, args) => cmh(this.contextMenusHandlers).create(ctx, args),
       'chrome.menus.update':    (ctx, args) => cmh(this.contextMenusHandlers).update(ctx, args),
       'chrome.menus.remove':    (ctx, args) => cmh(this.contextMenusHandlers).remove(ctx, args),
       'chrome.menus.removeAll': (ctx, args) => cmh(this.contextMenusHandlers).removeAll(ctx, args),
 
-      // omnibox (Task 24)
       'chrome.omnibox.setDefaultSuggestion': (ctx, args) => omh(this.omniboxHandlers).setDefaultSuggestion(ctx, args),
 
-      // webRequest (Task 28) — direct method only; the event surface
-      // (addListener/etc.) flows through the Event Subscription RPC.
       'chrome.webRequest.handlerBehaviorChanged': (ctx, args) =>
         wrh(this.webRequestHandlers).handlerBehaviorChanged(ctx, args),
 
-      // declarativeNetRequest (Task 29). Every update* method bumps
-      // the engine compile cache + pushes the new rules to the SW
-      // for the Task 30 fallback.
       'chrome.declarativeNetRequest.updateDynamicRules': async (ctx, args) => {
         const r = await dnh(this.dnrHandlers).updateDynamicRules(ctx, args);
         this.dnrEngine?.invalidate(ctx.id);
@@ -2901,9 +2501,6 @@ export class ExtensionManager {
       'chrome.declarativeNetRequest.testMatchOutcome': (ctx, args) =>
         dnh(this.dnrHandlers).testMatchOutcome(ctx, args),
 
-      // chrome.devtools.* (Task 32). Gating (devtools_page presence
-      // + devtools-open state) lives inside DevtoolsHandlers itself
-      // — HANDLER_PERMISSIONS = null for all of these.
       'chrome.devtools.panels.create':
         (ctx, args) => dt(this.devtoolsHandlers).panelsCreate(ctx, args),
       'chrome.devtools.panels.elements.createSidebarPane':
@@ -2923,20 +2520,17 @@ export class ExtensionManager {
       'chrome.devtools.network.getHAR':
         (ctx, args) => dt(this.devtoolsHandlers).networkGetHAR(ctx, args),
 
-      // chrome.permissions.* (Task 35)
       'chrome.permissions.getAll':   (ctx, args) => ph(this.permissionsHandlers).getAll(ctx, args),
       'chrome.permissions.contains': (ctx, args) => ph(this.permissionsHandlers).contains(ctx, args),
       'chrome.permissions.request':  (ctx, args) => ph(this.permissionsHandlers).request(ctx, args),
       'chrome.permissions.remove':   (ctx, args) => ph(this.permissionsHandlers).remove(ctx, args),
 
-      // chrome.sidePanel.* (Task 36)
       'chrome.sidePanel.setOptions':       (ctx, args) => sph(this.sidePanelHandlers).setOptions(ctx, args),
       'chrome.sidePanel.getOptions':       (ctx, args) => sph(this.sidePanelHandlers).getOptions(ctx, args),
       'chrome.sidePanel.setPanelBehavior': (ctx, args) => sph(this.sidePanelHandlers).setPanelBehavior(ctx, args),
       'chrome.sidePanel.getPanelBehavior': (ctx, args) => sph(this.sidePanelHandlers).getPanelBehavior(ctx, args),
       'chrome.sidePanel.open':             (ctx, args) => sph(this.sidePanelHandlers).open(ctx, args),
 
-      // chrome.downloads.* stubs (Task 37)
       'chrome.downloads.download':          (ctx, args) => dh(this.downloadsHandlers).download(ctx, args),
       'chrome.downloads.search':            (ctx, args) => dh(this.downloadsHandlers).search(ctx, args),
       'chrome.downloads.pause':             (ctx, args) => dh(this.downloadsHandlers).pause(ctx, args),
@@ -2950,7 +2544,6 @@ export class ExtensionManager {
       'chrome.downloads.acceptDanger':      (ctx, args) => dh(this.downloadsHandlers).acceptDanger(ctx, args),
       'chrome.downloads.setShelfEnabled':   (ctx, args) => dh(this.downloadsHandlers).setShelfEnabled(ctx, args),
 
-      // chrome.identity.* stubs (Task 38)
       'chrome.identity.getAuthToken':             (ctx, args) => idh(this.identityHandlers).getAuthToken(ctx, args),
       'chrome.identity.getProfileUserInfo':       (ctx, args) => idh(this.identityHandlers).getProfileUserInfo(ctx, args),
       'chrome.identity.launchWebAuthFlow':        (ctx, args) => idh(this.identityHandlers).launchWebAuthFlow(ctx, args),
@@ -2959,35 +2552,19 @@ export class ExtensionManager {
       'chrome.identity.getAccounts':              (ctx, args) => idh(this.identityHandlers).getAccounts(ctx, args),
       'chrome.identity.getRedirectURL':           (ctx, args) => idh(this.identityHandlers).getRedirectURL(ctx, args),
 
-      // chrome.management.* (Task 39)
       'chrome.management.getAll':                          (ctx, args) => mh(this.managementHandlers).getAll(ctx, args),
       'chrome.management.get':                             (ctx, args) => mh(this.managementHandlers).get(ctx, args),
       'chrome.management.getSelf':                         (ctx, args) => mh(this.managementHandlers).getSelf(ctx, args),
       'chrome.management.setEnabled':                      (ctx, args) => mh(this.managementHandlers).setEnabled(ctx, args),
       'chrome.management.uninstall':                       (ctx, args) => mh(this.managementHandlers).uninstall(ctx, args),
 
-      // chrome.idle (host-tracked: visibility + input + interval)
       'chrome.idle.queryState':           (ctx, args) => ih(this.idleHandlers).queryState(ctx, args),
       'chrome.idle.setDetectionInterval': (ctx, args) => ih(this.idleHandlers).setDetectionInterval(ctx, args),
 
-      // chrome.offscreen (MV3: hidden DOM contexts for tasks SWs
-      // can't do — Web Audio, MediaRecorder, DOM parsing, etc.)
       'chrome.offscreen.createDocument':  (ctx, args) => oh(this.offscreenHandlers).createDocument(ctx, args),
       'chrome.offscreen.closeDocument':   (ctx, args) => oh(this.offscreenHandlers).closeDocument(ctx, args),
       'chrome.offscreen.hasDocument':     (ctx, args) => oh(this.offscreenHandlers).hasDocument(ctx, args),
 
-      // chrome.runtime.getContexts — MV3. Enumerate live realms for
-      // the calling extension. We report:
-      //   - the BG iframe as `BACKGROUND` / `SERVICE_WORKER` (MV3
-      //     extensions don't distinguish; we use SERVICE_WORKER for MV3
-      //     and BACKGROUND for MV2)
-      //   - any open popup window as `POPUP`
-      //   - any active offscreen document as `OFFSCREEN_DOCUMENT`
-      //
-      // Filter args[0] respects `contextTypes` / `documentIds` /
-      // `frameIds` / `tabIds` / `windowIds` / `documentUrls` /
-      // `documentOrigins` / `incognito`. We honor the common ones
-      // (contextTypes); others are accepted but not enforced.
       'chrome.runtime.getContexts': async (ctx, args) => {
         const filter = (args[0] ?? {}) as {
           contextTypes?: string[];
@@ -3000,8 +2577,6 @@ export class ExtensionManager {
         };
         const types = filter.contextTypes;
         const wantType = (t: string): boolean => !types || types.includes(t);
-        // Honor documentUrls / documentOrigins filters by checking the
-        // synthesized URL/origin per row before pushing.
         const matchesUrl = (url?: string): boolean => {
           if (!filter.documentUrls || filter.documentUrls.length === 0) return true;
           if (!url) return false;
@@ -3017,8 +2592,6 @@ export class ExtensionManager {
           if (tabId === undefined) return false;
           return filter.tabIds.includes(tabId);
         };
-        // incognito is always false in DDX — filter true only if
-        // caller explicitly wants incognito-only (none match).
         if (filter.incognito === true) return [];
         const out: Array<{
           contextType: string;
@@ -3081,11 +2654,6 @@ export class ExtensionManager {
             });
           }
         }
-        // TAB contexts — every DDX tab is potentially one. We surface
-        // tabs whose URL is determinable, decoded back to the
-        // user-facing form (so Scramjet-encoded blob: URIs aren't
-        // leaked). Chrome reports `documentId` as a unique per-doc
-        // string; we synthesize from tabId + url hash.
         if (wantType('TAB')) {
           try {
             const tabResolver = this.nyxCtx?.tabResolver;
@@ -3120,11 +2688,6 @@ export class ExtensionManager {
             console.warn('[chrome.runtime.getContexts] TAB enumeration failed:', err);
           }
         }
-        // CONTENT_SCRIPT contexts — the relay tracks per-extension
-        // windows that have at least one content script registered.
-        // Map each to a row keyed by the underlying tab if we can
-        // resolve it (best-effort via `data-tab-id` attribute on the
-        // iframe ancestor).
         if (wantType('CONTENT_SCRIPT') && this.contentScriptRelay) {
           try {
             const windows = this.contentScriptRelay.windowsForExt(ctx.id);
@@ -3133,7 +2696,6 @@ export class ExtensionManager {
               let docUrl: string | undefined;
               let origin: string | undefined;
               try {
-                // Find owning iframe via window.frameElement; read data-tab-id.
                 const frame = (win as Window & { frameElement?: Element | null }).frameElement;
                 const tabIdStr = frame?.getAttribute?.('data-tab-id') ?? null;
                 if (tabIdStr && this.nyxCtx?.tabResolver) {
@@ -3164,8 +2726,6 @@ export class ExtensionManager {
         return out;
       },
 
-      // chrome.search.query — opens a tab with the configured search
-      // engine URL. Disposition selects current/new tab.
       'chrome.search.query': async (_ctx, args) => {
         const opts = (args[0] ?? {}) as { text?: string; disposition?: string; tabId?: number };
         if (typeof opts.text !== 'string' || !opts.text) {
@@ -3178,14 +2738,6 @@ export class ExtensionManager {
         await this.openTab(url);
       },
 
-      // chrome.sessions — surfaced from DDX's TabClosedStack.
-      //
-      // The stack stores `ClosedTabRecord { url, title, favicon,
-      // wasPinned, groupId, closedAt }`. Chrome's Session shape is
-      // `{ lastModified: epoch_sec, tab? | window? }` keyed off
-      // `sessionId`. We use the record's `closedAt` (epoch ms)
-      // stringified as the sessionId — stable within the session,
-      // round-trips cleanly through restore().
       'chrome.sessions.getDevices': async () => [],
       'chrome.sessions.getRecentlyClosed': async (_ctx, args) => {
         const opts = (args[0] ?? {}) as { maxResults?: number };
@@ -3195,14 +2747,10 @@ export class ExtensionManager {
         const tabsMod = (window as { tabs?: TabsInterface }).tabs;
         const stack = tabsMod?.closedTabStack;
         if (!stack || typeof stack.list !== 'function') return [];
-        // list() is newest-first; slice to requested count.
         const records = stack.list().slice(0, max);
         return records.map((t) => ({
           lastModified: Math.floor(t.closedAt / 1000),
           tab: {
-            // Negative ephemeral id — Chrome's restore() reads sessionId,
-            // not this. Kept distinct per record so multiple closed-tabs
-            // don't collide if a consumer keys off `id`.
             id: -Math.abs(t.closedAt | 0) - 1,
             url: t.url,
             title: t.title,
@@ -3219,10 +2767,6 @@ export class ExtensionManager {
         }));
       },
       'chrome.sessions.restore': async (_ctx, args) => {
-        // sessionId arg is optional. If absent, restore the most
-        // recently closed (Chrome's contract: `sessionId` omitted →
-        // most-recent entry). On match we remove that entry from the
-        // stack and reopen via the existing `tabs.createTab` path.
         const sessionId = typeof args[0] === 'string' ? args[0] : undefined;
         const tabsMod = (window as { tabs?: TabsInterface }).tabs;
         if (!tabsMod?.closedTabStack || typeof tabsMod.createTab !== 'function') {
@@ -3245,7 +2789,6 @@ export class ExtensionManager {
         } catch (err) {
           console.warn('[chrome.sessions.restore] createTab failed:', err);
         }
-        // Chrome returns the restored Session object.
         return {
           lastModified: Math.floor(target.closedAt / 1000),
           tab: {
@@ -3265,26 +2808,12 @@ export class ExtensionManager {
         };
       },
 
-      // chrome.topSites — synthesize from HistoryManager. Top sites
-      // are the URLs with the highest visit counts; we approximate by
-      // grouping HistoryManager entries by hostname (via
-      // `getMostVisitedSites`) and picking the most-visited entry per
-      // hostname to recover a (url, title) pair.
-      //
-      // HistoryManager exposes `getMostVisitedSites(limit)` returning
-      // `[{ domain, visits, lastVisit }]`. To get a representative
-      // URL+title per top domain we walk `getEntries()` once and pick
-      // the highest-`visitCount` entry per hostname. Result is sliced
-      // to 20 to match Chrome's defaults.
       'chrome.topSites.get': async () => {
         try {
           const { HistoryManager } = await import('@apis/history');
           const hm = HistoryManager.getInstance();
           const entries = hm.getEntries();
           if (entries.length === 0) return [];
-          // Best entry per hostname — prefer highest visitCount, break
-          // ties by most-recent visit. Chrome's topSites is keyed by
-          // origin/hostname in practice; we mirror that.
           const bestByHost = new Map<string, { url: string; title: string; visits: number; lastVisit: number }>();
           for (const e of entries) {
             let host: string;
@@ -3319,10 +2848,6 @@ export class ExtensionManager {
         }
       },
 
-      // chrome.readingList.* — wraps ReadingListManager singleton.
-      // Manager handles validation, persistence, and onEntry* events
-      // which we fan out below via addChangeListener (wired once at
-      // ExtensionManager construction).
       'chrome.readingList.addEntry': async (_ctx, args) => {
         const opts = (args[0] ?? {}) as { url?: string; title?: string; hasBeenRead?: boolean };
         if (typeof opts.url !== 'string' || !opts.url) {
@@ -3347,7 +2872,6 @@ export class ExtensionManager {
         }
         const rm = ReadingListManager.getInstance();
         await rm.removeEntry({ url: opts.url });
-        // Chrome returns undefined.
         return undefined;
       },
       'chrome.readingList.updateEntry': async (_ctx, args) => {
@@ -3367,11 +2891,6 @@ export class ExtensionManager {
         });
       },
 
-      // chrome.dns.resolve — delegates to the pluggable DnsResolver
-      // (src/apis/network/dns.ts). If no backend is registered the
-      // resolver throws a clear "No DNS backend registered" error
-      // that callers can catch. The future network stack will
-      // register a real backend.
       'chrome.dns.resolve': async (_ctx, args) => {
         const hostname = args[0];
         if (typeof hostname !== 'string' || !hostname) {
@@ -3381,10 +2900,6 @@ export class ExtensionManager {
         return getDnsResolver().resolve(hostname);
       },
 
-      // chrome.debugger.* — per-extension CDP sessions. Each attach
-      // creates an isolated session (extId, tabId) on top of the
-      // shared CdpHelper. onEvent fan-out happens via the
-      // `cdp.onCdpEvent` observer wired at manager init time.
       'chrome.debugger.attach': async (ctx, args) => {
         const target = (args[0] ?? {}) as { tabId?: number };
         const requiredVersion = typeof args[1] === 'string' ? args[1] : undefined;
@@ -3402,8 +2917,6 @@ export class ExtensionManager {
         const params = (args[2] ?? {}) as object;
         return dgh(this.debuggerHandlers).sendCommand(ctx.id, target, method, params);
       },
-      // chrome.declarativeContent.{addRules,removeRules,getRules} —
-      // relayed from BG's DeclarativeEvent.addRules() via RPC overlay.
       'chrome.declarativeContent.addRules': async (ctx, args) => {
         const rules = (args[0] ?? []) as Array<{
           id?: string;
@@ -3412,8 +2925,6 @@ export class ExtensionManager {
           priority?: number;
         }>;
         if (!this.declarativeContentHandlers) return [];
-        // Trust the structural shape — host-side matcher validates
-        // instanceType strings during evaluation.
         this.declarativeContentHandlers.addRules(
           ctx.id,
           rules as Parameters<DeclarativeContentHandlers['addRules']>[1],
@@ -3456,13 +2967,6 @@ export class ExtensionManager {
         });
       },
 
-      // chrome.browsingData.* — selectively clears persistent state.
-      // Real Chrome maps each remove* call to a `dataToRemove` flag;
-      // we route through SiteDataManager (src/apis/siteData.ts) which
-      // owns the per-origin clearing logic.
-      //
-      // `options.origins` is honored when present (chrome.browsingData
-      // ≥ 74); otherwise the operation is global (all sites).
       'chrome.browsingData.remove': async (_ctx, args) => {
         const [options, dataToRemove] = args as [
           { origins?: string[] } | undefined,
@@ -3494,7 +2998,6 @@ export class ExtensionManager {
           }
         }
         if (dataToRemove.downloads) {
-          // Downloads manager has its own clear API — wired separately.
           try {
             const { DownloadsManager } = await import('@apis/downloads');
             await DownloadsManager.getInstance().clearAll();
@@ -3511,7 +3014,6 @@ export class ExtensionManager {
         }
       },
       'chrome.browsingData.removeCacheStorage': async (_ctx, args) => {
-        // No separate cache storage in DDX; route through cache buster.
         const opts = args[0] as { origins?: string[] } | undefined;
         const { SiteDataManager } = await import('@apis/siteData');
         const sdm = SiteDataManager.getInstance();
@@ -3536,7 +3038,6 @@ export class ExtensionManager {
         } catch { /* manager not yet available */ }
       },
       'chrome.browsingData.removeFileSystems': async (_ctx, args) => {
-        // We treat fileSystems as part of localStorage namespace.
         const opts = args[0] as { origins?: string[] } | undefined;
         const { SiteDataManager } = await import('@apis/siteData');
         const sdm = SiteDataManager.getInstance();
@@ -3550,7 +3051,6 @@ export class ExtensionManager {
         const { HistoryManager } = await import('@apis/history');
         const hm = HistoryManager.getInstance();
         if (opts?.origins && opts.origins.length > 0) {
-          // Filter HistoryManager entries by origin.
           for (const origin of opts.origins) {
             try {
               const host = new URL(origin).hostname;
@@ -3562,9 +3062,6 @@ export class ExtensionManager {
         }
       },
       'chrome.browsingData.removeIndexedDB': async (_ctx, args) => {
-        // IndexedDB is shared with the host page in DDX (no Scramjet
-        // rewriter for IDB). We refuse per-origin partial clears to
-        // avoid nuking DDX's own DBs.
         const opts = args[0] as { origins?: string[] } | undefined;
         if (opts?.origins && opts.origins.length > 0) {
           console.warn(
@@ -3613,11 +3110,6 @@ export class ExtensionManager {
         },
       }),
 
-      // chrome.tabGroups — wraps DDX's existing tab-grouping internals.
-      // DDX stores groups by string IDs; we hash to numeric IDs via
-      // tabResolver to satisfy chrome.tabs.Tab.groupId / chrome.tabGroups.
-      // DDX TabGroup shape is `{id, name, color, isCollapsed, tabIds}`;
-      // we map `name → chrome.title` and `isCollapsed → chrome.collapsed`.
       'chrome.tabGroups.get': async (_ctx, args) => {
         const groupId = typeof args[0] === 'number' ? args[0] : -1;
         const gm = (window as { tabs?: TabsInterface }).tabs?.groupManager;
@@ -3706,8 +3198,6 @@ export class ExtensionManager {
       'chrome.management.generateAppForLink':              (ctx, args) => mh(this.managementHandlers).generateAppForLink(ctx, args),
     };
   }
-
-  // --- handler implementations ---
 
   private async storageGet(
     ctx: ExtensionContext,
@@ -3848,8 +3338,6 @@ export class ExtensionManager {
     return new Blob([JSON.stringify(subset)]).size;
   }
 
-  // ── chrome.storage.session.* (Task 14) ─────────────────────────────
-
   private async storageSessionGet(
     ctx: ExtensionContext,
     args: unknown[],
@@ -3914,8 +3402,6 @@ export class ExtensionManager {
     const subset = this.filterByKeys(data, args[0]);
     return new Blob([JSON.stringify(subset)]).size;
   }
-
-  // ── chrome.storage.managed.* (Task 14) ─────────────────────────────
 
   private async storageManagedGet(
     ctx: ExtensionContext,
@@ -4032,11 +3518,6 @@ export class ExtensionManager {
     }
 
     const sender = { id: ctx.id, origin: `https://${ctx.origin}` };
-    // Cross-extension messages should fire `onMessageExternal` on the
-    // receiving extension; same-extension messages fire `onMessage`.
-    // Matches Chrome's contract — extensions wire `onMessageExternal`
-    // specifically to handle cross-ext communication (and reject
-    // foreign senders that didn't opt in via externally_connectable).
     const eventName = targetId !== ctx.id
       ? 'chrome.runtime.onMessageExternal'
       : 'chrome.runtime.onMessage';
@@ -4068,13 +3549,10 @@ export class ExtensionManager {
     }
   }
 
-  // --- event helpers ---
-
   public fireEventOn(id: string, method: string, args: unknown[]): void {
     const s = this.spawned.get(id);
     if (!s) return;
     s.channel.sendEvent(method, args);
-    // Also fan out to content scripts
     this.contentScriptRelay?.fanoutToContentScripts(id, method, args);
   }
 

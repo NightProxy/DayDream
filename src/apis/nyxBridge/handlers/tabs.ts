@@ -1,4 +1,3 @@
-// src/apis/nyxBridge/handlers/tabs.ts
 
 import { register } from './index';
 import { DDXError } from '../types';
@@ -129,13 +128,6 @@ register('tabs.sendMessage', async (ctx, args: [TabId, unknown, { frameId?: numb
 	}
 });
 
-// Inline shape of the subset of the browser `Tabs` API we touch in
-// this file. Tabs lives in src/browser/tabs/index.ts and is bound
-// here as ctx.tabs (typed `unknown` to avoid pulling in the full
-// browser shell). Methods are typed precisely so call-site mistakes
-// (wrong arity / wrong argument types) get caught by tsc. groupManager
-// is optional on the live Tabs instance (see src/browser/tabs/index.ts:99)
-// because it is constructed lazily; we mirror that optionality here.
 interface TabsApi {
 	moveTabInOrder: (
 		draggedTabId: string,
@@ -152,7 +144,7 @@ interface TabsApi {
 }
 
 register('tabs.move', async (ctx, args: { tabIds: TabId | TabId[]; properties: { windowId?: number; index: number } }) => {
-	if (args.properties.windowId !== undefined && args.properties.windowId !== 1 && args.properties.windowId !== -2 /* WINDOW_ID_CURRENT */) {
+	if (args.properties.windowId !== undefined && args.properties.windowId !== 1 && args.properties.windowId !== -2) {
 		throw new DDXError('not_supported', 'DDX is single-window; windowId must be 1');
 	}
 	const ids = Array.isArray(args.tabIds) ? args.tabIds : [args.tabIds];
@@ -163,11 +155,6 @@ register('tabs.move', async (ctx, args: { tabIds: TabId | TabId[]; properties: {
 		if (id === undefined) continue;
 		const ddxId = ctx.tabResolver.toDdxId(id);
 		if (!ddxId) continue;
-		// Tabs.moveTabInOrder takes a TARGET tab id, not an absolute
-		// index. Translate the requested numeric index (chrome-API
-		// shape) into the id of the tab currently at that position;
-		// when the index lies beyond the end, anchor on the last tab
-		// and ask Tabs to place AFTER it.
 		const order = tabs.getTabsInOrder();
 		const wantedIdx = args.properties.index + i;
 		const lastIdx = order.length - 1;
@@ -193,9 +180,6 @@ register('tabs.group', async (ctx, args: { tabIds: TabId | TabId[]; groupId?: nu
 	const tabs = ctx.tabs as TabsApi;
 	const gm = tabs.groupManager;
 	if (!gm) {
-		// groupManager is lazily constructed in the live browser shell.
-		// If it isn't present, tab grouping isn't available — return
-		// the Chrome "no group" sentinel id rather than throw.
 		return -1;
 	}
 	let ddxGroupId: string;

@@ -60,9 +60,6 @@ function getInjectableTargetClass(frame: any): 'tab' | 'extension' | null {
 		return null;
 	}
 
-	// Extension-flavoured iframes: bg page, popup, devtools_page.
-	// Options pages don't have a host yet — when they do, they should
-	// carry data-helium-options-ext-id or similar and be added here.
 	const isExtIframe =
 		el.hasAttribute('data-helium-ext-id') ||
 		el.hasAttribute('data-helium-popup-ext-id') ||
@@ -100,10 +97,6 @@ function loadAgentSource(
 	return agentSourcePromise;
 }
 
-// Wait until the proxied window has an `eval` we can call AND a
-// document we can attach to. Both are installed early — usually
-// available immediately when init.post fires — but we poll defensively
-// in case Scramjet's client hooking is mid-flight.
 function waitForEvalReady(win: Window): Promise<Window> {
 	return new Promise((resolve, reject) => {
 		const start = Date.now();
@@ -152,10 +145,6 @@ function injectAgentScript(
 					w[AGENT_INJECT_MARK] = false;
 					return;
 				}
-				// Run the bundle inside the proxied window's realm. The
-				// proxied `eval` is Scramjet-trapped and will rewrite our
-				// source before executing. We discard the return value —
-				// chobitsu's IIFE installs everything as side-effects.
 				winEval.call(win, src);
 				console.log(
 					'[ddx-devtools] agent eval-injected (',
@@ -227,10 +216,6 @@ export function installDevToolsHook(
 					injectAgentScript(win, hostOrigin, basePath);
 					return;
 				}
-				// extension iframe — the per-target session listens for
-				// agent messages on its own. No per-tab registration; the
-				// ExtensionIframeDevToolsSession does its own filtering on
-				// ev.source against its target iframe's contentWindow.
 				console.log(
 					'[ddx-devtools] init.post fired for extension iframe',
 					'isTopLevel=',

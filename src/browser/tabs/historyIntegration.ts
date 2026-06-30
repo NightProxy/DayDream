@@ -8,8 +8,6 @@ export class TabHistoryIntegration {
 
 	constructor(_tabs: TabsInterface) {
 		this.tabs = _tabs;
-		// Shared singleton: TabMetaWatcher and the history page also use it.
-		// Separate instances would race on /data/history.json (EIO).
 		this.historyManager = HistoryManager.getInstance();
 		this.init();
 	}
@@ -220,9 +218,6 @@ export class TabHistoryIntegration {
 	}
 
 	private decodeProxiedUrl(url: string): string {
-		// Thin wrapper kept for call-site readability; all logic lives in the
-		// shared helper so every site (history, bookmarks, address bar,
-		// session save) uses the exact same fallback chain.
 		return decodeProxiedUrl(url, this.tabs?.proxy);
 	}
 

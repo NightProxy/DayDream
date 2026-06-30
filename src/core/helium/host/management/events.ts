@@ -1,14 +1,3 @@
-// src/core/helium/host/management/events.ts
-//
-// Wires chrome.management.* events (onInstalled, onUninstalled,
-// onEnabled, onDisabled) to the ExtensionManager's lifecycle
-// listeners. ExtensionManager exposes `on(event, listener)` for
-// 'installed' | 'uninstalled' | 'enabled' | 'disabled'.
-//
-// Each event must be fanned out only to extensions that hold the
-// 'management' permission. onUninstalled receives the bare id (the
-// extension is already gone at fire time, so an ExtensionInfo is
-// not available).
 
 import { getExtension } from '../../extfs';
 import { buildExtensionInfo } from './handlers';

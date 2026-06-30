@@ -96,8 +96,6 @@ export class ScriptingHandlers {
         scriptKey: `${ctx.id}:exec:files${i}:${Date.now()}`,
       });
       try {
-        // Eval inside the target window. The wrapper is an IIFE.
-        // `any` cast: Window's `eval` isn't reliably typed across realms.
         (win as any).eval(code);
       } catch (err) {
         console.warn(
@@ -152,10 +150,6 @@ return (${fnSrc}).apply(null, __args__);`;
     const win = iframe.contentWindow as Window | null;
     if (!win) throw new Error(`Tab ${tabId} not found`);
 
-    // Concatenate inline CSS + file contents. Files are resolved
-    // from the extension's extfs (same path as content scripts).
-    // Each file is decoded as UTF-8 and appended; missing files are
-    // skipped with a warning (matches Chrome's "best-effort" model).
     let css = opts.css ?? '';
     if (Array.isArray(opts.files) && opts.files.length > 0) {
       for (const file of opts.files) {
@@ -198,18 +192,6 @@ return (${fnSrc}).apply(null, __args__);`;
     const iframe = this.deps.nyxCtx.tabResolver.resolveIframe(tabId);
     const win = iframe.contentWindow as Window | null;
     if (!win) return;
-    // Find and remove style tags whose data-helium-content-css
-    // matches THIS extension's id. Buildup of removable CSS text is
-    // optional: callers may pass `css` and/or `files` to scope the
-    // removal to specific content (Chrome's contract). We compare
-    // verbatim — same text, same removal — but if neither is given
-    // we remove all helium CSS for this extension (the only behavior
-    // most extensions actually rely on).
-    //
-    // The data-helium-content-css attribute value is set to the
-    // extension's id by `buildCssWrapper`; using that as a selector
-    // keeps removal correctly scoped per-extension instead of
-    // wiping every Helium-injected stylesheet on the page.
     let targetCss: string | undefined;
     if (typeof opts.css === 'string' && opts.css.length > 0) {
       targetCss = opts.css;
@@ -224,11 +206,6 @@ return (${fnSrc}).apply(null, __args__);`;
       }
       if (acc) targetCss = acc;
     }
-    // CSS-attribute-selector requires double-quoted value with
-    // embedded quotes escaped. CSS.escape is the standard way but
-    // not all eval'd realms have it; we hand-build a safe selector
-    // for the (alphanumeric+hyphen) extension id, which is all DDX
-    // accepts at install time.
     const idForCss = ctx.id.replace(/[^A-Za-z0-9_-]/g, '');
     const cssLit = targetCss !== undefined ? JSON.stringify(targetCss) : 'null';
     try {
@@ -255,7 +232,6 @@ return (${fnSrc}).apply(null, __args__);`;
       }
       addDynamicRegistration(ctx.id, s.id, s);
     }
-    // Re-apply: simplest is to uninstall + reinstall everything for this ext.
     uninstallContentScripts(ctx.id);
     await installContentScripts(ctx.id, ctx, ctx.manifest);
   }

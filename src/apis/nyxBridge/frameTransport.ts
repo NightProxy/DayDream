@@ -1,13 +1,3 @@
-// src/apis/nyxBridge/frameTransport.ts
-//
-// Envelope codec for host ↔ per-frame agent messages. Wraps payloads in
-// Scramjet's `$scramjet$messagetype` envelope so the proxied iframe's
-// patched `Window.postMessage` accepts them as legitimate window-typed
-// messages. Tagged with `__nyxBridgeMsg: true` so the host can route
-// without colliding with other Scramjet traffic.
-//
-// Mirrors src/apis/devtools/frameTransport.ts but with `__nyxBridgeMsg`
-// instead of `__ddxDevtoolsMsg`.
 
 export interface AgentMessage {
 	kind: 'frame-ready' | 'frame-gone' | 'cdp-out' | 'agent-error';

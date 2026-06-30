@@ -1,7 +1,3 @@
-// src/core/helium/host/index.ts
-//
-// Aggregate re-exports for all host-side chrome.* namespace modules.
-// Imported as `@core/helium/host` (or transitively via `@core/helium`).
 
 export * from './action';
 export * from './alarms';

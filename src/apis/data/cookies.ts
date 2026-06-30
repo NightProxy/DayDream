@@ -1,19 +1,3 @@
-// src/apis/data/cookies.ts
-//
-// chrome.cookies.* backing implementation over Scramjet's CookieJar.
-//
-// CookieJar (scramjet/packages/core/src/shared/cookie.ts) shape:
-//   - Internal storage: Record<id, Cookie> keyed by `${domain}@${path}@${name}`
-//     where domain ALWAYS starts with a leading "." (host-only cookies have
-//     `hostOnly: true` set explicitly).
-//   - Cookie fields: name, value, path?, expires? (epoch ms number),
-//     maxAge?, domain?, hostOnly?, secure?, httpOnly?, sameSite?.
-//   - `dump()`        → `JSON.stringify(cookies)` of the Record above.
-//   - `load(str)`     → consumes the same JSON object format.
-//   - `setCookies(setCookieHeader, url)`  → parses a Set-Cookie header string
-//                       (e.g. `name=value; Path=/; Secure; SameSite=Lax`).
-//   - `getCookies(url, fromJs, sameSiteCtx)` → returns the `name=value; ...`
-//                       Cookie header string; not useful for chrome.cookies.
 
 import type { Proxy } from '@apis/proxy';
 
@@ -54,24 +38,19 @@ export interface CookieSetOpts {
   storeId?: string;
 }
 
-// Mirror of scramjet's `Cookie` type (the actual stored shape). Kept loose
-// because `dump()` is JSON, which may strip undefined fields.
 interface ScramjetCookie {
   name?: string;
   value?: string;
   path?: string;
-  expires?: number;          // epoch ms, or absent for session cookies
+  expires?: number;
   maxAge?: number;
-  domain?: string;           // always leading "." for non-hostOnly
+  domain?: string;
   hostOnly?: boolean;
   secure?: boolean;
   httpOnly?: boolean;
-  sameSite?: string;         // "strict"|"lax"|"none" or Title-case variants
+  sameSite?: string;
 }
 
-// Subset of CookieJar's public surface we actually invoke. Typed as a
-// structural interface so we can swap in a mock in the sanity tests
-// without depending on the scramjet build.
 export interface CookieJarLike {
   dump(): string;
   setCookies(cookieHeader: string, url: URL): void;
@@ -185,9 +164,6 @@ export class CookieAccessor {
     if (typeof jar.setCookies !== 'function') {
       throw new Error('CookieJar.setCookies unavailable');
     }
-    // Snapshot the prior cookie at this (url, name) so we can tell
-    // explicit-write from overwrite. Only relevant if listeners
-    // present — skip the I/O cost otherwise.
     const willEmit = this.listeners.size > 0;
     const filterForLookup = {
       url: opts.url,
@@ -211,9 +187,6 @@ export class CookieAccessor {
     const next = fetched[0] ?? null;
     if (willEmit && next) {
       if (prior) {
-        // Overwrite: Chrome emits TWO events — first the old cookie
-        // removed (cause:overwrite), then the new cookie added
-        // (cause:explicit). We mirror that contract.
         this.emit({ removed: true, cookie: prior, cause: 'overwrite' });
       }
       this.emit({ removed: false, cookie: next, cause: 'explicit' });
@@ -228,8 +201,6 @@ export class CookieAccessor {
   }): Promise<{ url: string; name: string; storeId: string } | null> {
     const jar = this.getJar();
     if (typeof jar.setCookies !== 'function') return null;
-    // Snapshot prior so we can include the removed cookie in the
-    // change event. Only do the lookup if there are listeners.
     const willEmit = this.listeners.size > 0;
     let prior: DDXCookie | null = null;
     if (willEmit) {
@@ -238,8 +209,6 @@ export class CookieAccessor {
         prior = fetched[0] ?? null;
       } catch { /* swallow */ }
     }
-    // Per RFC 6265 §3.1: setting Max-Age=0 expires the cookie immediately.
-    // CookieJar.setCookies honors Max-Age<=0 by deleting the matching id.
     const setVal = `${opts.name}=; Max-Age=0; Path=/`;
     try {
       jar.setCookies(setVal, new URL(opts.url));
@@ -284,9 +253,6 @@ export class CookieAccessor {
   private matchesFilter(cookie: ScramjetCookie, filter: CookieFilter): boolean {
     if (filter.name && cookie.name !== filter.name) return false;
     if (filter.domain) {
-      // Chrome semantics: filter.domain matches the cookie's domain or any
-      // parent. Cookie domains in the jar are stored with a leading dot;
-      // compare on the dot-stripped form.
       const cd = (cookie.domain ?? '').replace(/^\./, '');
       const fd = filter.domain.replace(/^\./, '');
       if (cd !== fd && !cd.endsWith('.' + fd)) return false;
@@ -322,8 +288,6 @@ export class CookieAccessor {
     else if (ssRaw === 'lax') sameSite = 'lax';
     else if (ssRaw === 'none') sameSite = 'no_restriction';
 
-    // expires is an epoch-ms number in the live jar, but a JSON round-trip
-    // through dump() preserves that. Accept legacy string/Date defensively.
     let expirationDate: number | undefined;
     const exp = c.expires as number | string | Date | undefined;
     if (exp !== undefined && exp !== null) {
@@ -334,11 +298,7 @@ export class CookieAccessor {
       if (Number.isFinite(t)) expirationDate = Math.floor(t / 1000);
     }
 
-    // The jar stores `hostOnly` explicitly; trust that flag rather than
-    // re-deriving it from the leading-dot domain convention.
     const hostOnly = c.hostOnly === true;
-    // Chrome surfaces domains without the synthetic leading dot only for
-    // host-only cookies; otherwise the leading dot is preserved.
     const rawDomain = c.domain ?? '';
     const domain = hostOnly ? rawDomain.replace(/^\./, '') : rawDomain;
 

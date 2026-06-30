@@ -2,9 +2,6 @@ import type { DispatchResult } from './types';
 
 const URL_PREFIXES = ['http://', 'https://', 'data:', 'javascript:'];
 
-// Subset of the OmniboxRegistry API we consult for keyword detection.
-// Resolved lazily from `window.extensions?.omniboxRegistry` to avoid
-// pulling Helium into the dispatch unit's import graph.
 interface OmniboxRegistryLike {
 	matchPrefix(input: string): {
 		extId: string;
@@ -23,7 +20,6 @@ function getExtensionOmniboxRegistry(): OmniboxRegistryLike | null {
 export function dispatch(input: string): DispatchResult {
 	if (!input) return { mode: 'closed' };
 
-	// URL-prefix bypass: never enter a mode for URL-shaped input.
 	for (const p of URL_PREFIXES) {
 		if (input.startsWith(p)) return { mode: 'default', payload: input };
 	}
@@ -31,9 +27,6 @@ export function dispatch(input: string): DispatchResult {
 	const trimmed = input.replace(/^\s+/, '');
 	if (!trimmed) return { mode: 'closed' };
 
-	// Extension-keyword detection comes BEFORE sigil checks. An extension
-	// declared keyword "tk " would still allow ">tk" to be a command-palette
-	// query because the registry only matches `<keyword>` or `<keyword> `.
 	const reg = getExtensionOmniboxRegistry();
 	if (reg) {
 		const match = reg.matchPrefix(trimmed);

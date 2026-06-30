@@ -1,17 +1,8 @@
-// src/apis/nyxBridge/handlers/index.ts
-//
-// Handler registry. Per-namespace handler files import `register` from
-// here and call it for each method they implement. NyxBridge.init()
-// imports `_loadAll` for its side effects, then dispatches via
-// `dispatch(ctx, method, args)`.
 
 import type { MethodName } from '../api';
 import { DDXError } from '../types';
 import type { TabResolver } from '../tabResolver';
 
-// Forward-declared types — fleshed out as later phases introduce them.
-// Phase 5 introduces HandleStore (DOM element handles).
-// Phase 6 introduces CdpHelper (per-frame chobitsu agent transport).
 export interface HandleStoreLike {
 	create(tabId: number, el: Element): { __handle: string; tabId: number };
 	resolve(handle: { __handle: string; tabId: number }): Element | null;
@@ -24,8 +15,8 @@ export interface CdpHelperLike {
 
 export interface HandlerContext {
 	tabResolver: TabResolver;
-	handleStore: HandleStoreLike | null; // null until Phase 5
-	cdp: CdpHelperLike | null; // null until Phase 6
+	handleStore: HandleStoreLike | null;
+	cdp: CdpHelperLike | null;
 	proxy: unknown;
 	tabs: unknown;
 	protocols: unknown;
@@ -34,9 +25,6 @@ export interface HandlerContext {
 
 export type Handler = (ctx: HandlerContext, args: any) => Promise<unknown>;
 
-// Populated by per-namespace files via the `register()` helper below.
-// Typed as a partial Record so tooling doesn't pretend every MethodName
-// is mapped before _loadAll.ts has been imported.
 export const HANDLERS: Partial<Record<MethodName, Handler>> = {};
 
 /**

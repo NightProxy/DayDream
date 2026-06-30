@@ -1,13 +1,3 @@
-// ddx://downloads/ — the full download manager page.
-//
-// Renders inside its own iframe; reads from the HOST's
-// DownloadsManager via `window.parent.downloadsManager` so the
-// history is consistent with what the shelf shows.
-//
-// Real-time: subscribes to the manager's change events; per-card
-// re-render on every delta. Search + state filter are debounced
-// re-render passes (no separate query, just client-side filter
-// over the manager's snapshot).
 
 import '@css/tailwind.css';
 import '@css/global.scss';
@@ -74,18 +64,15 @@ class DownloadsUI {
       return;
     }
 
-    // Seed from existing state.
     const all = await this.mgr.search({});
     for (const item of all) this.items.set(item.id, item);
 
-    // Subscribe.
     this.unsub = this.mgr.addChangeListener((event) => this.onEvent(event));
 
     this.setupListeners();
     this.render();
     createIcons({ icons });
 
-    // Re-hydrate icons on any DOM mutation.
     window.addEventListener('beforeunload', () => {
       if (this.unsub) this.unsub();
     });
@@ -101,7 +88,6 @@ class DownloadsUI {
       const id = event.delta.id;
       const item = this.items.get(id);
       if (!item) return;
-      // Apply delta.
       const next: DownloadItem = { ...item };
       if (event.delta.state) next.state = event.delta.state.current;
       if (event.delta.paused) next.paused = event.delta.paused.current;
@@ -198,7 +184,6 @@ class DownloadsUI {
     card.className = 'dl-card';
     card.setAttribute('data-download-id', String(item.id));
 
-    // Icon.
     const iconWrap = document.createElement('div');
     iconWrap.className = 'dl-icon';
     const icon = document.createElement('i');
@@ -208,7 +193,6 @@ class DownloadsUI {
     iconWrap.appendChild(icon);
     card.appendChild(iconWrap);
 
-    // Body: filename / meta / progress.
     const body = document.createElement('div');
     body.className = 'dl-body';
 
@@ -266,7 +250,6 @@ class DownloadsUI {
 
     card.appendChild(body);
 
-    // Actions.
     const actions = document.createElement('div');
     actions.className = 'dl-actions';
 
@@ -323,8 +306,6 @@ class DownloadsUI {
     return btn;
   }
 }
-
-// ── helpers (shared shape with shelf.ts) ──────────────────────────
 
 function pickIcon(item: DownloadItem): string {
   if (item.state === 'interrupted') return 'alert-triangle';

@@ -12,10 +12,6 @@ export class TabManipulation {
 		const tabInfo = this.tabs.getTabById(tabId);
 		if (!tabInfo) return null;
 
-		// Decode iframe.src before passing to createTab. createTab → processUrl
-		// → convertURL re-encodes through the proxy; passing an already-encoded
-		// scramjet URL would double-encode it. Falls back to tabInfo.url (the
-		// original creation URL) which is generally already plain.
 		const decodedFromIframe = decodeIframeUrl(
 			tabInfo.iframe,
 			this.tabs.proxy
@@ -64,10 +60,6 @@ export class TabManipulation {
 
 		try {
 			const url = new URL(currentSrc);
-			// Fire-and-forget cache eviction via SiteDataManager. We
-			// pass the decoded URL when available so the host matches
-			// the cookie/cache namespace of the displayed site rather
-			// than the scramjet-encoded one.
 			let originForClear = currentSrc;
 			try {
 				const decoded = (this.tabs.proxy as { decodeUrl?: (u: string) => string }).decodeUrl?.(currentSrc);
@@ -77,14 +69,10 @@ export class TabManipulation {
 				try { void SiteDataManager.getInstance().clearCache(originForClear); }
 				catch { /* swallow */ }
 			}).catch(() => { /* manager not available */ });
-			// Use a stable parameter key so back-to-back hard-reloads don't
-			// pile up multiple cache-bust params on the URL.
 			url.searchParams.set('__ddxHardReload', String(Date.now()));
 			tabInfo.iframe.src = url.toString();
 			this.tabs.logger.createLog(`Hard reloaded tab: ${tabId}`);
 		} catch (error) {
-			// URL parsing can fail for unusual srcs (data:, blob:, malformed).
-			// Fall back to plain refresh so the user still gets feedback.
 			console.warn(
 				`[Tabs] hardReloadTab fell back to plain refresh for ${tabId}:`,
 				error
@@ -145,7 +133,6 @@ export class TabManipulation {
 			) {
 				response = await this.tabs.proxy.fetch(decoded);
 			} else {
-				// Last resort, will likely fail on cross-origin URLs.
 				response = await fetch(decoded);
 			}
 
@@ -161,8 +148,6 @@ export class TabManipulation {
 			anchor.click();
 			anchor.remove();
 
-			// Give the browser a moment to start the download before
-			// revoking the blob URL.
 			setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 
 			this.tabs.logger.createLog(`Saved page: ${filename}`);

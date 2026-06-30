@@ -18,22 +18,11 @@ import type {
   LoadedExtension,
 } from './types';
 
-// ─────────────────────────────────────────────────────────────────────────
-// Debug logging
-//
-// Verbose tracing for the install + boot-load + list flows. Routes
-// through console.log/info so the user can see them in the DevTools
-// console without a special debug build. Tagged `[helium/extfs/dbg]`
-// so they're easy to filter against (or hide entirely with a console
-// filter once the bug is sorted).
-// ─────────────────────────────────────────────────────────────────────────
 const DBG_TAG = '[helium/extfs/dbg]';
 function dlog(...args: unknown[]): void {
   console.log(DBG_TAG, ...args);
 }
 function dgroup(label: string): void {
-  // Use a collapsed group so a flood of dlog entries inside a phase
-  // is easy to scroll past, but still expandable.
   console.groupCollapsed(`${DBG_TAG} ${label}`);
 }
 function dgroupEnd(): void {
@@ -72,11 +61,6 @@ export async function installExtension(
     index.extensions.find(e => e.id === unpacked.id)?.enabled ?? true;
   dlog(`previousEnabled=${previousEnabled} (was-in-index=${index.extensions.some(e => e.id === unpacked.id)})`);
 
-  // Reinstall: drop the old tree if any. Safe even on a fresh install
-  // because removeExtensionTree is idempotent. Failures are now
-  // best-effort — see the JSDoc above. We still log so persistent
-  // cleanup trouble shows up in the console rather than silently
-  // accumulating leftover files in OPFS.
   try {
     dlog(`calling removeExtensionTree(${unpacked.id})...`);
     await removeExtensionTree(unpacked.id);
@@ -88,16 +72,6 @@ export async function installExtension(
     );
   }
 
-  // Write non-manifest files first, then manifest.json LAST. Two reasons:
-  //   1. manifest.json existence is the boot-time signal that the
-  //      extension is fully installed (see loadExtensionsAtBoot). If we
-  //      crash mid-loop, we want manifest.json to either be absent
-  //      (treated as "missing, purge") or fully written (valid install).
-  //      Writing it last avoids the "manifest exists but other files
-  //      are partial" state.
-  //   2. Concurrent reads from event fanouts (chrome.management.*)
-  //      hitting getExtension during install will see "no manifest yet"
-  //      until everything else is on disk.
   let nonManifestCount = 0;
   for (const [relPath, bytes] of unpacked.files) {
     if (relPath === 'manifest.json') continue;
@@ -113,9 +87,6 @@ export async function installExtension(
       nonManifestCount++;
     } catch (err) {
       dlog(`writeExtensionFile failed at "${safe}":`, err);
-      // A single bad asset shouldn't take down the whole install —
-      // wrap the error with the path so the user gets a real
-      // diagnostic instead of just "file already exists".
       dgroupEnd();
       throw new Error(
         `[helium/extfs] install: failed to write "${safe}" for ${unpacked.id}: ${(err as Error).message ?? String(err)}`,
@@ -123,10 +94,6 @@ export async function installExtension(
     }
   }
   dlog(`wrote ${nonManifestCount} non-manifest file(s)`);
-  // Now manifest.json — and verify the round-trip BEFORE writing the
-  // index entry. If the on-disk bytes don't parse, we abort the install
-  // entirely and clean up. Better to surface a real error to the user
-  // than leave a phantom entry pointing at a broken tree.
   const manifestBytes = unpacked.files.get('manifest.json');
   if (!manifestBytes || manifestBytes.byteLength === 0) {
     await removeExtensionTree(unpacked.id);
@@ -134,21 +101,10 @@ export async function installExtension(
       `[helium/extfs] install: manifest.json missing or empty from unpacked archive for ${unpacked.id}`,
     );
   }
-  // Diagnostic: log what we're about to write so we can compare with
-  // the read-back. byteOffset != 0 or byteLength < buffer.byteLength
-  // would mean we're passing a sliced view into TFS — which TFS' own
-  // writeFile path tries to handle via `content.buffer.slice(byteOffset,
-  // byteOffset+byteLength)` but is a known source of zero-byte writes
-  // if the slice math goes sideways.
   dlog(`manifest.json bytes about to write: byteLength=${manifestBytes.byteLength}, byteOffset=${manifestBytes.byteOffset}, buffer.byteLength=${manifestBytes.buffer.byteLength}`);
   const manifestPreview = new TextDecoder().decode(manifestBytes.slice(0, Math.min(200, manifestBytes.byteLength)));
   dlog(`manifest.json first 200 chars: ${manifestPreview}`);
 
-  // Copy into a fresh tight Uint8Array. Defends against TFS' write
-  // path mishandling sliced views (where byteOffset != 0). If we keep
-  // hitting "file empty after write", this is the most likely root
-  // cause — a TFS writeFile that reads from the wrong region of the
-  // underlying ArrayBuffer.
   const tightCopy = new Uint8Array(manifestBytes.byteLength);
   tightCopy.set(manifestBytes);
   dlog(`tight copy: byteLength=${tightCopy.byteLength}, byteOffset=${tightCopy.byteOffset}, buffer.byteLength=${tightCopy.buffer.byteLength}`);
@@ -164,34 +120,17 @@ export async function installExtension(
       `[helium/extfs] install: failed to write manifest.json for ${unpacked.id}: ${(err as Error).message ?? String(err)}`,
     );
   }
-  // Verification round-trip: read back the bytes we just wrote and
-  // confirm they parse. This catches:
-  //   - silent TFS write truncation (the symptom that produced the
-  //     zero-byte manifest.json in the user's session)
-  //   - concurrent rmrf races (defended by the install mutex at the
-  //     ExtensionManager level, but cheap to verify here too)
-  //
-  // Retry up to 3 times with a brief yield in between. OPFS' writes
-  // are supposed to be flushed by the time TFS' `await writable.close()`
-  // resolves, but if we're hitting an eventual-consistency window then
-  // a small delay should suffice.
   let verifyBytes: Uint8Array | null = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     verifyBytes = await readExtensionFileRaw(unpacked.id, 'manifest.json');
     dlog(`verify attempt ${attempt}: read-back returned ${verifyBytes === null ? 'null' : `${verifyBytes.byteLength} bytes`}`);
     if (verifyBytes && verifyBytes.byteLength > 0) break;
     if (attempt < 3) {
-      // Yield to the event loop. If this works, the underlying issue
-      // is OPFS write-flush timing in TFS that should be reported
-      // upstream.
       await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
   if (!verifyBytes || verifyBytes.byteLength === 0) {
     dlog('verify FAILED after 3 attempts (empty/missing) — purging tree');
-    // BEFORE purging, do one last diagnostic: try to read EVERY file
-    // we wrote, to see whether the issue is specific to manifest.json
-    // or is wholesale.
     for (const [relPath] of unpacked.files) {
       if (relPath === 'manifest.json') continue;
       const safe = normalizeExtPath(relPath);
@@ -202,7 +141,7 @@ export async function installExtension(
       } catch (probeErr) {
         dlog(`  POST-FAIL probe ${safe}: threw`, probeErr);
       }
-      break; // one is enough for diagnostics
+      break;
     }
     await removeExtensionTree(unpacked.id);
     dgroupEnd();
@@ -237,9 +176,6 @@ export async function installExtension(
   };
   dlog('built entry:', entry);
 
-  // Re-read the index right before writing. If a parallel install of
-  // a DIFFERENT extension landed in between (mutex only guards the
-  // same id), we must include its entry in our write.
   const currentIndex = await readIndex();
   dlog(`pre-write readIndex returned ${currentIndex.extensions.length} entries:`, currentIndex.extensions.map(e => e.id));
   const next = currentIndex.extensions.filter(e => e.id !== unpacked.id);
@@ -250,10 +186,6 @@ export async function installExtension(
     dlog('writeIndex returned OK');
   } catch (err) {
     dlog('writeIndex FAILED:', err);
-    // Index write failed AFTER all files are on disk. Clean up the
-    // tree to avoid orphan files (files present but no index entry —
-    // exactly the symptom we hit). Then re-throw so the caller knows
-    // the install failed.
     try {
       await removeExtensionTree(unpacked.id);
     } catch (rmErr) {
@@ -268,10 +200,6 @@ export async function installExtension(
     );
   }
 
-  // Verify the index round-trip: read it back and confirm our entry
-  // is present. Same defense-in-depth pattern as the manifest verify.
-  // If the index has been silently truncated or our entry is missing,
-  // bail cleanly rather than reporting success on a phantom install.
   const verifyIndex = await readIndex();
   const hasUs = verifyIndex.extensions.some(e => e.id === unpacked.id);
   dlog(`verifyIndex returned ${verifyIndex.extensions.length} entries; hasUs=${hasUs}; ids=${verifyIndex.extensions.map(e => e.id).join(',')}`);
@@ -304,7 +232,7 @@ export async function uninstallExtension(id: string): Promise<void> {
   await removeExtensionTree(id);
   const index = await readIndex();
   const next = index.extensions.filter(e => e.id !== id);
-  if (next.length === index.extensions.length) return; // not present
+  if (next.length === index.extensions.length) return;
   await writeIndex({ version: 1, extensions: next });
 }
 
@@ -463,9 +391,6 @@ export async function loadExtensionsAtBoot(): Promise<LoadedExtension[]> {
       });
       dlog(`  loaded OK: name=${manifest.name} version=${manifest.version}`);
     } catch (err) {
-      // Manifest unparseable / file system error — extension is in a
-      // broken state we can't recover from. Mark for purge so we don't
-      // keep tripping over it on every boot.
       dlog(`  manifest load FAILED:`, err);
       console.warn(
         `[helium/extfs] loadExtensionsAtBoot: corrupt extension ${entry.id} (${(err as Error).message}); will purge`,
@@ -474,9 +399,6 @@ export async function loadExtensionsAtBoot(): Promise<LoadedExtension[]> {
     }
   }
 
-  // Atomic purge: remove the broken entries from the index in one pass,
-  // then delete their trees. Order matters — if rmrf fails for some
-  // reason, the index is already clean so we won't retry the bad path.
   if (corruptIds.length > 0) {
     dlog(`PURGE phase: removing ${corruptIds.length} corrupt entries: ${corruptIds.join(',')}`);
     const survivors = index.extensions.filter(e => !corruptIds.includes(e.id));
@@ -496,14 +418,6 @@ export async function loadExtensionsAtBoot(): Promise<LoadedExtension[]> {
     );
   }
 
-  // Orphan reconciler: find extension trees on disk that are NOT in the
-  // index, then either re-index them (if manifest.json is valid) or
-  // remove them. This recovers from interrupted installExtension calls
-  // where files got written but writeIndex never ran (e.g., browser
-  // killed mid-install, OPFS hiccup). Without this, the broken state
-  // is silent forever — UI doesn't see the extension, but the tree is
-  // still there taking up storage AND blocking re-install by the same
-  // id (because removeExtensionTree only runs on re-install).
   dlog('ORPHAN RECONCILER phase: scanning for trees on disk without index entries');
   try {
     const indexAfterPurge = await readIndex();
@@ -541,10 +455,6 @@ export async function loadExtensionsAtBoot(): Promise<LoadedExtension[]> {
             removed++;
             continue;
           }
-          // Re-create the index entry. We don't have the original
-          // unpacker metadata (format, idFromKey) so fill in reasonable
-          // defaults — the entry is still valid, just slightly less
-          // accurate than a fresh install.
           nextEntries.push({
             id,
             name: manifest.name,
@@ -557,8 +467,6 @@ export async function loadExtensionsAtBoot(): Promise<LoadedExtension[]> {
           });
           recovered++;
           dlog(`  RECOVERED orphan ${id} → re-indexed as enabled`);
-          // Add to the in-memory loaded list so this boot uses it
-          // immediately without a reload.
           loaded.push({
             entry: nextEntries[nextEntries.length - 1]!,
             manifest,

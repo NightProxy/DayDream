@@ -1,25 +1,3 @@
-// src/core/helium/host/webRequest/plugin.ts
-//
-// Per-frame Scramjet plugin that taps the fetch lifecycle hooks and
-// dispatches chrome.webRequest events to extension subscribers.
-//
-// Hook → event mapping (per spec §17):
-//   fetch.intercept        → onBeforeRequest        (blocking)
-//   fetch.request          → onBeforeSendHeaders    (blocking)
-//                            onSendHeaders          (observer, after)
-//   fetch.preresponse      → onHeadersReceived      (blocking)
-//                            onResponseStarted      (observer)
-//                            onBeforeRedirect       (observer, if 3xx)
-//   fetch.response         → onCompleted            (observer)
-//   error.request          → onErrorOccurred        (observer)
-//
-// DNR integration (Task 29): inside fetch.intercept, run DNR rules
-// FIRST. If DNR yields `block` / `redirect` / `upgradeScheme`, apply
-// to props and short-circuit subsequent webRequest blocking
-// dispatchers. If `allow` / `allowAllRequests`, also short-circuit
-// (DNR allow overrides webRequest cancel). `modifyHeaders` rules
-// are queued onto the request object and applied at the matching
-// hook (request for requestHeaders, preresponse for responseHeaders).
 
 import type { WebRequestRegistry } from './registry';
 import {
@@ -55,15 +33,9 @@ interface PluginDeps {
   tabResolver?: TabResolverDep | null;
 }
 
-// Per-request mutable state we attach via WeakMap so subsequent
-// hooks can pick it up.
 interface RequestState {
-  // Headers we applied from DNR modifyHeaders rules; merge with
-  // listener-modified headers at the relevant tap.
   dnrRequestHeaders?: DnrModifyHeadersQueue;
   dnrResponseHeaders?: DnrModifyHeadersQueue;
-  // Stamp whether DNR already short-circuited the request — skip
-  // webRequest blocking in that case.
   dnrShortCircuited?: boolean;
 }
 
@@ -77,24 +49,6 @@ function getState(reqObj: object): RequestState {
   }
   return s;
 }
-
-// ─── Scramjet structural types ─────────────────────────────────
-//
-// We type-mirror the Scramjet surface here rather than importing
-// from `@mercuryworkshop/scramjet*`. The webRequest module already
-// lives under `src/core/helium/host/` and is intentionally decoupled
-// from the Scramjet build graph; adding the import would drag
-// Scramjet's package alias resolution into every consumer.
-//
-// These interfaces mirror:
-//   - scramjet/packages/core/src/fetch/index.ts (FetchHooks, ScramjetFetchResponse)
-//   - scramjet/packages/core/src/shared/headers.ts (ScramjetHeaders)
-//   - @mercuryworkshop/proxy-transports (BareResponse, BareRequestInit, RawHeaders)
-//   - scramjet/packages/controller/src/index.ts (Frame)
-//   - scramjet/packages/controller/src/types.d.ts (FrameErrorHooks)
-//
-// If Scramjet's surface drifts, the structural mismatch will surface
-// at runtime where these get cast — fixes localize here.
 
 type RawHeaders = [string, string][];
 
@@ -190,10 +144,6 @@ interface ScramjetFrameLike {
 }
 
 export class WebRequestPlugin {
-  // Scramjet's controller.createFrame validation iterates plugin.dependencies
-  // (controller/src/index.ts:821). These fields satisfy the ManagedPlugin
-  // contract without us actually extending the class (we can't — it requires
-  // $scramjet.Plugin at construction time, which is too early at install).
   public readonly name = 'helium-webRequest';
   public readonly dependencies: string[] = [];
 
@@ -259,20 +209,11 @@ export class WebRequestPlugin {
       });
     }
     if (hooks.error?.request) {
-      // NB: the error.request hook gives `context = {rawrequest, error}`
-      // — a different shape than the fetch hooks (no shared
-      // `context.request` ScramjetFetchRequest reference). requestId
-      // continuity from the success path is therefore not possible
-      // without keying on `rawrequest`; v1 fires onErrorOccurred with
-      // a fresh id derived from the rawrequest object. The cross-hook
-      // id linkage for the error path is deferred work.
       tapFn(hooks.error.request, async (context: unknown, props: unknown) => {
         await this.onError(context, props);
       });
     }
   }
-
-  // --- tap implementations -------------------------------------
 
   private async onIntercept(context: unknown, props: InterceptProps): Promise<void> {
     const reqObj = (context as { request?: object } | undefined)?.request;
@@ -281,8 +222,6 @@ export class WebRequestPlugin {
 
     const details = this.buildDetails(context, reqObj as object);
 
-    // 1) DNR first (Task 29). If DNR short-circuits, we don't fire
-    //    webRequest blocking dispatchers for this request.
     if (this.dnr) {
       try {
         const dnrResult = await this.dnr.evaluate(details);
@@ -306,7 +245,6 @@ export class WebRequestPlugin {
             return;
           }
           if (dnrResult.kind === 'allow' || dnrResult.kind === 'allowAllRequests') {
-            // Skip blocking webRequest, but observer events still fire.
             state.dnrShortCircuited = true;
           } else if (dnrResult.kind === 'modifyHeaders') {
             if (dnrResult.requestHeaders) {
@@ -322,7 +260,6 @@ export class WebRequestPlugin {
       }
     }
 
-    // 2) onBeforeRequest (blocking).
     if (!state.dnrShortCircuited) {
       const response = await dispatchEvent(this.registry, 'onBeforeRequest', details, {
         blocking: true,
@@ -350,7 +287,6 @@ export class WebRequestPlugin {
       ...(headers ? { requestHeaders: headers } : {}),
     });
 
-    // onBeforeSendHeaders (blocking) → modify request headers.
     if (!state.dnrShortCircuited) {
       const response = await dispatchEvent(
         this.registry,
@@ -359,9 +295,6 @@ export class WebRequestPlugin {
         { blocking: true },
       );
       if (response.cancel) {
-        // request.props.earlyResponse accepts a native Response —
-        // Scramjet wraps via BareResponse.fromNativeResponse before
-        // handing it downstream (fetch.ts:204-211).
         props.earlyResponse = blockNativeResponse();
         state.dnrShortCircuited = true;
         return;
@@ -371,12 +304,10 @@ export class WebRequestPlugin {
       }
     }
 
-    // Apply DNR modifyHeaders requestHeaders (Task 29).
     if (state.dnrRequestHeaders) {
       applyDnrRequestHeaders(props, state.dnrRequestHeaders);
     }
 
-    // onSendHeaders (observer, fired after modifications).
     const finalHeaders = rawHeadersToWebRequestArray(props.init?.headers);
     const obsDetails = this.buildDetails(context, reqObj as object, {
       ...(finalHeaders ? { requestHeaders: finalHeaders } : {}),
@@ -409,7 +340,6 @@ export class WebRequestPlugin {
 
     const details = this.buildDetails(context, reqObj as object, baseExtras);
 
-    // onHeadersReceived (blocking).
     if (!state.dnrShortCircuited) {
       const response = await dispatchEvent(
         this.registry,
@@ -432,17 +362,14 @@ export class WebRequestPlugin {
       }
     }
 
-    // Apply DNR modifyHeaders responseHeaders.
     if (state.dnrResponseHeaders) {
       applyDnrPreresponseHeaders(props, state.dnrResponseHeaders);
     }
 
-    // onResponseStarted (observer).
     void dispatchEvent(this.registry, 'onResponseStarted', details, {
       blocking: false,
     });
 
-    // onBeforeRedirect (observer) if Location header set.
     const location = findHeader(responseHeaders, 'location');
     if (location && statusCode && statusCode >= 300 && statusCode < 400) {
       const redirectDetails = this.buildDetails(context, reqObj as object, {
@@ -476,7 +403,6 @@ export class WebRequestPlugin {
     void dispatchEvent(this.registry, 'onCompleted', details, {
       blocking: false,
     });
-    // Phase 4 (Task 32): devtools network fan-out hook.
     if (this.onResponseObserver) {
       try { this.onResponseObserver(details); } catch (err) {
         console.warn('[helium/webRequest] devtools onResponse hook threw:', err);
@@ -485,12 +411,6 @@ export class WebRequestPlugin {
   }
 
   private async onError(context: unknown, props: unknown): Promise<void> {
-    // The error.request hook ships a different shape than the fetch
-    // hooks: `context = {rawrequest: TransferRequest, error}`. We
-    // key the request id on the rawrequest object — error events
-    // therefore won't share an id with their preceding intercept
-    // dispatch, which is acceptable since onErrorOccurred is a
-    // terminal observer (no listener walks back to onBeforeRequest).
     const ctx = context as
       | { rawrequest?: { rawUrl?: string; method?: string }; error?: unknown }
       | undefined;
@@ -499,9 +419,6 @@ export class WebRequestPlugin {
     const err = (props as { error?: unknown } | undefined)?.error ?? ctx?.error;
     const message =
       err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
-    // Build details directly: rawrequest only carries url/method,
-    // so buildRequestDetails' `request` argument is satisfied by a
-    // shim object.
     const details = buildRequestDetails(
       { url: rawreq.rawUrl, method: rawreq.method },
       context,
@@ -533,13 +450,6 @@ export class WebRequestPlugin {
   }
 }
 
-// --- props mutation helpers ------------------------------------
-//
-// Each hook surfaces a different `props` shape; these helpers are
-// keyed by hook so the type assertions stay localised. The shapes
-// are mirrored from Scramjet's FetchHooks definition in
-// scramjet/packages/core/src/fetch/index.ts.
-
 /** intercept blocking: `props.response: ScramjetFetchResponse`. */
 function setInterceptResponse(
   props: InterceptProps,
@@ -551,9 +461,6 @@ function setInterceptResponse(
 function makeScramjetHeaders(entries: RawHeaders): ScramjetHeadersLike {
   const SH = getScramjet()?.ScramjetHeaders;
   if (SH) return SH.fromRawHeaders(entries);
-  // Fallback: tests / pre-init paths without $scramjet. Mirror the
-  // ScramjetHeaders contract minimally so consumers can still walk
-  // `.toRawHeaders()`.
   const map: Record<string, string> = {};
   for (const [k, v] of entries) map[k.toLowerCase()] = v;
   return {
@@ -628,8 +535,6 @@ function upgradeSchemeOf(url: string): string | null {
   }
   return null;
 }
-
-// --- header conversion ----------------------------------------
 
 /**
  * Convert RawHeaders ([name, value][]) to chrome.webRequest's array

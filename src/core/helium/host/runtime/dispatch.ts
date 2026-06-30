@@ -1,13 +1,3 @@
-// src/core/helium/host/runtime/dispatch.ts
-//
-// chrome.runtime.onMessage dispatcher with Chrome's sendResponse contract:
-//   - All listeners invoked with (message, sender, sendResponse)
-//   - Sync return values collected
-//   - If any listener returned `true`, wait for the first async sendResponse
-//     (subsequent calls are no-ops)
-//   - If a listener calls sendResponse synchronously, that value wins
-//     immediately and any `true` returns are ignored
-//   - Timeout: 30 seconds for async sendResponse
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -58,7 +48,6 @@ export function dispatchOnMessage(
         const r = listener(message, sender, sendResp);
         if (r === true) anyReturnedTrue = true;
       } catch (err) {
-        // Log but continue; Chrome doesn't propagate listener errors
         console.error('[helium/runtime] onMessage listener threw:', err);
       }
     }
@@ -66,12 +55,10 @@ export function dispatchOnMessage(
     if (settled) return;
 
     if (!anyReturnedTrue) {
-      // No listener will respond asynchronously
       settle(undefined, false);
       return;
     }
 
-    // Wait for async sendResponse or timeout
     timer = setTimeout(() => {
       settle(undefined, false);
     }, timeoutMs);

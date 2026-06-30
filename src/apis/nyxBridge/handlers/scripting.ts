@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/handlers/scripting.ts
-//
-// chrome.scripting parity. v1: func injection works; files: rejects;
-// insertCSS works; remove/register/update content scripts deferred.
 
 import { register } from './index';
 import { DDXError } from '../types';

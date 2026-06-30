@@ -34,7 +34,7 @@ import {
 	type InjectableScript
 } from './registry';
 
-type DomElement = unknown; // domhandler Element; we don't import its types
+type DomElement = unknown;
 
 /**
  * Signature of the inner function the rewriter calls. We mirror it
@@ -93,8 +93,6 @@ export function installScriptInjector(controller: unknown): void {
 			const originalGet = ctx.interface.getInjectScripts;
 			if (typeof originalGet !== 'function') return ctx;
 
-			// Avoid double-wrapping if this getter is somehow invoked
-			// recursively. We tag the wrapper and bail if we see it.
 			if ((originalGet as { __ddxWrapped?: boolean }).__ddxWrapped) {
 				return ctx;
 			}
@@ -133,11 +131,6 @@ export function installScriptInjector(controller: unknown): void {
 					}
 				}
 
-				// Order: registry-injected scripts run FIRST (before
-				// scramjet's own bootstrap). This is intentional —
-				// per-site shims must be live before any of the page's
-				// own scripts so they can patch globals, set storage,
-				// or otherwise prepare the environment.
 				return [...prepend, ...baseScripts];
 			};
 
@@ -148,7 +141,7 @@ export function installScriptInjector(controller: unknown): void {
 	});
 
 	installed = true;
-	void controller; // controller arg reserved for future use (e.g.
+	void controller;
 	// per-controller registries); currently we patch the class itself
 	// so the controller instance is unused. Keep the parameter to
 	// mirror `installEventsBridge(controller)` for call-site symmetry.
@@ -179,7 +172,6 @@ function resolveUrl(origin: unknown): URL | null {
  */
 function injectableToSrc(entry: InjectableScript): string {
 	if (entry.kind === 'src') return entry.url;
-	// kind === 'inline'
 	const utf8 = new TextEncoder().encode(entry.code);
 	let binary = '';
 	for (let i = 0; i < utf8.length; i++) {

@@ -4,7 +4,6 @@ import '@css/tailwind.css';
 import '@css/global.scss';
 import 'basecoat-css/all';
 
-// Inline CSS for Shadow DOM injection
 import varsCSS from '@css/vars.scss?inline';
 import importsCSS from '@css/imports.scss?inline';
 import tailwindCSS from '@css/tailwind.css?inline';
@@ -38,12 +37,6 @@ import { ExtensionDevToolsManager } from '@apis/devtools/extensionManager';
 
 const { Controller } = $scramjetController;
 
-/*navigator.serviceWorker?.addEventListener("message", (e) => {
-  console.log("[Main] SW message received:", e.data);
-  if (e.data?.type === "reload") location.reload();
-});
-navigator.serviceWorker?.startMessages();*/
-
 document.addEventListener('DOMContentLoaded', async () => {
 	try {
 		const existing = await navigator.serviceWorker.getRegistrations();
@@ -61,8 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 					console.warn('[Main] Failed to unregister stale SW:', err);
 				}
 			}
-			// Mark cleanup done so we don't loop, then reload to drop any
-			// active controller bindings to the unregistered SWs.
 			sessionStorage.setItem('__ddx_sw_cleanup', '1');
 			console.log(
 				'[Main] Reloading after cleaning up stale SW registrations'
@@ -70,7 +61,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			location.reload();
 			return;
 		}
-		// Clear the cleanup flag once we've successfully loaded without stale SWs
 		sessionStorage.removeItem('__ddx_sw_cleanup');
 	} catch (err) {
 		console.warn('[Main] Failed to enumerate SW registrations:', err);
@@ -133,7 +123,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	});
 
 	const eventsAPI = new EventSystem();
-	//await cache.init();
 
 	const profilesAPI = new ProfilesAPI(checkNightPlusStatus, 3);
 	await profilesAPI.initPromise;
@@ -148,9 +137,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	);
 	window.proxy = proxy;
 
-	// Backend swap removed in round-2 settings redesign — Scramjet ('sj') is the only
-	// supported backend. The old `proxy` SettingsAPI key (auto/sj/uv) is no longer read.
-	// Legacy settings page still writes it harmlessly.
 	const proxySetting = 'sj' as const;
 	let swConfigSettings: Record<string, any> = {};
 	var swConfig = {
@@ -162,7 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 				console.log('Scramjet Service Worker registered.');
 			}
 		},
-		// 'auto' was the "no service worker" mode; unreachable since round-2 backend swap removal.
 		auto: {
 			file: null,
 			config: null,
@@ -196,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	patchDocument(shadowRoot, shadowDocument);
 
-	window.d = shadowRoot; //DONT FUCKING CHNAGE THIS TO "doc" OR ANYTHING ELSE, IT'S USED IN THE DOCUMENT PATCHING AND IF YOU CHANGE IT, THE PATCHING WILL BREAK AND THE WHOLE BROWSER WILL BREAK
+	window.d = shadowRoot;
 
 	const initializeSystem = async () => {
 		console.log(swConfig[proxySetting as keyof typeof swConfig]);
@@ -225,8 +210,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		tabs.initSplitLayout();
 		tabs.setupVerticalTabsToggle();
-		// Wire host-shell context menus (tab strip background, back/forward/
-		// reload buttons). Must run after items are ready and tabs are wired.
 		tabs.auxiliaryMenus.installHostShellMenus();
 
 		window.protocols = proto;
@@ -239,20 +222,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 		//@ts-ignore
 		window.logging = loggingAPI;
 
-		// Proactively refresh the Night+ access token on boot so any
-		// embedded app that reads through nyxBridge (NyxAI's
-		// auth.getPlusToken) gets a fresh token rather than a stale one
-		// from last session. Fire-and-forget — the refresh path swallows
-		// its own errors and reactive 401-retry remains as the safety
-		// net. We don't await before nyxBridge.init() because the bridge
-		// only needs to be wired before NyxAI's iframe loads, and
-		// refresh is just a network round-trip that can complete in the
-		// background.
 		void tryRefreshOnBoot();
 
-		// NyxAI bridge — host-side coordinator that gives ddx://ai (NyxAI)
-		// typed control over DDX tabs. Stub for now; subsequent tasks wire
-		// handshake, channel, and per-frame agent.
 		const nyxBridge = createNyxBridge({
 			tabs: window.tabs,
 			proxy: window.proxy,
@@ -261,23 +232,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 		await nyxBridge.init();
 		window.nyxBridge = nyxBridge;
 
-		// Helium extension manager. Hydrates from /extensions/_index.json
-		// (in TFS), spawns each enabled extension's hidden iframe,
-		// registers per-extension RPC handlers for chrome.* methods.
-		// Reuses NyxBridge's HandlerContext for browser-control
-		// delegation (tabs, future cookies/bookmarks/etc.).
 		const extensionManager = new ExtensionManager(
 			window.proxy,
 			nyxBridge.getHandlerContext(),
 		);
 
-		// `chrome_url_overrides` coordinator. Wired BEFORE
-		// extensionManager.init() so any auto-spawn-time install hooks
-		// (currently none — hooks only fire on user-initiated install,
-		// but defensive) see the coordinator. After init(), we replay
-		// any persisted active overrides into the Protocols layer so
-		// the user's previously-confirmed newtab/bookmarks/history
-		// overrides survive restarts.
 		const { ExtensionUrlOverrides } = await import('@apis/extensions/urlOverrides');
 		const urlOverrides = new ExtensionUrlOverrides(proto);
 		extensionManager.setUrlOverrides(urlOverrides);
@@ -286,21 +245,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 		(window as any).extensions = extensionManager;
 		(window as any).extensionUrlOverrides = urlOverrides;
 
-		// Replay persisted active overrides now that extensions are
-		// spawned (so `getManifest(extId)` can resolve).
 		await urlOverrides.applyAll((extId) => extensionManager.getManifest(extId));
 
-		// Mount per-extension toolbar buttons (browser-action + page-action)
-		// inside the urlbar-ring. Render is already in the shadow DOM at
-		// this point. Toolbar self-subscribes to lifecycle events
-		// (tabSelected, install/uninstall, action-state mutations) for
-		// auto-refresh.
 		try {
 			const { ExtensionToolbarButtons } = await import('@browser/extensions/toolbarButtons');
 			const toolbar = new ExtensionToolbarButtons();
 			const tryMount = (): void => {
 				if (!toolbar.install()) {
-					// urlbar-ring not in DOM yet — retry next frame.
 					requestAnimationFrame(tryMount);
 				}
 			};
@@ -310,9 +261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			console.warn('[index] extension toolbar mount failed:', err);
 		}
 
-		// Mount the download shelf. Slot is in render.ts (hidden by
-		// default). Shelf subscribes to DownloadsManager events and
-		// auto-shows when the first download arrives.
 		try {
 			const { DownloadShelf } = await import('@browser/downloads/shelf');
 			const shelf = new DownloadShelf();
@@ -325,10 +273,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			console.warn('[index] download shelf mount failed:', err);
 		}
 
-		// Mount the lock-icon dropdown. Wires the `[data-component=
-		// "site-info"]` button to a floating panel showing the
-		// current site's permissions + cookie count + "Clear site
-		// data" button.
 		try {
 			const { LockDropdown } = await import('@browser/sitePermissions/lockDropdown');
 			const lock = new LockDropdown();
@@ -345,10 +289,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			(await settingsAPI.getItem('startupBehavior')) || 'newtab';
 		const startupCustomUrl =
 			(await settingsAPI.getItem('startupCustomUrl')) || '';
-
-		/*if ("serviceWorker" in navigator) {
-    await navigator.serviceWorker.ready;
-  }*/
 
 		let restored = false;
 		if (startupBehavior === 'restore') {
@@ -435,7 +375,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 							activeIframe
 						);
 					} else {
-						// No tab open yet — open a new one with the encoded URL
 						await proxy.registerSW(swConfigSettings);
 						await proxy.setTransports();
 						const prefix =
@@ -449,10 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			}
 		});
 
-		// Seed the command registry now that tabs/proto are fully ready.
-		// Uses a local KeybindManager to read the user's current keybinds —
-		// the registry stores closures that don't depend on this instance's
-		// lifetime.
 		{
 			const { KeybindManager } = await import('@browser/functions/keybinds');
 			const km = new KeybindManager(settingsAPI);
@@ -485,7 +420,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		window.logging = loggingAPI;
 		window.profiles = profilesAPI;
 		window.globals = globalFunctions;
-		//window.renderer = render;
 		window.functions = functions;
 		window.SWconfig = swConfig;
 		window.ProxySettings = proxySetting;

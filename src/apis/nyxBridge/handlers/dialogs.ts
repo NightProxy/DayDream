@@ -1,8 +1,3 @@
-// src/apis/nyxBridge/handlers/dialogs.ts
-//
-// One-shot dialog handler. NyxAI calls handleNext() BEFORE triggering
-// an action that would open a JS dialog (alert/confirm/prompt) so
-// chobitsu's Page.handleJavaScriptDialog auto-responds when it fires.
 
 import { register } from './index';
 import { DDXError } from '../types';

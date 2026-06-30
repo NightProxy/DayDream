@@ -1,13 +1,3 @@
-// src/pages/settings/sections/downloads.ts
-//
-// Downloads section. Three rows on the main view:
-//   - Download location (display + Change button stub — no real picker yet)
-//   - Ask where to save each file (persisted toggle)
-//   - Show download shelf (persisted toggle, also live-updates the
-//     `window.downloadShelf` controller via `setAutoShow`)
-//
-// The actual downloads list lives on its own page (ddx://downloads/);
-// this section only houses user-facing preferences.
 
 import { createRow } from "../components/row";
 import { createToggle } from "../components/toggle";
@@ -47,7 +37,6 @@ export async function render(container: HTMLElement): Promise<void> {
 		}),
 	);
 
-	// "Ask where to save" — unprefixed key (no runtime consumer yet).
 	const askToggle = createToggle({
 		icon: "help-circle",
 		label: "Ask where to save each file",
@@ -62,9 +51,6 @@ export async function render(container: HTMLElement): Promise<void> {
 	});
 	section.appendChild(askToggle.element);
 
-	// "Show download shelf" — KEEP `settings.` prefix to match runtime reader
-	// at src/browser/downloads/shelf.ts:94 (`api.getItem('settings.downloadShelfAutoShow')`).
-	// Also live-update the shelf controller via setAutoShow on change.
 	const shelfToggle = createToggle({
 		icon: "panel-bottom",
 		label: "Show download shelf",

@@ -1,5 +1,3 @@
-// Settings search: registry of "searchable units" (rows, toggles, buttons),
-// + a filter() method that hides non-matching units and dims the rail.
 
 export interface SearchUnit {
   id: string;
@@ -55,13 +53,11 @@ class SettingsSearchImpl {
       }
     }
 
-    // Hide sections with no matches
     for (const sectionEl of document.querySelectorAll<HTMLElement>("[data-section-id]")) {
       const id = sectionEl.dataset.sectionId!;
       sectionEl.classList.toggle("search-hide", !matchedSections.has(id));
     }
 
-    // Dim rail
     for (const railEl of document.querySelectorAll<HTMLElement>(".rail-item")) {
       railEl.classList.add("dim");
     }

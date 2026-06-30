@@ -1,22 +1,3 @@
-// src/core/helium/host/devtools/page.ts
-//
-// Devtools-page iframe spawner.
-//
-// Per spec §24.1: when an extension declares `devtools_page:
-// 'devtools.html'` AND devtools opens for some tab, we spawn a
-// hidden iframe at https://<extId>.ddx/devtools.html that runs in
-// the extension's origin with the HeliumExtensionPlugin attached.
-//
-// This module owns:
-//   - the per-(extId, tabId) hidden iframe registry,
-//   - lifecycle hooks (spawn / despawn / despawnAllForExt / despawnAllForTab),
-//   - exposing the active inspected tabId for inspectedWindow.tabId
-//     resolution.
-//
-// devtools_page iframes are constructed with `ctxOverrides: { inDevtools: true }`
-// so the bootstrap client surfaces `chrome.devtools.*` (panels,
-// inspectedWindow, network) on the chrome global. Regular BG iframes
-// don't carry the flag and so don't expose those namespaces.
 
 import type { Proxy } from '@apis/proxy';
 import { HeliumExtensionPlugin } from '../../extfs/plugin';
@@ -26,8 +7,8 @@ const CONTAINER_ID = '__helium_devtools_pages__';
 
 interface DevtoolsPageEntry {
 	extId: string;
-	tabId: string; // DDX tabId
-	tabIdNum: number; // numeric tabId for chrome.devtools.inspectedWindow.tabId
+	tabId: string;
+	tabIdNum: number;
 	iframe: HTMLIFrameElement;
 }
 
@@ -38,7 +19,7 @@ export interface DevtoolsPageHostDeps {
 }
 
 export class DevtoolsPageHost {
-	private readonly pages = new Map<string, DevtoolsPageEntry>(); // key = `${extId}::${tabId}`
+	private readonly pages = new Map<string, DevtoolsPageEntry>();
 	private container: HTMLDivElement | null = null;
 
 	constructor(private readonly deps: DevtoolsPageHostDeps) {}
@@ -65,11 +46,6 @@ export class DevtoolsPageHost {
 		iframe.dataset.heliumDevtoolsTab = ddxTabId;
 		iframe.style.display = 'none';
 
-		// Compute the numeric tabId now and bake it into ctx. This
-		// makes `chrome.devtools.inspectedWindow.tabId` a synchronous
-		// read inside the devtools_page realm, matching Chrome's
-		// contract (extensions read it inline and pass it into
-		// `chrome.tabs.sendMessage` etc.).
 		const tabIdNum = this.deps.tabIdToNum(ddxTabId);
 		const plugin = new HeliumExtensionPlugin(ctx, {
 			ctxOverrides: { inDevtools: true, inspectedTabId: tabIdNum },
@@ -108,9 +84,6 @@ export class DevtoolsPageHost {
 		};
 		this.pages.set(key, entry);
 
-		// Register as inspectable target so it shows up on the
-		// ddx://extensions "Inspect views" list. Best-effort — the
-		// manager may not exist yet during early init.
 		try {
 			const w = window as {
 				extDevtools?: import('@apis/devtools/extensionManager').ExtensionDevToolsManager;

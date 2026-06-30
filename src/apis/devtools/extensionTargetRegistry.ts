@@ -62,8 +62,8 @@ export type TargetEvent =
 type Listener = (e: TargetEvent) => void;
 
 export class ExtensionTargetRegistry {
-	private targets = new Map<string, ExtensionTarget>(); // key = `${extId}::${targetId}`
-	private byExtension = new Map<string, Set<string>>(); // extId → Set<targetId>
+	private targets = new Map<string, ExtensionTarget>();
+	private byExtension = new Map<string, Set<string>>();
 	private wantedIframes = new WeakSet<HTMLIFrameElement>();
 	private listeners = new Set<Listener>();
 
@@ -71,8 +71,6 @@ export class ExtensionTargetRegistry {
 		const key = `${target.extId}::${target.targetId}`;
 		const prev = this.targets.get(key);
 		if (prev) {
-			// Replace silently (e.g., BG iframe re-spawned). Drop the old
-			// one's wanted flag if its iframe changed.
 			if (
 				prev.kind !== 'content-script' &&
 				target.kind !== 'content-script' &&

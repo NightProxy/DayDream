@@ -14,11 +14,6 @@ export class ChromeProcesses {
   public readonly onUpdatedWithMemory: ChromeEvent = new ChromeEvent();
   public readonly onUpdated: ChromeEvent = new ChromeEvent();
 
-  // `chrome.processes.*` — process introspection. DDX has no process
-  // model (everything is one renderer + Scramjet SW). Returns safe
-  // defaults; extensions that branch on process info pick the "no
-  // info" path.
-
   getProcessIdForTab(...args: any[]): any {
     const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
     if (cb) { try { cb(-1); } catch { /* swallow */ } return undefined; }

@@ -3,7 +3,7 @@ import type { SearchEngineRegistry } from '@apis/searchEngines';
 import { parseBang } from '@apis/searchEngines';
 
 export interface BangModeDeps {
-	rawInput: string; // e.g. "!yt cats" — full input including "!"
+	rawInput: string;
 	searchEngines: SearchEngineRegistry;
 	onNavigate: (url: string) => void;
 }

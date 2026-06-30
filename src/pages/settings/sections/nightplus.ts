@@ -14,9 +14,6 @@ interface NightPlusState {
   expiresAt: string | null;
 }
 
-// Mullvad relay shape from https://api.mullvad.net/public/relays/wireguard/v1/
-// (verified live + matches legacy src/pages/settingsOld/index.tsx:1240-1289):
-//   { countries: [{ name, code, cities: [{ name, code, relays: [{ hostname, ... }] }] }] }
 interface MullvadRelay {
   hostname: string;
   country: string;
@@ -42,7 +39,6 @@ export async function render(container: HTMLElement, ctx: SectionContext): Promi
   if (state.authed) renderSignedIn(container, state);
   else renderSignedOut(container);
 
-  // Refresh in background
   void (async () => {
     try {
       const npMod = await import("../../../apis/nightplus");
@@ -62,10 +58,6 @@ export async function render(container: HTMLElement, ctx: SectionContext): Promi
 
 export function unmount(): void {
   renderGen++;
-  // Invalidate any in-flight Mullvad fetch so a late response doesn't open
-  // a dropdown after the user has navigated away. (proxy.fetch can't be
-  // aborted via AbortSignal — its signature is (url, method, body, headers)
-  // and it has no signal parameter.)
   mullvadGen++;
   mounted = null;
 }
@@ -103,7 +95,6 @@ function renderSignedIn(container: HTMLElement, state: NightPlusState): void {
   h2.textContent = "Night+";
   section.appendChild(h2);
 
-  // Status card
   const status = document.createElement("div");
   status.className = "ddx-status-card";
   const icon = document.createElement("div");
@@ -143,10 +134,8 @@ function renderSignedIn(container: HTMLElement, state: NightPlusState): void {
   status.appendChild(body);
   section.appendChild(status);
 
-  // Features list
   section.appendChild(renderFeaturesUnlocked());
 
-  // Premium WISP picker
   section.appendChild(
     createRow({
       icon: "server",
@@ -167,7 +156,6 @@ function renderSignedIn(container: HTMLElement, state: NightPlusState): void {
     }),
   );
 
-  // Mullvad picker
   section.appendChild(
     createRow({
       icon: "globe",
@@ -188,7 +176,6 @@ function renderSignedIn(container: HTMLElement, state: NightPlusState): void {
     }),
   );
 
-  // Toggles
   section.appendChild(
     createToggle({
       icon: "shield",
@@ -222,7 +209,6 @@ function renderSignedIn(container: HTMLElement, state: NightPlusState): void {
     }).element,
   );
 
-  // Open NyxAI row
   section.appendChild(
     createRow({
       icon: "sparkles",
@@ -256,7 +242,6 @@ function renderSignedOut(container: HTMLElement): void {
   h2.textContent = "Night+";
   section.appendChild(h2);
 
-  // Hero
   const hero = document.createElement("div");
   hero.className = "ddx-status-card is-locked";
   const logo = document.createElement("img");
@@ -288,7 +273,6 @@ function renderSignedOut(container: HTMLElement): void {
   hero.appendChild(body);
   section.appendChild(hero);
 
-  // Locked features
   const locked = document.createElement("div");
   locked.className = "ddx-locked-card";
   for (const feature of [
@@ -390,28 +374,20 @@ async function openPremiumWispPicker(anchor: HTMLElement): Promise<void> {
   }
 }
 
-// Convert a Mullvad WireGuard hostname (e.g. "us-nyc-wg-001") to its
-// SOCKS5 equivalent URL (e.g. "socks5h://us-nyc-socks5-001.relays.mullvad.net:1080").
-// Matches the legacy transform at src/pages/settingsOld/index.tsx:1264-1271.
-// Returns null if the hostname doesn't follow the expected pattern.
 function hostnameToSocksUrl(hostname: string): string | null {
   const parts = hostname.split("-");
   if (parts.length < 4) return null;
   const nodeNumber = parts[parts.length - 1];
-  const baseHostname = parts.slice(0, -2).join("-"); // drop "-wg-NNN"
+  const baseHostname = parts.slice(0, -2).join("-");
   return `socks5h://${baseHostname}-socks5-${nodeNumber}.relays.mullvad.net:1080`;
 }
 
 async function fetchMullvadRelays(gen: number): Promise<MullvadRelay[]> {
   if (mullvadCache && Date.now() - mullvadCache.ts < 3_600_000) return mullvadCache.data;
   const proxy = await getProxy();
-  // proxy.fetch signature is (url, method?, body?, headers?) — does NOT
-  // accept a RequestInit. AbortSignal is not supported here, so we rely
-  // on `mullvadGen` to drop late responses instead.
   const resp = await proxy.fetch("https://api.mullvad.net/public/relays/wireguard/v1/");
   if (gen !== mullvadGen) return [];
   const data = await resp.json();
-  // Live API schema (verified): { countries: [{ name, code, cities: [{ name, code, relays: [{ hostname, ... }] }] }] }
   const enriched: MullvadRelay[] = [];
   for (const country of data?.countries ?? []) {
     for (const city of country?.cities ?? []) {
@@ -433,7 +409,7 @@ async function openMullvadPicker(anchor: HTMLElement): Promise<void> {
   const gen = ++mullvadGen;
   try {
     const relays = await fetchMullvadRelays(gen);
-    if (gen !== mullvadGen) return; // navigated away or another picker started
+    if (gen !== mullvadGen) return;
     if (!relays.length) {
       showInlineNotice("No Mullvad relays available", { kind: "error" });
       return;
@@ -476,13 +452,6 @@ async function openMullvadPicker(anchor: HTMLElement): Promise<void> {
 }
 
 async function openSignIn(): Promise<void> {
-  // night-auth contract (verified via src/pages/newtab/index.tsx:888-985 +
-  // package.json exports):
-  //   - The package's default export IS the NightLogin class.
-  //   - onSuccess / onCancel are passed to the CONSTRUCTOR, not to .show().
-  //   - .show() is called with NO arguments.
-  //   - The modal writes the JWT to localStorage["access_token"] itself
-  //     then fires onSuccess(undefined) as a "go read it" hook.
   try {
     const [{ default: NightLogin }, mod] = await Promise.all([
       import("@nightnetwork/night-auth"),
@@ -492,9 +461,6 @@ async function openSignIn(): Promise<void> {
       service: "DayDreamX",
       theme: "system",
       backdropBlur: "8px",
-      // Modal references /bg.png, /nightlogo.png etc. at runtime —
-      // empty assetUrl resolves them against the served origin root,
-      // where srv/vite/copy.ts puts them.
       assetUrl: "",
       onSuccess: async () => {
         let token: string | null = null;
