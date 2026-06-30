@@ -9,19 +9,12 @@
 import { ChromeMiniInstance } from '../mini-chrome-instance';
 
 export function runPseudo(ctx: any, scriptKey: string, scriptBody: string): void {
-  // Pseudo runs in the page realm; let the constructor post window-ready
-  // so the host can route events back to this same window.
   const chromeInstance = new ChromeMiniInstance(ctx, scriptKey);
-  // Freeze the surface so a misbehaving script can't replace methods.
-  // Doesn't prevent mutation of unfrozen nested objects (e.g.
-  // chrome.runtime.lastError) since we need to mutate that ourselves.
   Object.freeze(chromeInstance.runtime);
   Object.freeze(chromeInstance.extension);
   Object.freeze(chromeInstance.storage);
   Object.freeze(chromeInstance.tabs);
 
-  // Capture intrinsics before any user code runs. If the page later
-  // monkey-patches `Object`, the script body sees the captured ref.
   const _Object = Object;
   const _Array = Array;
   const _Promise = Promise;

@@ -1,48 +1,3 @@
-// src/apis/siteData.ts
-//
-// SiteDataManager — per-origin data clearing.
-//
-// Drives the address-bar lock-icon "Clear site data" UX, the
-// hard-cache-reset variant of refresh, and the real implementation of
-// `chrome.browsingData.*` host handlers.
-//
-// What we can clear PER ORIGIN:
-//   - Cookies            : iterate CookieJar, delete entries whose
-//                          domain matches the target host.
-//   - localStorage       : iterate keys, remove those prefixed with
-//                          `${host}@` (Scramjet's namespace).
-//   - sessionStorage     : same prefix scheme.
-//   - HTTP cache         : tag-based eviction via Scramjet's
-//                          ScramjetClient cache plugin OR by
-//                          bumping a "cache epoch" on the next nav
-//                          (forces revalidation). We use both —
-//                          tag eviction if the plugin is loaded,
-//                          plus an explicit query-string buster on
-//                          the next navigation.
-//   - In-flight requests : not selectively clearable; leave alone.
-//
-// What's GLOBAL (can't be cleared per-origin without losing data):
-//   - IndexedDB          : NOT namespaced by Scramjet — the underlying
-//                          IndexedDB instance is shared with the host
-//                          page. We refuse to clear it per-origin to
-//                          avoid breaking DDX's own DBs (history,
-//                          bookmarks, etc.). `clearAll()` is OK if
-//                          the caller is explicit about wanting it.
-//   - Cache Storage      : not rewritten by Scramjet (proxied pages
-//                          can't register their own SW).
-//   - Service Workers    : owned by the host's Scramjet SW; no per-
-//                          origin worker registrations exist.
-//
-// PUBLIC API:
-//   const m = SiteDataManager.getInstance();
-//   await m.clearCookies('example.com');
-//   await m.clearStorage('example.com');
-//   await m.clearCache('example.com');
-//   await m.clearAll('example.com'); // wraps cookies + storage + cache
-//   await m.clearAllSites();         // wipe everything (browsingData.remove all=true)
-//
-// Returns an object with per-category counts so UI can show "Cleared 3
-// cookies, 2 localStorage keys, marked cache stale".
 
 import type { CookieAccessor } from './data/cookies';
 
@@ -108,9 +63,6 @@ export class SiteDataManager {
     if (!host) return 0;
     const accessor = this.cookieAccessor;
     if (!accessor) return 0;
-    // CookieAccessor's filter supports `domain` (matches the cookie's
-    // domain OR any parent). We can't directly delete via accessor
-    // (it has no per-host clear), so list + remove individually.
     const cookies = await accessor.getCookies({ domain: host });
     let removed = 0;
     for (const c of cookies) {
@@ -162,8 +114,6 @@ export class SiteDataManager {
     if (!host) return false;
     const prior = this.cacheEpochByHost.get(host) ?? 0;
     this.cacheEpochByHost.set(host, prior + 1);
-    // Best-effort: invalidate Scramjet cache plugin storage if loaded.
-    // The plugin keys entries by URL; we walk and drop matching ones.
     try {
       const cachePlugin = (window as { __scramjetHttpCache?: { clearForHost?: (h: string) => void } }).__scramjetHttpCache;
       cachePlugin?.clearForHost?.(host);
@@ -201,17 +151,12 @@ export class SiteDataManager {
    * `@` namespace, e.g. theme settings) — only the per-origin entries.
    */
   async clearAllSites(): Promise<{ cookies: number; localStorageKeys: number; sessionStorageKeys: number }> {
-    // Cookies: nuke entirely via the underlying jar's clear().
     let cookies = 0;
     const accessor = this.cookieAccessor;
     try {
-      // Use getCookies({}) + remove loop to count + emit per-cookie events.
       if (accessor) {
         const all = await accessor.getCookies({});
         cookies = all.length;
-        // Best-effort: try to hit the jar directly for one-shot clear.
-        // Falls back to per-cookie remove if the jar shape doesn't
-        // expose a clear() (or if accessor doesn't expose its proxy).
         const accessorAny = accessor as unknown as {
           proxy?: { getCookieJar?: () => { clear?: () => void } | null };
         };
@@ -242,11 +187,6 @@ export class SiteDataManager {
     const toRemove: string[] = [];
     for (let i = 0; i < store.length; i++) {
       const key = store.key(i);
-      // Scramjet's namespace pattern is `${host}@${origKey}`. Any
-      // key containing '@' that isn't a DDX-internal key qualifies.
-      // We require host to look like a host (contains '.' OR is
-      // 'localhost') to avoid eating legitimate '@' keys (e.g.
-      // email-formatted keys some libs use as identifiers).
       if (!key || !key.includes('@')) continue;
       const at = key.indexOf('@');
       const maybeHost = key.slice(0, at);
@@ -271,7 +211,6 @@ export class SiteDataManager {
       const u = new URL(input);
       return u.hostname.toLowerCase();
     } catch {
-      // Not a URL — treat as host.
       return input.toLowerCase().replace(/^\.+/, '');
     }
   }

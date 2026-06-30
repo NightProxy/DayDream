@@ -1,10 +1,3 @@
-// src/core/helium/host/webRequest/handlers.ts
-//
-// Direct chrome.webRequest.* methods. The event surface
-// (addListener / removeListener / hasListener) is wired through
-// the Event Subscription RPC (Task 27) rather than HANDLER_PERMISSIONS,
-// because subscription is a stateful bidirectional protocol rather
-// than a one-shot RPC.
 
 import type { ExtensionContext } from '../../extfs/types';
 

@@ -1,6 +1,3 @@
-// src/core/helium/host/devtools/index.ts
-//
-// Re-exports for the chrome.devtools.* host modules.
 
 export { DevtoolsHandlers, DevtoolsNotAvailableError } from './handlers';
 export type { DevtoolsHandlersDeps } from './handlers';

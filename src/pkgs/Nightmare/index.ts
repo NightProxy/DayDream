@@ -17,7 +17,7 @@ class Nightmare implements NightmareUI {
 	rightclickmenu: RightClickMenu | null = null;
 	notifications: NotificationManager | null = null;
 	permissionPrompt: PermissionPrompt | null = null;
-	np: NPInterface | null = null; //polyfill for old Nightmare plugins
+	np: NPInterface | null = null;
 
 	constructor() {
 		this.initializeComponents();
@@ -36,7 +36,7 @@ class Nightmare implements NightmareUI {
 			sidemenu: this.sidemenu,
 			sidepanel: this.sidepanel,
 			rightclickmenu: this.rightclickmenu
-		}; //polyfill for old Nightmare plugins
+		};
 	}
 
 	createElement(

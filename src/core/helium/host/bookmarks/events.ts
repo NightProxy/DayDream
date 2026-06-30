@@ -1,4 +1,3 @@
-// src/core/helium/host/bookmarks/events.ts
 
 import type { ExtensionManager } from '@apis/extensions';
 import { BookmarkManager } from '@apis/bookmarks';

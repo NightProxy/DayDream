@@ -278,7 +278,6 @@ export class Controller {
 			const frame = this.frames.find((f) => path.startsWith(f.prefix));
 			if (!frame) throw new Error("No frame found for request");
 			try {
-				// doesn't actually *load* every request, but hold up requests until the promise finishes
 				await this.loadSavedCookies();
 
 				if (path === frame.prefix + this.config.virtualWasmPath) {
@@ -517,7 +516,6 @@ export class Controller {
 			}
 
 			if (e.data.$controller$swrevive) {
-				// if we just spawned the service worker, it will send this even though it's not actually dead
 				// TODO: pretty jank, fix at some point
 				if (this.guardServiceWorkerRevive) {
 					return;
@@ -666,14 +664,6 @@ function yieldGetInjectScripts(
 	sjconfig: ScramjetConfig,
 	prefix: URL,
 	cookieJar: CookieJar,
-	// `obscuraSrc` is the IIFE-format Obscura bundle as a raw string.
-	// We thread it through this factory's parameter list (rather than
-	// reading from a module-level binding) because `yieldGetInjectScripts`
-	// is itself stringified into the bootstrap below for nested-frame
-	// recursion — and `.toString()` doesn't carry over closure values.
-	// Keeping it as a parameter means the stringified copy still works
-	// when the proxied frame's inject.ts re-invokes us, as long as
-	// inject.ts threads the bundle through too.
 	obscuraSrc: string
 ) {
 	const getInjectScripts: ScramjetInterface["getInjectScripts"] = (
@@ -753,11 +743,6 @@ export class Frame {
 					this.controller.scramjetConfig,
 					new URL(this.prefix, location.href),
 					this.controller.cookieJar,
-					// Inline Obscura IIFE bundle text. The data URL emitted
-					// by `yieldGetInjectScripts` evaluates this inside each
-					// proxied frame, which re-initializes a frame-local
-					// WASM-backed codec. See note inside yieldGetInjectScripts
-					// for why this can't be passed as a function reference.
 					OBSCURA_IIFE_SRC
 				),
 				getWorkerInjectScripts: (meta, type, script) => {

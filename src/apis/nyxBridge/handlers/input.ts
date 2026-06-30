@@ -1,9 +1,3 @@
-// src/apis/nyxBridge/handlers/input.ts
-//
-// Low-level keyboard/mouse via CDP Input.dispatch*. These give NyxAI
-// Puppeteer-grade fidelity (real OS-level input events, not synthetic
-// DOM events). For high-level helpers see dom.click/dom.type which use
-// the DOM-level path.
 
 import { register } from './index';
 import { DDXError } from '../types';

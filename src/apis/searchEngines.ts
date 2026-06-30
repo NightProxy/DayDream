@@ -16,7 +16,6 @@ export interface SearchEngineRegistryReader {
 	findByAt(at: string): SearchEngine | undefined;
 }
 
-// Built-in seed list. Order = display order.
 export const BUILTIN_SEARCH_ENGINES: Omit<SearchEngine, 'id'>[] = [
 	{ name: 'DuckDuckGo', bang: 'ddg', at: 'ddg', urlTemplate: 'https://duckduckgo.com/?q=%s', builtIn: true },
 	{ name: 'Google', bang: 'g', at: 'google', urlTemplate: 'https://www.google.com/search?q=%s', builtIn: true },
@@ -80,13 +79,6 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 
 	constructor(private settings: SettingsAPI) {}
 
-	// Lazy because `new Logger()` constructs a NightFS instance, which calls
-	// `navigator.storage.getDirectory()`. That isn't available in jsdom (the
-	// test runtime) or any other non-browser context. Eager init would crash
-	// every test that instantiates a registry; lazy init defers the side
-	// effect until the corrupt-load diagnostic actually needs it. The outer
-	// try/catch at the call site tolerates the case where Logger throws
-	// even at use time. See SearchEngineRegistry.load() corrupt path.
 	private getLogger(): Logger {
 		if (!this.logger) this.logger = new Logger();
 		return this.logger;
@@ -96,10 +88,8 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 		const rawEngines = await this.settings.getItem<unknown>('searchEngines');
 		const rawDefaultId = await this.settings.getItem<string>('defaultSearchEngineId');
 
-		// Case: corrupt (truthy but not a valid array of engines)
 		if (rawEngines != null && !this.isValidEngineList(rawEngines)) {
 			await this.settings.setItem('searchEngines.backup', rawEngines);
-			// Best-effort log; tolerate Logger init failure (e.g., non-browser env).
 			try {
 				const logResult = this.getLogger().createLog(
 					'[searchEngines] corrupt registry value backed up to searchEngines.backup; reseeding built-ins',
@@ -113,7 +103,6 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 			return;
 		}
 
-		// Case: unset / empty array → migration
 		if (!Array.isArray(rawEngines) || rawEngines.length === 0) {
 			const legacySearch = await this.settings.getItem<string>('search');
 			await this.migrateFromLegacy(legacySearch);
@@ -121,7 +110,6 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 			return;
 		}
 
-		// Case: valid existing list
 		this.engines = (rawEngines as SearchEngine[]).map((e) => ({ ...e }));
 		if (rawDefaultId && this.engines.some((e) => e.id === rawDefaultId)) {
 			this.defaultId = rawDefaultId;
@@ -235,7 +223,6 @@ export class SearchEngineRegistry implements SearchEngineRegistryReader {
 		const idx = this.engines.findIndex((e) => e.id === id);
 		if (idx === -1) throw new Error(`Unknown engine id: ${id}`);
 		if (patch.urlTemplate !== undefined) this.validateTemplate(patch.urlTemplate);
-		// Normalize incoming patch values: trim whitespace; collapse empty `at` to undefined.
 		const normPatch: typeof patch = { ...patch };
 		if (patch.bang !== undefined) {
 			normPatch.bang = patch.bang.trim();
@@ -340,9 +327,6 @@ export function searchImpl(input: string, registry: SearchEngineRegistry): strin
 	try {
 		return new URL(input).toString();
 	} catch {
-		// Not a full URL — try as a bare hostname with implicit http://.
-		// Note: bare hostnames without a dot (e.g. "localhost", "myserver")
-		// fall through to search by design — preserved from legacy heuristic.
 		try {
 			const url = new URL(`http://${input}`);
 			if (url.hostname.includes('.')) return url.toString();

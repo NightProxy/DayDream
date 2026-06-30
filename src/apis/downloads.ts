@@ -1,44 +1,3 @@
-// src/apis/downloads.ts
-//
-// DownloadsManager — pluggable downloads orchestrator.
-//
-// Design goals:
-//   - **Pluggable backends.** Each "platform" (the default web
-//     backend, plus external platform implementations the user adds)
-//     registers a `DownloadProvider` and the manager routes downloads
-//     through it. The default web provider ships in DDX.
-//   - **Programmatic + navigation.** `chrome.downloads.download()`
-//     creates a download via the manager. Navigation-initiated
-//     downloads (user clicks a `.zip` link, server responds with
-//     `Content-Disposition: attachment`) are intercepted by the
-//     Scramjet plugin in `src/browser/downloads/scramjetPlugin.ts`
-//     and routed to the SAME manager.
-//   - **Real progress + lifecycle.** `onCreated` / `onChanged` /
-//     `onErased` / `onDeterminingFilename` events fire as real
-//     state transitions, not stubs. Extensions get the full Chrome
-//     contract.
-//   - **Persistent history.** Downloads persist across sessions via
-//     SettingsAPI (`/data/downloads.json`). `search()` returns the
-//     history.
-//
-// PROVIDER CONTRACT:
-//   interface DownloadProvider {
-//     name: string;          // unique provider id
-//     start(spec, controller): DownloadHandle | Promise<DownloadHandle>;
-//     pause?(id): void;       // optional
-//     resume?(id): void;      // optional
-//     cancel?(id): void;      // optional
-//     listFiles?(): DownloadItem[]; // optional — for combined listing
-//   }
-//
-// The provider receives a `DownloadController` callback with
-// `reportProgress`, `reportComplete`, `reportError` methods. The
-// manager wires these into its event fan-out.
-//
-// USAGE:
-//   const mgr = DownloadsManager.getInstance();
-//   mgr.registerProvider(new DefaultWebDownloadProvider());
-//   await mgr.startDownload({ url: 'https://example.com/file.zip' });
 
 import { SettingsAPI } from './settings';
 
@@ -361,7 +320,6 @@ export class DownloadsManager {
       delta.filename = { previous: item.filename, current: filename };
       item.filename = filename;
     }
-    // Sync received bytes to total if we know it.
     if (item.totalBytes > 0 && item.bytesReceived !== item.totalBytes) {
       delta.bytesReceived = { previous: item.bytesReceived, current: item.totalBytes };
       item.bytesReceived = item.totalBytes;
@@ -384,8 +342,6 @@ export class DownloadsManager {
     this.emit({ type: 'changed', delta });
     this.enqueueWrite();
   }
-
-  // ── chrome.downloads.* delegation surface ────────────────────────
 
   async search(query: {
     query?: string[];
@@ -411,8 +367,6 @@ export class DownloadsManager {
       results = results.filter((i) => i.paused === query.paused);
     }
     if (Array.isArray(query.query) && query.query.length > 0) {
-      // Each term is matched against url + filename (case-insensitive).
-      // Prefix with `-` to exclude.
       const includes: string[] = [];
       const excludes: string[] = [];
       for (const t of query.query) {
@@ -442,7 +396,6 @@ export class DownloadsManager {
       );
     }
     if (Array.isArray(query.orderBy)) {
-      // chrome's orderBy is a list of property names; prefix `-` for descending.
       results.sort((a, b) => {
         for (const k of query.orderBy!) {
           const desc = k.startsWith('-');
@@ -458,7 +411,6 @@ export class DownloadsManager {
         return 0;
       });
     } else {
-      // Default: newest first.
       results.sort((a, b) => b.startTime - a.startTime);
     }
     if (typeof query.limit === 'number') results = results.slice(0, query.limit);
@@ -472,7 +424,6 @@ export class DownloadsManager {
     if (control?.pause) {
       control.pause();
     } else {
-      // Provider doesn't support pause — also try the provider class method.
       const provider = this.providers.get(item.providerName);
       provider?.pause?.(id);
     }
@@ -530,8 +481,6 @@ export class DownloadsManager {
   }
 }
 
-// ── helpers ──────────────────────────────────────────────────────────
-
 export function inferFilenameFromUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -568,8 +517,6 @@ export function inferMimeFromUrl(url: string): string {
     return 'application/octet-stream';
   }
 }
-
-// ── Default web provider ────────────────────────────────────────────
 
 /**
  * Default download provider — fetches the URL and triggers a browser
@@ -610,14 +557,12 @@ export class DefaultWebDownloadProvider implements DownloadProvider {
     const cd = response.headers.get('content-disposition') ?? '';
     const inferredName = parseFilenameFromContentDisposition(cd) ?? controller.item.filename;
     if (!response.body) {
-      // Older runtimes — no streaming, just blob.
       const blob = await response.blob();
       controller.reportProgress(blob.size, blob.size);
       this.triggerDownload(blob, inferredName);
       controller.reportComplete(undefined, inferredName);
       return;
     }
-    // Stream + report progress.
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
     let received = 0;
@@ -654,7 +599,6 @@ export class DefaultWebDownloadProvider implements DownloadProvider {
       a.click();
       a.remove();
     } finally {
-      // Defer revoke so the click has a chance to consume the URL.
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
     }
   }
@@ -667,7 +611,6 @@ export class DefaultWebDownloadProvider implements DownloadProvider {
  */
 export function parseFilenameFromContentDisposition(cd: string): string | undefined {
   if (!cd) return undefined;
-  // RFC 5987: filename*=UTF-8''encoded preferred over filename=
   const star = cd.match(/filename\*\s*=\s*[^']+'[^']*'([^;]+)/i);
   if (star && star[1]) {
     try { return decodeURIComponent(star[1].trim()); } catch { /* fall through */ }

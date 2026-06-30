@@ -45,11 +45,8 @@ export class ContentScriptRelay {
   private listener: ((e: MessageEvent) => void) | null = null;
   private sweepTimer: number | null = null;
 
-  // Map<extId, Map<windowToken, WindowEntry>>
   public readonly tracked = new Map<string, Map<string, WindowEntry>>();
 
-  // Port routing — declared here so port.ts can attach to it.
-  // Filled by port.ts at install time.
   public portHandler: ((data: any, source: Window) => void) | null = null;
 
   constructor(deps: RelayDeps) {
@@ -77,7 +74,6 @@ export class ContentScriptRelay {
   private async onMessage(e: MessageEvent): Promise<void> {
     const raw = e.data as any;
     if (!raw || typeof raw !== 'object') return;
-    // Unwrap scramjet envelope
     const m = raw.__helium_cs__
       ? raw
       : (raw.$scramjet$messagetype && raw.$scramjet$data?.__helium_cs__)
@@ -87,10 +83,6 @@ export class ContentScriptRelay {
 
     const source = e.source as Window | null;
     if (!source) return;
-    // Ignore self-loops: ShadowRealm/Neutron mode chrome instances live
-    // in the host realm and would otherwise feedback their RPC posts
-    // back to themselves. Those modes set { skipRegistration: true }
-    // and route chrome.* via direct host calls, not via postMessage.
     if (source === window) return;
 
     switch (m.__helium_cs__) {

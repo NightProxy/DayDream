@@ -1,9 +1,3 @@
-// Boot the shared internal-page theme system before anything else.
-// Without this, the iframe's document is left with default CSS-var values
-// until something pokes the theming pipeline (e.g. opening the Appearance
-// tab, which lazily wires `getTheming()` and updates roles/colors). Every
-// other internal page (history, extensions, downloads, newtab, etc.) does
-// this import — settings should too.
 import "@pages/shared/themeInit";
 
 import { createIcons, icons } from "lucide";
@@ -77,9 +71,6 @@ function renderRail() {
     a.className = "rail-item";
     a.dataset.id = item.id;
     if (item.external && item.href) {
-      // Keep href for accessibility (right-click → copy link), but the
-      // click handler below routes through the host's Tabs API so the URL
-      // opens as a new browser tab instead of navigating this iframe.
       a.href = item.href;
     } else {
       a.href = `#${item.id}`;
@@ -95,10 +86,6 @@ function renderRail() {
         void openResetModal();
       });
     } else if (item.external && item.href) {
-      // External rail items (e.g. Extensions → ddx://extensions/) must
-      // open via the host's Tabs API. Setting location.href inside the
-      // iframe just navigates the iframe and fails — ddx:// is not a
-      // scheme the iframe can resolve on its own.
       const href = item.href;
       a.addEventListener("click", (e) => {
         e.preventDefault();
@@ -117,15 +104,11 @@ function setActiveRail(id: string) {
 }
 
 function parseHash(): { section: string; subpage: string | undefined } {
-  const raw = location.hash.slice(1); // strip "#"
+  const raw = location.hash.slice(1);
   if (!raw) return { section: "profiles", subpage: undefined };
 
   const [headRaw, queryRaw] = raw.split("?");
 
-  // Apply redirect map (only on first segment).
-  // If both the user provided a query AND the redirect target has one,
-  // the user-supplied query wins (a user typing `#OldName?subpage=X`
-  // should keep their X). Otherwise fall back to the redirect's default query.
   if (ANCHOR_REDIRECTS[headRaw]) {
     const [redirSection, redirQuery] = ANCHOR_REDIRECTS[headRaw].split("?");
     const finalQuery = queryRaw ?? redirQuery;
@@ -161,11 +144,9 @@ async function mountSection(sectionId: string, subpage: string | undefined) {
 
   try {
     const mod = await loader();
-    if (gen !== mountGen) return;        // superseded by a newer mount
+    if (gen !== mountGen) return;
     await mod.render(content, { subpage });
     if (gen !== mountGen) {
-      // Newer mount started after our render finished — call this section's unmount
-      // immediately and bail; the newer mount already cleared the slot.
       mod.unmount?.();
       return;
     }
@@ -190,7 +171,6 @@ function wireSearch() {
     }, 80);
   });
 
-  // Ctrl/Cmd+F focuses search
   window.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "f") {
       e.preventDefault();
@@ -199,7 +179,6 @@ function wireSearch() {
     }
   });
 
-  // Esc clears, then blurs
   input.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (input.value) {
@@ -233,7 +212,6 @@ async function openResetModal() {
 
 function onHashChange() {
   const { section, subpage } = parseHash();
-  // Normalize URL if a redirect happened
   const normalized = subpage ? `${section}?subpage=${subpage}` : section;
   if (location.hash.slice(1) !== normalized) {
     history.replaceState(null, "", `#${normalized}`);

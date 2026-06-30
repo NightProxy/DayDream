@@ -1,7 +1,3 @@
-// src/core/helium/host/windows/events.ts
-//
-// chrome.windows.* events. DDX is single-window so the only valid
-// windowId is 1 (or WINDOW_ID_NONE = -1 on blur).
 
 import type { ExtensionManager } from '@apis/extensions';
 
@@ -53,8 +49,6 @@ export function installWindowEventListeners(extMgr: ExtensionManager): () => voi
     extMgr.fanoutEvent('chrome.windows.onFocusChanged', [-1]);
   };
 
-  // onBoundsChanged on resize. Debounced via raf so a drag doesn't
-  // fire 60 events/s — last value wins.
   let rafPending: number | null = null;
   const onResize = (): void => {
     if (rafPending != null) return;
@@ -68,11 +62,6 @@ export function installWindowEventListeners(extMgr: ExtensionManager): () => voi
   window.addEventListener('blur', onBlur);
   window.addEventListener('resize', onResize);
 
-  // Boot-time onCreated emit. Some extensions track "first window
-  // seen since BG started" and re-init UI on each new one — we fire
-  // exactly one event for the synthetic DDX window. Fire on the next
-  // microtask so any extension that registers `onCreated.addListener`
-  // synchronously during BG init catches it.
   queueMicrotask(() => {
     extMgr.fanoutEvent('chrome.windows.onCreated', [buildWindowSnapshot()]);
   });

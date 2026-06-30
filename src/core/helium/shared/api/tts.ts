@@ -17,7 +17,6 @@ export class ChromeTts {
 
   constructor(ctx: ExtensionContext) {
     this.ctx = ctx;
-    // Bridge voiceschanged event from the platform → chrome.tts.onVoicesChanged.
     try {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.addEventListener('voiceschanged', () => {

@@ -1,8 +1,3 @@
-// src/core/helium/host/commands/handlers.ts
-//
-// chrome.commands.* handler implementations. Currently only `getAll`
-// is a real method; `onCommand` is an event (fired by ExtensionManager
-// via fireEventOn when a registered keybind or palette command runs).
 
 import type { ExtensionContext } from '../../extfs/types';
 
@@ -33,7 +28,6 @@ export class CommandsHandlers {
       if (spec?.description) info.description = spec.description;
       const sk = spec?.suggested_key;
       if (sk) {
-        // Prefer platform-specific entry; fall back to "default".
         const platform = detectPlatform();
         const shortcut = sk[platform] ?? sk.default;
         if (shortcut) info.shortcut = shortcut;

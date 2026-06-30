@@ -1,4 +1,3 @@
-// src/core/helium/host/cookies/handlers.ts
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { CookieAccessor, CookieFilter, CookieSetOpts, DDXCookie } from '@apis/data/cookies';

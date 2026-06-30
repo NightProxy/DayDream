@@ -1,24 +1,3 @@
-// src/core/helium/host/downloads/handlers.ts
-//
-// chrome.downloads.* host handlers — thin delegation layer over the
-// host-side DownloadsManager (src/apis/downloads.ts).
-//
-// All methods translate Chrome's argument shape into the manager's
-// API and proxy the result. This means extensions get:
-//   - Real onCreated / onChanged / onErased events (fanned out by
-//     the manager's changeListener; wired in extensions.ts).
-//   - Real search() that returns persisted history.
-//   - Real pause / resume / cancel / erase wired through the
-//     current provider (default web provider supports cancel; other
-//     providers may add pause/resume).
-//   - Real download IDs that round-trip across all methods.
-//
-// chrome.downloads.acceptDanger / setShelfEnabled / setUiOptions remain
-// no-ops — DDX has no download shelf UI surface (yet).
-//
-// chrome.downloads.getFileIcon / show / showDefaultFolder / open throw
-// because the default web provider has no filesystem accounting
-// (Blob URL + anchor click). Native providers may implement them.
 
 import type { ExtensionContext } from '../../extfs/types';
 

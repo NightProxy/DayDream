@@ -1,4 +1,3 @@
-// src/core/helium/content/rolldown.neutron-worker.config.ts
 /**
  * Builds the neutron-worker IIFE bundle that runs inside the Worker
  * spawned per ISOLATED-mode content script. Bundles

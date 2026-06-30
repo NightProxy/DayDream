@@ -91,20 +91,6 @@ export function bootAgent(): void {
 		postToHost({ kind: 'cdp-out', frameId, payload });
 	});
 
-	// Host -> agent CDP transport.
-	//
-	// We do NOT use postMessage for this direction. Scramjet proxies the
-	// proxied window's own-property `postMessage` with a wrapper that
-	// reads the caller's realm SCRAMJETCLIENT, which doesn't exist when
-	// the host (unproxied) is the caller — every host->agent post would
-	// crash inside scramjet's proxy. There is no
-	// `Window.prototype.postMessage` to bypass it with (postMessage is
-	// an own property of each Window instance, not on the prototype).
-	//
-	// Instead, expose a direct function on this proxied window. The host
-	// invokes it cross-realm; the body executes here with normal access
-	// to chobitsu. Scramjet's hooks cover specific DOM globals, not
-	// arbitrary user-defined window properties, so this slot survives.
 	const receive = (incomingFrameId: string, payload: string) => {
 		if (incomingFrameId !== frameId) return;
 		if (typeof payload !== 'string') return;
@@ -126,7 +112,6 @@ export function bootAgent(): void {
 			enumerable: false,
 		});
 	} catch {
-		// Some hardened pages may freeze window. Best effort.
 		try {
 			(window as unknown as Record<string, unknown>).__ddxDevtoolsReceive =
 				receive;

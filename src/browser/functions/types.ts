@@ -15,7 +15,7 @@ export interface FuncInterface {
   settings: SettingsAPI;
   profiles: ProfilesAPI;
   proto: Protocols;
-  nightmarePlugins: any | null; // i hate doing this, but its odd
+  nightmarePlugins: any | null;
   windowing: Windowing;
   events: EventSystem;
   devToggle: boolean;

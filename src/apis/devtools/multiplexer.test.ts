@@ -238,12 +238,9 @@ describe('CdpMultiplexer — message routing', () => {
 		const sessionId = JSON.parse(postToDevTools.mock.calls[0][0]).result
 			.sessionId;
 		postToDevTools.mockClear();
-		// DT issues a real CDP request through that session.
 		mux.receiveFromDevTools(
 			JSON.stringify({ id: 2, method: 'DOM.enable', sessionId })
 		);
-		// Frame replies with the same id; the multiplexer must restamp
-		// sessionId so DT can route the response.
 		mux.receiveFromFrame('top', JSON.stringify({ id: 2, result: { ok: 1 } }));
 		const out = JSON.parse(postToDevTools.mock.calls[0][0]);
 		expect(out.sessionId).toBe(sessionId);
@@ -261,9 +258,6 @@ describe('CdpMultiplexer — message routing', () => {
 			title: 't',
 			postToFrame,
 		});
-		// Even with an attached session, top-level (sessionless) replies
-		// must NOT carry a sessionId — DT routes them off the root
-		// connection.
 		mux.receiveFromDevTools(
 			JSON.stringify({
 				id: 5,
@@ -301,7 +295,6 @@ describe('CdpMultiplexer — message routing', () => {
 		const sessionId = JSON.parse(postToDevTools.mock.calls[0][0]).result
 			.sessionId;
 		postToDevTools.mockClear();
-		// No id => event.
 		mux.receiveFromFrame(
 			'top',
 			JSON.stringify({ method: 'Network.requestWillBeSent', params: {} })
@@ -361,9 +354,6 @@ describe('CdpMultiplexer — auto-attach semantics', () => {
 			})
 		);
 		const out = parseAll(postToDevTools);
-		// Response (id 22) only — no Target.attachedToTarget event
-		// because the top-level frame is the connection target, not
-		// a child auto-attach target.
 		expect(out).toHaveLength(1);
 		expect(out[0].id).toBe(22);
 		expect(
@@ -423,7 +413,6 @@ describe('CdpMultiplexer — Target.* response sessionId routing', () => {
 			title: 'c',
 			postToFrame: vi.fn(),
 		});
-		// Open a child session.
 		mux.receiveFromDevTools(
 			JSON.stringify({
 				id: 1,
@@ -434,8 +423,6 @@ describe('CdpMultiplexer — Target.* response sessionId routing', () => {
 		const childSession = JSON.parse(postToDevTools.mock.calls[0][0])
 			.result.sessionId as string;
 		postToDevTools.mockClear();
-		// DT issues `Target.setAutoAttach` over that child session.
-		// The response must echo `sessionId` so DT routes it correctly.
 		mux.receiveFromDevTools(
 			JSON.stringify({
 				id: 55,

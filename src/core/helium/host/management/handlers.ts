@@ -1,19 +1,3 @@
-// src/core/helium/host/management/handlers.ts
-//
-// chrome.management.* host handlers (spec §26.3).
-//
-// Reads installed-extension metadata from extfs (listExtensions /
-// getExtension) and performs lifecycle ops by delegating to the host
-// ExtensionManager via the injected deps.
-//
-// The ExtensionInfo shape mirrors Chrome's docs:
-//   { id, name, shortName, description, version, mayDisable, enabled,
-//     isApp, type, homepageUrl?, updateUrl?, offlineEnabled, optionsUrl?,
-//     icons?, permissions, hostPermissions, installType }
-//
-// Methods that don't apply to a browser extension model — launchApp,
-// createAppShortcut, setLaunchType, generateAppForLink — throw
-// 'not_supported'. getPermissionWarningsBy* return [] (no warning UI).
 
 import type { ExtensionContext } from '../../extfs/types';
 import {
@@ -126,10 +110,6 @@ export function buildExtensionInfo(
 		hostPermissions: manifestHostPermissions(manifest),
 		installType: 'normal',
 	};
-	// Optional fields, only set if present in manifest. `version_name`
-	// is a user-friendly version label (e.g. "v3.0 beta") distinct from
-	// the strict numeric `version`. Real Chrome surfaces it here when
-	// declared; some extensions check for it.
 	if (typeof m.version_name === 'string') info.versionName = m.version_name;
 	if (typeof m.homepage_url === 'string') info.homepageUrl = m.homepage_url;
 	if (typeof m.update_url === 'string') info.updateUrl = m.update_url;
@@ -178,9 +158,6 @@ export class ManagementHandlers {
 	): Promise<ExtensionInfo> => {
 		const info = await loadInfo(ctx.id);
 		if (info) return info;
-		// Fall back to whatever we can synthesize from ctx — the
-		// extension is clearly running so this should rarely happen,
-		// but cover the case where extfs read fails.
 		return {
 			id: ctx.id,
 			name: ctx.id,
@@ -212,8 +189,6 @@ export class ManagementHandlers {
 		args: unknown[],
 	): Promise<void> => {
 		const id = String(args[0] ?? '');
-		// args[1] may be {showConfirmDialog?: boolean} — ignored; Helium
-		// has no built-in confirmation UI for management-driven uninstall.
 		await this.deps.uninstall(id);
 	};
 

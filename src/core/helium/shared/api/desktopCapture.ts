@@ -51,9 +51,6 @@ export class ChromeDesktopCapture {
         }
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
         this.pending.delete(requestId);
-        // Stash the stream globally so the extension can fetch it
-        // back. Chrome's path uses getUserMedia with the streamId;
-        // ours is to look up via the stream id.
         try { (window as { __heliumDesktopStreams?: Map<string, MediaStream> }).__heliumDesktopStreams ??= new Map(); } catch { /* noop */ }
         const map = (window as { __heliumDesktopStreams?: Map<string, MediaStream> }).__heliumDesktopStreams;
         if (map) map.set(stream.id, stream);

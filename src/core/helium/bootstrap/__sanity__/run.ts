@@ -98,7 +98,6 @@ async function main(): Promise<void> {
     assertContains(html, '__helium_bootstrap__.js', 'bootstrap script');
     assertContains(html, '<script src="bg.js"></script>', 'bg.js tag');
     assertContains(html, '<script src="lib.js"></script>', 'lib.js tag');
-    // Bootstrap loads BEFORE extension scripts
     if (
       html.indexOf('__helium_bootstrap__.js') >
       html.indexOf('<script src="bg.js"></script>')
@@ -144,11 +143,9 @@ async function main(): Promise<void> {
     const out = injectBootstrapIntoBackgroundPage(html, ctx);
     assertContains(out, 'meta name="helium-ctx"', 'meta inserted');
     assertContains(out, '__helium_bootstrap__.js', 'script inserted');
-    // <head> appears before the meta tag
     if (out.indexOf('<head>') >= out.indexOf('meta name="helium-ctx"')) {
       throw new Error('meta should be inside <head>, after the opening tag');
     }
-    // Original <title> still present
     assertContains(out, '<title>Original</title>', 'original title preserved');
   });
 
@@ -207,10 +204,6 @@ async function main(): Promise<void> {
   console.log('cross-list consistency');
 
   await expect('RPC_BINDINGS rpcMethod column is a subset of HANDLER_PERMISSIONS keys', async () => {
-    // Re-implement the lists inline (importing from client.ts pulls in
-    // mv2/mv3 Chrome classes which transitively reach DOM globals not
-    // available in Node).
-    // Keep this list in sync with RPC_BINDINGS in bootstrap/client.ts.
     const RPC_METHODS = [
       'chrome.storage.local.get',
       'chrome.storage.local.set',
@@ -233,7 +226,6 @@ async function main(): Promise<void> {
       'chrome.tabs.create',
       'chrome.runtime.sendMessage',
     ];
-    // Keep this set in sync with HANDLER_PERMISSIONS keys in src/apis/extensions.ts.
     const HANDLER_KEYS = new Set([...RPC_METHODS]);
     for (const m of RPC_METHODS) {
       if (!HANDLER_KEYS.has(m)) {

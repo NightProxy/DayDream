@@ -45,8 +45,6 @@ export class ExtensionDevToolsManager {
 	constructor(opts: ManagerOpts) {
 		this.opts = opts;
 
-		// Auto-close any session whose target gets removed from the
-		// registry (e.g., BG iframe re-spawned, worker died).
 		this.targetRegistry.subscribe((e) => {
 			if (e.kind === 'removed') {
 				const key = `${e.extId}::${e.targetId}`;
@@ -59,7 +57,6 @@ export class ExtensionDevToolsManager {
 					}
 				}
 			}
-			// Fan out to UI subscribers.
 			for (const l of this.listeners) {
 				try {
 					l(e);
@@ -108,7 +105,6 @@ export class ExtensionDevToolsManager {
 			if (target.kind !== 'content-script') {
 				this.targetRegistry.markIframeWanted(target.iframe, false);
 			}
-			// Notify UI so the button state flips back to "Inspect."
 			for (const l of this.listeners) {
 				try {
 					l({ kind: 'removed', extId, targetId });
@@ -144,9 +140,6 @@ export class ExtensionDevToolsManager {
 			return;
 		}
 
-		// Iframe target: mark the iframe wanted BEFORE creating the
-		// session so the hookInstaller's init.post tap (which fires on
-		// subsequent navigation) sees the predicate true.
 		this.targetRegistry.markIframeWanted(target.iframe, true);
 		const session = new ExtensionIframeDevToolsSession({
 			devtoolsHostUrl: this.opts.devtoolsHostUrl,
@@ -155,20 +148,6 @@ export class ExtensionDevToolsManager {
 		});
 		this.sessions.set(key, session);
 
-		// Trigger the agent injection by re-navigating the iframe.
-		//
-		// Why not iframe.contentWindow.location.reload(): that reads
-		// `.location` on a scramjet-proxied contentWindow. Scramjet's
-		// location proxy reads SCRAMJETCLIENT from the caller's realm
-		// (the host has none), so the access throws or worse. We're the
-		// host, and we own the <iframe> ELEMENT (host realm). Reassigning
-		// `iframe.src` is a host-side property mutation that Chrome
-		// handles natively — no scramjet trap in the path.
-		//
-		// Resetting iframe.src to its current value triggers a fresh
-		// load. The scramjet init.post hook fires for the reloaded
-		// frame, our gate now returns 'extension' (because we just
-		// marked the iframe wanted), and injectAgentScript runs.
 		try {
 			const src = target.iframe.getAttribute('src');
 			if (src) {

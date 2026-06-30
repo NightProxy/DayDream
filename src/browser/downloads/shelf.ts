@@ -1,34 +1,3 @@
-// src/browser/downloads/shelf.ts
-//
-// Download shelf — bottom-of-host strip that shows in-progress and
-// recently completed downloads. Auto-shows when a new download
-// starts; user dismisses via the X button. Items remain on the shelf
-// until the user dismisses them or clears the shelf.
-//
-// DOM contract: a host shell `<div data-component="download-shelf">`
-// slot exists in render.ts. The slot is `display:none` until the
-// first download arrives; we toggle `display:flex` and inject cards.
-//
-// Real-time updates: subscribes to `DownloadsManager.addChangeListener`
-// so per-card progress / state changes render the moment they happen.
-//
-// Visual design follows DDX's design language (theme tokens, no
-// hard-coded colors).
-//
-// Behavior:
-//   - New download created   → shelf shows + card appended
-//   - Per-byte progress      → that card's progress bar / label updates
-//   - Download completes     → card flips to "complete" state, gets
-//                              an "Open" button (opens the URL) and
-//                              "Show all" link to ddx://downloads/
-//   - Download errors        → card flips to error state with reason
-//   - User clicks X on card  → card removed from shelf (not erased
-//                              from history; just dismissed from the
-//                              ephemeral strip)
-//   - User clicks shelf X    → entire shelf hides; cards persist so
-//                              re-showing brings them back
-//
-// "Show all downloads" link → opens ddx://downloads/ in a new tab.
 
 import type {
   DownloadChangeEvent,
@@ -84,8 +53,6 @@ export class DownloadShelf {
     this.subscribe();
     this.mounted = true;
 
-    // Restore the persisted auto-show preference (fire-and-forget; the
-    // shelf works fine with the default `true` if this fails).
     void (async () => {
       try {
         const mod = await import('../../apis/settings');
@@ -111,7 +78,6 @@ export class DownloadShelf {
       minHeight: '52px',
     } satisfies Partial<CSSStyleDeclaration>);
 
-    // Left: scrollable card strip.
     const cards = document.createElement('div');
     Object.assign(cards.style, {
       flex: '1',
@@ -127,7 +93,6 @@ export class DownloadShelf {
     this.cardsContainer = cards;
     this.slot.appendChild(cards);
 
-    // Right: "Show all" + close.
     const right = document.createElement('div');
     Object.assign(right.style, {
       display: 'flex',
@@ -177,7 +142,6 @@ export class DownloadShelf {
       const id = event.delta.id;
       const card = this.cards.get(id);
       if (!card) return;
-      // Apply delta to the cached item.
       const item: DownloadItem = { ...card.item };
       if (event.delta.state) item.state = event.delta.state.current;
       if (event.delta.paused) item.paused = event.delta.paused.current;
@@ -198,7 +162,6 @@ export class DownloadShelf {
 
   private addCard(item: DownloadItem): void {
     if (!this.cardsContainer) return;
-    // Bounded — drop the oldest if we're full.
     if (this.cards.size >= MAX_VISIBLE_CARDS) {
       const oldest = this.cards.keys().next().value;
       if (oldest !== undefined) this.removeCard(oldest);
@@ -235,7 +198,6 @@ export class DownloadShelf {
     const { item, el } = card;
     el.innerHTML = '';
 
-    // Header row: icon + filename + dismiss button.
     const header = document.createElement('div');
     Object.assign(header.style, {
       display: 'flex',
@@ -281,7 +243,6 @@ export class DownloadShelf {
 
     el.appendChild(header);
 
-    // Body row: progress / status.
     const body = document.createElement('div');
     Object.assign(body.style, {
       display: 'flex',
@@ -326,7 +287,6 @@ export class DownloadShelf {
       } satisfies Partial<CSSStyleDeclaration>);
       body.appendChild(status);
 
-      // Actions row.
       const actions = document.createElement('div');
       Object.assign(actions.style, {
         display: 'flex',
@@ -344,7 +304,6 @@ export class DownloadShelf {
       actions.appendChild(openBtn);
       body.appendChild(actions);
     } else {
-      // interrupted
       const status = document.createElement('div');
       status.textContent = humanError(item.error) || 'Failed';
       Object.assign(status.style, {
@@ -355,7 +314,6 @@ export class DownloadShelf {
     }
     el.appendChild(body);
 
-    // Hydrate the new icon.
     createIcons({ icons });
   }
 
@@ -421,8 +379,6 @@ export class DownloadShelf {
     if (this.slot) this.slot.innerHTML = '';
   }
 
-  // ── small DOM helpers ────────────────────────────────────────────
-
   private makeIconButton(icon: string, label: string, sizeClass = 'h-4 w-4'): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -469,8 +425,6 @@ export class DownloadShelf {
   }
 }
 
-// ── pure helpers ──────────────────────────────────────────────────
-
 function pickIcon(item: DownloadItem): string {
   if (item.state === 'interrupted') return 'alert-triangle';
   if (item.state === 'complete') return 'file-down';
@@ -507,7 +461,6 @@ function sizeLabel(bytes: number): string {
 
 function humanError(reason: string | undefined): string | null {
   if (!reason) return null;
-  // Convert FILE_FOO_BAR → "File foo bar".
   return reason
     .toLowerCase()
     .replace(/_/g, ' ')

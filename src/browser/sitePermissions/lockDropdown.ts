@@ -1,27 +1,3 @@
-// src/browser/sitePermissions/lockDropdown.ts
-//
-// Address-bar lock-icon dropdown. Chrome's "Site information" panel.
-//
-// Click the lock icon in the address bar → floating panel anchored
-// to the lock, showing:
-//   - Origin + connection status header
-//   - List of granted/denied permissions for the active tab's origin
-//     (only ones that have been touched — pristine ones aren't listed
-//     because real Chrome doesn't show them either; user can grant
-//     pre-emptively from ddx://settings#SitePermissions if they want)
-//   - "Cookies and site data" line with count + "Clear data for this
-//     site" button
-//   - "Reset permissions" link to wipe all stored permission grants
-//     for this origin
-//   - Link to ddx://settings#SitePermissions for the global view
-//
-// Re-resolves the active tab's URL on every open (cheaper than
-// subscribing to tabSelected when the dropdown is hidden 99% of the
-// time).
-//
-// Visual style follows DDX design language (theme tokens) and mirrors
-// `menuManager.openExtensionsPopover` structurally (position:fixed
-// floater anchored via getBoundingClientRect, outside-click dismiss).
 
 import { createIcons, icons } from 'lucide';
 import type { PermissionGrant, PermissionState, SitePermissionsStore } from '@apis/sitePermissions';
@@ -85,13 +61,11 @@ export class LockDropdown {
     this.popover = popover;
     document.body.appendChild(popover);
 
-    // Anchor below the lock button.
     const rect = this.lockBtn.getBoundingClientRect();
     Object.assign(popover.style, {
       top: `${rect.bottom + 6}px`,
       left: `${rect.left}px`,
     });
-    // Overflow correction.
     requestAnimationFrame(() => {
       const pr = popover.getBoundingClientRect();
       if (pr.right > window.innerWidth - 8) {
@@ -101,7 +75,6 @@ export class LockDropdown {
       popover.style.transform = 'translateY(0)';
     });
 
-    // Outside-click dismiss (deferred to skip the opening click).
     this.outsideHandler = (e: MouseEvent): void => {
       if (!this.popover) return;
       if (this.popover.contains(e.target as Node)) return;
@@ -114,7 +87,6 @@ export class LockDropdown {
       }
     }, 0);
 
-    // Populate body now (async — store reads).
     await this.fillBody(popover, origin);
   }
 
@@ -148,7 +120,6 @@ export class LockDropdown {
         try { decoded = tabs?.proxy?.decodeUrl?.(src) ?? src; } catch { /* swallow */ }
         try { return new URL(decoded).origin; } catch { /* fall through */ }
       }
-      // Address bar fallback.
       const shadow = (window as { d?: ShadowRoot | Document }).d ?? document;
       const ab = shadow.querySelector('[data-component="address-bar"]') as HTMLInputElement | null;
       if (ab?.value) {
@@ -180,7 +151,6 @@ export class LockDropdown {
       transition: 'opacity .12s ease, transform .12s ease',
     } satisfies Partial<CSSStyleDeclaration>);
 
-    // Header.
     const header = document.createElement('div');
     Object.assign(header.style, {
       padding: '14px 16px 10px',
@@ -218,7 +188,6 @@ export class LockDropdown {
     header.appendChild(originLine);
     popover.appendChild(header);
 
-    // Body container — populated async in fillBody.
     const body = document.createElement('div');
     body.setAttribute('data-component', 'lock-dropdown-body');
     Object.assign(body.style, { padding: '4px 0' } satisfies Partial<CSSStyleDeclaration>);
@@ -247,7 +216,6 @@ export class LockDropdown {
       return;
     }
 
-    // 1. Permissions section.
     const store = (window as { sitePermissionsStore?: SitePermissionsStore }).sitePermissionsStore;
     const grants = store ? await store.listForOrigin(origin) : [];
     if (grants.length > 0) {
@@ -258,7 +226,6 @@ export class LockDropdown {
       }
     }
 
-    // 2. Site data section.
     const dataSec = this.section('Site data');
     body.appendChild(dataSec.header);
     const dataRow = document.createElement('div');
@@ -317,7 +284,6 @@ export class LockDropdown {
     });
     body.appendChild(clearBtn);
 
-    // 3. Reset permissions (only if there are grants to reset).
     if (grants.length > 0) {
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
@@ -338,7 +304,6 @@ export class LockDropdown {
       resetBtn.addEventListener('click', async () => {
         try {
           await store?.clearForOrigin(origin);
-          // Re-render the body to reflect cleared grants.
           await this.fillBody(popover, origin);
         } catch (err) {
           console.warn('[lockDropdown] reset failed:', err);
@@ -347,7 +312,6 @@ export class LockDropdown {
       body.appendChild(resetBtn);
     }
 
-    // 4. Settings link.
     const sep = document.createElement('div');
     Object.assign(sep.style, { height: '1px', background: 'var(--white-08)', margin: '6px 0' } satisfies Partial<CSSStyleDeclaration>);
     body.appendChild(sep);
@@ -391,7 +355,6 @@ export class LockDropdown {
     });
     body.appendChild(settingsLink);
 
-    // Hydrate any newly-added lucide icons.
     createIcons({ icons });
   }
 

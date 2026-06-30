@@ -1,21 +1,3 @@
-// src/core/helium/host/identity/handlers.ts
-//
-// chrome.identity.* host handlers (spec §26.2).
-//
-// Stub implementation. Helium has no concept of a signed-in Google
-// account, so OAuth helpers throw or return empty values. Methods
-// that Chrome promises to be idempotent (removeCachedAuthToken,
-// clearAllCachedAuthTokens) are no-ops.
-//
-//   - getAuthToken             → throws 'not_supported'
-//   - launchWebAuthFlow        → throws 'not_supported'
-//   - getProfileUserInfo       → { email: '', id: '' }
-//   - getAccounts              → []
-//   - getRedirectURL(path?)    → https://<id>.ddx/redirect/<path>
-//   - removeCachedAuthToken    → no-op
-//   - clearAllCachedAuthTokens → no-op
-//
-// Events never fire.
 
 import type { ExtensionContext } from '../../extfs/types';
 

@@ -68,8 +68,6 @@ export class AuxiliaryMenus {
 		this.getRightClickMenu()?.closeMenu();
 	}
 
-	/* ---------- shared item builder ---------- */
-
 	private buildItem(spec: MenuItemSpec): HTMLElement {
 		const baseClass =
 			'flex items-center gap-3 px-4 py-2 w-full text-left text-sm rounded-md transition-colors';
@@ -163,8 +161,6 @@ export class AuxiliaryMenus {
 		for (const el of items) menuEl.appendChild(el);
 	}
 
-	/* ---------- (1) Tab strip background ---------- */
-
 	private getActiveTabId(): string | null {
 		return this.tabs.activeTabId;
 	}
@@ -178,7 +174,6 @@ export class AuxiliaryMenus {
 				icon: 'rotate-ccw',
 				label: this.truncate(record.title || record.url, 40),
 				onclick: async () => {
-					// Reopen this specific entry: remove it, then create a tab.
 					this.tabs.closedTabStack?.removeByTimestamp(
 						record.closedAt
 					);
@@ -186,7 +181,7 @@ export class AuxiliaryMenus {
 				}
 			}));
 
-		const isVerticalActive = false; // No public getter; toggle is purely state-flip.
+		const isVerticalActive = false;
 
 		const sections: MenuSection[] = [
 			{
@@ -249,7 +244,6 @@ export class AuxiliaryMenus {
 		});
 
 		const menu = this.buildMenu(sections);
-		// Extension contextMenus injection (browser_action context).
 		try {
 			this.appendExtensionMenusTo(menu, 'browser_action', {}, undefined, undefined);
 		} catch (err) {
@@ -257,8 +251,6 @@ export class AuxiliaryMenus {
 		}
 		return menu;
 	}
-
-	/* ---------- (2) Back / Forward / Reload buttons ---------- */
 
 	buildBackMenu(): HTMLElement {
 		const tabId = this.getActiveTabId();
@@ -348,7 +340,6 @@ export class AuxiliaryMenus {
 					{
 						icon: 'eraser',
 						label: 'Empty Cache and Hard Reload',
-						// Real impl waits on per-site permissions / cache mgmt.
 						disabled: true
 					}
 				]
@@ -368,8 +359,6 @@ export class AuxiliaryMenus {
 
 		return this.buildMenu(sections);
 	}
-
-	/* ---------- (3) History list items ---------- */
 
 	/**
 	 * Build a context menu for a single history entry. The history page
@@ -477,8 +466,6 @@ export class AuxiliaryMenus {
 			}
 		];
 
-		// Suppress unused-var lint hint for entryId — kept in the signature
-		// because callers may want it for telemetry/logging.
 		void entryId;
 
 		const menu = this.buildMenu(sections);
@@ -486,8 +473,6 @@ export class AuxiliaryMenus {
 		menu.appendChild(this.buildLabel(url));
 		return menu;
 	}
-
-	/* ---------- (4) Page background (proxied iframe) ---------- */
 
 	buildPageBackgroundMenu(iframe: HTMLIFrameElement): HTMLElement {
 		const tabId = iframe.getAttribute('data-tab-id') || null;
@@ -545,7 +530,6 @@ export class AuxiliaryMenus {
 					},
 					{
 						icon: 'code',
-						// Disabled until the view-source page lands.
 						label: 'View Source',
 						disabled: true
 					},
@@ -579,8 +563,6 @@ export class AuxiliaryMenus {
 						label: 'Inspect Element',
 						disabled: !tabId,
 						onclick: () => {
-							// Prefer the tab the user actually right-clicked
-							// on; fall back to the active tab if that's missing.
 							const w = window as any;
 							let id: string | null = tabId ?? null;
 							if (!id) {
@@ -623,7 +605,6 @@ export class AuxiliaryMenus {
 			menu.appendChild(this.buildSeparator());
 			menu.appendChild(this.buildLabel(decodedUrl));
 		}
-		// Extension contextMenus injection (page context).
 		try {
 			let tabIdNum: number | undefined;
 			let tabInfo: unknown = undefined;
@@ -648,8 +629,6 @@ export class AuxiliaryMenus {
 		}
 		return menu;
 	}
-
-	/* ---------- helpers ---------- */
 
 	private async bookmarkAllTabs(): Promise<void> {
 		try {
@@ -710,8 +689,6 @@ export class AuxiliaryMenus {
 		return s.length <= max ? s : s.slice(0, max - 1) + '\u2026';
 	}
 
-	/* ---------- installers ---------- */
-
 	/**
 	 * Install all auxiliary menu listeners that bind to host-shell elements.
 	 * Call once after `items` is populated and tabs are initialised. The
@@ -731,13 +708,9 @@ export class AuxiliaryMenus {
 		const items = this.tabs.items;
 
 		if (items.tabBar) {
-			// Guard so right-clicks on a tab go to the tab-level menu via its
-			// own listener (which calls stopPropagation). We only fire when
-			// the event target is the tabBar itself or the bare strip area.
 			items.tabBar.addEventListener('contextmenu', (event: MouseEvent) => {
 				const target = event.target as HTMLElement | null;
 				if (!target) return;
-				// If the click is on a tab or group header, let those listeners win.
 				if (
 					target.closest('[data-component="tab"]') ||
 					target.closest('[data-dnd-kind="groupHeader"]')

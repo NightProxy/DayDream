@@ -1,8 +1,3 @@
-// src/core/helium/host/dnr/index.ts
-//
-// `compileRule` collides with the same name in `content/matcher`,
-// so we re-export it under `compileDnrRule`. Internal callers within
-// the DNR module use the original name directly.
 
 export {
   type Rule as DnrRule,

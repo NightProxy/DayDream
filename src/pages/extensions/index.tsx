@@ -6,18 +6,6 @@ import '@pages/shared/themeInit';
 import '@utils/global/panic';
 import { createIcons, icons } from 'lucide';
 
-// ─────────────────────────────────────────────────────────────────────────
-// Helium browser-extension manager UI.
-//
-// This page lives inside DDX as an iframe (ddx://extensions/ →
-// /internal/extensions). The ExtensionManager singleton lives on the
-// HOST window (window.extensions on the outer Electron-style shell, NOT
-// inside this iframe). We walk window → parent → top to find it.
-//
-// All extension state comes from the manager, which itself reads the
-// extfs index in OPFS. There is no "marketplace" or "Reflux" layer.
-// ─────────────────────────────────────────────────────────────────────────
-
 interface HeliumExtMgrLike {
   installFromBytes(bytes: Uint8Array): Promise<{ id: string; name?: string }>;
   uninstall(id: string): Promise<void>;
@@ -80,11 +68,6 @@ interface ExtensionViewModel {
   hasOptions: boolean;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// ExtDevtools access. Lives on the host (browser shell) window, same as
-// the ExtensionManager. We walk up the iframe chain to find it.
-// ─────────────────────────────────────────────────────────────────────────
-
 interface ExtTargetLike {
   extId: string;
   targetId: string;
@@ -125,11 +108,6 @@ function getExtDevtools(): ExtDevtoolsLike | null {
   }
   return null;
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// chrome_url_overrides coordinator. Lives on host window (same as the
-// ExtensionManager). Walks the parent chain to find it.
-// ─────────────────────────────────────────────────────────────────────────
 
 interface UrlOverrideState {
   active: { newtab?: string; bookmarks?: string; history?: string };
@@ -207,8 +185,6 @@ async function listAllExtensions(): Promise<ExtensionViewModel[]> {
     console.warn('[helium/extfs/dbg] [page] listAllExtensions: no manager → returning []');
     return [];
   }
-  // Prefer listAllWithManifest — it returns the parsed manifest so we
-  // can show description / icon / homepage / permissions inline.
   if (mgr.listAllWithManifest) {
     try {
       console.log('[helium/extfs/dbg] [page] listAllExtensions: calling listAllWithManifest...');
@@ -219,7 +195,6 @@ async function listAllExtensions(): Promise<ExtensionViewModel[]> {
       console.warn('[extensions] listAllWithManifest failed:', err);
     }
   }
-  // Fallback to the lean listAll() — minimal info, no manifest.
   if (mgr.listAll) {
     try {
       console.log('[helium/extfs/dbg] [page] listAllExtensions: falling back to listAll...');
@@ -243,7 +218,6 @@ async function listAllExtensions(): Promise<ExtensionViewModel[]> {
       console.warn('[extensions] listAll failed:', err);
     }
   }
-  // Last resort: running-only.
   const running = mgr.list();
   console.log(`[helium/extfs/dbg] [page] listAllExtensions: last-resort list() returned ${running.length} running entries`);
   return running.map((e) => ({
@@ -336,17 +310,12 @@ function pickIconPath(m: {
 }
 
 function pickLargestIcon(map: Record<string, string>): string | null {
-  // Prefer 128 → 64 → 48 → 32 → 16 → first available.
   for (const size of ['128', '64', '48', '32', '16']) {
     if (typeof map[size] === 'string') return map[size]!;
   }
   const first = Object.values(map).find((v) => typeof v === 'string');
   return first ?? null;
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// Toast/status messages
-// ─────────────────────────────────────────────────────────────────────────
 
 function status(message: string, kind: 'info' | 'success' | 'error'): void {
   const container = document.getElementById('helium-install-status');
@@ -392,10 +361,6 @@ function formatError(err: unknown): string {
   return String(err);
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Install flow
-// ─────────────────────────────────────────────────────────────────────────
-
 async function installFile(file: File): Promise<void> {
   const mgr = getHeliumExtMgr();
   if (!mgr) {
@@ -419,11 +384,6 @@ async function installFile(file: File): Promise<void> {
     status(`✗ Failed to install ${file.name}: ${formatError(err)}`, 'error');
     console.error('[helium-install]', err);
   } finally {
-    // Always refresh the list — install may have partially completed
-    // (files written to disk, index updated) before throwing, and the
-    // user benefits from seeing the actual on-disk state regardless.
-    // Errors inside renderList itself are caught and logged so we don't
-    // mask the original install failure with a render failure.
     try {
       await renderList();
     } catch (renderErr) {
@@ -443,10 +403,6 @@ async function handleFiles(files: FileList | File[] | null): Promise<void> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Card rendering
-// ─────────────────────────────────────────────────────────────────────────
-
 function escapeHtml(s: string): string {
   return s.replace(
     /[&<>"']/g,
@@ -460,19 +416,6 @@ function escapeHtml(s: string): string {
       })[c]!,
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// Inspect views section. One per extension card. Subscribes to the
-// host's ExtensionDevToolsManager and renders one button per live
-// inspectable target. Clicking toggles a docked chii panel inline
-// below the card.
-// ─────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────
-// chrome_url_overrides per-card section. Renders one checkbox per
-// override kind declared by the manifest (newtab/bookmarks/history).
-// Reads/writes via the host-side ExtensionUrlOverrides coordinator.
-// ─────────────────────────────────────────────────────────────────────────
 
 function buildOverridesSection(ext: ExtensionViewModel): HTMLDivElement {
   const root = document.createElement('div');
@@ -515,11 +458,6 @@ function buildOverridesSection(ext: ExtensionViewModel): HTMLDivElement {
       input.addEventListener('change', async () => {
         try {
           if (input.checked) {
-            // setActive handles "displace any other claimant" + persist
-            // + push to the Protocols layer in one shot. The lookup
-            // callback resolves our extId → manifest so the coordinator
-            // can read the actual override path declared by this
-            // extension.
             await overrides.setActive(kind, ext.id, (extId) => {
               const m = getHeliumExtMgr();
               return m?.getManifest ? m.getManifest(extId) : null;
@@ -595,10 +533,6 @@ function buildInspectViewsSection(extId: string): InspectViewsHandle {
         if (dt.isOpen(t.extId, t.targetId)) {
           dt.closeTarget(t.extId, t.targetId);
         } else {
-          // The session mounts its panel directly under the host body
-          // (NOT inside this extensions page iframe), so chii's
-          // window.parent reaches the host's message listener. The
-          // panel docks at the bottom of the screen.
           void dt.openTarget(t.extId, t.targetId);
         }
       });
@@ -610,8 +544,6 @@ function buildInspectViewsSection(extId: string): InspectViewsHandle {
   const ext = getExtDevtools();
   if (ext) {
     unsubscribe = ext.subscribe((e) => {
-      // Only refresh if this event is for us. The change events fire
-      // for every extension; filter by extId where present.
       const evExtId = (e as { extId?: string }).extId;
       const targetExtId = (e.target as ExtTargetLike | undefined)?.extId;
       if (evExtId !== undefined && evExtId !== extId) return;
@@ -652,14 +584,12 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
   card.dataset.heliumExtId = ext.id;
   if (!ext.enabled) card.classList.add('opacity-60');
 
-  // Header: icon + name/meta
   const header = document.createElement('div');
   header.className = 'flex items-start gap-3';
 
   const iconEl = document.createElement('div');
   iconEl.className =
     'h-12 w-12 rounded-lg bg-[var(--white-05)] flex-shrink-0 flex items-center justify-center overflow-hidden';
-  // Placeholder icon
   iconEl.innerHTML =
     '<i data-lucide="puzzle" class="h-5 w-5 text-[var(--proto)]"></i>';
   if (ext.iconPath) {
@@ -668,7 +598,7 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
       mgr
         .getIconDataUrl(ext.id, ext.iconPath)
         .then((dataUrl) => {
-          if (!dataUrl) return; // keep placeholder
+          if (!dataUrl) return;
           const img = document.createElement('img');
           img.src = dataUrl;
           img.alt = '';
@@ -693,7 +623,6 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
 
   header.append(iconEl, info);
 
-  // Description
   if (ext.description) {
     const desc = document.createElement('p');
     desc.className = 'text-xs text-[var(--proto)] line-clamp-2';
@@ -703,7 +632,6 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
     card.append(header);
   }
 
-  // Access label chip
   const accessRow = document.createElement('div');
   accessRow.className = 'flex items-center gap-2 text-xs';
   const chip = document.createElement('span');
@@ -724,28 +652,17 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
   }
   card.appendChild(accessRow);
 
-  // Inspect views — live list of inspectable realms for this extension.
-  // Renders an empty section by default; populated/refreshed via
-  // refreshInspectViewsSection() below as targets register/unregister.
   const inspectSection = buildInspectViewsSection(ext.id);
   card.appendChild(inspectSection.root);
 
-  // chrome_url_overrides controls. Only renders when the manifest
-  // actually declares one or more overrides. Each slot gets its own
-  // checkbox; user can flip them on/off independently. Conflicts
-  // resolve as "most-recently-toggled wins" — if you turn on
-  // extension A's newtab, any other active newtab override is
-  // cleared automatically by the coordinator.
   if (ext.urlOverrides.length > 0) {
     card.appendChild(buildOverridesSection(ext));
   }
 
-  // Footer: toggle + uninstall
   const footer = document.createElement('div');
   footer.className =
     'flex items-center justify-between gap-2 pt-3 mt-auto border-t border-[var(--white-08)]';
 
-  // Toggle
   const toggleLabel = document.createElement('label');
   toggleLabel.className =
     'inline-flex items-center gap-2 cursor-pointer text-xs select-none';
@@ -777,10 +694,6 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
   const actionBtns = document.createElement('div');
   actionBtns.className = 'flex items-center gap-1';
 
-  // Options button — only when manifest declares options_ui.page or
-  // options_page. Clicking invokes chrome.runtime.openOptionsPage on
-  // the extension's behalf, which the host handler implements as a
-  // new tab navigation to the options URL.
   if (ext.hasOptions) {
     const optionsBtn = document.createElement('button');
     optionsBtn.className =
@@ -829,10 +742,6 @@ function buildCard(ext: ExtensionViewModel): HTMLElement {
   return card;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// List rendering
-// ─────────────────────────────────────────────────────────────────────────
-
 async function renderList(): Promise<void> {
   console.log('[helium/extfs/dbg] [page] renderList() entry');
   const list = document.getElementById('helium-extension-list');
@@ -845,7 +754,6 @@ async function renderList(): Promise<void> {
 
   const exts = await listAllExtensions();
   console.log(`[helium/extfs/dbg] [page] renderList: got ${exts.length} extension(s):`, exts.map(e => ({ id: e.id, name: e.name, enabled: e.enabled })));
-  // Enabled first, then alphabetical.
   exts.sort((a, b) => {
     if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
     return a.name.localeCompare(b.name);
@@ -853,9 +761,6 @@ async function renderList(): Promise<void> {
 
   list.innerHTML = '';
 
-  // Pending-overrides banner (newtab/bookmarks/history awaiting user
-  // confirmation). Rendered above the list so it's the first thing
-  // the user sees on the page.
   await renderOverrideBanners(list, exts);
 
   if (exts.length === 0) {
@@ -875,12 +780,6 @@ async function renderList(): Promise<void> {
   }
   createIcons({ icons });
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// chrome_url_overrides banner UI. Renders a sticky banner per pending
-// override (newtab/bookmarks/history) asking the user to confirm or
-// decline. Auto-refreshes on coordinator state changes.
-// ─────────────────────────────────────────────────────────────────────────
 
 const OVERRIDE_LABELS: Record<'newtab' | 'bookmarks' | 'history', string> = {
   newtab: 'new tab page',
@@ -945,10 +844,6 @@ async function renderOverrideBanners(
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Drop-zone wiring
-// ─────────────────────────────────────────────────────────────────────────
-
 function setupDropzone(): void {
   const dropzone = document.getElementById('helium-dropzone');
   const fileInput = document.getElementById(
@@ -959,7 +854,7 @@ function setupDropzone(): void {
   dropzone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
     await handleFiles(fileInput.files);
-    fileInput.value = ''; // reset so same file can be re-selected
+    fileInput.value = '';
   });
 
   ['dragenter', 'dragover'].forEach((evt) => {

@@ -1,38 +1,3 @@
-// src/apis/sitePermissions.ts
-//
-// SitePermissionsStore — per-origin Web API permission grants.
-//
-// Mirrors Chrome's per-site permissions UI:
-//   - granted   : user explicitly allowed
-//   - denied    : user explicitly blocked
-//   - prompt    : ask on next use (default)
-//
-// We persist (origin, permissionName) → state. The Scramjet plugin
-// at `src/browser/sitePermissions/scramjetPlugin.ts` intercepts
-// Web Platform API calls from proxied pages and posts a permission
-// request to the host. The host checks this store; on `prompt` it
-// shows the Nightmare permission modal; the user's choice is then
-// persisted (unless `temporary: true`).
-//
-// PERMISSION NAMES (matches Permissions API string keys):
-//   - 'geolocation'
-//   - 'notifications'
-//   - 'camera'           — navigator.mediaDevices.getUserMedia({video:true})
-//   - 'microphone'       — getUserMedia({audio:true})
-//   - 'midi'
-//   - 'background-sync'
-//   - 'persistent-storage'
-//   - 'push'
-//   - 'screen-wake-lock'
-//   - 'clipboard-read'   — async clipboard read
-//   - 'clipboard-write'
-//   - 'display-capture'  — getDisplayMedia
-//   - 'storage-access'
-//   - 'system-wake-lock'
-//
-// We accept any string — unknown names are treated like custom
-// permissions (still prompted, still stored). Caller can call
-// `getState(origin, name)` to check without prompting.
 
 import { SettingsAPI } from './settings';
 
@@ -64,7 +29,7 @@ export class SitePermissionsStore {
 
   private readonly storageKey: string;
   private readonly store: SettingsAPI;
-  private grants: Map<string, PermissionGrant[]> = new Map(); // origin → grants
+  private grants: Map<string, PermissionGrant[]> = new Map();
   /** Session-only grants — not persisted; cleared at boot. */
   private sessionGrants: Map<string, PermissionGrant[]> = new Map();
   private loaded = false;
@@ -220,7 +185,6 @@ export class SitePermissionsStore {
       const u = new URL(input);
       return u.origin.toLowerCase();
     } catch {
-      // Not a URL — accept bare hostname and synthesize https origin.
       const h = input.toLowerCase().replace(/^\.+/, '');
       return h ? `https://${h}` : '';
     }

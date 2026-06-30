@@ -127,7 +127,7 @@ export class ProfileManager {
     const oldData = await store.getItem<ProfileData>(oldId);
     if (!oldData) return false;
     const exists = await store.getItem(newId);
-    if (exists) return false; // name collision
+    if (exists) return false;
     await store.setItem(newId, oldData);
     await store.removeItem(oldId);
     const current = await store.getItem<string>("__current_profile__");

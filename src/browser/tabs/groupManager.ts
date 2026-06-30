@@ -350,8 +350,6 @@ export class TabGroupManager2 {
 
 		this.tabs.runStateTransaction('move-group', () => {
 			const orderedTabIds = [...group.tabIds];
-			// Re-anchor: move the first tab to `targetIndex`, then place
-			// the rest immediately after, preserving intra-group order.
 			const ungrouped = this.tabs.getUngroupedUnpinnedTabs().map(t => t.id);
 			const clamped = Math.max(
 				0,

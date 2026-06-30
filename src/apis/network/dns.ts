@@ -1,25 +1,3 @@
-// src/apis/network/dns.ts
-//
-// Pluggable DNS resolver hook. Backs `chrome.dns.resolve` and any
-// future internal DDX subsystem that needs to resolve hostnames
-// without bouncing through the browser's hidden resolver.
-//
-// Today: no backend is registered, so `resolve()` throws a clear
-// "No DNS backend registered" error that callers can catch.
-//
-// When DDX's internal network stack lands, it should call
-// `setDnsBackend(impl)` at boot to register the real resolver.
-// chrome.dns.resolve() will then start returning real values.
-//
-// Backend contract (intentionally narrow — matches Chrome's API):
-//   resolve(hostname): Promise<{address, statusCode}>
-// where:
-//   address     — first A/AAAA record, or '' on failure
-//   statusCode  — 0 on success, non-zero net::ERR_* style code on
-//                 failure. Common values:
-//                    -105 ERR_NAME_NOT_RESOLVED
-//                    -106 ERR_INTERNET_DISCONNECTED
-//                    -118 ERR_CONNECTION_TIMED_OUT
 
 export interface DnsResolveResult {
   address: string;
@@ -84,9 +62,6 @@ let _resolver: DnsResolver | null = null;
 export function getDnsResolver(): DnsResolver {
   if (!_resolver) {
     _resolver = new DnsResolver();
-    // Expose globally so platform code (e.g. external network stacks
-    // loaded by host plugins) can register without going through
-    // module imports.
     (window as { dnsResolver?: DnsResolver }).dnsResolver = _resolver;
   }
   return _resolver;

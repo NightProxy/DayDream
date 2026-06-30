@@ -1,27 +1,14 @@
-// src/core/helium/host/contextMenus/inject.ts
-//
-// Helper called from the browser-side menu builders to append
-// extension-contributed contextMenus entries. Adds a separator before
-// the extension entries (when there are any). Clicking an entry fires
-// chrome.contextMenus.onClicked on the owning extension.
-//
-// Usage from a menu builder:
-//   import { injectExtensionMenus } from '@core/helium/host/contextMenus/inject';
-//   injectExtensionMenus(menuItems, 'tab', { pageUrl }, info, { tab }, deps);
 
 import type { ContextMenuRegistry, ContextType, ContextInfo, MenuEntry } from './registry';
 
 export interface InjectDeps {
   registry: ContextMenuRegistry;
-  // Fires chrome.contextMenus.onClicked on the extension.
   fireOnClicked: (extId: string, info: ContextMenuClickInfo, tab?: unknown) => void;
-  // ui.createElement-compatible: most call-sites have access to a Nightmare/UI instance.
   createElement: (
     tag: string,
     attrs?: Record<string, unknown>,
     children?: Array<string | HTMLElement>,
   ) => HTMLElement;
-  // Grants activeTab to the owning extension on click.
   grantActiveTab?: ((extId: string, tabId: number) => void) | undefined;
 }
 
@@ -60,11 +47,9 @@ export function injectExtensionMenus(
   const entries = deps.registry.getMenusForContext(contextType, info);
   if (entries.length === 0) return;
 
-  // Separator before extension entries.
   menuItems.push(buildSeparator(deps));
 
   for (const { extId, entry } of entries) {
-    // Skip child entries — we render them inline under their parent.
     if (entry.parentId) continue;
 
     if (entry.type === 'separator') {

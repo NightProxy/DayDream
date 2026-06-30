@@ -1,26 +1,4 @@
-// src/core/helium/host/extension/handlers.ts
-//
-// chrome.extension.* host handlers (Task 34, MV2 surface).
-//
-// chrome.extension.* is the legacy MV2 namespace for extension
-// introspection. Most of it has been superseded by chrome.runtime
-// in MV3, but extensions in the wild still ship MV2 background
-// pages that call chrome.extension.getBackgroundPage(),
-// chrome.extension.getViews(), and chrome.extension.getURL().
-//
-// Coverage (per spec §27 + Tier 1-3 plan Task 34):
-//   - getBackgroundPage  — MV2-only; throws under MV3 (use
-//                          chrome.runtime.getBackgroundPage instead)
-//   - getViews           — v1: only the background page's
-//                          contentWindow is tracked; popup/devtools/tab
 //                          views are TODO (see inline comment).
-//   - getURL             — same as chrome.runtime.getURL; always
-//                          `https://<id>.ddx/<path>`.
-//   - isAllowedIncognitoAccess  — false (no private browsing yet).
-//   - isAllowedFileSchemeAccess — false (no file:// scheme in DDX).
-//
-// All handlers are async to match the host RPC contract; the
-// in-iframe shim awaits them via the bootstrap channel.
 
 import type { ExtensionContext } from '../../extfs/types';
 
@@ -106,7 +84,7 @@ export class ExtensionHandlers {
     args: unknown[],
   ): Promise<Window[]> => {
     const opts = (args[0] ?? {}) as { type?: string; windowId?: number };
-    void opts.windowId; // not honoured in v1 (single-window)
+    void opts.windowId;
     const out: Window[] = [];
 
     const wantAll = opts.type === undefined;

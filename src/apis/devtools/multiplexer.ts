@@ -17,19 +17,12 @@ interface MuxOpts {
 export class CdpMultiplexer {
 	private postToDevTools: (cdpJson: string) => void;
 	private frames = new Map<string, FrameRecord>();
-	private sessions = new Map<string, string>(); // sessionId -> frameId
-	private attachments = new Map<string, string>(); // frameId -> sessionId
+	private sessions = new Map<string, string>();
+	private attachments = new Map<string, string>();
 	private discoverEnabled = false;
 	private autoAttachEnabled = false;
 	private topLevelFrameId: string | null = null;
-	// Per-frame: request id -> sessionId the DT request carried, or null
-	// if the request was sessionless (top-level connection). Used so
-	// responses are stamped with sessionId only when DT expects one.
 	private pendingRequests = new Map<string, Map<number, string | null>>();
-	// Host-originated requests issued via `request()`. Keyed by the
-	// internally-allocated id; mapped to a pending Promise resolver.
-	// These ids do not collide with DT-side ids because they're drawn
-	// from a separate, large negative range.
 	private hostRequests = new Map<
 		number,
 		{ resolve: (result: unknown) => void; reject: (err: Error) => void }
@@ -50,12 +43,6 @@ export class CdpMultiplexer {
 				targetInfo: this.toTargetInfo(record),
 			});
 		}
-		// Auto-attach is for sub-targets (iframes, workers). The
-		// top-level frame IS the page that the sessionless devtools
-		// connection talks to — don't announce it as a child session
-		// or DT will issue every domain enable twice (once sessionless
-		// to the page, once over the new child session) and chobitsu
-		// will fire each event twice.
 		if (
 			this.autoAttachEnabled &&
 			record.parentFrameId !== null &&
@@ -85,8 +72,6 @@ export class CdpMultiplexer {
 			this.topLevelFrameId =
 				[...this.frames.values()].find((f) => f.parentFrameId === null)
 					?.frameId ?? null;
-			// All in-flight host requests targeted the top-level frame
-			// that just went away. Reject them so callers don't hang.
 			if (this.hostRequests.size > 0) {
 				const err = new Error('CdpMultiplexer.request: top-level frame detached before response');
 				for (const [, p] of this.hostRequests) p.reject(err);
@@ -160,14 +145,7 @@ export class CdpMultiplexer {
 			return;
 		}
 
-		// Responses (have an id) get stamped with the sessionId that
-		// originated the request, if any. Sessionless requests must
-		// receive sessionless responses so DT's top-level dispatcher
-		// matches them to the correct pending invocation.
 		if (typeof msg?.id === 'number') {
-			// Host-originated requests: resolve the in-flight Promise
-			// and DO NOT forward to DT. Host ids live in a separate
-			// negative range so they never collide with DT ids.
 			const hostPending = this.hostRequests.get(msg.id);
 			if (hostPending) {
 				this.hostRequests.delete(msg.id);
@@ -184,14 +162,11 @@ export class CdpMultiplexer {
 			if (origin) {
 				this.postToDevTools(JSON.stringify({ ...msg, sessionId: origin }));
 			} else {
-				// Sessionless — emit as-is, no sessionId.
 				this.postToDevTools(cdpJson);
 			}
 			return;
 		}
 
-		// Spontaneous events (no id). Stamp with the frame's attached
-		// session if any, otherwise deliver as a top-level event.
 		const sid = this.attachments.get(frameId);
 		if (sid) {
 			this.postToDevTools(JSON.stringify({ ...msg, sessionId: sid }));
@@ -281,10 +256,6 @@ export class CdpMultiplexer {
 		params: Record<string, unknown>,
 		originSessionId: string | null
 	): void {
-		// Capture for re-stamping responses. Sessioned Target.* requests
-		// (e.g., `Target.setAutoAttach` issued over a child session)
-		// must have their responses returned on the same session, or
-		// DT's per-session dispatcher rejects them as "wrong id".
 		const reply = (result: unknown, errorMessage?: string) =>
 			this.respond(id, result, originSessionId, errorMessage);
 		switch (method) {
@@ -307,8 +278,6 @@ export class CdpMultiplexer {
 				reply({});
 				if (this.autoAttachEnabled) {
 					for (const rec of this.frames.values()) {
-						// Top-level frame is the connection target itself,
-						// never a child auto-attach. See attachFrame().
 						if (rec.parentFrameId === null) continue;
 						if (!this.attachments.has(rec.frameId)) {
 							this.attachInternal(rec.frameId);

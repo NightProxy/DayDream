@@ -14,7 +14,6 @@
 import { runIsolated } from './isolation';
 import { ChromeMiniInstance, unregisterAll } from './mini-chrome-instance';
 
-// Singleton state
 declare const __HELIUM_MINI_CHROME_INSTALLED__: unique symbol;
 const gWin = window as unknown as { [k: symbol]: boolean };
 const INSTALL_KEY = Symbol.for('helium.mini-chrome.installed');
@@ -32,7 +31,6 @@ if ((gWin as any)[INSTALL_KEY]) {
     runIsolated,
   };
 
-  // Best-effort cleanup on page hide
   window.addEventListener('pagehide', () => {
     unregisterAll();
   }, { once: true });

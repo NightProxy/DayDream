@@ -112,10 +112,6 @@ function substituteMsgPlaceholders(
  * runtime and is safe to import from any context.
  */
 export class HeliumExtensionPlugin {
-  // Scramjet's controller.createFrame iterates plugin.dependencies
-  // (controller/src/index.ts:821). These fields satisfy the ManagedPlugin
-  // contract without extending the class (we can't — $scramjet.Plugin is
-  // not available at module-load time).
   public readonly name: string;
   public readonly dependencies: string[] = [];
 
@@ -140,8 +136,6 @@ export class HeliumExtensionPlugin {
 
   constructor(ctx: ExtensionContext, opts: PluginOpts = {}) {
     this.name = `helium-${ctx.id}`;
-    // Merge overrides into the on-wire ctx. We never let an override
-    // touch id / manifest / origin — only the optional transport flags.
     const overrides = opts.ctxOverrides;
     if (overrides) {
       let merged: ExtensionContext = ctx;
@@ -156,11 +150,6 @@ export class HeliumExtensionPlugin {
     this.enforceHostPolicy = opts.enforceHostPolicy ?? true;
     this.hostPatterns = compileHostPatterns(ctx.manifest);
 
-    // Eagerly kick off locale negotiation + messages.json load. The
-    // first HTML/CSS/JSON request for this extension will then have
-    // the i18n payload in-cache. If this fails we fall back to an
-    // empty message map — the extension just sees `__MSG_*__` literals
-    // (same as Chrome behaviour for missing _locales/).
     void prepareI18nFor(ctx.id, (ctx.manifest as { default_locale?: string }).default_locale)
       .catch((err) => {
         console.warn('[helium/extfs] prepareI18nFor failed for', ctx.id, err);
@@ -177,12 +166,10 @@ export class HeliumExtensionPlugin {
    * cached after the first await so subsequent calls are zero-RTT.
    */
   private async enrichCtxForMeta(): Promise<ExtensionContext> {
-    // Cheap path: prepared, just splice it in.
     const cached = getCachedI18n(this.ctx.id);
     if (cached) {
       return { ...this.ctx, i18nLocale: cached.locale, i18nMessages: cached.messages };
     }
-    // First request raced ahead of the constructor preload — await it.
     try {
       const prepared = await prepareI18nFor(
         this.ctx.id,
@@ -218,13 +205,11 @@ export class HeliumExtensionPlugin {
     const url: URL | undefined = context.parsed?.url;
     if (!url) return;
 
-    // 1. Our own origin → serve files.
     if (url.host === this.ctx.origin) {
       await this.serveFile(url, context, props);
       return;
     }
 
-    // 2. External: deny-by-default policy.
     if (!this.enforceHostPolicy) return;
     if (isAllowedExternalOrigin(url, this.ctx, this.hostPatterns)) return;
 
@@ -244,7 +229,6 @@ export class HeliumExtensionPlugin {
       return;
     }
 
-    // Synthetic path: bootstrap IIFE bundle.
     if (rel === '__helium_bootstrap__.js') {
       props.earlyResponse = new Response(bootstrapSrc, {
         status: 200,
@@ -257,8 +241,6 @@ export class HeliumExtensionPlugin {
       return;
     }
 
-    // Synthetic path: entry HTML for MV2 background.scripts or MV3
-    // background.service_worker.
     if (rel === '__helium_entry__' || rel === '__helium_entry__.html') {
       const ctxWithI18n = await this.enrichCtxForMeta();
       const html = buildEntryHtml(ctxWithI18n, this.collectScriptTags());
@@ -287,7 +269,6 @@ export class HeliumExtensionPlugin {
       return;
     }
 
-    // HEAD requests: send headers only.
     if (method === 'HEAD') {
       props.earlyResponse = new Response(null, {
         status: 200,
@@ -300,28 +281,14 @@ export class HeliumExtensionPlugin {
       return;
     }
 
-    // Any extension-authored HTML, CSS, or JSON needs the i18n
-    // preprocessor pass (per Chrome's contract — `__MSG_*__`
-    // substitution happens at file-serve time, not at runtime).
-    //
-    // HTML additionally gets the bootstrap + helium-ctx injected, so
-    // the page can construct `chrome.*` and talk to the host. This
-    // covers popups, options pages, devtools_pages, and any other
-    // HTML page the extension serves — NOT just the bg.page.
-    //
-    // For the bg.page case specifically, the BG iframe's iframe.src
-    // points at the file directly; for popup/options the same
-    // codepath now does the same work.
     const isLocalizable = isHtml(rel) || isCss(rel) || isJson(rel);
     if (isLocalizable) {
       const ctxWithI18n = await this.enrichCtxForMeta();
       const messages = ctxWithI18n.i18nMessages ?? {};
       let body = new TextDecoder().decode(bytes);
 
-      // __MSG_*__ substitution applies to all three types.
       body = substituteMsgPlaceholders(body, messages);
 
-      // HTML additionally gets bootstrap injection.
       if (isHtml(rel)) {
         body = injectBootstrapIntoBackgroundPage(body, ctxWithI18n);
       }
@@ -337,13 +304,6 @@ export class HeliumExtensionPlugin {
       return;
     }
 
-    // Fall-through: serve raw bytes. JS, images, fonts, binary
-    // assets. We do NOT inject anything into JS — the bootstrap
-    // already loaded and runs FIRST in any HTML container, and the
-    // extension's own scripts depend on `chrome` already being
-    // present by the time they execute (which is what
-    // injectBootstrapIntoBackgroundPage guarantees for the HTML
-    // entry).
     props.earlyResponse = new Response(toArrayBuffer(bytes), {
       status: 200,
       statusText: 'OK',

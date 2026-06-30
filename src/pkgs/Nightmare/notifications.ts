@@ -1,11 +1,3 @@
-// src/pkgs/Nightmare/notifications.ts
-//
-// Toast-style notification manager. Renders stacked toasts in the
-// bottom-right corner. Used by chrome.notifications.* via the Helium
-// host bridge but also usable directly via `ui.notifications.show(...)`.
-//
-// Supports basic / image / list / progress types. Auto-dismiss after
-// 5s unless requireInteraction is set. Buttons fire onButtonClick.
 
 export type NotificationType = 'basic' | 'image' | 'list' | 'progress';
 
@@ -183,9 +175,6 @@ let nextId = 0;
 export class NotificationManager {
   private active = new Map<string, ActiveNotification>();
   private container: HTMLElement | null = null;
-  // NightmareUI ref retained for future API consistency (parity with
-  // other Nightmare components which receive `ui` in their constructor).
-  // Currently unused inside the manager.
   constructor(_ui?: unknown) {
     void _ui;
   }
@@ -194,7 +183,6 @@ export class NotificationManager {
     this.ensureStyles();
     const container = this.ensureContainer();
     const id = idHint ?? `notif-${++nextId}`;
-    // If id already exists, treat as update.
     const existing = this.active.get(id);
     if (existing) {
       this.applyToElement(existing.element, opts);
@@ -245,12 +233,8 @@ export class NotificationManager {
   }
 
   getPermissionLevel(): 'granted' | 'denied' {
-    // No native browser permission required — DDX shell renders these
-    // directly. Always granted.
     return 'granted';
   }
-
-  // ── internals ──────────────────────────────────────────────────
 
   private ensureStyles(): void {
     if (document.getElementById(STYLE_ID)) return;

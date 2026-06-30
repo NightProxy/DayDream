@@ -84,7 +84,7 @@ export async function render(container: HTMLElement, ctx: SectionContext): Promi
   }
 
   await renderMain(container, profiles);
-  if (gen !== renderGen) return; // superseded
+  if (gen !== renderGen) return;
 
   if (offChange) offChange();
   offChange = profiles.onChange(() => {
@@ -111,10 +111,8 @@ async function renderMain(container: HTMLElement, profiles: ProfilesAPI) {
   const all: string[] = await profiles.listProfiles();
   const activeData = activeId ? await profiles.getProfileData(activeId) : null;
 
-  // Hero
   if (activeId) {
     const stats = await computeStats(activeId, activeData);
-    // Mutable refs assigned after the hero is built (callbacks read these lazily).
     let switchBtn: HTMLButtonElement | null = null;
     let manageBtn: HTMLButtonElement | null = null;
     const hero = createProfileHero(activeId, activeData, stats, {
@@ -132,7 +130,6 @@ async function renderMain(container: HTMLElement, profiles: ProfilesAPI) {
     section.appendChild(noProfile);
   }
 
-  // Quick actions (only when active profile exists)
   if (activeId) {
     section.appendChild(createRow({
       label: "Rename this profile",
@@ -160,7 +157,6 @@ async function renderMain(container: HTMLElement, profiles: ProfilesAPI) {
     }));
   }
 
-  // All profiles subheader
   const allHeader = document.createElement("div");
   allHeader.className = "settings-subheader";
   allHeader.textContent = "All profiles";
@@ -204,7 +200,6 @@ async function renderMain(container: HTMLElement, profiles: ProfilesAPI) {
     section.appendChild(row);
   }
 
-  // Add profile row (or Night+ upgrade row)
   const isNightPlus = await checkNightPlus();
   const max = 3;
   if (all.length >= max && !isNightPlus) {
@@ -239,7 +234,6 @@ async function renderMain(container: HTMLElement, profiles: ProfilesAPI) {
     section.appendChild(addRow);
   }
 
-  // Data & backup subheader
   const dataHeader = document.createElement("div");
   dataHeader.className = "settings-subheader";
   dataHeader.textContent = "Data & backup";
@@ -342,7 +336,6 @@ function openAvatarModal(id: string, current: ProfileAppearance | undefined, pro
   const body = document.createElement("div");
   body.style.cssText = "display:flex; flex-direction:column; gap:14px;";
 
-  // Preview (mutable ref so we can swap on refresh)
   let previewEl: HTMLElement = createAvatar(id, chosen, { size: 64 });
   previewEl.style.alignSelf = "center";
   body.appendChild(previewEl);
@@ -354,7 +347,6 @@ function openAvatarModal(id: string, current: ProfileAppearance | undefined, pro
     previewEl = updated;
   }
 
-  // Avatar type tabs
   const typeRow = document.createElement("div");
   typeRow.style.cssText = "display:flex; gap:8px; justify-content:center;";
   for (const t of ["letter", "icon", "image"] as const) {
@@ -370,7 +362,6 @@ function openAvatarModal(id: string, current: ProfileAppearance | undefined, pro
   }
   body.appendChild(typeRow);
 
-  // Color presets
   const colorRow = document.createElement("div");
   colorRow.style.cssText = "display:flex; gap:6px; flex-wrap:wrap; justify-content:center;";
   for (const c of AVATAR_COLOR_PRESETS) {
@@ -381,7 +372,6 @@ function openAvatarModal(id: string, current: ProfileAppearance | undefined, pro
   }
   body.appendChild(colorRow);
 
-  // Icon presets
   const iconRow = document.createElement("div");
   iconRow.style.cssText = "display:flex; gap:6px; flex-wrap:wrap; justify-content:center;";
   for (const name of AVATAR_ICON_PRESETS) {
@@ -398,7 +388,6 @@ function openAvatarModal(id: string, current: ProfileAppearance | undefined, pro
   }
   body.appendChild(iconRow);
 
-  // Image upload
   const upload = document.createElement("input");
   upload.type = "file";
   upload.accept = "image/*";
@@ -459,12 +448,11 @@ function openClearDataModal(id: string, data: ProfileData | null, profiles: Prof
           }
         }
         if (errs.length) {
-          // Find the modal-desc div and update it to surface the errors.
           const descEl = handle.root.querySelector(".modal-desc");
           if (descEl) {
             descEl.textContent = `Some cleanup steps failed: ${errs.join("; ")}. The profile may be partially cleared.`;
           }
-          return; // keep modal open so user can dismiss explicitly
+          return;
         }
         handle.close();
       },

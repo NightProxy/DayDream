@@ -29,25 +29,19 @@ export function compileRule(rule: ContentScriptRule): CompiledMatcher {
 
   return {
     matches: (url: URL, isAboutBlank: boolean) => {
-      // Never inject into Helium extension origins. Same-page BG iframes
-      // and popups all live under `<extid>.ddx`.
       if (url.hostname.endsWith('.ddx')) return false;
 
-      // about:blank handling: rule must opt in
       if (isAboutBlank && !matchAboutBlank) return false;
 
       const href = url.toString();
 
-      // exclude_matches wins
       for (const ex of excludes) {
         if (matchUrlPattern(ex, href)) return false;
       }
-      // exclude_globs also exclude
       for (const ex of excludeGlobs) {
         if (matchGlob(ex, href)) return false;
       }
 
-      // matches must hit
       let included = false;
       for (const inc of includes) {
         if (matchUrlPattern(inc, href)) {
@@ -57,7 +51,6 @@ export function compileRule(rule: ContentScriptRule): CompiledMatcher {
       }
       if (!included) return false;
 
-      // include_globs further restrict if present
       if (includeGlobs.length > 0) {
         let globHit = false;
         for (const g of includeGlobs) {

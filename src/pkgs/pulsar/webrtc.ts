@@ -1,5 +1,3 @@
-// WebRTC connection-state helpers used by the Pulsar client.
-// Vendored from @abndnce/pulsar core package.
 
 export const CONNECTION_TIMEOUT_MS = 30_000;
 

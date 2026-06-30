@@ -1,6 +1,3 @@
-// src/apis/nyxBridge/handlers/host.ts
-//
-// Bridge meta: version, capabilities surface, default-timeout setter.
 
 import { register } from './index';
 import { METHOD_REGISTRY } from '../api';

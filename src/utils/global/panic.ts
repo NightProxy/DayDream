@@ -22,8 +22,6 @@ const normalize = (s: string) => s?.trim().toLowerCase();
 const triggerPanic = async (): Promise<void> => {
   const settingsAPI = new SettingsAPI();
 
-  // Read all three knobs up front so a slow setting store doesn't
-  // interleave with the close-tabs / clear-data steps.
   let panicUrl = "about:blank";
   let closeTabs = true;
   let clearData = false;
@@ -35,7 +33,6 @@ const triggerPanic = async (): Promise<void> => {
   }
   try {
     const c = await settingsAPI.getItem("panicCloseTabs");
-    // Default true — only false when explicitly set to false/"false".
     if (c === false || c === "false") closeTabs = false;
   } catch {
     /* keep default true */
@@ -47,9 +44,6 @@ const triggerPanic = async (): Promise<void> => {
     /* keep default false */
   }
 
-  // Preserve legacy behavior: panic also flips disableTabClose off so
-  // the browser can actually navigate away without a beforeunload
-  // prompt. This was the only effect of the old panic implementation.
   try {
     const disableTabClose =
       (await settingsAPI.getItem("disableTabClose")) || "false";
@@ -60,16 +54,12 @@ const triggerPanic = async (): Promise<void> => {
     /* ignore */
   }
 
-  // Step 1 — close all tabs. We try the host's Tabs.closeAllTabs first
-  // (when running in the parent shell), then fall back to closing each
-  // tab individually. Either path is fire-and-forget.
   if (closeTabs) {
     try {
       const tabs = (window as any).tabs;
       if (tabs?.closeAllTabs) {
         await tabs.closeAllTabs();
       } else if (typeof tabs?.tabs?.forEach === "function") {
-        // Fallback: iterate registered tabs and close one by one.
         tabs.tabs.forEach((t: any) => {
           try {
             tabs.closeTabById?.(t.id);
@@ -83,9 +73,6 @@ const triggerPanic = async (): Promise<void> => {
     }
   }
 
-  // Step 2 — clear profile data + storage. Profile-level clear is the
-  // big hammer (cookies, indexeddb, cache); local/session storage
-  // clears are best-effort top-ups for the current document.
   if (clearData) {
     try {
       const profiles = (window as any).profiles;
@@ -107,8 +94,6 @@ const triggerPanic = async (): Promise<void> => {
     }
   }
 
-  // Step 3 — navigate. Always target the top window so iframe callers
-  // (e.g. the Test panic button inside settings) escape correctly.
   const target = panicUrl;
   if (window.top && window.top !== window.self) {
     try {
@@ -133,11 +118,6 @@ const triggerPanic = async (): Promise<void> => {
   }
 };
 
-// Expose triggerPanic on whichever window loads this module. The
-// settings iframe (Privacy → Cloaking → Panic → Test) calls
-// `(window.parent as any).triggerPanic()`, so this needs to be
-// reachable on the host shell. src/utils/global/index.ts pulls this
-// module into the host bundle via a side-effect import.
 if (typeof window !== "undefined") {
   (window as any).triggerPanic = triggerPanic;
 }

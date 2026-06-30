@@ -58,11 +58,6 @@ export class SplitLayoutManager {
 		this.gutter.dataset.gutter = 'split';
 		this.gutter.dataset.shown = 'false';
 
-		// Build click-catcher overlays. These sit absolutely-positioned on
-		// top of the non-focused split pane(s) and intercept the first
-		// click so we can swap focus before any iframe content sees it.
-		// The overlay for the focused pane is hidden so that side gets
-		// clicks directly.
 		this.leftOverlay = this.createOverlay('left');
 		this.rightOverlay = this.createOverlay('right');
 
@@ -88,13 +83,8 @@ export class SplitLayoutManager {
 		el.className = `split-click-catcher split-click-catcher--${side}`;
 		el.dataset.side = side;
 		el.dataset.shown = 'false';
-		// First click: switch focus to this side. We use mousedown (not
-		// click) so the focus swap happens before the click event has a
-		// chance to land on anything else.
 		el.addEventListener('mousedown', evt => {
 			if (this.mode !== 'split') return;
-			// Don't preventDefault — we still want this click to focus
-			// the iframe behind us. We just want to be FIRST to react.
 			const pane = side === 'left' ? this.leftPane : this.rightPane;
 			const iframe = pane.querySelector(
 				'iframe'
@@ -102,23 +92,8 @@ export class SplitLayoutManager {
 			const tabId = iframe?.getAttribute('data-tab-id') ?? null;
 			if (!tabId) return;
 
-			// Hide the overlay BEFORE the click finishes so the same
-			// pointer event can re-target onto the iframe. We do this by
-			// setting pointer-events:none on the overlay synchronously,
-			// then dispatching a synthetic click at the same coords on
-			// whatever lands underneath.
 			el.style.pointerEvents = 'none';
 			this.tabs.setSplitFocus?.(tabId);
-			// After focus updates, redraw overlay state. selectTab calls
-			// apply() which calls applyOverlayVisibility() so the now-
-			// focused side ends up with overlay hidden, and the other
-			// side picks up the overlay.
-			// Note: we don't need to manually re-show — apply() handles
-			// it. But we also don't need to dispatch a synthetic click,
-			// since the user's click was already routed through the
-			// iframe focus mechanism (the overlay was on TOP of the
-			// iframe but became pointer-events:none mid-click — the
-			// browser will land the click on the iframe behind it).
 			void evt;
 		});
 		return el;
@@ -174,7 +149,6 @@ export class SplitLayoutManager {
 		this.mode = splitActive ? 'split' : 'main';
 		this.root.dataset.splitMode = this.mode;
 
-		// Re-parent iframes into the right panes.
 		if (opts.mainIframe && opts.mainIframe.parentElement !== this.mainPane) {
 			this.mainPane.appendChild(opts.mainIframe);
 		}
@@ -202,10 +176,6 @@ export class SplitLayoutManager {
 		this.rightPane.dataset.focused =
 			splitActive && opts.focusedSide === 'right' ? 'true' : 'false';
 
-		// Click-catcher overlays: shown on the NON-focused side(s) so the
-		// first click switches focus before reaching iframe content. The
-		// focused side has its overlay hidden + pointer-events:none so it
-		// receives clicks normally.
 		if (splitActive) {
 			const leftIsFocused = opts.focusedSide === 'left';
 			this.leftOverlay.dataset.shown = leftIsFocused
@@ -214,9 +184,6 @@ export class SplitLayoutManager {
 			this.rightOverlay.dataset.shown = leftIsFocused
 				? 'true'
 				: 'false';
-			// Reset pointer-events; createOverlay's handler sets it to
-			// none mid-click so it can pass the click through to the
-			// iframe. apply() restores the default for the next cycle.
 			this.leftOverlay.style.pointerEvents = '';
 			this.rightOverlay.style.pointerEvents = '';
 		} else {

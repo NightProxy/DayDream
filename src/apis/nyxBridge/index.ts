@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/index.ts
-//
-// Public host-side entry. Constructed once in src/index.tsx after Tabs
-// is ready. After init(), exposed on window.nyxBridge for debugging.
 
 import { scriptInjectionRegistry } from '../scriptInjection';
 import type { ScriptInjectionRegistry } from '../scriptInjection';
@@ -17,7 +13,7 @@ import { dispatch } from './handlers';
 import { CdpHelper } from './cdp';
 import type { AgentMessage } from './frameTransport';
 import { dispatchEventToFrame } from './frameDispatch';
-import './handlers/_loadAll'; // side-effect: registers every handler
+import './handlers/_loadAll';
 
 /**
  * Payload for a `?`-prefix / "Ask Nyx" prefill from DDX → NyxAI. The
@@ -199,7 +195,6 @@ export class NyxBridge {
 				return '';
 			}
 		}
-		// Fallback for tests / unwired hosts: use the src attribute as-is.
 		return iframe.getAttribute('src') ?? '';
 	}
 

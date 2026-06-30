@@ -32,7 +32,6 @@
 
 import type { ExtensionFormat } from './types';
 
-// The on-wire magic is constant: "Cr24" little-endian.
 const CRX_MAGIC = 0x34327243;
 
 export interface CrxParseResult {

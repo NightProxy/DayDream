@@ -1,22 +1,3 @@
-// src/core/helium/host/webRequest/events.ts
-//
-// Event dispatchers: take a Scramjet request + frame context, build
-// chrome.webRequest `details`, walk the registry, await blocking
-// subscribers, then apply their merged response back onto the
-// hook's `props` object.
-//
-// Each dispatcher follows the same pattern:
-//   1. Build details (URL, method, type, requestId, tabId, ...)
-//   2. Iterate matching subscribers via `registry.forEvent(event)`
-//   3. For blocking subscribers: await `listener(details)` and merge
-//      responses (cancel wins; redirect wins; headers merged in order)
-//   4. For observer subscribers: fire without awaiting (best-effort)
-//   5. Mutate `props` per the merged response
-//
-// The `listener` set in the registry is the host-side internal
-// callback that routes to the BG via `channel.requestEvent` (added
-// in Task 27). For now, we accept that the listener is opaque and
-// returns whatever the extension's listener returned.
 
 import type { WebRequestRegistry, WebRequestEvent } from './registry';
 import {
@@ -25,19 +6,15 @@ import {
   type ResourceType,
 } from './filter';
 
-// --- requestId WeakMap (UUID per request) ----------------------
-
 const requestIdMap = new WeakMap<object, string>();
 
 function uuid(): string {
-  // RFC4122 v4 via crypto.randomUUID when available; fallback to manual.
   const g = globalThis as unknown as { crypto?: { randomUUID?: () => string } };
   const fn = g.crypto?.randomUUID;
   if (typeof fn === 'function') return fn.call(g.crypto);
   const hex = (n: number) => n.toString(16).padStart(2, '0');
   const b = new Uint8Array(16);
   for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
-  // v4
   b[6] = ((b[6]! & 0x0f) | 0x40) as 0x40;
   b[8] = ((b[8]! & 0x3f) | 0x80) as 0x80;
   return (
@@ -62,8 +39,6 @@ export function getOrAssignRequestId(reqObj: object): string {
   }
   return id;
 }
-
-// --- Scramjet → webRequest mapping helpers ---------------------
 
 /**
  * Map Scramjet's request kind / fetch destination to a
@@ -142,7 +117,6 @@ export function inferResourceType(
       break;
   }
 
-  // URL heuristics fallback.
   const url = request.url ?? ctx?.parsed?.url?.toString() ?? '';
   if (/\.(css)(\?|#|$)/i.test(url)) return 'stylesheet';
   if (/\.(js|mjs)(\?|#|$)/i.test(url)) return 'script';
@@ -204,10 +178,6 @@ export function getFrameMeta(
   documentId?: string;
   initiator?: string;
 } {
-  // chrome.webRequest's parsed surface — Scramjet stores fetch
-  // origin/initiator info on `context.parsed` (see
-  // ScramjetFetchParsed). We probe defensively because the error
-  // hook gives a different context shape.
   const ctx = context as
     | {
         parsed?: {
@@ -237,11 +207,8 @@ export function getFrameMeta(
     initiator?: string;
   } = {
     tabId,
-    // v1: top-frame only. chrome.webRequest's "frameId == 0"
-    // canonically means "main frame", so this matches contract.
     frameId: 0,
     parentFrameId: -1,
-    // DDX uses a single window for v1.
     windowId: 1,
   };
 
@@ -251,8 +218,6 @@ export function getFrameMeta(
   if (typeof init === 'string') out.initiator = init;
   return out;
 }
-
-// --- BlockingResponse merge ------------------------------------
 
 export interface BlockingResponse {
   cancel?: boolean;
@@ -281,7 +246,6 @@ export function mergeBlockingResponses(
     if (!r || typeof r !== 'object') continue;
     if (r.cancel) {
       merged.cancel = true;
-      // Per spec: don't bother merging once a cancel wins.
       return merged;
     }
     if (!merged.redirectUrl && typeof r.redirectUrl === 'string') {
@@ -307,7 +271,6 @@ function mergeHeadersList(
   base: Array<{ name: string; value?: string; binaryValue?: number[] }> | null,
   patch: Array<{ name: string; value?: string; binaryValue?: number[] }>,
 ): Array<{ name: string; value?: string; binaryValue?: number[] }> {
-  // Use insertion-ordered Map keyed on lowercase name.
   const map = new Map<string, { name: string; value?: string; binaryValue?: number[] }>();
   if (base) {
     for (const h of base) map.set(h.name.toLowerCase(), h);
@@ -315,8 +278,6 @@ function mergeHeadersList(
   for (const h of patch) map.set(h.name.toLowerCase(), h);
   return Array.from(map.values());
 }
-
-// --- Dispatcher core -------------------------------------------
 
 export interface RequestDetails {
   requestId: string;
@@ -432,7 +393,6 @@ export async function dispatchEvent(
   if (matched.length === 0) return {};
 
   if (!opts.blocking) {
-    // Observer: fire-and-forget, no merge.
     for (const sub of matched) {
       void Promise.resolve()
         .then(() => sub.listener(details as unknown as Record<string, unknown>))
@@ -446,14 +406,9 @@ export async function dispatchEvent(
     return {};
   }
 
-  // Blocking: await all matching subscribers concurrently, with
-  // per-listener timeout. Then merge.
   const timeoutMs = opts.perListenerTimeoutMs ?? 5000;
   const settled = await Promise.allSettled(
     matched.map(async (sub) => {
-      // Respect each subscriber's blocking flag — non-blocking
-      // listeners under the same event surface get fired but their
-      // return value is ignored.
       const result = sub.listener(details as unknown as Record<string, unknown>);
       if (result == null) return undefined;
       if (typeof (result as { then?: unknown }).then === 'function') {

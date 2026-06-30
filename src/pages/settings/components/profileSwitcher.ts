@@ -78,7 +78,6 @@ export function openSwitcherDropdown(
 		pop.appendChild(item);
 	}
 
-	// Position below anchor, right-aligned
 	document.body.appendChild(pop);
 	const rect = anchor.getBoundingClientRect();
 	const popRect = pop.getBoundingClientRect();

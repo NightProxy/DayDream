@@ -1,17 +1,3 @@
-// src/core/helium/host/webRequest/host-rpc.ts
-//
-// Host-side glue for the Event Subscription RPC (Task 27). When a
-// BG calls `chrome.webRequest.<event>.addListener` the bootstrap
-// sends `__helium_event_subscribe__` over the channel; we register
-// a Subscriber on the WebRequestRegistry whose `listener` field
-// calls `channel.requestEvent(method, [opaqueId, details])` to
-// route the firing back to the BG and await the listener's
-// BlockingResponse.
-//
-// Unsubscribe goes through `__helium_event_unsubscribe__`.
-//
-// Hooked into ExtensionManager.installHandlers via
-// `installWebRequestEventRpc(channel, extId, registry)`.
 
 import type { ExtensionBridgeChannel } from '../../bootstrap/channel';
 import type {
@@ -59,7 +45,6 @@ export function installWebRequestEventRpc(
   opts: { blockingTimeoutMs?: number } = {},
 ): () => void {
   const timeoutMs = opts.blockingTimeoutMs ?? 5000;
-  // opaqueId (BG-assigned) → registry opaqueId
   const opaqueMap = new Map<number, number>();
 
   channel.registerHandler('__helium_event_subscribe__', async (req) => {
@@ -84,8 +69,6 @@ export function installWebRequestEventRpc(
       extId,
       event,
       async (details) => {
-        // Round-trip back to BG. Pass opaqueId so the BG-side
-        // event-rpc handler routes to the right listener.
         try {
           const result = await channel.requestEvent(
             method,
@@ -94,8 +77,6 @@ export function installWebRequestEventRpc(
           );
           return result;
         } catch (err) {
-          // Timeout / channel closed → drop. Returning undefined
-          // means the dispatcher treats this as "no response".
           console.warn(
             `[helium/webRequest] requestEvent ${method} for ${extId} failed:`,
             err,
@@ -113,7 +94,7 @@ export function installWebRequestEventRpc(
 
   channel.registerHandler('__helium_event_unsubscribe__', async (req) => {
     const [methodRaw, bgOpaqueIdRaw] = req.args as [unknown, unknown];
-    void methodRaw; // method is informational; registry lookup is by id
+    void methodRaw;
     if (typeof bgOpaqueIdRaw !== 'number') return undefined;
     const registryId = opaqueMap.get(bgOpaqueIdRaw);
     if (typeof registryId === 'number') {

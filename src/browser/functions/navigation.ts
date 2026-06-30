@@ -37,9 +37,6 @@ export class Navigation implements NavigationInterface {
         iframe.contentWindow.history.back();
 
         const tabId = iframe.getAttribute("data-tab-id") || "unknown";
-        // Keep our shadow nav stack cursor in sync. Iframe's native
-        // History is opaque so we can't observe the cursor change
-        // directly; this is the only place that knows it happened.
         (window as any).tabs?.navStack?.notifyBackward?.(tabId);
 
         const detail = {

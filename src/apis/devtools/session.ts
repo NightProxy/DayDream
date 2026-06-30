@@ -53,9 +53,6 @@ export class DevToolsSession {
 	private destroyed = false;
 	private hostMessageListener: (ev: MessageEvent) => void;
 
-	// Per-extension panel registry. Tracks which PanelEntry rows in
-	// `panel.panels` were added by which extension, so we can clean
-	// up on extension kill / session destroy.
 	private extensionPanels = new Map<string, Set<number>>();
 
 	constructor(opts: SessionOpts) {
@@ -124,7 +121,6 @@ export class DevToolsSession {
 		} catch {
 			// ignore
 		}
-		// Drop all per-extension panel records before tearing down the DOM.
 		this.extensionPanels.clear();
 		unmountPanel(this.tabData);
 		this.windowsByFrameId.clear();
@@ -162,8 +158,6 @@ export class DevToolsSession {
 	private onHostMessage(ev: MessageEvent): void {
 		if (this.destroyed) return;
 
-		// 1) DevTools iframe -> us. Plain bridge message (same-origin,
-		//    no Scramjet involved).
 		if (ev.source === this.panel.devtoolsIframe.contentWindow) {
 			const d = ev.data as DevtoolsBridgeMessage | undefined;
 			if (!d || typeof d !== 'object') return;
@@ -184,13 +178,6 @@ export class DevToolsSession {
 			return;
 		}
 
-		// 2) Proxied window -> us. Source must be a window we registered
-		//    via the hook installer. Payload may arrive in two shapes:
-		//      a) full Scramjet envelope (wrapper passed it through)
-		//      b) pre-unwrapped DevtoolsMessage (Scramjet's incoming
-		//         hook on the proxied side stripped the envelope before
-		//         it reached the host)
-		//    Try both. Drop silently if neither matches.
 		if (ev.source && this.attachedWindows.has(ev.source as Window)) {
 			let decoded = decodeEnvelope(ev.data) ?? decodeUnwrapped(ev.data);
 			if (!decoded) {
@@ -242,37 +229,11 @@ export class DevToolsSession {
 		frameId: string,
 		cdpJson: string
 	): void {
-		// Why not postMessage:
-		//
-		// `win` is a Scramjet-proxied iframe contentWindow. Scramjet has
-		// replaced the own-property `window.postMessage` with a Proxy
-		// (see scramjet/.../client/shared/postmessage.ts:9). On apply,
-		// that Proxy steals `Function` from the message argument's realm,
-		// gets the caller's `globalThis`, and reads
-		// `globalThis[SCRAMJETCLIENT].url.origin`. The host realm has no
-		// SCRAMJETCLIENT installed, so `callerClient` is undefined and
-		// `callerClient.url` throws.
-		//
-		// We can't fall back to `Window.prototype.postMessage` either —
-		// in real browsers `postMessage` is an own property of each
-		// Window instance, NOT on `Window.prototype` (verified in Chrome:
-		// `Window.prototype.postMessage === undefined`). There is no
-		// prototype-chain native to invoke.
-		//
-		// Solution: skip postMessage entirely for the host -> agent leg.
-		// The agent installs a direct function `__ddxDevtoolsReceive` on
-		// its proxied window. Calling that function from the host crosses
-		// realms cleanly — Scramjet's proxies cover specific DOM globals,
-		// not arbitrary user-defined window properties. The function
-		// body then runs in the proxied realm with normal access to
-		// chobitsu.
 		try {
 			const recv = (win as unknown as {
 				__ddxDevtoolsReceive?: (frameId: string, payload: string) => void;
 			}).__ddxDevtoolsReceive;
 			if (typeof recv !== 'function') {
-				// Agent not yet installed (or window is mid-teardown).
-				// Drop the message; chii will resend on reconnect.
 				return;
 			}
 			recv(frameId, cdpJson);

@@ -1,26 +1,3 @@
-// src/core/helium/host/devtools/inspectedWindow.ts
-//
-// chrome.devtools.inspectedWindow.* host handlers.
-//
-// Surface (per spec §24.3):
-//   - inspectedWindow.tabId     — numeric inspected tab id
-//   - inspectedWindow.eval()    — Runtime.evaluate via CdpMultiplexer
-//   - inspectedWindow.reload()  — delegates to chrome.tabs.reload via nyx
-//   - inspectedWindow.getResources()                — STUB returns []
-//   - inspectedWindow.onResourceAdded                — STUB (never fires)
-//   - inspectedWindow.onResourceContentCommitted     — STUB (never fires)
-//
-// The tabId is provided by the caller — the devtools_page iframe
-// records its inspected tab at spawn time (see page.ts) and threads
-// it through every method call. Since the BG iframe runs in its own
-// frame and has no inherent inspected-tab association, we accept the
-// tabId as an argument from the BG-side chrome.devtools binding (or
-// from the host's devtoolsHandlers facade).
-//
-// Routing eval(): the host issues a CDP Runtime.evaluate through the
-// per-tab DevToolsSession's CdpMultiplexer using its public
-// `request(method, params)` helper, which routes to the top-level
-// frame's chobitsu agent and resolves with the response.
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { DevToolsManager } from '@apis/devtools';
@@ -93,12 +70,6 @@ export class InspectedWindowHandlers {
 		void options.frameURL;
 		void options.contextSecurityOrigin;
 		// NOTE(helium-t1-3): useContentScriptContext is a documented v1
-		// limitation. Honoring it would require routing the eval to a
-		// per-isolated-world chobitsu agent (one per content-script
-		// world), which the current single-agent-per-frame multiplexer
-		// does not model. v1 always evals in the page realm; extensions
-		// that rely on CS-world helpers (e.g. jQuery injected by the
-		// extension) will not see them.
 		void options.useContentScriptContext;
 
 		const mgr = this.deps.getDevToolsManager();
@@ -162,12 +133,6 @@ export class InspectedWindowHandlers {
 		}
 		if (opts.injectedScript) {
 			// NOTE(helium-t1-3): documented v1 limitation. Honoring
-			// injectedScript would require Page.addScriptToEvaluateOnNewDocument
-			// (or an equivalent pre-navigation hook in chobitsu) wired
-			// to clear after the next navigation completes. Punting:
-			// the host has no analogous pre-load script slot today, and
-			// the only known caller (devtools_page reload buttons that
-			// inject ad-hoc helpers) tolerates the ignore.
 			console.warn(
 				'[helium/devtools] inspectedWindow.reload: injectedScript ignored',
 			);

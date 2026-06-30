@@ -20,10 +20,6 @@ async function renderMain(container: HTMLElement): Promise<void> {
   h2.textContent = "System";
   section.appendChild(h2);
 
-  // DevTools is always-on (chii). The runtime defaults to "chii" when no
-  // `devtools` key is set (see src/browser/functions/keyboardManager.ts:236 +
-  // src/browser/render.ts:930), so no UI toggle is needed — surfaced here as
-  // an informational row instead.
   section.appendChild(
     createRow({
       icon: "code",
@@ -40,7 +36,6 @@ async function renderMain(container: HTMLElement): Promise<void> {
     }),
   );
 
-  // Keyboard shortcuts drill-down
   section.appendChild(
     createRow({
       icon: "keyboard",
@@ -58,7 +53,6 @@ async function renderMain(container: HTMLElement): Promise<void> {
     }),
   );
 
-  // Hardware acceleration placeholder
   section.appendChild(
     createToggle({
       icon: "cpu",
@@ -105,10 +99,6 @@ function renderKeybinds(container: HTMLElement): void {
         console.warn("[system] keybinds init failed:", e);
       }
       if (!initialized) {
-        // Build the fallback DOM with textContent + a real click handler
-        // rather than an inline href. Anchors with `ddx://` hrefs inside
-        // an iframe navigate the iframe, not open a new tab — the click
-        // handler routes through the host Tabs API.
         body.innerHTML = "";
         const wrap = document.createElement("div");
         wrap.className = "ddx-host-unavailable";

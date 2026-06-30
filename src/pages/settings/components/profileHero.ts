@@ -14,25 +14,21 @@ export interface HeroStats {
 }
 
 export async function computeStats(_profileId: string, data: ProfileData | null): Promise<HeroStats> {
-  // BookmarkManager is a singleton — fetch via getInstance and read its in-memory list.
   let bookmarkCount = 0;
   try {
     const mod = await import("../../../apis/bookmarks");
     bookmarkCount = mod.BookmarkManager.getInstance().getBookmarks().length;
   } catch { /* not initialized yet */ }
 
-  // SitePermissionsStore exposes async listAll() returning a flat array of grants.
   let siteGrantCount = 0;
   try {
     const sps = window.sitePermissionsStore;
     if (sps && typeof sps.listAll === "function") {
       const grants = await sps.listAll();
-      // Count distinct origins, not raw grant entries, so the stat reads "N sites".
       siteGrantCount = new Set(grants.map((g: { origin: string }) => g.origin)).size;
     }
   } catch { /* ignore */ }
 
-  // Serialize-and-measure: rough byte size of cookies + localStorage + indexedDB
   let bytes = 0;
   if (data) {
     try {

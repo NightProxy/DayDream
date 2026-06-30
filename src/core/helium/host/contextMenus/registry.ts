@@ -1,7 +1,3 @@
-// src/core/helium/host/contextMenus/registry.ts
-//
-// In-memory + extfs-persisted contextMenus registry. One Map<extId, Map<menuId, MenuEntry>>.
-// Persisted as `__helium_contextmenus__.json` per extension.
 
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
 
@@ -108,7 +104,6 @@ export class ContextMenuRegistry {
     const map = this.byExt.get(extId);
     if (!map) return false;
     const had = map.delete(id);
-    // Also remove children
     for (const [k, v] of map.entries()) {
       if (v.parentId === id) map.delete(k);
     }
@@ -171,14 +166,11 @@ export class ContextMenuRegistry {
 function entryMatchesContext(entry: MenuEntry, ctx: ContextType): boolean {
   const list = entry.contexts ?? ['page'];
   if (list.includes('all')) {
-    // `all` per spec excludes launcher / browser_action / page_action / action / tab.
     return !['launcher', 'browser_action', 'page_action', 'action', 'tab'].includes(ctx);
   }
   return list.includes(ctx);
 }
 
-// Minimal Chrome URL pattern matcher.
-// Supports scheme://host/path with `*` wildcards.
 function matchesAnyPattern(patterns: string[], url: string): boolean {
   for (const p of patterns) {
     if (urlPatternMatches(p, url)) return true;
@@ -188,7 +180,6 @@ function matchesAnyPattern(patterns: string[], url: string): boolean {
 
 function urlPatternMatches(pattern: string, url: string): boolean {
   if (pattern === '<all_urls>') return /^(https?|ftp|file):/i.test(url);
-  // Translate pattern to regex.
   const m = /^(\*|https?|file|ftp):\/\/([^/]+)(\/.*)$/.exec(pattern);
   if (!m) return false;
   const [, schemeRaw, hostRaw, pathRaw] = m;
@@ -197,7 +188,6 @@ function urlPatternMatches(pattern: string, url: string): boolean {
   try { u = new URL(url); } catch { return false; }
   const scheme = u.protocol.replace(':', '');
   if (schemeRaw !== '*' && schemeRaw !== scheme) return false;
-  // Host wildcard handling: `*.example.com` matches example.com or anything under it.
   if (hostRaw !== '*') {
     if (hostRaw.startsWith('*.')) {
       const suffix = hostRaw.slice(2);
@@ -206,7 +196,6 @@ function urlPatternMatches(pattern: string, url: string): boolean {
       return false;
     }
   }
-  // Path: `*` is .* greedy
   const pathRe = new RegExp(
     '^' + pathRaw.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$',
   );

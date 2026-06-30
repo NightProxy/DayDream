@@ -24,13 +24,9 @@ export class ChromeDom {
   openOrClosedShadowRoot(...args: any[]): ShadowRoot | null {
     const el = args[0];
     if (!el || typeof el !== 'object') return null;
-    // Open shadow root: directly accessible.
     if ('shadowRoot' in el && el.shadowRoot) {
       return el.shadowRoot as ShadowRoot;
     }
-    // Closed shadow root: not reachable from JS without the privileged
-    // binding. Return null — extensions handle this as "no shadow"
-    // which is a documented possibility.
     return null;
   }
 }

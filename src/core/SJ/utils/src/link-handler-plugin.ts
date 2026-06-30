@@ -50,7 +50,6 @@ export class LinkHandlerPlugin extends ManagedPlugin {
 
 				const anchorObserver = new MutationObserver((mutations) => {
 					mutations.forEach((mutation) => {
-						// https://issues.chromium.org/issues/440360422
 						setTimeout(() => {
 							mutation.addedNodes.forEach((_node) => {
 								const node = _node as HTMLAnchorElement;

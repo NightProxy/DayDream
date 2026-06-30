@@ -1,8 +1,3 @@
-// src/apis/nyxBridge/handlers/history.ts
-//
-// V1: read-only stub returning empty arrays. DDX has no centralised
-// history module yet; the contract methods are wired so NyxAI can
-// feature-detect via host.capabilities() but writes reject.
 
 import { register } from './index';
 import { DDXError } from '../types';

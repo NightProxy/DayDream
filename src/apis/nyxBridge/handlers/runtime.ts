@@ -1,6 +1,3 @@
-// src/apis/nyxBridge/handlers/runtime.ts
-//
-// Meta info about the bridge runtime itself.
 
 import { register } from './index';
 

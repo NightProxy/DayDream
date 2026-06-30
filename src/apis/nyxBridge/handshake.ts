@@ -1,4 +1,3 @@
-// src/apis/nyxBridge/handshake.ts
 
 export const NYX_ORIGINS_DEFAULT: readonly string[] = [
 	'https://nyx.night-x.com',

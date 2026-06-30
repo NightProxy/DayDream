@@ -63,11 +63,6 @@ export class CommandRegistry {
 	private logger: Logger | null = null;
 	private listeners = new Set<() => void>();
 
-	// Lazy because `new Logger()` constructs a NightFS instance, which calls
-	// `navigator.storage.getDirectory()`. That isn't available in jsdom (the
-	// test runtime) or any other non-browser context. Eager init would crash
-	// every test that instantiates a registry; lazy init defers the side
-	// effect until a code path actually needs to log.
 	private getLogger(): Logger {
 		if (!this.logger) this.logger = new Logger();
 		return this.logger;
@@ -128,7 +123,6 @@ export class CommandRegistry {
 	async execute(id: string): Promise<void> {
 		const cmd = this.commands.get(id);
 		if (!cmd) {
-			// Best-effort log; tolerate Logger init failure (e.g., non-browser env).
 			try {
 				const logResult = this.getLogger().createLog(`[commands] unknown id "${id}"`);
 				logResult?.catch?.(() => {});
@@ -141,7 +135,6 @@ export class CommandRegistry {
 			await cmd.action();
 		} catch (err) {
 			console.warn(`[commands] action "${id}" failed:`, err);
-			// Best-effort log; tolerate Logger init failure (e.g., non-browser env).
 			try {
 				const logResult = this.getLogger().createLog(`[commands] action "${id}" failed: ${err}`);
 				logResult?.catch?.(() => {});

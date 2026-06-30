@@ -8,9 +8,6 @@ class SettingsAPI {
   store!: FSType;
   private ready: Promise<void>;
 
-  //why the fuck is this written this way??
-  // since v1, we used localforage, and it was good, but we need to think ahead for data detction, so minimizing IDB usage is essential, however, im a lazy ass motherfucker, and dont wanna replace all of the functions
-
   constructor(
     file2Store: string = "/data/settings.json",
     folder2Store: string = "/data",

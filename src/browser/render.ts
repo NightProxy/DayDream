@@ -181,11 +181,6 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
-                    // Wired in src/browser/functions/functions.ts via
-                    // MenuManager.extensionsMenu(button) — opens the
-                    // Edge-style dropdown listing installed extensions
-                    // with pin/⋯ + "Manage extensions" button at the
-                    // top.
                     "data-component": "extensions",
                     "data-tooltip": "Extensions",
                     "data-side": "right",
@@ -602,14 +597,6 @@ class Render {
                     "div",
                     { class: "relative w-full flex-1 urlbar-ring" },
                     [
-                      // Lock icon — clickable wrapper so the
-                      // site-permissions lock-dropdown can mount onto
-                      // it. Was previously a static `<i>` inside a
-                      // `pointer-events-none` div; now a real
-                      // `<button data-component="site-info">` that
-                      // sits absolutely positioned but accepts clicks.
-                      // LockDropdown (`src/browser/sitePermissions/lockDropdown.ts`)
-                      // attaches its click handler post-render.
                       this.ui.createElement(
                         "button",
                         {
@@ -994,10 +981,6 @@ class Render {
             },
             [],
           ),
-          // Download shelf slot — sits between the iframe and the
-          // bottom of the viewport. Initially hidden (display:none);
-          // DownloadShelf (`src/browser/downloads/shelf.ts`) toggles
-          // visibility based on download activity.
           this.ui.createElement(
             "div",
             {

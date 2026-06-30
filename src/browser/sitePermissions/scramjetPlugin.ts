@@ -1,33 +1,3 @@
-// src/browser/sitePermissions/scramjetPlugin.ts
-//
-// Scramjet plugin that patches Web Platform permission-requesting
-// APIs in every proxied iframe so DDX can mediate per-origin grants
-// through the host (SitePermissionsStore + Nightmare prompt UI).
-//
-// Patched surfaces:
-//   - navigator.permissions.query({name}) — reports the stored
-//     state without prompting.
-//   - Notification.requestPermission(cb?) — asks the host; sets
-//     Notification.permission accordingly.
-//   - navigator.geolocation.getCurrentPosition / watchPosition —
-//     asks the host before calling through to the native API.
-//   - navigator.mediaDevices.getUserMedia({audio, video}) — asks
-//     the host before calling through.
-//   - navigator.mediaDevices.getDisplayMedia — asks the host before
-//     calling through. (display-capture)
-//
-// Wire flow (in-iframe):
-//   1. Patch API entry points.
-//   2. On call, postMessage `{__ddxSitePermission, reqId, origin, name}`
-//      to `window.parent` (host).
-//   3. Wait for `{__ddxSitePermissionResp, reqId, state}`.
-//   4. If granted, call through to the native API; if denied,
-//      reject with a DOMException matching Chrome's behavior.
-//
-// Hooks `frame.hooks.init.post` — runs AFTER ScramjetClient is
-// installed in the iframe, BEFORE the page's own scripts execute.
-// We patch on the iframe's `window` so the patches are visible to
-// page code.
 
 /**
  * `frame.hooks.init.post` dispatches its tap callbacks with a SINGLE
@@ -54,15 +24,13 @@ interface ScramjetFrameLike {
   };
 }
 
-const HOST_TIMEOUT_MS = 60_000; // give the user time to consider the prompt
+const HOST_TIMEOUT_MS = 60_000;
 
 /**
  * In-iframe helper: ask the host for permission. Resolves to the
  * granted/denied state.
  */
 function askHostScript(origin: string, name: string): Promise<'granted' | 'denied'> {
-  // Generate a request id within this iframe; the host echoes it
-  // back in the reply.
   const reqId = Math.floor(Math.random() * 2 ** 53);
   return new Promise((resolve) => {
     let settled = false;
@@ -105,7 +73,6 @@ function askHostScript(origin: string, name: string): Promise<'granted' | 'denie
  * serialize it cleanly.
  */
 function installPatches(): void {
-  // ── helpers ────────────────────────────────────────────────────
   const origin = window.location.origin;
   const reqId = (): number => Math.floor(Math.random() * 2 ** 53);
   const HOST_TIMEOUT = 60_000;
@@ -143,7 +110,6 @@ function installPatches(): void {
     });
   }
 
-  // ── navigator.permissions.query ────────────────────────────────
   try {
     const navPerms = (navigator as Navigator & { permissions?: { query?: unknown } }).permissions;
     if (navPerms?.query) {
@@ -207,7 +173,6 @@ function installPatches(): void {
     return { state, onchange: null };
   }
 
-  // ── Notification.requestPermission ─────────────────────────────
   try {
     const Notif = (window as Window & { Notification?: typeof Notification }).Notification;
     if (Notif && typeof Notif.requestPermission === 'function') {
@@ -215,7 +180,6 @@ function installPatches(): void {
       Notif.requestPermission = ((cb?: (permission: NotificationPermission) => void) => {
         const p = askHost('notifications').then((state) => {
           const perm: NotificationPermission = state === 'granted' ? 'granted' : 'denied';
-          // Best-effort: reflect into Notification.permission.
           try {
             Object.defineProperty(Notif, 'permission', { value: perm, configurable: true });
           } catch { /* swallow */ }
@@ -227,14 +191,10 @@ function installPatches(): void {
         });
         return p;
       }) as typeof Notif.requestPermission;
-      // Also intercept the constructor — if state is denied, drop the
-      // notification. Best-effort.
-      // Skipped for now: page can pre-check Notification.permission.
       void origReq;
     }
   } catch (err) { console.warn('[sitePerms/page] Notification patch failed:', err); }
 
-  // ── navigator.geolocation ──────────────────────────────────────
   try {
     const geo = navigator.geolocation;
     if (geo) {
@@ -260,8 +220,6 @@ function installPatches(): void {
         error?: PositionErrorCallback | null,
         options?: PositionOptions,
       ): number => {
-        // We can't return the watch id synchronously while gated on
-        // a prompt. Return a synthetic id and start the watch async.
         let realId = -1;
         const synthId = Math.floor(Math.random() * 2 ** 30);
         void askHost('geolocation').then((state) => {
@@ -273,8 +231,6 @@ function installPatches(): void {
             error?.({ code: 1, message: 'User denied geolocation', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as GeolocationPositionError);
           }
         });
-        // Pair the synth id with the real one so clearWatch(synth)
-        // can resolve.
         watchMap.set(synthId, () => realId);
         return synthId;
       };
@@ -293,7 +249,6 @@ function installPatches(): void {
     }
   } catch (err) { console.warn('[sitePerms/page] geolocation patch failed:', err); }
 
-  // ── navigator.mediaDevices.{getUserMedia, getDisplayMedia} ─────
   try {
     const md = navigator.mediaDevices;
     if (md && typeof md.getUserMedia === 'function') {
@@ -377,22 +332,12 @@ export class DdxSitePermissionsPlugin {
     }
     if (!this.inner) return;
     const initPost = frame.hooks.init.post;
-    // tap callbacks receive ONE arg: the frame init context. See the
-    // ScramjetInitContext doc above. The previous `(ctxArg, propsArg)`
-    // signature was wrong and caused `Cannot read 'eval' of undefined`.
     this.inner.tap(initPost, (ctxArg: unknown) => {
       const ctx = ctxArg as ScramjetInitContext;
       const win = ctx?.window;
       if (!win) return;
-      // Don't double-inject if the same window flows through
-      // init.post more than once (subframe re-hook scenarios).
       const tagged = win as Window & { __ddxSitePermsInstalled?: boolean };
       if (tagged.__ddxSitePermsInstalled) return;
-      // Scramjet's `eval` trap may not be wired immediately on
-      // init.post — Scramjet's client hooking is mid-flight when
-      // subframes are constructed. Poll the same way devtools'
-      // hookInstaller does (READY_POLL_MAX_MS=~1500ms is enough; we
-      // give it 2s here).
       void waitForEvalReady(win)
         .then((ready) => {
           try {
@@ -405,13 +350,10 @@ export class DdxSitePermissionsPlugin {
           }
         })
         .catch((err) => {
-          // Timed out — the iframe likely closed before its eval
-          // was ready. Quietly drop.
           console.debug('[sitePerms/page] inject prerequisite wait failed:', err);
         });
     });
   }
 }
 
-// Export for test / debugging.
 export { askHostScript };

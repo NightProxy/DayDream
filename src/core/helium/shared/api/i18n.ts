@@ -31,11 +31,6 @@ export class ChromeI18n {
   constructor(ctx: ExtensionContext) {
     this.ctx = ctx;
     this.messages = ctx.i18nMessages ?? {};
-    // Preferred order: explicitly negotiated locale, manifest's
-    // default_locale, navigator.language (in the iframe realm), then
-    // a generic 'en' fallback. The iframe doesn't have access to the
-    // user's full Accept-Language list, but `navigator.language` is
-    // available in proxied contexts.
     const manifestDefault = (ctx.manifest as { default_locale?: string }).default_locale;
     this.locale = ctx.i18nLocale ?? manifestDefault ?? (typeof navigator !== 'undefined' ? navigator.language : 'en');
   }
@@ -83,7 +78,6 @@ export class ChromeI18n {
     const substitutions = args[1];
     if (typeof key !== 'string') return '';
 
-    // Special @@ keys
     if (key.startsWith('@@')) {
       switch (key) {
         case '@@extension_id': return this.ctx.id;
@@ -101,14 +95,12 @@ export class ChromeI18n {
 
     let msg = entry.message;
 
-    // Apply named placeholders first (e.g., $NAME$ → entry.placeholders.NAME.content).
     if (entry.placeholders) {
       for (const [name, p] of Object.entries(entry.placeholders)) {
         msg = msg.replace(new RegExp(`\\$${escapeRegExp(name)}\\$`, 'gi'), p.content);
       }
     }
 
-    // Then $1..$9 substitutions.
     const subs = Array.isArray(substitutions) ? substitutions : substitutions != null ? [String(substitutions)] : [];
     for (let i = 0; i < 9; i++) {
       msg = msg.replace(new RegExp(`\\$${i + 1}`, 'g'), subs[i] != null ? String(subs[i]) : '');
@@ -118,9 +110,6 @@ export class ChromeI18n {
   }
 
   getUILanguage(): string {
-    // Chrome returns a BCP-47 locale tag. Our negotiated locale may
-    // use either underscore or hyphen separators (messages.json
-    // directories use underscores). Normalize to hyphen.
     return this.locale.replace(/_/g, '-');
   }
 }

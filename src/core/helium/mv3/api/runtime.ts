@@ -9,13 +9,6 @@ export class ChromeRuntime extends ChromeRuntimeBase {
   public readonly onUserScriptMessage: ChromeEvent = new ChromeEvent();
   public readonly onUserScriptConnect: ChromeEvent = new ChromeEvent();
 
-  // MV3-only. RPC-wired to the host's `runtime.getContexts` handler.
-  // Post-handshake the bootstrap's installRpcBindings overlays this
-  // stub with one that calls into the host (which enumerates the
-  // real spawned BG/popup/offscreen contexts for this extension).
-  // Pre-handshake calls now queue (per the new channelReady gate);
-  // this throw is purely defensive in case a caller reaches in
-  // before the overlay runs.
   getContexts(..._args: any[]): any {
     throw new Error('chrome.runtime.getContexts is not implemented (overlay not yet installed)');
   }

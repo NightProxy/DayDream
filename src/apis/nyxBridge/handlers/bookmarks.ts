@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/handlers/bookmarks.ts
-//
-// V1: read-only stub. Read methods return empty arrays so feature
-// detection works; write methods reject with not_supported.
 
 import { register } from './index';
 import { DDXError } from '../types';

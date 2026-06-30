@@ -15,15 +15,12 @@ export function compileHostPatterns(
 ): string[] {
   const out: string[] = [];
 
-  // MV3.
   if (Array.isArray(manifest.host_permissions)) {
     for (const p of manifest.host_permissions) {
       if (typeof p === 'string') out.push(p);
     }
   }
 
-  // MV2: `permissions` may mix API tokens (e.g. "tabs") with URL
-  // patterns ("https://*/*"). Filter to URL-pattern-looking entries.
   if (Array.isArray(manifest.permissions)) {
     for (const p of manifest.permissions) {
       if (typeof p !== 'string') continue;
@@ -59,21 +56,15 @@ export function isAllowedExternalOrigin(
   ctx: ExtensionContext,
   compiledHostPatterns: string[],
 ): boolean {
-  // Rule 1: any *.ddx host — let downstream WAR decide.
   if (url.hostname.endsWith('.ddx')) return true;
 
-  // Rule 2: manifest host patterns.
   for (const pattern of compiledHostPatterns) {
     if (matchUrlPattern(pattern, url.toString())) return true;
   }
 
-  // Rule 3: externally_connectable.ids (cross-extension messaging).
   const ec = (ctx.manifest as ChromeManifest).externally_connectable;
   if (ec && Array.isArray(ec.ids)) {
     if (ec.ids.includes('*')) return true;
-    // This path is mostly a no-op when the URL isn't *.ddx (rule 1
-    // already returned true for those). Kept for future cases where
-    // an extension talks to a non-.ddx peer via the ids list.
     const host = url.hostname;
     if (host.endsWith('.ddx')) {
       const peer = host.slice(0, -'.ddx'.length);

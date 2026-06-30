@@ -1,48 +1,3 @@
-// src/apis/extensions/urlOverrides.ts
-//
-// Coordinator for `chrome_url_overrides` (newtab / bookmarks / history).
-//
-// Chrome's contract:
-//   - An extension declares `chrome_url_overrides: { newtab: "newtab.html" }`
-//     in its manifest. When the user navigates to the corresponding page
-//     (chrome://newtab/, chrome://bookmarks/, chrome://history/), the
-//     extension's HTML is loaded instead.
-//   - Only ONE extension can own each override slot at a time. Chrome's
-//     real-world behavior is "most recently installed wins" with a one-
-//     time confirmation prompt.
-//   - User can disable the override at any time via chrome://extensions.
-//
-// DDX-specific shape:
-//   - Extensions are served from `https://<extId>.ddx/<path>`. The
-//     HeliumExtensionPlugin injects bootstrap + helium-ctx into HTML
-//     responses, so an extension-served newtab page Just Works as a
-//     fully functional chrome.* surface (per the popup-iframe round of
-//     fixes).
-//   - DDX has its own `ddx://newtab/`, `ddx://bookmarks/`, `ddx://history/`
-//     routes registered via the `Protocols` class. We override these
-//     entries to point at the extension's URL when an override is
-//     active.
-//
-// State machine:
-//
-//   ┌─────────┐  install + manifest.chrome_url_overrides.<kind>
-//   │ inactive│ ────────────────────────────────────────►   pending
-//   └─────────┘                                                │
-//        ▲                                                    user confirms
-//        │   (kill/uninstall/setEnabled false/user disable)   │
-//        │                                                    ▼
-//        └────────────────────────────────────────────────  active
-//
-// Persistence: serialized to SettingsAPI under
-//   `extensionUrlOverrides` = {
-//     active:   { newtab?: extId, bookmarks?: extId, history?: extId },
-//     pending:  { newtab?: extId, bookmarks?: extId, history?: extId },
-//     declined: { newtab?: string[], ... },  // extIds the user explicitly rejected; don't re-prompt
-//   }
-//
-// We don't store the URL itself — only the extId. The URL is rebuilt
-// from the extension's live manifest each time we apply. That way
-// updates to the manifest survive reloads without us re-walking state.
 
 import { SettingsAPI } from '@apis/settings';
 import type { ChromeManifest, FirefoxManifest } from '@core/helium';
@@ -229,15 +184,12 @@ export class ExtensionUrlOverrides implements ExtensionUrlOverridesAPI {
       if (!extId) continue;
       const manifest = lookupManifest(extId);
       if (!manifest) {
-        // Stale entry: extension is gone or disabled.
         delete state.active[kind];
         mutated = true;
         continue;
       }
       const path = readManifestOverride(manifest, kind);
       if (!path) {
-        // Manifest no longer declares the override (e.g., extension
-        // updated and removed the field).
         delete state.active[kind];
         mutated = true;
         continue;
@@ -263,14 +215,9 @@ export class ExtensionUrlOverrides implements ExtensionUrlOverridesAPI {
     for (const kind of OVERRIDE_KINDS) {
       const path = readManifestOverride(manifest, kind);
       if (!path) continue;
-      // Skip if user previously declined this extId for this kind.
       const declined = state.declined[kind] ?? [];
       if (declined.includes(extId)) continue;
-      // Skip if this extension is already the active owner (re-install
-      // of the currently active extension — no need to re-prompt).
       if (state.active[kind] === extId) continue;
-      // Stage as pending. If something is already pending for this
-      // kind, the new one wins (most-recently-installed semantics).
       state.pending[kind] = extId;
       mutated = true;
     }
@@ -310,8 +257,6 @@ export class ExtensionUrlOverrides implements ExtensionUrlOverridesAPI {
     if (!extId) return;
     const manifest = lookupManifest(extId);
     if (!manifest) {
-      // Extension was removed between staging and confirming. Drop
-      // the pending entry silently.
       delete state.pending[kind];
       await this.persist(state);
       return;
@@ -375,10 +320,7 @@ export class ExtensionUrlOverrides implements ExtensionUrlOverridesAPI {
     }
     const state = await this.load();
     state.active[kind] = extId;
-    // Clear any pending claim on this slot — user has spoken.
     if (state.pending[kind]) delete state.pending[kind];
-    // Also remove this extId from the declined list if it was there —
-    // the user is now explicitly opting in.
     if (state.declined[kind]) {
       state.declined[kind] = state.declined[kind]!.filter((id) => id !== extId);
     }
@@ -398,9 +340,6 @@ export class ExtensionUrlOverrides implements ExtensionUrlOverridesAPI {
   }
 
   getActiveExtId(kind: OverrideKind): string | null {
-    // Reads the cached state. `load()` populates `this.cached`; if it
-    // hasn't been called yet (extremely early init), return null —
-    // the caller will fall back to the default page.
     if (!this.cached) return null;
     return this.cached.active[kind] ?? null;
   }

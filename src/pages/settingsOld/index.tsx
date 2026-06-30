@@ -1506,9 +1506,6 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Returns a normalized (trimmed) form on success, or an error string on failure.
-// Callers pass the trimmed values to the registry so user-visible "  Name  "
-// doesn't get persisted verbatim and silently fail downstream comparisons.
 function validateEngineForm(
   name: string,
   bang: string,
@@ -1558,7 +1555,6 @@ function renderSearchEnginesTable() {
     .map((e) => searchEngineRowHtml(e, e.id === defaultId))
     .join("");
 
-  // Default radio
   table.querySelectorAll<HTMLInputElement>('input[name="se-default"]').forEach((radio) => {
     radio.addEventListener("change", async () => {
       if (radio.checked) {
@@ -1569,7 +1565,6 @@ function renderSearchEnginesTable() {
     });
   });
 
-  // Edit buttons
   table.querySelectorAll<HTMLButtonElement>("[data-edit-engine]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.editEngine!;
@@ -1577,7 +1572,6 @@ function renderSearchEnginesTable() {
     });
   });
 
-  // Remove buttons
   table.querySelectorAll<HTMLButtonElement>("[data-remove-engine]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.removeEngine!;
@@ -1590,7 +1584,6 @@ function renderSearchEnginesTable() {
     });
   });
 
-  // Save buttons (visible only on edit rows — see startEditEngine)
   table.querySelectorAll<HTMLButtonElement>("[data-save-engine]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.saveEngine!;
@@ -1618,7 +1611,6 @@ function renderSearchEnginesTable() {
     });
   });
 
-  // Cancel buttons on edit rows
   table.querySelectorAll<HTMLButtonElement>("[data-cancel-engine]").forEach((btn) => {
     btn.addEventListener("click", () => {
       renderSearchEnginesTable();
@@ -1693,7 +1685,6 @@ function startEditEngine(id: string) {
   const newRow = wrapper.firstElementChild!;
   row.replaceWith(newRow);
 
-  // Re-bind cancel and save just for this new row
   newRow.querySelector("[data-cancel-engine]")?.addEventListener("click", () => {
     renderSearchEnginesTable();
   });
@@ -1929,13 +1920,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initializeCommandsPanel();
 });
 
-// ──────────────────────────────────────────────────────────────────────
-// Site Permissions section
-// ──────────────────────────────────────────────────────────────────────
-// Reads from the HOST's SitePermissionsStore via window.parent.
-// Live updates via the store's change listener — toggles propagate
-// immediately to other tabs / the lock dropdown.
-
 import type {
   PermissionGrant,
   PermissionState,
@@ -2023,7 +2007,6 @@ class SitePermissionsUI {
       return;
     }
     const all = await this.store.listAll();
-    // Group by origin.
     const byOrigin = new Map<string, PermissionGrant[]>();
     for (const g of all) {
       let arr = byOrigin.get(g.origin);
@@ -2051,7 +2034,6 @@ class SitePermissionsUI {
       this.listEl.appendChild(this.renderSiteCard(origin, byOrigin.get(origin)!));
     }
 
-    // Re-hydrate icons.
     createIcons({ icons });
   }
 

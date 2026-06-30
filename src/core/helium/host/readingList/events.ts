@@ -1,9 +1,3 @@
-// src/core/helium/host/readingList/events.ts
-//
-// chrome.readingList.onEntryAdded / onEntryUpdated / onEntryRemoved
-// event fan-out. Subscribes to ReadingListManager's change events and
-// re-emits as Chrome-shape events to every extension with the
-// `readingList` permission.
 
 import type { ExtensionManager } from '@apis/extensions';
 import { ReadingListManager } from '@apis/readingList';

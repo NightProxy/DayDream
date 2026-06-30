@@ -62,7 +62,6 @@ export class ChromeFontSettings {
           }
         }
       }
-      // Always include the standard families as a baseline.
       for (const fam of ['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy']) {
         if (!seen.has(fam)) list.push({ fontId: fam, displayName: fam });
       }

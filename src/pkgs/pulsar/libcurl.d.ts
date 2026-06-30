@@ -1,4 +1,3 @@
-// Minimal type shims for libcurl.js (no official typings shipped).
 
 declare module 'libcurl.js' {
 	interface LibcurlFetchOptions {

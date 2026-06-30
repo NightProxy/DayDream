@@ -16,8 +16,6 @@ interface ExtMgrLike {
 	getRunningContext?: (extId: string) => { ctx: unknown; iframe: HTMLIFrameElement } | undefined;
 }
 
-// Per-tab channel store: keep a reference so the auxiliary channel
-// for an extension-newtab tab can be closed when the tab closes.
 const extensionTabChannels = new Map<string, { close: () => void }>();
 
 export class TabLifecycle {
@@ -44,8 +42,6 @@ export class TabLifecycle {
 		const overrides = (window as { extensionUrlOverrides?: UrlOverridesLike }).extensionUrlOverrides;
 		if (!overrides) return null;
 
-		// Strip protocol + trailing slash for a quick path check.
-		// Accept both `ddx://newtab` and `ddx://newtab/`.
 		const m = url.match(/^ddx:\/\/([a-z]+)\/*$/i);
 		if (!m) return null;
 		const kind = m[1].toLowerCase();
@@ -55,9 +51,6 @@ export class TabLifecycle {
 		const extId = overrides.getActiveExtId(kind);
 		if (!extId) return null;
 
-		// Look up the manifest's chrome_url_overrides path for this
-		// kind. The extension manager has the manifest in memory; the
-		// extension page does the same lookup.
 		const mgr = (window as { extensions?: { getManifest?: (id: string) => unknown } }).extensions;
 		const manifest = mgr?.getManifest?.(extId) as { chrome_url_overrides?: Record<string, string> } | null;
 		const overridePath = manifest?.chrome_url_overrides?.[kind];
@@ -131,17 +124,6 @@ export class TabLifecycle {
 
 		const id = `tab-${this.tabs.tabCount}`;
 
-		// Detect `chrome_url_overrides` claims. If the requested URL
-		// is one of the override slots (ddx://newtab, ddx://bookmarks,
-		// ddx://history) AND an extension currently owns that slot,
-		// the tab's frame needs the extension's HeliumExtensionPlugin
-		// attached at construction. Without it the fake `<extId>.ddx`
-		// origin hits the browser's DNS resolver (since there's no
-		// per-frame plugin to intercept the fetch) → ERR_NAME_NOT_RESOLVED.
-		//
-		// We attach the plugin AND wire the auxiliary channel so the
-		// override page has full `chrome.*` RPC functionality
-		// (matches what Chrome's newtab override gets).
 		const overrideInfo = await this.resolveExtensionOverride(url);
 		const plugins: unknown[] = [];
 		let overrideExtId: string | null = null;
@@ -161,9 +143,6 @@ export class TabLifecycle {
 		);
 		const iframe = managedFrame.iframe;
 
-		// For extension-newtab tabs: wire the auxiliary channel so the
-		// page gets a real MessagePort for chrome.* RPCs. Matches the
-		// popup/offscreen recipe.
 		if (overrideExtId && plugins.length > 0) {
 			this.wireExtensionChannel(overrideExtId, iframe, id);
 		}
@@ -250,8 +229,6 @@ export class TabLifecycle {
 
 				const tabInfo = this.tabs.getTabById(id);
 				if (tabInfo && tabInfo.tab.classList.contains('active')) {
-					// First check if the raw path maps directly to an internal
-					// URL (e.g. /internal/newtab → ddx://newtab).
 					const rawPath = new URL(iframe.src).pathname;
 					const internalCheck =
 						await this.tabs.proto.getInternalURL(rawPath);
@@ -261,7 +238,6 @@ export class TabLifecycle {
 					) {
 						this.tabs.items.addressBar!.value = internalCheck;
 					} else {
-						// Centralized decode of the iframe URL.
 						const decoded = decodeProxiedUrl(
 							iframe.src,
 							this.tabs.proxy
@@ -365,13 +341,8 @@ export class TabLifecycle {
 			return;
 		}
 
-		// Snapshot pre-teardown for the recently-closed stack. Must run
-		// before iframe.src is cleared / contentWindow is stopped so
-		// `closedTabStack.push` can read the live URL/favicon.
 		this.tabs.closedTabStack?.push(tabInfo);
 
-		// If this tab is in a split, dissolve the pair so the partner returns
-		// to a normal main-pane tab before we tear down.
 		if (tabInfo.splitPartnerId) {
 			this.tabs.unsplitTab?.(id);
 		}
@@ -405,9 +376,6 @@ export class TabLifecycle {
 			'[TabLifecycle] Removed tab and iframe DOM elements via frame manager'
 		);
 
-		// Close any auxiliary channel wired for an extension-newtab
-		// override in this tab. Without this the host port leaks and
-		// pending RPCs stay dangling until GC.
 		const extChannel = extensionTabChannels.get(id);
 		if (extChannel) {
 			try { extChannel.close(); } catch (err) {
@@ -481,11 +449,8 @@ export class TabLifecycle {
 			activeIFrame.id
 		);
 
-		// Snapshot for the recently-closed stack BEFORE teardown.
 		this.tabs.closedTabStack?.push(this.tabs.getTabById(activeTab.id));
 
-		// Capture the URL for the close-log message in decoded form so we
-		// don't dump scramjet-encoded gibberish into the user-facing log.
 		const activeIframeUrl = decodeProxiedUrl(
 			activeIFrame.src,
 			this.tabs.proxy
@@ -566,10 +531,6 @@ export class TabLifecycle {
 			this.tabs.getTabsInOrder().length
 		);
 
-		// Snapshot ALL tabs to the recently-closed stack in display order.
-		// Pushed oldest-first so the rightmost tab ends up on top (matches
-		// Chrome's "Reopen Closed Tab" repeated-press behavior of reopening
-		// tabs from right to left).
 		for (const tabData of this.tabs.getTabsInOrder()) {
 			this.tabs.closedTabStack?.push(tabData);
 		}
@@ -620,11 +581,6 @@ export class TabLifecycle {
 			(document.getElementById(tabId) as HTMLElement);
 		if (!tabElement) return;
 
-		// Tab strip visual active state. Only the focused/active tab gets
-		// `.active`. In a split pair the active tab is whichever side the
-		// user is currently focused on; the partner stays `.inactive` but
-		// remains visible (it's still a tab). The capsule itself gets a
-		// `.has-active` marker so CSS can style the whole capsule.
 		const allTabs = this.tabs.items.tabBar!.querySelectorAll('.tab');
 		allTabs.forEach((tab: Element) => {
 			tab.classList.remove('active');
@@ -641,23 +597,16 @@ export class TabLifecycle {
 		) as HTMLElement | null;
 		if (capsule) capsule.classList.add('has-active');
 
-		// Resolve the split pair state, if any.
 		const partnerId = tabInfo.splitPartnerId;
 		const partner = partnerId
 			? this.tabs.getTabById(partnerId)
 			: undefined;
 		const inSplit = !!partner;
 
-		// When the user clicks one side of a split capsule we want THAT side
-		// to become the focused frame (Edge behavior). Update the focus map
-		// before reading it.
 		if (inSplit && partner && this.tabs.focusedSplitSideByPairKey) {
 			this.tabs.focusedSplitSideByPairKey.set(tabInfo.id, tabInfo.id);
 			this.tabs.focusedSplitSideByPairKey.set(partner.id, tabInfo.id);
 
-			// Update the capsule indicator (which side has the underline)
-			// without a full strip re-render. The data-split-focused attr
-			// is read by CSS to draw the focus underline.
 			const capsuleEl = tabInfo.tab.closest(
 				'[data-component="split-capsule"]'
 			) as HTMLElement | null;
@@ -672,8 +621,6 @@ export class TabLifecycle {
 			}
 		}
 
-		// Decide which iframe owns the address bar / nav buttons / legacy
-		// `.active` selector. In a split pair this is the user-focused side.
 		const focusedTabId = inSplit
 			? this.tabs.getSplitFocusedTabId?.(tabId) ?? tabId
 			: tabId;
@@ -682,14 +629,6 @@ export class TabLifecycle {
 			this.tabs.frameByTabId.get(focusedTab.id) ??
 			(document.getElementById(focusedTab.frameId) as HTMLIFrameElement | null);
 
-		// CSS hides every iframe by default. Visible iframes carry one of
-		// these classes:
-		//   .active         — the focused frame. Exactly one in the DOM.
-		//                     Legacy call-sites that querySelector(
-		//                     'iframe.active') get this one.
-		//   .split-visible  — the non-focused half of a split pair. Visible
-		//                     but not the focus target.
-		// Selecting a tab clears all of them and re-applies fresh.
 		if (this.tabs.items.frameContainer) {
 			this.tabs.items.frameContainer
 				.querySelectorAll('iframe.active, iframe.split-visible')
@@ -700,7 +639,6 @@ export class TabLifecycle {
 		}
 		if (focusedIframe) focusedIframe.classList.add('active');
 
-		// Non-focused split partner stays visible alongside the focused one.
 		if (inSplit && partner) {
 			const partnerIframe = this.tabs.frameByTabId.get(partner.id);
 			if (partnerIframe && partnerIframe !== focusedIframe) {
@@ -712,9 +650,6 @@ export class TabLifecycle {
 			}
 		}
 
-		// Hand the layout the iframes per pane. In split mode we put the
-		// pair's left+right iframes into the split panes; in main mode we
-		// show whichever non-split tab is active.
 		if (inSplit && partner) {
 			const leftTab =
 				tabInfo.splitPlacement === 'split-left' ? tabInfo : partner;
@@ -741,7 +676,6 @@ export class TabLifecycle {
 			});
 		}
 
-		// Devtools panel toggling — delegate to the new manager.
 		(window as any).devtools?.onTabSelect(tabId);
 
 		const tabSelectedEvent = new CustomEvent('tabSelected', {
@@ -753,7 +687,6 @@ export class TabLifecycle {
 		});
 		document.dispatchEvent(tabSelectedEvent);
 
-		// Address bar reflects the focused iframe's URL.
 		if (focusedIframe) {
 			const rawPath = new URL(focusedIframe.src).pathname;
 			const internalCheck = await this.tabs.proto.getInternalURL(

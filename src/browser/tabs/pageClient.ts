@@ -226,8 +226,6 @@ export class TabPageClient {
 
 		const handler = (event: MouseEvent) => {
 			const target = event.target as HTMLElement | null;
-			// If the click is on an anchor, the link bridge will fire and
-			// open the link menu instead — don't double-handle.
 			if (target?.closest('a[href]')) return;
 
 			event.preventDefault();
@@ -255,10 +253,6 @@ export class TabPageClient {
 		const menu = this.tabs.auxiliaryMenus?.buildPageBackgroundMenu(iframe);
 		if (!menu) return;
 
-		// Compute pageX/Y in HOST coordinates from the iframe-local event.
-		// The iframe contentDocument's MouseEvent has clientX/Y relative to
-		// the iframe viewport — translate to host viewport via the iframe's
-		// bounding rect.
 		const rect = iframe.getBoundingClientRect();
 		const hostX = rect.left + event.clientX;
 		const hostY = rect.top + event.clientY;
@@ -268,8 +262,6 @@ export class TabPageClient {
 		});
 		document.body.appendChild(tempAnchor);
 
-		// openMenu reads pageX/pageY from the event; build a synthetic event
-		// with translated coords.
 		const hostEvent = new MouseEvent('contextmenu', {
 			clientX: hostX,
 			clientY: hostY,
@@ -383,7 +375,6 @@ export class TabPageClient {
 			]
 		);
 
-		// Extension contextMenus injection (link context).
 		try {
 			const extMgr = (window as { extensions?: ExtManagerLike }).extensions;
 			const registry = extMgr?.contextMenusRegistry;
@@ -462,8 +453,6 @@ export class TabPageClient {
 		}
 
 		const handler = (event: MouseEvent) => {
-			// Middle button = button 1 on `auxclick`. Ctrl/meta + left click =
-			// modifier-tab on `click`. Anything else, leave alone.
 			const isMiddle = event.button === 1;
 			const isModifierLeft =
 				event.button === 0 && (event.ctrlKey || event.metaKey);
@@ -582,9 +571,6 @@ export class TabPageClient {
 		});
 		document.dispatchEvent(iframeLoadedEvent);
 
-		// Phase 'committed' for in-page URL changes (link clicks,
-		// history.pushState). The protocols.navigate() path fires its
-		// own 'committed' event; this catches everything else.
 		let href: string | undefined;
 		try {
 			href = iframe.contentWindow?.location?.href ?? undefined;
@@ -619,11 +605,6 @@ export class TabPageClient {
 	 */
 	private setupPhaseEvents(iframe: HTMLIFrameElement): void {
 		const tabId = iframe.id.replace('iframe-', 'tab-');
-		// Bind once-per-iframe handlers. The iframe is recreated when a
-		// tab is closed so re-firing on subsequent navigations is fine.
-		// Documented best-effort: DOMContentLoaded inside the Scramjet
-		// proxy may fire late or not at all. The iframe.load fallback
-		// (registered below) reliably covers the 'completed' phase.
 		let domFired = false;
 		let loadFired = false;
 
@@ -665,9 +646,6 @@ export class TabPageClient {
 			// proxied window may not support addEventListener; fall back below
 		}
 
-		// Iframe-level fallback: when contentWindow events don't reach
-		// us (Scramjet proxy, cross-origin, etc.), the iframe's own load
-		// event still fires when the page finishes loading.
 		iframe.addEventListener('load', () => {
 			if (!domFired) {
 				domFired = true;

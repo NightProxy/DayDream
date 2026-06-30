@@ -1,25 +1,4 @@
-// src/core/helium/host/i18n/negotiate.ts
-//
-// Locale negotiation: walk navigator.languages, look for matching
-// _locales/<locale>/messages.json in extfs, fall back to default_locale.
-//
-// Two access patterns:
-//   - `negotiateLocale(extId)` + `loadMessages(extId, locale)`: async,
-//     hit the OPFS-backed extfs each time. Used for occasional RPC
-//     handlers (chrome.i18n.getMessage if anyone DID call it via the
-//     channel).
-//   - `prepareI18nFor(extId, manifest)`: async, runs once per extension
-//     lifetime; subsequently `getCachedI18n(extId)` returns the locale
-//     + messages synchronously. Used by `extfs/plugin.ts` to bake the
-//     messages into the on-wire `<meta name="helium-ctx">` payload
-//     (the bootstrap needs them to provide a synchronous
-//     `chrome.i18n.getMessage`, matching Chrome's contract).
 
-// Direct import from `install.ts` rather than the `../../extfs`
-// barrel: the barrel re-exports `HeliumExtensionPlugin`, and
-// `extfs/plugin.ts` now imports `prepareI18nFor` from this file. Going
-// through the barrel would create a module-init cycle. The barrel
-// path is fine for everything else; this is the only edge.
 import { readExtensionFile } from '../../extfs/install';
 
 const localeCache = new Map<string, string | null>();
@@ -44,10 +23,6 @@ export async function negotiateLocale(extId: string, defaultLocale?: string): Pr
   const candidates = [...langs, defaultLocale]
     .filter((s): s is string => typeof s === 'string')
     .flatMap((l) => {
-      // Try the literal tag first (e.g. "en-US"), then the base
-      // language ("en"). Also try Chrome's underscore convention
-      // since `_locales/` directories use underscores while
-      // `navigator.languages` uses hyphens.
       const variants: string[] = [l, l.replace(/-/g, '_')];
       const base = l.split('-')[0];
       if (base && base !== l) variants.push(base);

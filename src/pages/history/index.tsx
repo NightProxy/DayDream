@@ -129,11 +129,6 @@ class HistoryUI {
 			}
 		});
 
-		// Right-click on a history row opens our context menu. The menu
-		// content is built by the host's `auxiliaryMenus.buildHistoryItemMenu`
-		// and rendered by the host's RightClickMenu instance, since this
-		// page lives inside an iframe and the menu container needs to be
-		// positioned in host viewport coordinates.
 		document.addEventListener('contextmenu', (e: MouseEvent) => {
 			const target = e.target as HTMLElement;
 			const item = target.closest('[data-history-url]');
@@ -196,8 +191,6 @@ class HistoryUI {
 				}
 			});
 
-			// Translate iframe-local mouse coords into host coords for the
-			// host-side RightClickMenu container.
 			const hostIframe = parentWin.document
 				?.querySelector('iframe.active') as HTMLIFrameElement | null;
 			const rect = hostIframe?.getBoundingClientRect();

@@ -1,20 +1,3 @@
-// src/browser/extensions/popupHost.ts
-//
-// Floating popup-iframe spawner for chrome.action / browserAction /
-// pageAction default_popup. Anchored to a UI element (typically a
-// row in the extensions menu). Dismisses on outside click.
-//
-// The popup iframe is spawned via `proxy.createFrame` with a fresh
-// HeliumExtensionPlugin obtained from `extensions.createExtensionPlugin(extId)`.
-// That plugin intercepts `https://<id>.ddx/*` requests, serves the
-// popup HTML / JS / images from extfs (injecting bootstrap + helium-ctx
-// into HTML responses and substituting `__MSG_*__` placeholders).
-//
-// The popup ALSO needs the same MessageChannel handshake the BG iframe
-// gets — without it the bootstrap loads but never gets a port, so all
-// `chrome.*.*` RPCs hang forever. That wiring is done by calling back
-// into ExtensionManager.wireAuxiliaryViewChannel(ctx, iframe). The
-// returned channel is closed when the popup is dismissed.
 
 import type { ExtensionContext } from '@core/helium';
 import type { ExtensionBridgeChannel } from '@core/helium';
@@ -50,7 +33,6 @@ export function openExtensionPopup(opts: OpenExtensionPopupOpts): void {
 	} as Partial<CSSStyleDeclaration>);
 
 	const rect = opts.anchorEl.getBoundingClientRect();
-	// Position below the anchor by default; flip up if it would overflow.
 	const viewportH = window.innerHeight;
 	const desiredTop = rect.bottom + 4;
 	if (desiredTop + 200 > viewportH) {
@@ -78,17 +60,8 @@ export function openExtensionPopup(opts: OpenExtensionPopupOpts): void {
 	document.body.appendChild(wrapper);
 	currentPopup = wrapper;
 
-	// Spawn the popup frame via Scramjet with a fresh HeliumExtensionPlugin
-	// bound to the calling extension's context (obtained from the
-	// ExtensionManager). If the extension is not running the plugin will
-	// be null and the frame is created without one — popup HTML won't
-	// resolve in that case, but spawning is best-effort.
 	void spawnPopupFrame(iframe, opts)
 		.then((channel) => {
-			// Register the popup contentWindow with ExtensionManager so
-			// chrome.extension.getViews({ type: 'popup' }) can find it.
-			// Tries immediately and again on iframe load — the
-			// contentWindow can swap once Scramjet finishes hydrating.
 			tryRegisterPopupWindow(opts.extId, iframe, channel);
 			iframe.addEventListener('load', () => {
 				tryRegisterPopupWindow(opts.extId, iframe, channel);
@@ -99,8 +72,6 @@ export function openExtensionPopup(opts: OpenExtensionPopupOpts): void {
 			console.warn('[helium/popupHost] spawn failed:', err);
 		});
 
-	// Outside-click dismiss. Delay attachment until next tick so the
-	// initial click that triggered the popup doesn't immediately close it.
 	dismissHandler = (e: MouseEvent) => {
 		if (!wrapper.contains(e.target as Node) && !opts.anchorEl.contains(e.target as Node)) {
 			closeExtensionPopup();
@@ -133,10 +104,6 @@ export function closeExtensionPopup(): void {
 		} catch (err) {
 			console.warn('[helium/popupHost] unregister popup target threw:', err);
 		}
-		// Close the popup's MessageChannel. Without this, any pending
-		// RPCs on the popup-side ExtensionBridgeChannel are left dangling
-		// and the host port leaks until GC. close() is idempotent and
-		// safe even if the channel was never fully connected.
 		if (owner.channel) {
 			try {
 				owner.channel.close();
@@ -175,11 +142,6 @@ function tryRegisterPopupWindow(
 ): void {
 	const win = iframe.contentWindow;
 	if (!win) return;
-	// Avoid double-registering the same Window for the same popup. If
-	// the iframe load fires repeatedly we only register once per
-	// (extId, window) pair; ExtensionManager.popupWindows is a Set so
-	// duplicates are no-ops, but the bookkeeping is simpler when we
-	// pin the owner.
 	if (currentPopupOwner && currentPopupOwner.win === win && currentPopupOwner.extId === extId) {
 		return;
 	}
@@ -238,17 +200,9 @@ async function spawnPopupFrame(
 				opts.extId +
 				' — popup HTML will fail to load (extension not running?)',
 		);
-		// No plugin means we can't intercept the popup's requests, so
-		// the popup won't get the bootstrap injected. The handshake
-		// would never fire. Bail out cleanly.
 		return null;
 	}
 
-	// IMPORTANT ORDER: wire the channel BEFORE frame.go(). The
-	// handshake is attached via `iframe.addEventListener('load', ...,
-	// { once: true })`, and `frame.go` is what triggers the load. If
-	// we attached AFTER load, the listener could miss the event in a
-	// race.
 	let channel: ExtensionBridgeChannel | null = null;
 	if (typeof w.extensions?.wireAuxiliaryViewChannel === 'function') {
 		try {

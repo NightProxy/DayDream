@@ -59,14 +59,12 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 			onSelect: () => deps.onNavigate(defaultEngine.urlTemplate.replace('%s', encodeURIComponent(query))),
 		};
 
-	// Synchronous sources
 	const tabsResults = safeCall(() => deps.tabs.searchOpen(query)) ?? [];
 	const historyResults = safeCall(() => deps.history.searchEntries(query)) ?? [];
 	const bookmarksRaw = safeCall(() => deps.bookmarks.searchBookmarks(query)) ?? [];
 	const bookmarksResults = bookmarksRaw.filter(isBookmark);
 	const protocolRoutes = safeCall(() => deps.protocols.listRoutes()) ?? [];
 
-	// Async source: search suggestions
 	let suggestions: string[] = [];
 	try {
 		suggestions = await deps.fetchSuggestions(query, deps.signal);
@@ -76,7 +74,6 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 
 	const sections: OmniboxSection[] = [];
 
-	// Open tabs
 	if (tabsResults.length > 0) {
 		const rows: OmniboxRow[] = tabsResults.slice(0, CAPS.tabs).map((t) => ({
 			id: `tab-${t.tabId}`,
@@ -94,7 +91,6 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 		});
 	}
 
-	// History
 	if (historyResults.length > 0) {
 		const rows: OmniboxRow[] = historyResults.slice(0, CAPS.history).map((r: HistorySearchResult) => ({
 			id: `hist-${r.entry.id}`,
@@ -112,7 +108,6 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 		});
 	}
 
-	// Bookmarks
 	if (bookmarksResults.length > 0) {
 		const rows: OmniboxRow[] = bookmarksResults.slice(0, CAPS.bookmarks).map((b) => ({
 			id: `bm-${b.id}`,
@@ -130,7 +125,6 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 		});
 	}
 
-	// Internal pages (filter out wildcard `*` routes)
 	const protoMatches = filterProtocolRoutes(protocolRoutes, query);
 	if (protoMatches.length > 0) {
 		const rows: OmniboxRow[] = protoMatches.slice(0, CAPS.internal).map((r) => ({
@@ -148,7 +142,6 @@ export async function renderDefaultMode(deps: DefaultModeDeps): Promise<DefaultM
 		});
 	}
 
-	// Search suggestions
 	if (suggestions.length > 0) {
 		const rows: OmniboxRow[] = suggestions.slice(0, CAPS.search).map((s, i) => ({
 			id: `sug-${i}`,

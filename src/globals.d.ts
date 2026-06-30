@@ -44,17 +44,11 @@ declare global {
 		liveInject?: any;
 		codeInject?: any;
 		d: ShadowRoot;
-		// Downloads + site permissions subsystems (exposed by their
-		// respective install.ts files at boot — see
-		// src/browser/downloads/install.ts and
-		// src/browser/sitePermissions/install.ts).
 		downloadsManager?: import('@apis/downloads').DownloadsManager;
 		sitePermissionsStore?: import('@apis/sitePermissions').SitePermissionsStore;
-		// Optional UI controllers — added at boot if present.
 		downloadShelf?: import('@browser/downloads/shelf').DownloadShelf;
 		lockDropdown?: import('@browser/sitePermissions/lockDropdown').LockDropdown;
 		extensionToolbar?: import('@browser/extensions/toolbarButtons').ExtensionToolbarButtons;
-		// SiteDataManager + DnsResolver from earlier session
 		dnsResolver?: import('@apis/network/dns').DnsResolver;
 	}
 
@@ -63,43 +57,6 @@ declare global {
 		config: any;
 		func: Function;
 	}
-
-	/*interface SJOptions {
-    prefix: string;
-    globals?: {
-      wrapfn: string;
-      wrapthisfn: string;
-      trysetfn: string;
-      importfn: string;
-      rewritefn: string;
-      metafn: string;
-      setrealmfn: string;
-      pushsourcemapfn: string;
-    };
-    files: {
-      wasm: string;
-      shared: string;
-      worker: string;
-      client: string;
-      sync: string;
-    };
-    flags?: {
-      serviceworkers?: boolean;
-      syncxhr?: boolean;
-      naiiveRewriter?: boolean;
-      strictRewrites?: boolean;
-      rewriterLogs?: boolean;
-      captureErrors?: boolean;
-      cleanErrors?: boolean;
-      scramitize?: boolean;
-      sourcemaps?: boolean;
-    };
-    siteFlags?: {};
-    codec?: {
-      encode: string;
-      decode: string;
-    };
-  }*/
 
 	interface SJConfig {
 		prefix: string;
@@ -146,12 +103,6 @@ declare global {
 		siteFlags: Record<string, any>;
 		maskedfiles: string[];
 	}
-
-	/*declare class ScramjetController {
-    constructor(opts: SJOptions);
-    init(path?: string): Promise<void>;
-    encodeUrl(term: string): string;
-  }*/
 
 	interface SJController {
 		id: string;

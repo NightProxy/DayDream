@@ -4,10 +4,6 @@ import type { FSType } from '@terbiumos/tfs';
 import { dirname, EXT_ROOT, INDEX_PATH, extPath } from './path';
 import type { ExtensionIndex } from './types';
 
-// ─────────────────────────────────────────────────────────────────────────
-// Debug logging — same tag/format as install.ts so a single console
-// filter ("helium/extfs/dbg") captures the full extension lifecycle.
-// ─────────────────────────────────────────────────────────────────────────
 const DBG_TAG = '[helium/extfs/dbg]';
 function dlog(...args: unknown[]): void {
   console.log(DBG_TAG, ...args);
@@ -31,15 +27,6 @@ function mkdir(store: FSType, path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     store.mkdir(path, err => {
       if (!err) return resolve();
-      // EEXIST is benign — another concurrent ensureDir created the
-      // directory between our exists() check and our mkdir() call.
-      // Treat as success; mkdir semantics are idempotent for our
-      // purposes. (Mirrors `mkdir -p` behavior.)
-      //
-      // TFS surfaces EEXIST via both `code` and `name`; check both so
-      // a future TFS version that drops one of the fields doesn't
-      // regress our suppression. See `writeFileBinary` below for the
-      // same defensive pattern.
       const code = (err as { code?: string }).code;
       const name = (err as { name?: string }).name;
       if (code === 'EEXIST' || name === 'EEXIST') return resolve();
@@ -88,22 +75,12 @@ async function ensureDir(store: FSType, path: string): Promise<void> {
 let opQueue: Promise<unknown> = Promise.resolve();
 function queueOp<T>(fn: () => Promise<T>): Promise<T> {
   const next = opQueue.then(fn, fn);
-  // Don't propagate failures into subsequent ops; each op handles its
-  // own errors. .catch(() => {}) detaches the rejection from the chain.
   opQueue = next.catch(() => undefined);
   return next;
 }
 
 function readFileBinary(store: FSType, path: string): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
-    // CRITICAL: must pass explicit 'arraybuffer' type. TFS' readFile
-    // auto-detects the encoding from the path extension, falling back
-    // to UTF-8 for unknown extensions. `manifest.json` falls into
-    // "unknown" since `.json` is not in TFS' binaryExts set, so without
-    // this explicit type TFS would return a STRING (from `file.text()`)
-    // and our `new Uint8Array(stringPosingAsArrayBuffer)` would yield
-    // an empty array — exactly the "file empty after write" symptom
-    // that broke every install before this fix.
     store.readFile(path, 'arraybuffer', (err, content) => {
       if (err) {
         dlog(`readFileBinary(${path}): TFS readFile errored:`, err);
@@ -120,8 +97,6 @@ function readFileBinary(store: FSType, path: string): Promise<Uint8Array> {
         resolve(new Uint8Array(content));
         return;
       }
-      // Defensive: if TFS regresses and returns something else, surface
-      // it as an error rather than silently producing empty bytes.
       dlog(`readFileBinary(${path}): TFS returned UNEXPECTED type ${typeof content}: ${String(content).slice(0, 80)}`);
       reject(new Error(`[helium/extfs] readFileBinary(${path}): unexpected return type from TFS readFile: ${typeof content}`));
     });
@@ -151,8 +126,6 @@ function unlink(store: FSType, path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     store.unlink(path, err => {
       if (!err) return resolve();
-      // ENOENT is benign for unlink-before-write.
-      // Check both `code` and `name` for resilience (TFS sets both).
       const code = (err as { code?: string }).code;
       const name = (err as { name?: string }).name;
       if (code === 'ENOENT' || name === 'ENOENT') return resolve();
@@ -193,7 +166,6 @@ async function writeFileBinary(
     console.warn(
       `[helium/extfs] writeFileBinary(${path}) hit EEXIST; unlinking and retrying`,
     );
-    // Retry path: drop the stale entry and write fresh.
     await unlink(store, path);
     await writeFileBinaryRaw(store, path, content);
     dlog(`writeFileBinary(${path}) retry succeeded`);
@@ -234,9 +206,6 @@ async function writeFileUtf8(
     await writeFileUtf8Raw(store, path, content);
     return;
   } catch (err) {
-    // Match writeFileBinary's two-field detection — TFS surfaces EEXIST
-    // via both `code` and `name`, but a future minor version could
-    // drop one. Belt and suspenders.
     const code = (err as { code?: string }).code;
     const name = (err as { name?: string }).name;
     if (code !== 'EEXIST' && name !== 'EEXIST') {
@@ -310,7 +279,7 @@ function rmdirShallow(store: FSType, path: string): Promise<void> {
  */
 async function rmrf(store: FSType, path: string): Promise<void> {
   const st = await stat(store, path);
-  if (!st) return; // doesn't exist
+  if (!st) return;
   if (st.type === 'DIRECTORY') {
     let entries: string[];
     try {
@@ -323,11 +292,6 @@ async function rmrf(store: FSType, path: string): Promise<void> {
     for (const name of entries) {
       await rmrf(store, `${path}/${name}`);
     }
-    // Final rmdir of the now-empty directory. OPFS occasionally reports
-    // the dir as still non-empty here (the recursive walk above just
-    // emptied it but the directory handle hasn't been refreshed), so
-    // EEXIST gets retried once and then swallowed as a benign no-op
-    // rather than propagated to the install path.
     let lastErr: unknown = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -337,9 +301,6 @@ async function rmrf(store: FSType, path: string): Promise<void> {
         const code = (err as { code?: string }).code;
         const name = (err as { name?: string }).name;
         if (code === 'ENOENT' || name === 'ENOENT') return;
-        // EEXIST (= "file already exists", remapped from
-        // InvalidModificationError on non-empty removeEntry) — yield
-        // a microtask to let OPFS settle, then retry once.
         if (code === 'EEXIST' || name === 'EEXIST') {
           lastErr = err;
           await new Promise(resolve => setTimeout(resolve, 0));
@@ -348,16 +309,12 @@ async function rmrf(store: FSType, path: string): Promise<void> {
         throw err;
       }
     }
-    // Both attempts hit EEXIST — give up on the empty dir but don't
-    // poison the install. Log so it's discoverable if other things
-    // start failing.
     console.warn(
       `[helium/extfs] rmrf: directory "${path}" still reports non-empty after recursive cleanup; leaving empty shell behind. Last error:`,
       lastErr,
     );
     return;
   }
-  // File or symlink: unlink.
   try {
     await unlink(store, path);
   } catch (err) {
@@ -380,11 +337,6 @@ export async function getStore(): Promise<FSType> {
       const nfs = new NightFS();
       await nfs.init;
       const store = nfs.core.fs;
-      // ensureDir is internally idempotent and only runs once at init,
-      // before any opQueue work, so it's safe to call outside the queue.
-      // Wrap in try/catch — if the root dir already exists from a
-      // prior session, ensureDir's EEXIST suppression handles it; this
-      // catch is belt-and-suspenders.
       try {
         await ensureDir(store, EXT_ROOT);
         dlog(`getStore: ${EXT_ROOT} ensured`);

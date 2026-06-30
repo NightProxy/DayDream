@@ -438,7 +438,6 @@ class Tabs implements TabsInterface {
 		if (!active || !partner) return false;
 		if (active.isPinned || partner.isPinned) return false;
 
-		// Dissolve any pre-existing splits both tabs may be in.
 		if (active.splitPartnerId) this.unsplitTab(active.id);
 		if (partner.splitPartnerId) this.unsplitTab(partner.id);
 
@@ -447,7 +446,6 @@ class Tabs implements TabsInterface {
 		this.setTabSplitPlacement(active.id, 'split-left');
 		this.setTabSplitPlacement(partner.id, 'split-right');
 
-		// Default focus = the partner tab the user just split off into.
 		this.focusedSplitSideByPairKey.set(active.id, partner.id);
 		this.focusedSplitSideByPairKey.set(partner.id, partner.id);
 
@@ -485,8 +483,6 @@ class Tabs implements TabsInterface {
 		if (!pairId) return;
 		this.focusedSplitSideByPairKey.set(tab.id, tab.id);
 		this.focusedSplitSideByPairKey.set(pairId, tab.id);
-		// Make the focused side the active tab. selectTab handles the
-		// capsule indicator swap + address bar update.
 		this.selectTab(tab.id);
 	};
 
@@ -592,7 +588,6 @@ class Tabs implements TabsInterface {
 		const newTabId = await this.createTab(record.url);
 		if (!newTabId) return null;
 
-		// Re-pin if needed.
 		if (record.wasPinned && this.pinManager) {
 			try {
 				this.pinManager.pinTab(newTabId);
@@ -601,7 +596,6 @@ class Tabs implements TabsInterface {
 			}
 		}
 
-		// Re-attach to original group if it still exists.
 		if (record.groupId && this.groupManager) {
 			const groupStillExists = this.groups.some(
 				g => g.id === record.groupId
@@ -671,8 +665,6 @@ class Tabs implements TabsInterface {
 				.map(entry => entry.tabId!)
 		);
 
-		// Track which split-paired tabs have already been emitted as part
-		// of a capsule, so we don't render them twice.
 		const consumedBySplit = new Set<string>();
 
 		for (const entry of visual) {
@@ -721,8 +713,6 @@ class Tabs implements TabsInterface {
 					: undefined;
 
 				if (partner && !consumedBySplit.has(partner.id)) {
-					// Render both halves wrapped in a split capsule. Use
-					// the left-hand tab of the pair on the left.
 					const leftTab =
 						tab.splitPlacement === 'split-left' ? tab : partner;
 					const rightTab =
@@ -786,7 +776,6 @@ class Tabs implements TabsInterface {
 					continue;
 				}
 
-				// Non-split tab: clean up any leftover split markers.
 				delete tab.tab.dataset.splitSide;
 				delete tab.tab.dataset.splitFocused;
 
@@ -823,23 +812,10 @@ class Tabs implements TabsInterface {
 	}
 
 	private applyGroupHeaderExtents(): void {
-		// Clear stale extent vars from every tab so a tab that just left
-		// the start position (e.g., reorder, ungroup) doesn't keep the line.
 		this.tabs.forEach(t =>
 			t.tab.style.removeProperty('--header-extent')
 		);
 
-		// Effective gap between header chip and the first grouped tab.
-		//
-		// Horizontal mode: parent flex `gap-2` adds 8px; the CSS rule
-		// `.tab-group-header + .tab[data-group-id] { margin-left: -0.25rem; }`
-		// pulls 4px back for a Chrome-style tight grouping.
-		//
-		// Vertical mode: navbar tab-bar is `flex-col` with no flex gap and
-		// header sits flush with first tab, so the gap is 0. The base
-		// `.tab[data-group-id]::after` rule for vertical already extends the
-		// accent bar `top: -0.28rem` past the tab's top edge, so the value
-		// here only needs to carry the header's actual size.
 		const HEADER_GAP_PX = this.verticalTabsEnabled ? 0 : 4;
 
 		this.groupHeaderElementById.forEach((headerEl, groupId) => {
@@ -853,8 +829,6 @@ class Tabs implements TabsInterface {
 			const firstTab = this.getTabById(firstVisibleTabId);
 			if (!firstTab) return;
 
-			// In horizontal mode the underline grows along x → header width.
-			// In vertical mode the accent bar grows along y → header height.
 			const headerExtent = this.verticalTabsEnabled
 				? headerEl.offsetHeight
 				: headerEl.offsetWidth;
@@ -992,8 +966,6 @@ class Tabs implements TabsInterface {
 				tabIds: []
 			}));
 
-		// Map persisted IDs to freshly created IDs so we can rewire split
-		// pair references after every tab exists.
 		const persistedToCreated = new Map<string, string>();
 
 		for (const tabCache of [...cached.tabs].sort(
@@ -1011,7 +983,6 @@ class Tabs implements TabsInterface {
 			}
 		}
 
-		// Re-create split pairs after all tabs exist.
 		for (const tabCache of cached.tabs as any[]) {
 			if (!tabCache.splitPartnerId) continue;
 			const createdId = persistedToCreated.get(tabCache.id);
@@ -1022,7 +993,6 @@ class Tabs implements TabsInterface {
 			const me = this.getTabById(createdId);
 			const partner = this.getTabById(createdPartnerId);
 			if (!me || !partner) continue;
-			// Only set up the pair once (skip the partner half).
 			if (me.splitPartnerId) continue;
 			me.splitPartnerId = partner.id;
 			partner.splitPartnerId = me.id;

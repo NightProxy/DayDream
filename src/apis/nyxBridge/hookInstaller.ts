@@ -118,9 +118,6 @@ export function installNyxBridgeHook(opts: NyxHookInstallerOpts): void {
 	const hostOrigin = location.origin;
 	const basePath = (window as any).basePath ?? '/';
 
-	// Install a single message listener on the host window that decodes
-	// every envelope and dispatches. The agent posts via window.parent
-	// from inside the proxied frame; we receive on the host's window.
 	messageListener = (ev: MessageEvent) => {
 		const msg = decodeEnvelope(ev.data);
 		if (!msg) return;
@@ -141,8 +138,6 @@ export function installNyxBridgeHook(opts: NyxHookInstallerOpts): void {
 				const realUrl = opts.resolveRealUrl
 					? opts.resolveRealUrl(frame)
 					: ((frame?.url ?? frame?.element?.src ?? '') as string);
-				// Skip Nyx frames — they receive the client runtime via
-				// scriptInjectionRegistry, not the agent.
 				if (realUrl && isNyxOrigin(realUrl, opts.allowlist)) return;
 				injectAgentScript(win, hostOrigin, basePath);
 			});
@@ -151,12 +146,10 @@ export function installNyxBridgeHook(opts: NyxHookInstallerOpts): void {
 		}
 	};
 
-	// Tap any frames already created.
 	if (Array.isArray(opts.controller.frames)) {
 		for (const frame of opts.controller.frames) installOnFrame(frame);
 	}
 
-	// Tap future frames by wrapping createFrame.
 	const original = opts.controller.createFrame?.bind(opts.controller);
 	if (typeof original === 'function') {
 		opts.controller.createFrame = (...args: any[]) => {

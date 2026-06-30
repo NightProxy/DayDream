@@ -1,48 +1,4 @@
 // @ts-nocheck
-// HTTP cache plugin for ScramjetFetchHandler.
-//
-// Service-worker `fetch` ignores the browser's HTTP cache, so without this
-// every navigation re-runs the full network fetch even for unchanged
-// resources. This plugin caches the **upstream** response (the BareResponse
-// as received from the network, BEFORE rewriteResponseHeaders / rewriteBody
-// run). On a hit we hand that same untouched response to the pipeline, which
-// then re-rewrites with the current Frame's prefix.
-//
-// Storing pre-rewrite means:
-//   - The cache is shared across Frames, Controllers, and page reloads --
-//     one Frame's hit serves another Frame's request because the stored
-//     bytes contain only the upstream's URLs, not any frame-bound prefix.
-//   - Redirect Location / Content-Location and Link headers come out of
-//     `rewriteResponseHeaders` correctly on each hit, because that runs
-//     on the cache-derived response just like a fresh one.
-//   - We don't skip the rewriter on hit; we only skip the network. That's
-//     where the win actually is for service-worker proxying.
-//
-// Implementation aims for RFC 9111 (HTTP caching) compliance for a
-// PRIVATE cache (browser-local, single-user):
-//
-//   - Only GET / HEAD are cached.
-//   - Cacheable status codes per RFC 9110 §15.1: 200 203 204 300 301 308
-//     404 405 410 414 501. Other statuses pass through. 206 is omitted
-//     because the Cache API spec (Service Workers §cache-put) rejects
-//     partial responses outright.
-//   - `Cache-Control: no-store` and `Vary: *` opt out.
-//   - Freshness:
-//       1. `Cache-Control: s-maxage` (private cache treats this same as
-//          max-age),
-//       2. `Cache-Control: max-age`,
-//       3. `Expires`,
-//       4. heuristic 10% × (Date - Last-Modified) per RFC 9111 §4.2.2.
-//   - `Cache-Control: no-cache` / `Pragma: no-cache` / `Cache-Control:
-//     immutable` are honoured.
-//   - `Vary` is honoured by storing one entry per (URL × selected-headers)
-//     pair via the underlying Cache API's built-in matching.
-//
-// 304 revalidation isn't handled here yet -- stale entries fall through to
-// a full refetch. Adding it cleanly requires a hook position that lets us
-// substitute the cached body AFTER the network 304 arrives but BEFORE
-// `rewriteBody` runs, without going through `rewriteBody` again. That can
-// come later.
 
 import {
 	BareResponse,
@@ -143,7 +99,6 @@ function freshnessLifetimeSeconds(
 	if (lastModified) {
 		const lmMs = Date.parse(lastModified);
 		if (Number.isFinite(lmMs) && lmMs <= dateMs) {
-			// RFC 9111 §4.2.2 heuristic: 10% of the time since Last-Modified.
 			return ((dateMs - lmMs) * 0.1) / 1000;
 		}
 	}
@@ -179,7 +134,6 @@ function responseIsStorable(
 	const cc = parseCacheControl(headers.get("cache-control"));
 	if (cc["no-store"]) return false;
 
-	// "Vary: *" means "never reusable".
 	const vary = headers.get("vary");
 	if (vary && vary.split(",").some((v) => v.trim() === "*")) return false;
 
@@ -306,9 +260,6 @@ export class HttpCachePlugin extends ManagedPlugin {
 	readonly cacheName: string;
 
 	private cachePromise: Promise<Cache> | null = null;
-	// Marks requests whose `earlyResponse` we sourced from the cache, so the
-	// preresponse hook below knows not to re-store them. WeakMap keys are
-	// the request objects so entries clean themselves up automatically.
 	private cameFromCache = new WeakMap<ScramjetFetchRequest, true>();
 
 	constructor(options: HttpCachePluginOptions = {}) {
@@ -329,14 +280,11 @@ export class HttpCachePlugin extends ManagedPlugin {
 
 		const hooks = frame.fetchHandler.hooks.fetch;
 
-		// ----- request: cache lookup --------------------------------------
 		this.tap(hooks.request, async (ctx, props) => {
 			const req = ctx.request;
 			if (!isCacheableMethod(req.method)) return;
 			const reqCache = req.cache as string;
-			// Honour the request's own cache mode where it asks for fresh data.
 			if (reqCache === "no-store" || reqCache === "reload") return;
-			// Don't undo an earlyResponse another plugin already set.
 			if (props.earlyResponse) return;
 
 			const cache = await this.openCache();
@@ -373,8 +321,6 @@ export class HttpCachePlugin extends ManagedPlugin {
 			const fresh =
 				!mustRevalidateBeforeUse && lifetime !== null && age < lifetime;
 
-			// `immutable` short-circuits the freshness check (RFC 8246)
-			// provided the client hasn't asked for a forced revalidation.
 			const immutable =
 				cc.immutable === true &&
 				reqCache !== "no-cache" &&
@@ -385,13 +331,7 @@ export class HttpCachePlugin extends ManagedPlugin {
 				return;
 			}
 
-			// Build a BareResponse around the stored bytes/headers and hand
-			// it to doNetworkFetch via earlyResponse. The pipeline will then
-			// run rewriteResponseHeaders/rewriteBody/etc. as if we'd just
-			// fetched it.
 			const headers = strippedHeadersFromStored(stored);
-			// Recompute Age the consumer sees so it isn't stuck at storage
-			// time.
 			if (storedAt) {
 				headers.set("age", String(Math.floor((Date.now() - storedAt) / 1000)));
 			}
@@ -411,12 +351,8 @@ export class HttpCachePlugin extends ManagedPlugin {
 			props.earlyResponse = earlyResponse;
 		});
 
-		// ----- preresponse: cache store -----------------------------------
 		this.tap(hooks.preresponse, async (ctx, props) => {
 			const req = ctx.request;
-			// Skip if this body came back via cache.match -- restoring it
-			// would just rewrite the same bytes with a fresh STORED_AT_HEADER
-			// (resetting the freshness clock).
 			if (this.cameFromCache.has(req)) {
 				this.cameFromCache.delete(req);
 				return;
@@ -429,8 +365,6 @@ export class HttpCachePlugin extends ManagedPlugin {
 			if (!responseIsStorable(props.response.status, headers, req.method))
 				return;
 
-			// Drain the stream once and rebuild the BareResponse around the
-			// buffered copy so the rest of doHandleFetch can still read it.
 			const { replacement, bodyBuffer } = await rebuildBareResponseWithBuffer(
 				props.response
 			);
@@ -451,8 +385,6 @@ export class HttpCachePlugin extends ManagedPlugin {
 				const cache = await this.openCache();
 				await cache.put(cacheKey, toStore);
 			} catch (err) {
-				// Cache.put can fail on opaque or oddly-headered responses;
-				// don't let a cache write failure break the actual fetch.
 				console.warn("[scramjet-http-cache] cache.put failed:", err);
 			}
 		});
@@ -464,8 +396,6 @@ export class HttpCachePlugin extends ManagedPlugin {
 	 */
 	async bust(): Promise<boolean> {
 		try {
-			// Drop the memoized handle too; the next install will re-open
-			// against a fresh empty cache.
 			this.cachePromise = null;
 			return await caches.delete(this.cacheName);
 		} catch (err) {

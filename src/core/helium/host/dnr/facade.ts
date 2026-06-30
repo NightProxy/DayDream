@@ -1,15 +1,3 @@
-// src/core/helium/host/dnr/facade.ts
-//
-// Adapter implementing the WebRequestPlugin's DnrEngineFacade.
-// On each request, walks every running extension that has the
-// `declarativeNetRequest` permission, evaluates rules, and combines
-// the per-extension MatchResults per Chrome semantics:
-//
-//   - `block` from any extension wins over `redirect` /
-//     `modifyHeaders` from others.
-//   - `allow` / `allowAllRequests` from any extension overrides
-//     others' `block`. (Spec §18.)
-//   - `modifyHeaders` from multiple extensions concatenate.
 
 import {
   compileRule,
@@ -65,9 +53,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
   private readonly registry: ExtensionRegistryView;
   private readonly compiledCache: Map<string, { gen: number; rules: CompiledRule[] }> = new Map();
   private readonly generations: Map<string, number> = new Map();
-  // Circular buffer of recent rule matches. Capped at
-  // MATCHED_RULES_BUFFER_CAP across all extensions to keep memory
-  // bounded even on busy pages. Indexed/filtered at read time.
   private readonly matchedRules: MatchedRuleRecord[] = [];
 
   constructor(storage: DnrStorage, registry: ExtensionRegistryView) {
@@ -106,9 +91,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
     tabId: number,
   ): void {
     if (this.matchedRules.length >= MATCHED_RULES_BUFFER_CAP) {
-      // Drop the oldest. shift() is O(n) but the cap is small (1k) and
-      // matches are not on a hot path that we measured. If this ever
-      // shows up in a profile, swap to a ring-buffer with a head index.
       this.matchedRules.shift();
     }
     this.matchedRules.push({
@@ -135,7 +117,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
       }));
     }
 
-    // Per-extension evaluation.
     let combinedBlock: DnrEvaluationResult | null = null;
     let combinedAllow: DnrEvaluationResult | null = null;
     let combinedRedirect: DnrEvaluationResult | null = null;
@@ -148,10 +129,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
       if (compiled.length === 0) return;
       const result = evalRules(compiled, req, { extOrigin: ext.ctx.origin });
       if (!result) return;
-      // Record the matched rule(s) for getMatchedRules(). All match
-      // kinds get recorded — including `allow` / `allowAllRequests`,
-      // which Chrome surfaces through getMatchedRules so extensions
-      // can observe which allow rules fired.
       if (result.kind === 'modifyHeaders') {
         for (const r of result.rules) {
           this.recordMatch(ext.ctx.id, r.rulesetId, r.id, req.tabId);
@@ -182,7 +159,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
       }
     });
 
-    // Allow overrides block per spec §18.
     if (combinedAllow) return combinedAllow;
     if (combinedBlock) return combinedBlock;
     if (combinedRedirect) return combinedRedirect;
@@ -199,9 +175,6 @@ export class DnrEngineFacadeImpl implements DnrEngineFacade {
     const gen = this.generations.get(extId) ?? 0;
     const cached = this.compiledCache.get(extId);
     if (cached && cached.gen === gen) return cached.rules;
-    // Thread each rule's source ruleset id into the CompiledRule so
-    // downstream consumers (facade.recordMatch → getMatchedRules) can
-    // report the real ruleset, not a synthetic label.
     const tagged = this.storage.getAllActiveRulesWithSource(extId);
     const compiled = tagged.map(({ rule, rulesetId }) =>
       compileRule(rule, rulesetId),

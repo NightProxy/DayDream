@@ -1,35 +1,6 @@
-// src/core/helium/host/dnr/engine.ts
-//
-// Rule compilation + evaluation for chrome.declarativeNetRequest.
-// Per spec §18.
-//
-// compileRule(rule): CompiledRule
-//   Pre-computes:
-//     - urlFilter regex from Chrome's urlFilter syntax
-//     - regexFilter RegExp
-//     - resourceTypes Set / excludedResourceTypes Set
-//     - methods Set / excluded
-//     - initiator + request domain suffix lists
-//     - tabId set / excluded
-//     - response header matchers
-//
-// evalRules(rules, request): MatchResult | null
-//   Walks the compiled set, collects matches, then applies the
-//   priority + action precedence rules:
-//     1. Filter to rules where the request matches.
-//     2. Sort by priority desc.
-//     3. Within the highest priority:
-//          allow / allowAllRequests → return allow
-//        Then within the highest priority of remaining:
-//          block / redirect / upgradeScheme → return that (first wins)
-//        Then collect every matching modifyHeaders (any priority below
-//        the winning block/redirect, OR all if there was no winning
-//        block/redirect) and return a combined modifyHeaders result.
 
 import type { ResourceType } from '../webRequest/filter';
 import type { DnrHeaderOp } from '../webRequest/dnr-bridge';
-
-// --- Rule schema (JSON) -----------------------------------------
 
 export type RequestMethod =
   | 'connect'
@@ -50,7 +21,7 @@ export interface RuleCondition {
   excludedInitiatorDomains?: string[];
   requestDomains?: string[];
   excludedRequestDomains?: string[];
-  domains?: string[]; // deprecated alias for initiatorDomains
+  domains?: string[];
   excludedDomains?: string[];
   resourceTypes?: ResourceType[];
   excludedResourceTypes?: ResourceType[];
@@ -107,8 +78,6 @@ export interface Rule {
   action: RuleAction;
 }
 
-// --- Compiled form ----------------------------------------------
-
 export interface CompiledRule {
   id: number;
   priority: number;
@@ -139,7 +108,6 @@ export interface CompiledRule {
    *   - unknown / not threaded             → '_combined'
    */
   rulesetId: string;
-  // Keep original rule for action-data lookup (redirect.url etc.).
   raw: Rule;
 }
 
@@ -149,7 +117,6 @@ export interface DNRRequest {
   method?: string;
   type: ResourceType;
   tabId: number;
-  // Optional: response headers when evaluating after preresponse.
   responseHeaders?: Array<{ name: string; value?: string }>;
 }
 
@@ -169,8 +136,6 @@ export type MatchResult =
       requestHeaders: DnrHeaderOp[];
       responseHeaders: DnrHeaderOp[];
     };
-
-// --- urlFilter compiler -----------------------------------------
 
 const RE_ESCAPE = /[.+?$(){}[\]\\]/g;
 
@@ -198,8 +163,6 @@ export function compileUrlFilter(
   let i = 0;
   const n = filter.length;
 
-  // Domain anchor: `||example.com` — match host suffix (with optional
-  // leading subdomain).
   if (filter.startsWith('||')) {
     pat += '^https?://([^/]+\\.)?';
     i = 2;
@@ -215,7 +178,6 @@ export function compileUrlFilter(
       continue;
     }
     if (ch === '^') {
-      // separator: any non-[A-Za-z0-9_-.%] OR end-of-string
       pat += '(?:[^a-zA-Z0-9._%-]|$)';
       continue;
     }
@@ -232,8 +194,6 @@ export function compileUrlFilter(
     return null;
   }
 }
-
-// --- Compile a single rule --------------------------------------
 
 export function compileRule(rule: Rule, rulesetId: string = '_combined'): CompiledRule {
   const cond = rule.condition ?? {};
@@ -288,8 +248,6 @@ export function compileRule(rule: Rule, rulesetId: string = '_combined'): Compil
   };
 }
 
-// --- Single-rule matcher ----------------------------------------
-
 function hostMatchesSuffix(host: string, suffixes: string[]): boolean {
   for (const s of suffixes) {
     if (host === s) return true;
@@ -309,7 +267,6 @@ function hostnameOf(urlStr: string): string {
 function isThirdParty(reqHost: string, initiatorHost: string): boolean {
   if (!reqHost || !initiatorHost) return false;
   if (reqHost === initiatorHost) return false;
-  // eTLD+1 approximation: last two labels match.
   const a = reqHost.split('.').slice(-2).join('.');
   const b = initiatorHost.split('.').slice(-2).join('.');
   return a !== b;
@@ -336,26 +293,21 @@ export function ruleMatches(
   rule: CompiledRule,
   req: DNRRequest,
 ): boolean {
-  // url
   if (rule.urlRegex && !rule.urlRegex.test(req.url)) return false;
   if (rule.customRegex && !rule.customRegex.test(req.url)) return false;
 
-  // type
   if (rule.resourceTypes && !rule.resourceTypes.has(req.type)) return false;
   if (rule.excludedResourceTypes && rule.excludedResourceTypes.has(req.type)) {
     return false;
   }
 
-  // method
   const m = (req.method ?? 'get').toLowerCase();
   if (rule.methods && !rule.methods.has(m)) return false;
   if (rule.excludedMethods && rule.excludedMethods.has(m)) return false;
 
-  // tabId
   if (rule.tabIds && !rule.tabIds.has(req.tabId)) return false;
   if (rule.excludedTabIds && rule.excludedTabIds.has(req.tabId)) return false;
 
-  // domains
   const reqHost = hostnameOf(req.url);
   if (rule.requestDomains && !hostMatchesSuffix(reqHost, rule.requestDomains)) {
     return false;
@@ -382,14 +334,12 @@ export function ruleMatches(
     return false;
   }
 
-  // domainType
   if (rule.domainType) {
     const tp = isThirdParty(reqHost, initiatorHost);
     if (rule.domainType === 'thirdParty' && !tp) return false;
     if (rule.domainType === 'firstParty' && tp) return false;
   }
 
-  // responseHeaders (only meaningful when we have them; otherwise skip)
   if (rule.responseHeaders && req.responseHeaders) {
     if (!headersIncludes(req.responseHeaders, rule.responseHeaders)) return false;
   }
@@ -401,8 +351,6 @@ export function ruleMatches(
 
   return true;
 }
-
-// --- Eval many rules --------------------------------------------
 
 /**
  * Resolve a redirect URL from a rule.action.redirect object. Returns
@@ -495,13 +443,11 @@ export function evalRules(
   if (matched.length === 0) return null;
   matched.sort((a, b) => b.priority - a.priority);
 
-  // Step 1: allowAllRequests
   for (const r of matched) {
     if (r.action.type === 'allowAllRequests') {
       return { kind: 'allowAllRequests', rule: r };
     }
   }
-  // Step 2: allow at highest priority
   const topPriority = matched[0]!.priority;
   for (const r of matched) {
     if (r.priority !== topPriority) break;
@@ -509,7 +455,6 @@ export function evalRules(
       return { kind: 'allow', rule: r };
     }
   }
-  // Step 3: block/redirect/upgradeScheme at highest priority
   for (const r of matched) {
     if (r.priority !== topPriority) break;
     if (r.action.type === 'block') return { kind: 'block', rule: r };
@@ -526,7 +471,6 @@ export function evalRules(
       return out;
     }
   }
-  // Step 4: modifyHeaders — collect all matching rules.
   const reqOps: DnrHeaderOp[] = [];
   const respOps: DnrHeaderOp[] = [];
   const modRules: CompiledRule[] = [];

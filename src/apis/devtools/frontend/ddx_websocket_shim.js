@@ -16,10 +16,6 @@
  */
 (function () {
 	const NativeWebSocket = window.WebSocket;
-	// Match URL strings constructed from `?ws=ddx-bridge` (the chii
-	// fork builds `ws://ddx-bridge/` or `ws://ddx-bridge`). We also
-	// match `ws=ddx-bridge` for callers that pass the query string
-	// form directly.
 	function isShimUrl(u) {
 		if (typeof u !== 'string') return false;
 		return u.indexOf('ddx-bridge') !== -1;
@@ -28,7 +24,7 @@
 	class FakeWebSocket {
 		constructor(url) {
 			this.url = url;
-			this.readyState = 0; // CONNECTING
+			this.readyState = 0;
 			this.binaryType = 'arraybuffer';
 			this._listeners = { open: [], message: [], close: [], error: [] };
 			this.onopen = null;
@@ -36,7 +32,7 @@
 			this.onclose = null;
 			this.onerror = null;
 			Promise.resolve().then(() => {
-				this.readyState = 1; // OPEN
+				this.readyState = 1;
 				this._fire('open', { type: 'open' });
 				try {
 					window.parent.postMessage({ kind: 'devtools-ready' }, '*');
@@ -82,7 +78,7 @@
 		}
 		close() {
 			if (this.readyState === 3) return;
-			this.readyState = 3; // CLOSED
+			this.readyState = 3;
 			this._fire('close', { type: 'close', code: 1000 });
 		}
 	}

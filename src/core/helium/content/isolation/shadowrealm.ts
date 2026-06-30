@@ -44,23 +44,11 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
     return;
   }
 
-  // Build a host-side chrome instance; the realm calls back into the
-  // host via wrapped functions to invoke its async methods. SKIP the
-  // window-ready registration: this instance lives in the HOST realm,
-  // not the proxied page, so events should NOT be routed here via
-  // postMessage. Events still reach the realm because the realm's
-  // chrome.* methods route through this host instance's async impls
-  // (the relay-based fanout path is unnecessary).
   const chromeInstance = new ChromeMiniInstance(ctx, scriptKey, { skipRegistration: true });
 
-  // Capture host callback table — the realm can pass us function refs
-  // that we invoke when DOM events fire. ShadowRealm allows function
-  // refs across the boundary.
   const realmCallbacks = new Map<number, (...args: unknown[]) => unknown>();
   let nextCallbackId = 0;
 
-  // Bridge: realm → host function calls. Each method gets a tiny
-  // adapter that takes JSON args.
   const bridge = {
     runtimeSendMessage: (argsJson: string) =>
       chromeInstance.runtime.sendMessage(...(JSON.parse(argsJson) as unknown[])),
@@ -79,7 +67,6 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
     tabsQuery: (q: string) => chromeInstance.tabs.query(JSON.parse(q)),
     tabsCreate: (c: string) => chromeInstance.tabs.create(JSON.parse(c)),
 
-    // DOM bridge: dom-* methods route to host's document
     domGet: (handle: string, prop: string): unknown => {
       const el = resolveHandle(handle);
       if (!el) return undefined;
@@ -117,17 +104,12 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
     },
   };
 
-  // Inside the realm: install bridge functions + build chrome global +
-  // synthetic document. Then evaluate the script body.
   const realmSetup = `
     globalThis.__helium_bridge__ = {};
     globalThis.__helium_ctx__ = ${JSON.stringify(ctx)};
   `;
   realm.evaluate(realmSetup);
 
-  // Bind each bridge function across the boundary one-by-one.
-  // ShadowRealm requires functions to be passed via a wrapper call.
-  // We use the documented evaluate-returns-function pattern.
   const bridgeBinder = realm.evaluate(`
     (function(name, fn) {
       globalThis.__helium_bridge__[name] = fn;
@@ -138,7 +120,6 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
     bridgeBinder(name, fn);
   }
 
-  // Construct chrome + document inside the realm
   const realmChrome = `
     var chrome = {
       runtime: {
@@ -177,7 +158,6 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
   `;
   realm.evaluate(realmChrome);
 
-  // Evaluate the user script body
   try {
     realm.evaluate(`(function(chrome) {\n${scriptBody}\n})(globalThis.chrome)`);
   } catch (err) {
@@ -185,13 +165,10 @@ export function runShadowRealm(ctx: any, scriptKey: string, scriptBody: string):
   }
 }
 
-// Host-side handle storage. Element refs come back from the realm as
-// strings; we look them up here to invoke real DOM operations.
 const handleStore = new Map<string, unknown>();
 let nextHandleId = 0;
 
 function storeHandle(el: unknown): string {
-  // Use deterministic-ish IDs for debug ergonomics; not security.
   const id = `h${nextHandleId++}`;
   handleStore.set(id, el);
   return id;

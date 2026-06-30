@@ -2,7 +2,7 @@ export interface ModalAction {
   label: string;
   onClick: () => void | Promise<void>;
   variant?: "primary" | "ghost" | "danger";
-  closeOnClick?: boolean; // default true
+  closeOnClick?: boolean;
 }
 
 export interface ModalOptions {

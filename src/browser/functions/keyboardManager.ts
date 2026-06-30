@@ -200,9 +200,6 @@ export class KeyboardManager implements KeyboardInterface {
 
     try {
       if (hard) {
-        // Hard reload: cache-busts via tabs.hardReloadTab. Falls back
-        // to a plain location.reload if we can't resolve the tab id
-        // (e.g. activeIframe missing data-tab-id attribute).
         const tabId = activeIframe.getAttribute("data-tab-id");
         if (tabId && this.tabs?.hardReloadTab) {
           this.tabs.hardReloadTab(tabId);

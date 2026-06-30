@@ -1,13 +1,3 @@
-// src/apis/nyxBridge/handlers/auth.ts
-//
-// Night+ SSO between DDX (host) and embedded apps (NyxAI). DDX is the
-// source of truth for the access token; embedded apps read via
-// `auth.getPlusToken` and may write via `auth.setToken` /
-// `auth.clearToken` to keep the host's storage authoritative.
-//
-// Origin allowlisting + handshake gating live in NyxBridge itself
-// (channel.ts + handshake.ts) — by the time these handlers run, we've
-// already verified the caller is a Nyx-allowlisted iframe.
 
 import { register } from './index';
 
@@ -15,7 +5,7 @@ register('auth.getPlusToken', async () => {
 	const { getAccessToken } = await import('../../nightplus');
 	const token = await getAccessToken();
 	if (!token) return null;
-	return { token, expiresAt: 0 }; // expiresAt 0 = present-but-unknown
+	return { token, expiresAt: 0 };
 });
 
 register('auth.getUser', async () => {
@@ -43,10 +33,6 @@ register('auth.setToken', async (_ctx, args) => {
 	const { setAccessToken, dumpNightPlusData } = await import('../../nightplus');
 	await setAccessToken(token);
 
-	// Best-effort: mint a plus-client session and dump cached data so
-	// the rest of DDX (proxy.checkAuthentication, premium server
-	// listings, etc.) sees the new token without waiting for the next
-	// page load.
 	try {
 		const basePlusPath = (window as any).basePath
 			? `${(window as any).basePath}/plus`

@@ -47,7 +47,6 @@ class ScriptInjectionRegistryImpl {
 	private entries = new Map<string, ScriptInjectionEntry>();
 
 	register(entry: ScriptInjectionEntry): void {
-		// Idempotent on id — re-registration replaces the prior entry.
 		this.entries.set(entry.id, entry);
 	}
 

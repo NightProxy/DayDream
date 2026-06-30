@@ -56,19 +56,13 @@ export class BookmarkManager {
 	private getDecryptedUrlFromIframeSrc(iframeSrc: string): string | null {
 		try {
 			if (!iframeSrc) return null;
-			// Centralized decode covers active-iframe, registered-frame, and
-			// SWconfig fallbacks for both Scramjet v1/v2 and registered
-			// protocols.
 			const decoded = decodeProxiedUrl(iframeSrc, this.tabs.proxy);
 			if (decoded && decoded !== iframeSrc) return decoded;
 
-			// If the decoder returned the same string, the URL was probably
-			// already plain or a registered protocol — return as-is.
 			if (window.protocols?.isRegisteredProtocol(iframeSrc)) {
 				return iframeSrc;
 			}
 
-			// Last-ditch: maybe it's a UV-style ?url=... wrapper.
 			try {
 				const url = new URL(iframeSrc);
 				const wrapped = url.searchParams.get('url');

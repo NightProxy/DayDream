@@ -84,7 +84,6 @@ export function createRow(opts: RowOptions): HTMLElement {
     row.addEventListener("click", opts.onClick);
   }
 
-  // Defer icon init until next tick so callers can batch
   queueMicrotask(() => createIcons({ icons }));
 
   if (opts.searchUnit) {

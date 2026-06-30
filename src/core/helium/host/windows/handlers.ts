@@ -1,8 +1,3 @@
-// src/core/helium/host/windows/handlers.ts
-//
-// chrome.windows.* host handlers. Delegates to the NyxBridge windows.*
-// methods. DDX is single-window; create maps to creating tabs in the
-// existing window.
 
 import {
   dispatch as nyxDispatch,

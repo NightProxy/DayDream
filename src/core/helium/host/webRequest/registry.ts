@@ -1,23 +1,3 @@
-// src/core/helium/host/webRequest/registry.ts
-//
-// Tracks live chrome.webRequest.* listeners as registered by every
-// running extension. One instance per ExtensionManager, threaded
-// into the WebRequestPlugin so taps can iterate subscribers cheaply.
-//
-// Subscriber lifecycle:
-//   subscribe(extId, event, listener, filter, extraInfoSpec)
-//     → returns a `disposer` fn
-//
-// `listener` here is the host-side internal callback. The BG iframe
-// registers chrome.webRequest.onBeforeRequest.addListener; the
-// bootstrap forwards subscription metadata to host via Event RPC
-// (Task 27); host materializes an entry in this registry with a
-// listener that calls back via channel.requestEvent.
-//
-// Each subscriber gets a stable monotonic `opaqueId`. The
-// host→BG event RPC uses this id (rather than identifying the
-// listener fn by ref) so disposers can match a specific entry even
-// when several extensions register on the same event.
 
 import type { RequestFilter } from './filter';
 
@@ -61,9 +41,7 @@ export interface Subscriber {
 
 export class WebRequestRegistry {
   private nextId = 1;
-  // event → list of subscribers (insertion-ordered).
   private readonly byEvent: Map<WebRequestEvent, Subscriber[]> = new Map();
-  // extId → set of opaqueIds (for fast clearForExt).
   private readonly byExt: Map<string, Set<number>> = new Map();
 
   subscribe(

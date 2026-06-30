@@ -12,8 +12,6 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const configDir = dirname(fileURLToPath(import.meta.url));
-// configDir = <repo>/src/core/SJ/controller — four `..` segments reach
-// the repo root. Update if this file moves.
 const repoRoot = resolve(configDir, '..', '..', '..', '..');
 
 export default defineConfig({

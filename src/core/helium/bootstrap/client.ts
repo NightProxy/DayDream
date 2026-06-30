@@ -30,7 +30,6 @@ import { findOpaqueId, subscribeEvent, unsubscribeEvent } from './event-rpc';
  * The sanity script cross-checks both sides.
  */
 const RPC_BINDINGS: Array<[string[], string]> = [
-  // ---- storage (Task 14) ----
   [['storage', 'local', 'get'],            'chrome.storage.local.get'],
   [['storage', 'local', 'set'],            'chrome.storage.local.set'],
   [['storage', 'local', 'remove'],         'chrome.storage.local.remove'],
@@ -52,7 +51,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['storage', 'managed', 'get'],          'chrome.storage.managed.get'],
   [['storage', 'managed', 'getBytesInUse'],'chrome.storage.managed.getBytesInUse'],
 
-  // ---- runtime (Phase 0) ----
   [['runtime', 'sendMessage'],                  'chrome.runtime.sendMessage'],
   [['runtime', 'getBackgroundPage'],            'chrome.runtime.getBackgroundPage'],
   [['runtime', 'getPlatformInfo'],              'chrome.runtime.getPlatformInfo'],
@@ -64,20 +62,12 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['runtime', 'connectNative'],                'chrome.runtime.connectNative'],
   [['runtime', 'sendNativeMessage'],            'chrome.runtime.sendNativeMessage'],
 
-  // ---- extension (Task 34, MV2 surface) ----
   // NOTE: chrome.extension.getURL is a SYNCHRONOUS method in Chrome's
-  // contract. Wiring it as an RPC binding would turn the synthesized
-  // method into one that returns a Promise, breaking MV2 callers that
-  // do `const u = chrome.extension.getURL('/popup.html')`. We leave
-  // it bound to the local ChromeExtensionBase.getURL() — even though
-  // HANDLER_PERMISSIONS has an entry for it for parity, that entry is
-  // only consumed by the permission audit and never actually called.
   [['extension', 'getBackgroundPage'],          'chrome.extension.getBackgroundPage'],
   [['extension', 'getViews'],                   'chrome.extension.getViews'],
   [['extension', 'isAllowedIncognitoAccess'],   'chrome.extension.isAllowedIncognitoAccess'],
   [['extension', 'isAllowedFileSchemeAccess'],  'chrome.extension.isAllowedFileSchemeAccess'],
 
-  // ---- scripting (Task 26) ----
   [['scripting', 'executeScript'],                  'chrome.scripting.executeScript'],
   [['scripting', 'insertCSS'],                      'chrome.scripting.insertCSS'],
   [['scripting', 'removeCSS'],                      'chrome.scripting.removeCSS'],
@@ -86,7 +76,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['scripting', 'getRegisteredContentScripts'],    'chrome.scripting.getRegisteredContentScripts'],
   [['scripting', 'updateContentScripts'],           'chrome.scripting.updateContentScripts'],
 
-  // ---- tabs (Task 9) ----
   [['tabs', 'query'],             'chrome.tabs.query'],
   [['tabs', 'get'],               'chrome.tabs.get'],
   [['tabs', 'getCurrent'],        'chrome.tabs.getCurrent'],
@@ -110,14 +99,10 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['tabs', 'setZoomSettings'],   'chrome.tabs.setZoomSettings'],
   [['tabs', 'toggleReaderMode'],  'chrome.tabs.toggleReaderMode'],
   [['tabs', 'sendMessage'],       'chrome.tabs.sendMessage'],
-  // MV2-style script/CSS injection. Adapted on the host to
-  // chrome.scripting.* equivalents so MV2 popups/BG scripts that
-  // call chrome.tabs.executeScript({code} or {file}) just work.
   [['tabs', 'executeScript'],     'chrome.tabs.executeScript'],
   [['tabs', 'insertCSS'],         'chrome.tabs.insertCSS'],
   [['tabs', 'removeCSS'],         'chrome.tabs.removeCSS'],
 
-  // ---- windows (Task 11) ----
   [['windows', 'get'],            'chrome.windows.get'],
   [['windows', 'getCurrent'],     'chrome.windows.getCurrent'],
   [['windows', 'getLastFocused'], 'chrome.windows.getLastFocused'],
@@ -126,14 +111,12 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['windows', 'update'],         'chrome.windows.update'],
   [['windows', 'remove'],         'chrome.windows.remove'],
 
-  // ---- alarms (Task 12) ----
   [['alarms', 'create'],   'chrome.alarms.create'],
   [['alarms', 'get'],      'chrome.alarms.get'],
   [['alarms', 'getAll'],   'chrome.alarms.getAll'],
   [['alarms', 'clear'],    'chrome.alarms.clear'],
   [['alarms', 'clearAll'], 'chrome.alarms.clearAll'],
 
-  // ---- bookmarks (Task 16) ----
   [['bookmarks', 'get'],         'chrome.bookmarks.get'],
   [['bookmarks', 'getChildren'], 'chrome.bookmarks.getChildren'],
   [['bookmarks', 'getRecent'],   'chrome.bookmarks.getRecent'],
@@ -146,7 +129,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['bookmarks', 'remove'],      'chrome.bookmarks.remove'],
   [['bookmarks', 'removeTree'],  'chrome.bookmarks.removeTree'],
 
-  // ---- history (Task 17) ----
   [['history', 'search'],      'chrome.history.search'],
   [['history', 'getVisits'],   'chrome.history.getVisits'],
   [['history', 'addUrl'],      'chrome.history.addUrl'],
@@ -154,36 +136,17 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['history', 'deleteRange'], 'chrome.history.deleteRange'],
   [['history', 'deleteAll'],   'chrome.history.deleteAll'],
 
-  // ---- cookies (Task 18) ----
   [['cookies', 'get'],                'chrome.cookies.get'],
   [['cookies', 'getAll'],             'chrome.cookies.getAll'],
   [['cookies', 'set'],                'chrome.cookies.set'],
   [['cookies', 'remove'],             'chrome.cookies.remove'],
   [['cookies', 'getAllCookieStores'], 'chrome.cookies.getAllCookieStores'],
 
-  // ---- i18n (Task 15) ----
-  //
-  // Note: chrome.i18n.getMessage / getUILanguage / getAcceptLanguages
-  // intentionally do NOT appear here. They have synchronous, host-
-  // preloaded implementations in `shared/api/i18n.ts` that read from
-  // `ctx.i18nMessages` baked into the `<meta name="helium-ctx">`
-  // payload. Listing them here would cause `installRpcBindings()` to
-  // overwrite the sync impl with an async (Promise-returning) stub,
-  // which breaks the universal `el.textContent =
-  // chrome.i18n.getMessage(key)` pattern.
-  //
-  // `detectLanguage` is the only i18n method that genuinely needs a
-  // host round-trip (it'd ideally use CLD or a network call). The
-  // host returns `{languages: []}` as a safe default, but binding it
-  // here means extensions that call it actually get a Promise
-  // (rather than the synth-class stub throwing "is not implemented").
   [['i18n', 'detectLanguage'], 'chrome.i18n.detectLanguage'],
 
-  // ---- webNavigation (Task 19) ----
   [['webNavigation', 'getFrame'],     'chrome.webNavigation.getFrame'],
   [['webNavigation', 'getAllFrames'], 'chrome.webNavigation.getAllFrames'],
 
-  // ---- action / browserAction / pageAction (Task 20) ----
   [['action', 'setTitle'],                  'chrome.action.setTitle'],
   [['action', 'getTitle'],                  'chrome.action.getTitle'],
   [['action', 'setPopup'],                  'chrome.action.setPopup'],
@@ -224,17 +187,14 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['pageAction', 'getPopup'], 'chrome.pageAction.getPopup'],
   [['pageAction', 'setIcon'],  'chrome.pageAction.setIcon'],
 
-  // ---- commands (Task 21) ----
   [['commands', 'getAll'], 'chrome.commands.getAll'],
 
-  // ---- notifications (Task 22) ----
   [['notifications', 'create'],             'chrome.notifications.create'],
   [['notifications', 'update'],             'chrome.notifications.update'],
   [['notifications', 'clear'],              'chrome.notifications.clear'],
   [['notifications', 'getAll'],             'chrome.notifications.getAll'],
   [['notifications', 'getPermissionLevel'], 'chrome.notifications.getPermissionLevel'],
 
-  // ---- contextMenus + alias menus (Task 23) ----
   [['contextMenus', 'create'],     'chrome.contextMenus.create'],
   [['contextMenus', 'update'],     'chrome.contextMenus.update'],
   [['contextMenus', 'remove'],     'chrome.contextMenus.remove'],
@@ -244,20 +204,10 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['menus', 'remove'],     'chrome.menus.remove'],
   [['menus', 'removeAll'],  'chrome.menus.removeAll'],
 
-  // ---- omnibox (Task 24) ----
   [['omnibox', 'setDefaultSuggestion'], 'chrome.omnibox.setDefaultSuggestion'],
 
-  // ---- webRequest (Task 28) — only the direct method; events go via
-  // the Event Subscription RPC installed by installWebRequestEventBindings.
   [['webRequest', 'handlerBehaviorChanged'], 'chrome.webRequest.handlerBehaviorChanged'],
 
-  // ---- declarativeNetRequest (Task 29) ----
-  // Two related but distinct methods:
-  //   - getAvailableStaticRules(rulesetId) -> Rule[]      (internal,
-  //     non-Chrome — diagnostics)
-  //   - getAvailableStaticRuleCount() -> number           (real Chrome
-  //     API — extensions call this before bulk-loading rules)
-  // Both are bound; the host has handlers for both names.
   [['declarativeNetRequest', 'updateDynamicRules'],         'chrome.declarativeNetRequest.updateDynamicRules'],
   [['declarativeNetRequest', 'getDynamicRules'],            'chrome.declarativeNetRequest.getDynamicRules'],
   [['declarativeNetRequest', 'updateSessionRules'],         'chrome.declarativeNetRequest.updateSessionRules'],
@@ -273,35 +223,26 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['declarativeNetRequest', 'isRegexSupported'],           'chrome.declarativeNetRequest.isRegexSupported'],
   [['declarativeNetRequest', 'testMatchOutcome'],           'chrome.declarativeNetRequest.testMatchOutcome'],
 
-  // ---- devtools (Task 32) ----
   [['devtools', 'panels', 'create'],                                 'chrome.devtools.panels.create'],
   [['devtools', 'panels', 'elements', 'createSidebarPane'],          'chrome.devtools.panels.elements.createSidebarPane'],
   [['devtools', 'panels', 'sources', 'createSidebarPane'],           'chrome.devtools.panels.sources.createSidebarPane'],
   [['devtools', 'panels', 'setOpenResourceHandler'],                 'chrome.devtools.panels.setOpenResourceHandler'],
-  // Note: `chrome.devtools.inspectedWindow.tabId` intentionally NOT
-  // in RPC_BINDINGS. It's a SYNCHRONOUS number property baked into
-  // helium-ctx (`ctx.inspectedTabId`) by DevtoolsPageHost — matching
-  // Chrome's contract. Listing it here would let installRpcBindings
-  // overwrite the sync number with a Promise-returning method.
   [['devtools', 'inspectedWindow', 'eval'],                          'chrome.devtools.inspectedWindow.eval'],
   [['devtools', 'inspectedWindow', 'reload'],                        'chrome.devtools.inspectedWindow.reload'],
   [['devtools', 'inspectedWindow', 'getResources'],                  'chrome.devtools.inspectedWindow.getResources'],
   [['devtools', 'network', 'getHAR'],                                'chrome.devtools.network.getHAR'],
 
-  // ---- permissions (Task 35) ----
   [['permissions', 'getAll'],   'chrome.permissions.getAll'],
   [['permissions', 'contains'], 'chrome.permissions.contains'],
   [['permissions', 'request'],  'chrome.permissions.request'],
   [['permissions', 'remove'],   'chrome.permissions.remove'],
 
-  // ---- sidePanel (Task 36) ----
   [['sidePanel', 'setOptions'],       'chrome.sidePanel.setOptions'],
   [['sidePanel', 'getOptions'],       'chrome.sidePanel.getOptions'],
   [['sidePanel', 'setPanelBehavior'], 'chrome.sidePanel.setPanelBehavior'],
   [['sidePanel', 'getPanelBehavior'], 'chrome.sidePanel.getPanelBehavior'],
   [['sidePanel', 'open'],             'chrome.sidePanel.open'],
 
-  // ---- downloads (Task 37) ----
   [['downloads', 'download'],           'chrome.downloads.download'],
   [['downloads', 'search'],             'chrome.downloads.search'],
   [['downloads', 'pause'],              'chrome.downloads.pause'],
@@ -315,7 +256,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['downloads', 'acceptDanger'],       'chrome.downloads.acceptDanger'],
   [['downloads', 'setShelfEnabled'],    'chrome.downloads.setShelfEnabled'],
 
-  // ---- identity (Task 38) ----
   [['identity', 'getAuthToken'],             'chrome.identity.getAuthToken'],
   [['identity', 'getProfileUserInfo'],       'chrome.identity.getProfileUserInfo'],
   [['identity', 'launchWebAuthFlow'],        'chrome.identity.launchWebAuthFlow'],
@@ -324,7 +264,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['identity', 'getAccounts'],              'chrome.identity.getAccounts'],
   [['identity', 'getRedirectURL'],           'chrome.identity.getRedirectURL'],
 
-  // ---- management (Task 39) ----
   [['management', 'getAll'],                          'chrome.management.getAll'],
   [['management', 'get'],                             'chrome.management.get'],
   [['management', 'getSelf'],                         'chrome.management.getSelf'],
@@ -338,30 +277,23 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['management', 'setLaunchType'],                   'chrome.management.setLaunchType'],
   [['management', 'generateAppForLink'],              'chrome.management.generateAppForLink'],
 
-  // ---- idle ----
   [['idle', 'queryState'],            'chrome.idle.queryState'],
   [['idle', 'setDetectionInterval'],  'chrome.idle.setDetectionInterval'],
 
-  // ---- runtime.getContexts (MV3) ----
   [['runtime', 'getContexts'],        'chrome.runtime.getContexts'],
 
-  // ---- offscreen ----
   [['offscreen', 'createDocument'],  'chrome.offscreen.createDocument'],
   [['offscreen', 'closeDocument'],   'chrome.offscreen.closeDocument'],
   [['offscreen', 'hasDocument'],     'chrome.offscreen.hasDocument'],
 
-  // ---- search ----
   [['search', 'query'],              'chrome.search.query'],
 
-  // ---- sessions ----
   [['sessions', 'getDevices'],          'chrome.sessions.getDevices'],
   [['sessions', 'getRecentlyClosed'],   'chrome.sessions.getRecentlyClosed'],
   [['sessions', 'restore'],             'chrome.sessions.restore'],
 
-  // ---- topSites ----
   [['topSites', 'get'],                 'chrome.topSites.get'],
 
-  // ---- browsingData ----
   [['browsingData', 'remove'],            'chrome.browsingData.remove'],
   [['browsingData', 'removeAppcache'],    'chrome.browsingData.removeAppcache'],
   [['browsingData', 'removeCache'],       'chrome.browsingData.removeCache'],
@@ -379,33 +311,23 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['browsingData', 'removeWebSQL'],      'chrome.browsingData.removeWebSQL'],
   [['browsingData', 'settings'],          'chrome.browsingData.settings'],
 
-  // ---- tabGroups (MV3) ----
   [['tabGroups', 'get'],    'chrome.tabGroups.get'],
   [['tabGroups', 'move'],   'chrome.tabGroups.move'],
   [['tabGroups', 'query'],  'chrome.tabGroups.query'],
   [['tabGroups', 'update'], 'chrome.tabGroups.update'],
 
-  // ---- readingList (MV3) ----
   [['readingList', 'addEntry'],    'chrome.readingList.addEntry'],
   [['readingList', 'query'],       'chrome.readingList.query'],
   [['readingList', 'removeEntry'], 'chrome.readingList.removeEntry'],
   [['readingList', 'updateEntry'], 'chrome.readingList.updateEntry'],
 
-  // ---- dns (MV3) ----
   [['dns', 'resolve'], 'chrome.dns.resolve'],
 
-  // ---- debugger ----
   [['debugger', 'attach'],      'chrome.debugger.attach'],
   [['debugger', 'detach'],      'chrome.debugger.detach'],
   [['debugger', 'sendCommand'], 'chrome.debugger.sendCommand'],
   [['debugger', 'getTargets'],  'chrome.debugger.getTargets'],
 
-  // ---- declarativeContent.onPageChanged rule manipulation ----
-  // RPC overlay replaces the `DeclarativeEvent` methods on the
-  // `onPageChanged` instance so addRules / removeRules / getRules
-  // hit host-side `DeclarativeContentHandlers`. Synthetic RPC keys
-  // because Chrome's API doesn't expose top-level addRules; we use
-  // the path-based replacement of `installRpcBindings`.
   [['declarativeContent', 'onPageChanged', 'addRules'],    'chrome.declarativeContent.addRules'],
   [['declarativeContent', 'onPageChanged', 'removeRules'], 'chrome.declarativeContent.removeRules'],
   [['declarativeContent', 'onPageChanged', 'getRules'],    'chrome.declarativeContent.getRules'],
@@ -432,73 +354,29 @@ const RPC_BINDINGS: Array<[string[], string]> = [
 
   const ChromeClass = ctx.manifestVersion === 2 ? ChromeMV2 : ChromeMV3;
   const chrome = new ChromeClass(ctx);
-  // Only devtools_page iframes get chrome.devtools.* (panels,
-  // inspectedWindow, network). Regular BG / popup / options iframes
-  // never carry the inDevtools flag, so chrome.devtools stays
-  // undefined for them — matching Chrome's behaviour where the
-  // namespace is gated on the host iframe being a devtools page.
   if (ctx.inDevtools === true) {
     (chrome as any).devtools = new ChromeDevtools(ctx);
   }
   (globalThis as any).chrome = chrome;
 
-  // Channel resolver. The channel is constructed inside
-  // `completeHandshake` when the host hands us the MessagePort.
-  // `installRpcBindings` (below) wraps every RPC method to await
-  // this resolver — meaning pre-handshake calls don't throw, they
-  // queue. Once the handshake completes the queue drains in order.
-  //
-  // This single mechanism replaces what used to be per-method
-  // throwing stubs ("chrome.X.Y is not implemented") for everything
-  // in RPC_BINDINGS — extensions that call those methods at
-  // top-level of their BG script now wait instead of crashing.
   let resolveChannel!: (ch: ExtensionBridgeChannel) => void;
   const channelReady = new Promise<ExtensionBridgeChannel>((r) => {
     resolveChannel = r;
   });
 
-  // Legacy `ready` promise — kept for downstream functions that
-  // gate on a barrier (vs. needing the actual channel). Resolves
-  // at the same time as channelReady.
   let resolveReady!: () => void;
   const ready = new Promise<void>((r) => {
     resolveReady = r;
   });
 
-  // Install the RPC overlay IMMEDIATELY (pre-handshake). Method
-  // wrappers will await the channelReady promise, so pre-handshake
-  // calls don't throw — they queue and resolve after the handshake
-  // completes. This eliminates the entire class of "called chrome.X
-  // at top-level, hit the throwing stub" bugs for anything in the
-  // RPC_BINDINGS table.
   installRpcBindings(chrome, channelReady, ready);
 
-  // Handshake delivery — two paths share one implementation:
-  //
-  //   1. Direct function call from the host realm:
-  //        iframe.contentWindow.__helium_handshake_receive__(port)
-  //      This is the supported path. Scramjet wraps every per-frame
-  //      window.postMessage with a client-context lookup that crashes when
-  //      invoked from the host realm (it expects SCRAMJETCLIENT on the
-  //      caller's globalThis, which the host doesn't have). The native
-  //      Window.prototype.postMessage isn't a workaround — postMessage is
-  //      an own property of each Window instance, not on the prototype, so
-  //      Window.prototype.postMessage is `undefined`. Exposing our own
-  //      function lets the host hand us the MessagePort directly without
-  //      crossing scramjet's hooks. Mirrors the __ddxDevtoolsReceive
-  //      pattern used by the devtools agent (see apis/devtools/session.ts).
-  //
-  //   2. postMessage fallback: if anyone else somehow gets a message
-  //      through (e.g., a future code path that wraps in scramjet's
-  //      envelope itself), the original message listener still picks it up.
   let consumed = false;
   const completeHandshake = (port: MessagePort): void => {
     if (consumed) return;
     consumed = true;
     window.removeEventListener('message', handshakeListener);
     const channel = new ExtensionBridgeChannel(port);
-    // Hand the channel to the pre-installed RPC overlay — any
-    // queued pre-handshake calls now resolve.
     resolveChannel(channel);
     installRuntimeOnMessageHandler(chrome, channel);
     installRuntimeConnect(chrome, channel);
@@ -523,9 +401,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   };
   window.addEventListener('message', handshakeListener);
 
-  // Expose the direct-call entry point. Defined as a non-enumerable,
-  // non-configurable own property so page scripts and extension code can't
-  // accidentally shadow or delete it before the host's load handler runs.
   try {
     Object.defineProperty(window, '__helium_handshake_receive__', {
       value: (port: MessagePort): void => {
@@ -540,8 +415,6 @@ const RPC_BINDINGS: Array<[string[], string]> = [
       configurable: false,
     });
   } catch (err) {
-    // Some hardened environments may already have a property here.
-    // Best-effort fallback: leave the message-listener path alone.
     console.warn(
       '[helium/bootstrap] could not install __helium_handshake_receive__:',
       err,
@@ -569,22 +442,8 @@ function installRpcBindings(
     const parent = resolvePath(chrome, path.slice(0, -1));
     const last = path[path.length - 1];
     if (!parent || !last) {
-      // Expected for MV2 iframes trying to install MV3-only paths
-      // (chrome.action.*, chrome.scripting.*, chrome.storage.session.*,
-      // chrome.declarativeNetRequest.*, chrome.sidePanel.*, ...) and
-      // vice versa. The RPC_BINDINGS table is intentionally a superset.
-      // Silent skip avoids dozens of console warnings on every load
-      // without losing real information — if an extension actually
-      // tries to USE a missing method, the JS error at the call site
-      // will be louder and more actionable than this hand-wave at
-      // installation time.
       continue;
     }
-    // Callback-aware: when the last arg is a function, treat it as a
-    // chrome callback. Resolve the chrome.runtime.lastError contract:
-    //   - On success: lastError = null, callback(result).
-    //   - On failure: lastError = { message }, callback(undefined).
-    // When no callback is supplied, return the Promise (MV3 style).
     const impl = async (args: unknown[]): Promise<unknown> => {
       const channel = await channelReady;
       await ready;
@@ -595,9 +454,6 @@ function installRpcBindings(
       } catch (err) {
         const e = err as Error;
         (chrome.runtime as any).lastError = { message: e.message };
-        // For permission errors and any other failures, the chrome
-        // contract for callbacks is to return undefined with lastError
-        // set, then clear lastError after the callback runs.
         if (e.name === 'ChromePermissionError') return undefined;
         throw err;
       }
@@ -676,7 +532,6 @@ function installRuntimeConnect(
       try {
         const portId = await portIdPromise;
         if (typeof portId !== 'number' || portId < 0) {
-          // Host rejected (target not running / not externally_connectable / etc.)
           disconnected = true;
           onDisconnect._dispatch([]);
           return;
@@ -700,7 +555,6 @@ function installRuntimeConnect(
           onMessage,
           onDisconnect,
         } as unknown as BgPort);
-        // Drain queued sends
         for (const msg of queuedSends) {
           channel.sendEvent('chrome.runtime.port-msg-bg-to-cs', [{ portId, message: msg }]);
         }
@@ -741,7 +595,6 @@ function installRuntimeConnect(
     };
   };
 
-  // chrome.runtime.connect(extensionId?, connectInfo?) → Port
   chrome.runtime.connect = (...args: unknown[]): unknown => {
     let extId: string | undefined;
     let connectInfo: { name?: string; includeTlsChannelId?: boolean } | undefined;
@@ -761,7 +614,6 @@ function installRuntimeConnect(
     return makePort(portIdPromise, name);
   };
 
-  // chrome.tabs.connect(tabId, connectInfo) → Port
   if (chrome.tabs) {
     chrome.tabs.connect = (...args: unknown[]): unknown => {
       const tabId = typeof args[0] === 'number' ? args[0] : -1;
@@ -787,18 +639,11 @@ function installRuntimeOnMessageHandler(
       const [message, sender] = args as [unknown, unknown];
       const event = chrome.runtime?.[eventName];
       if (!event) return undefined;
-      // ChromeEvent stores listeners internally; expose an iterable view
-      // via the documented `_listenersForDispatch()` escape hatch. We
-      // hand the listener set to dispatchOnMessage so it owns the
-      // sendResponse / async / timeout contract.
       const listeners = collectOnMessageListeners(event);
       const result = await dispatchOnMessage(listeners, message, sender);
       return result.response;
     };
   channel.registerEventHandler('chrome.runtime.onMessage', dispatch('onMessage'));
-  // Cross-extension messages route to `onMessageExternal` per Chrome's
-  // contract. Same dispatch contract — sendResponse, return-true-for-
-  // async, single-winner, 30s timeout.
   channel.registerEventHandler('chrome.runtime.onMessageExternal', dispatch('onMessageExternal'));
 }
 
@@ -813,8 +658,6 @@ function collectOnMessageListeners(event: any): Iterable<OnMessageListener> {
   if (typeof event._listenersForDispatch === 'function') {
     return event._listenersForDispatch() as Iterable<OnMessageListener>;
   }
-  // Defensive fallback for old/foreign event objects without the
-  // documented hatch.
   if (typeof event.dispatchSync === 'function') {
     const compound: OnMessageListener = (msg, sender, sendResponse) => {
       const results = event.dispatchSync(msg, sender, sendResponse) as unknown[];
@@ -914,7 +757,6 @@ function installEventRouter(
   channel: ExtensionBridgeChannel,
 ): void {
   channel.setEventHandler((method, args) => {
-    // Port lifecycle methods are handled here, NOT via resolvePath.
     if (method === 'chrome.runtime.onConnect-port') {
       const info = args[0] as { portId: number; name: string; sender: { id: string } };
       const port = new BgPort(channel, info.portId, info.name, info.sender);
@@ -939,7 +781,6 @@ function installEventRouter(
       return;
     }
 
-    // Default: dispatch to the chrome.<ns>.<event> path on the BG chrome.
     const parts = method.split('.');
     if (parts.length < 2 || parts[0] !== 'chrome') {
       console.warn('[helium/bootstrap] unsupported event method:', method);
@@ -947,17 +788,6 @@ function installEventRouter(
     }
     const target = resolvePath(chrome, parts.slice(1));
     if (target && typeof (target as any).dispatch === 'function') {
-      // chrome.omnibox.onInputChanged listeners are invoked with
-      // (text, suggest) where `suggest` is a callback. The host
-      // transport drops the function across the MessageChannel, so
-      // we synthesize a callback that wraps suggestions and sends
-      // them back to the host via a sendEvent. The host's omnibox
-      // UI listens for `chrome.omnibox.suggestions-out` events and
-      // applies them to the dropdown.
-      //
-      // The host expects the event payload to be the suggestion
-      // array. Convention: the suggest callback wraps any input —
-      // the host renders whatever it gets, latest call wins.
       if (method === 'chrome.omnibox.onInputChanged') {
         const suggest = (suggestions: unknown) => {
           try {

@@ -1,15 +1,3 @@
-// Shared transport-construction + proxied-fetch logic.
-//
-// Both the page-side `Proxy` (src/apis/proxy.ts) and the service worker
-// (src/core/sw/index.ts) need to:
-//   1. pick a transport (libcurl / epoxy / pulsar) based on settings
-//   2. read the wisp URL (and any per-transport options) from settings
-//   3. call `transport.request(...)` with manual redirect-following
-//      and Headers normalization
-//
-// This module is the single source of truth for all of that. It runs in
-// any context that has `fetch` / `Response` / `Headers` (window or
-// ServiceWorker). It does NOT touch BareMux — by design.
 
 import type {
 	ProxyTransport,

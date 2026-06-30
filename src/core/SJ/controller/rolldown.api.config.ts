@@ -21,12 +21,8 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 
 const configDir = dirname(fileURLToPath(import.meta.url));
-// configDir = <repo>/src/core/SJ/controller — four `..` segments reach
-// the repo root. Update if this file moves.
 const repoRoot = resolve(configDir, '..', '..', '..', '..');
 
-// Read scramjet's version from the installed package so the runtime check
-// stays in sync without manual updates here.
 const scramjetVersion: string = JSON.parse(
 	readFileSync(
 		resolve(
@@ -63,7 +59,6 @@ function rawTextPlugin(): Plugin {
 		resolveId(source, importer) {
 			if (!source.endsWith(SUFFIX)) return null;
 			const bare = source.slice(0, -SUFFIX.length);
-			// Resolve relative to the importing file when present.
 			const abs = importer
 				? resolve(dirname(importer), bare)
 				: resolve(repoRoot, bare);
@@ -84,8 +79,6 @@ export default defineConfig({
 	output: {
 		file: resolve(configDir, 'dist', 'api.js'),
 		format: 'iife',
-		// Matches the prebuilt bundle's `var $scramjetController;(()=>{...})()`
-		// shape. rolldown emits this as a top-level assignment.
 		name: '$scramjetController',
 		extend: true,
 		minify: true
@@ -109,12 +102,6 @@ export default defineConfig({
 	},
 	plugins: [rawTextPlugin()],
 	transform: {
-		// `version.ts` references `SCRAMJET_EXPECTED_VERSION` as a
-		// build-time constant (matches what upstream's rspack
-		// DefinePlugin supplies). It's used by the runtime
-		// version-mismatch check against `$scramjet.versionInfo.version`,
-		// so this value MUST match the installed scramjet's version —
-		// hence reading it from node_modules above.
 		define: {
 			SCRAMJET_EXPECTED_VERSION: JSON.stringify(scramjetVersion)
 		}

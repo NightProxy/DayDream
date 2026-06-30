@@ -29,7 +29,6 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 	if (!url) return url;
 
 	try {
-		// Step 1: already-decoded internal/protocol URLs pass through.
 		if (
 			(globalThis as any).protocols?.isRegisteredProtocol?.(url) ||
 			url.includes('/internal/')
@@ -39,7 +38,6 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 
 		const resolvedProxy = proxy ?? (globalThis as any).proxy;
 
-		// Step 2: try the currently-active iframe (v2 per-frame prefix).
 		try {
 			const activeIframe = document.querySelector(
 				'iframe.active'
@@ -56,7 +54,6 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 			// fall through
 		}
 
-		// Step 3: walk registered frames.
 		try {
 			const frames = resolvedProxy?.controller?.frames;
 			if (frames && resolvedProxy.extractEncodedUrl) {
@@ -74,7 +71,6 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 			// fall through
 		}
 
-		// Step 4: SWconfig-global-prefix legacy fallback.
 		try {
 			const swc = (globalThis as any).SWconfig;
 			const ps = (globalThis as any).ProxySettings;

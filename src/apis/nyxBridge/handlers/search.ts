@@ -1,7 +1,3 @@
-// src/apis/nyxBridge/handlers/search.ts
-//
-// search.query: routes to protocols.navigate (default) or
-// tabs.createTab (when disposition === 'NEW_TAB').
 
 import { register } from './index';
 import { DDXError } from '../types';

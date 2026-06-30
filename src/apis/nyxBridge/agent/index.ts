@@ -1,14 +1,3 @@
-// src/apis/nyxBridge/agent/index.ts
-//
-// Per-frame agent for NyxBridge. Bundled to an IIFE by
-// agent/rolldown.config.ts and injected (via hookInstaller) into every
-// non-Nyx proxied frame the bridge wants to drive. Mirrors
-// src/apis/devtools/agent/index.ts but:
-//
-//   - Exposes window.__nyxBridgeReceive instead of __ddxDevtoolsReceive
-//   - Posts envelopes tagged __nyxBridgeMsg via frameTransport.encodeEnvelope
-//   - Uses sessionStorage key "nyx-frame-id" so devtools-agent and
-//     bridge-agent in the same frame don't collide on frame ids.
 
 import chobitsu from 'chobitsu';
 import { encodeEnvelope, type AgentMessage } from '../frameTransport';

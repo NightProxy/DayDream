@@ -1,10 +1,3 @@
-// src/core/helium/host/permissions/storage.ts
-//
-// Persistence layer for chrome.permissions.* optional-permission
-// grants. Each extension keeps an `__helium_optional_perms__.json`
-// file under its extfs tree storing the set of optional API
-// permissions and host (origin) permissions the user has approved
-// at runtime.
 
 import { readExtensionFile, writeExtensionFile } from '../../extfs';
 

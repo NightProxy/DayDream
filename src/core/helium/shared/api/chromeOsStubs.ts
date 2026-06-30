@@ -1,20 +1,3 @@
-// src/core/helium/shared/api/chromeOsStubs.ts
-//
-// ChromeOS-only API stubs. Each class throws with a clear,
-// detectable error message so extensions can `try { ... } catch (e) { ... }`
-// and fall back to non-ChromeOS code paths instead of crashing with
-// "Cannot read properties of undefined".
-//
-// We INTENTIONALLY do not implement these — they're system-level
-// integrations that have no meaning in a browser-in-browser context
-// (no real OS networking config, no kiosk wallpaper, no enterprise
-// management plane, no smart-card reader, no IME stack, no audio
-// hardware enumeration, no userland-mounted filesystem provider,
-// no document scanner, no platform keystore).
-//
-// If a Chromebook-flavored DDX build ever wants any of these, the
-// platform layer can override the relevant class by reassigning
-// `chrome.X = new RealX(ctx)` after Chrome construction.
 
 import type { ExtensionContext } from '../../extfs/types';
 import { ChromeEvent } from '..';
@@ -27,7 +10,6 @@ function notSupported(api: string): never {
   );
 }
 
-// ── chrome.vpnProvider ──────────────────────────────────────────────
 export class ChromeVpnProvider {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
@@ -43,16 +25,12 @@ export class ChromeVpnProvider {
   notifyConnectionStateChanged(..._args: any[]): any { return notSupported('vpnProvider.notifyConnectionStateChanged'); }
 }
 
-// ── chrome.wallpaper ────────────────────────────────────────────────
 export class ChromeWallpaper {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
   setWallpaper(..._args: any[]): any { return notSupported('wallpaper.setWallpaper'); }
 }
 
-// ── chrome.networking.onc ───────────────────────────────────────────
-// The full surface lives under `chrome.networking.onc.*`; we expose
-// a single `onc` namespace stub so feature-detection works.
 class NetworkingOnc {
   public readonly onNetworksChanged: ChromeEvent = new ChromeEvent();
   public readonly onNetworkListChanged: ChromeEvent = new ChromeEvent();
@@ -85,7 +63,6 @@ export class ChromeNetworking {
   }
 }
 
-// ── chrome.enterprise.* ─────────────────────────────────────────────
 class EnterpriseDeviceAttributes {
   getDirectoryDeviceId(..._args: any[]): any { return notSupported('enterprise.deviceAttributes.getDirectoryDeviceId'); }
   getDeviceSerialNumber(..._args: any[]): any { return notSupported('enterprise.deviceAttributes.getDeviceSerialNumber'); }
@@ -126,13 +103,11 @@ export class ChromeEnterprise {
   }
 }
 
-// ── chrome.certificateProvider ──────────────────────────────────────
 export class ChromeCertificateProvider {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
   public readonly onCertificatesUpdateRequested: ChromeEvent = new ChromeEvent();
   public readonly onSignatureRequested: ChromeEvent = new ChromeEvent();
-  // Deprecated (pre-MV3) events kept for compat:
   public readonly onCertificatesRequested: ChromeEvent = new ChromeEvent();
   public readonly onSignDigestRequested: ChromeEvent = new ChromeEvent();
   setCertificates(..._args: any[]): any { return notSupported('certificateProvider.setCertificates'); }
@@ -141,7 +116,6 @@ export class ChromeCertificateProvider {
   stopPinRequest(..._args: any[]): any { return notSupported('certificateProvider.stopPinRequest'); }
 }
 
-// ── chrome.input.ime ────────────────────────────────────────────────
 class InputIme {
   public readonly onActivate: ChromeEvent = new ChromeEvent();
   public readonly onDeactivated: ChromeEvent = new ChromeEvent();
@@ -179,7 +153,6 @@ export class ChromeInput {
   }
 }
 
-// ── chrome.audio ────────────────────────────────────────────────────
 export class ChromeAudio {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
@@ -193,7 +166,6 @@ export class ChromeAudio {
   setMute(..._args: any[]): any { return notSupported('audio.setMute'); }
 }
 
-// ── chrome.fileSystemProvider ───────────────────────────────────────
 export class ChromeFileSystemProvider {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
@@ -224,7 +196,6 @@ export class ChromeFileSystemProvider {
   notify(..._args: any[]): any { return notSupported('fileSystemProvider.notify'); }
 }
 
-// ── chrome.documentScan ─────────────────────────────────────────────
 export class ChromeDocumentScan {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
@@ -239,15 +210,12 @@ export class ChromeDocumentScan {
   closeScanner(..._args: any[]): any { return notSupported('documentScan.closeScanner'); }
 }
 
-// ── chrome.platformKeys ─────────────────────────────────────────────
 export class ChromePlatformKeys {
   protected readonly ctx: ExtensionContext;
   constructor(ctx: ExtensionContext) { this.ctx = ctx; }
   selectClientCertificates(..._args: any[]): any { return notSupported('platformKeys.selectClientCertificates'); }
   getKeyPair(..._args: any[]): any { return notSupported('platformKeys.getKeyPair'); }
   getKeyPairBySpki(..._args: any[]): any { return notSupported('platformKeys.getKeyPairBySpki'); }
-  // platformKeys.subtleCrypto returns a (would-be) SubtleCrypto-compatible
-  // object; we expose a throwing one to avoid the "not a function" error.
   subtleCrypto(): { encrypt: () => never; decrypt: () => never; sign: () => never; verify: () => never } {
     const t = () => notSupported('platformKeys.subtleCrypto');
     return { encrypt: t, decrypt: t, sign: t, verify: t };

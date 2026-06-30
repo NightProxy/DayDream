@@ -1,15 +1,9 @@
-// src/apis/nyxBridge/types.ts
-//
-// Internal types — handshake state, channel envelope, request shapes.
-// Not exposed to NyxAI. The public contract lives in api.ts.
 
 import type { ErrorCode } from './api';
 
-// ── Channel envelopes ───────────────────────────────────────────────
-
 export interface NyxRequestEnvelope {
 	requestId: string;
-	type: string; // method name from METHOD_REGISTRY, OR "__handshake.init" / "__handshake.complete"
+	type: string;
 	sessionId?: string;
 	args?: unknown;
 }
@@ -28,8 +22,6 @@ export interface NyxResponseError {
 
 export type NyxResponse = NyxResponseSuccess | NyxResponseError;
 
-// ── Handshake state ─────────────────────────────────────────────────
-
 export type HandshakeState =
 	| { kind: 'challenged'; iframe: HTMLIFrameElement; expectedToken: string; createdAt: number }
 	| { kind: 'trusted'; iframe: HTMLIFrameElement; createdAt: number };
@@ -39,8 +31,6 @@ export interface TrustVerification {
 	code?: ErrorCode;
 	reason?: string;
 }
-
-// ── Internal error ──────────────────────────────────────────────────
 
 export class DDXError extends Error {
 	override name = 'DDXError' as const;

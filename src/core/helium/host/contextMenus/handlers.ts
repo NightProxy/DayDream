@@ -1,8 +1,3 @@
-// src/core/helium/host/contextMenus/handlers.ts
-//
-// chrome.contextMenus.* (alias chrome.menus.*) handlers. Delegates to
-// ContextMenuRegistry. Click events fire via the inject layer
-// (browser-side menu builders), not here.
 
 import type { ExtensionContext } from '../../extfs/types';
 import type { ContextMenuRegistry, MenuEntry } from './registry';

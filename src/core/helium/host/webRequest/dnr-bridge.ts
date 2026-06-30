@@ -1,19 +1,3 @@
-// src/core/helium/host/webRequest/dnr-bridge.ts
-//
-// Thin type seam between the WebRequestPlugin (Task 26) and the DNR
-// engine (Task 29). Lives in the webRequest dir to avoid a circular
-// import: the plugin pulls in only the seam, and the real DNR
-// implementation lives under ../dnr/ and provides the facade.
-//
-// The plugin invokes `evaluate(details)` at fetch.intercept time;
-// the engine returns one of:
-//   { kind: 'block' }
-//   { kind: 'redirect', url }
-//   { kind: 'upgradeScheme' }
-//   { kind: 'allow' }
-//   { kind: 'allowAllRequests' }
-//   { kind: 'modifyHeaders', requestHeaders?, responseHeaders? }
-//   null (no match)
 
 import type { RequestDetails } from './events';
 

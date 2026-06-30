@@ -184,10 +184,6 @@ class DDXWorker {
 				`[DDXWorker] restoreRequest OK: ${response.status} ${relativePath}`
 			);
 
-			// Add CORS so the calling page can read the response. We
-			// rebuild the Headers from the existing response (rather
-			// than mutating it in-place) so we can layer in the CORS
-			// fields without losing transport-supplied headers.
 			const responseHeaders = new Headers(response.headers);
 			responseHeaders.set('Access-Control-Allow-Origin', '*');
 			responseHeaders.set(
@@ -206,9 +202,6 @@ class DDXWorker {
 				'[DDXWorker] restoreRequest failed:',
 				getErrorMessage(error)
 			);
-			// Drop the cached transport so the next request rebuilds
-			// from scratch — same self-healing pattern the BareClient
-			// path used.
 			this.transportCache = null;
 
 			return new Response(
@@ -234,7 +227,6 @@ class DDXWorker {
 			return adblockSetting;
 		}
 
-		// Default to disabled if not set
 		return false;
 	}
 
@@ -248,10 +240,6 @@ class DDXWorker {
 
 		await this.wispManager.ensureWisp();
 
-		// Helium SW-level webRequest/DNR fallback (Task 30). Main-page
-		// pushes DNR rules to us; we evaluate locally per request. If
-		// any rule yields block/redirect, short-circuit. Otherwise fall
-		// through to the existing flow.
 		try {
 			const swResult = await evaluateSwLevelRules(event);
 			if (swResult) return swResult;

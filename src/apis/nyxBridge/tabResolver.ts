@@ -1,9 +1,3 @@
-// src/apis/nyxBridge/tabResolver.ts
-//
-// Resolves between DDX's string tab IDs (`tab-1`, `tab-2`, ...) and the
-// numeric IDs exposed to NyxAI through the contract (chrome.tabs-style).
-// Numeric IDs are auto-assigned on first sight and stable for the
-// lifetime of the underlying DDX tab.
 
 import { DDXError } from './types';
 import type { TabId, TabInfo } from './api';
@@ -30,11 +24,6 @@ export interface TabsLike {
 	closeTabById(id: string): Promise<unknown> | unknown;
 }
 
-// ── groupId hash helpers ────────────────────────────────────────────
-//
-// DDX's group IDs are strings; chrome.tabs.Tab.groupId is a number.
-// We assign monotonically increasing numbers per unique string id, with
-// -1 as the "no group" sentinel (TAB_GROUP_ID_NONE).
 const groupIdToNum = new Map<string, number>();
 const numToGroupId = new Map<number, string>();
 let nextGroupNum = 1;
@@ -115,14 +104,6 @@ export class TabResolver {
 		if (!t) throw new DDXError('tab_not_found', `tab_not_found: tab data missing for ${ddxId}`);
 		const order = this.tabs.getTabsInOrder();
 		const idx = order.findIndex((x) => x?.id === ddxId);
-		// URL coverage in order of preference:
-		//   1. `t.url` — kept fresh by metaWatcher (decoded already)
-		//   2. Live decode from iframe — covers the "navigation just
-		//      happened, metaWatcher hasn't run yet" race + the
-		//      "non-active tab navigated in the background" case
-		//   3. Empty string — last resort. Extensions like uBO derive
-		//      hostnames from this; passing undefined would crash
-		//      their `punycode.toUnicode(undefined)` path.
 		let url = t.url ?? '';
 		if (!url || url.startsWith('about:blank')) {
 			try {
@@ -148,7 +129,6 @@ export class TabResolver {
 			groupId: hashGroupId(t.groupId),
 			incognito: false,
 		};
-		// openerTabId is optional with exactOptionalPropertyTypes; omit when unset.
 		return info;
 	}
 

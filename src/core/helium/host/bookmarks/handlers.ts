@@ -1,8 +1,3 @@
-// src/core/helium/host/bookmarks/handlers.ts
-//
-// chrome.bookmarks.* handlers backed by the DDX BookmarkManager singleton.
-// All node shapes mirror Chrome's BookmarkTreeNode loosely (only the
-// fields the manager has are filled).
 
 import type { ExtensionContext } from '../../extfs/types';
 import {

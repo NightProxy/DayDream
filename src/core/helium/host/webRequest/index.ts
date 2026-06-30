@@ -1,10 +1,3 @@
-// src/core/helium/host/webRequest/index.ts
-//
-// Re-exports + installer entrypoint.
-//
-// Usage from src/apis/proxy.ts (after `installScriptInjector`):
-//   import { installWebRequestHook } from '@core/helium/host/webRequest';
-//   installWebRequestHook(this.controller, { registry, dnr });
 
 import { WebRequestPlugin } from './plugin';
 import type { WebRequestRegistry } from './registry';

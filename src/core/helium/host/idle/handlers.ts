@@ -1,18 +1,3 @@
-// src/core/helium/host/idle/handlers.ts
-//
-// `chrome.idle.*` host handlers. Provides a real-ish idle detector
-// driven by:
-//   - Page Visibility API (document.visibilityState) → 'idle' when
-//     the DDX shell is hidden
-//   - User input + setTimeout (lastInputAt + detectionInterval) →
-//     'idle' when no input for N seconds
-//   - 'locked' is never reported (no screen-lock signal available in
-//     a web context; Chrome itself can't always detect this either)
-//
-// This is host-side so the same state is shared across all spawned
-// extensions. Per-extension `setDetectionInterval` is honoured: the
-// host tracks the minimum-requested interval and uses that as the
-// effective threshold.
 
 import type { ExtensionContext } from '../../extfs/types';
 
@@ -30,7 +15,7 @@ export interface IdleDeps {
 export class IdleHandlers {
   private currentState: IdleState = 'active';
   private lastInputAt: number = Date.now();
-  private detectionIntervalSec: number = 60;   // Chrome's default minimum
+  private detectionIntervalSec: number = 60;
   private installed = false;
 
   constructor(private readonly deps: IdleDeps) {}
@@ -48,17 +33,12 @@ export class IdleHandlers {
       if (this.currentState !== 'active') this.transitionTo('active');
     };
 
-    // Real user-input signals. Any of these resets the idle clock.
     document.addEventListener('mousemove', bump, { passive: true });
     document.addEventListener('mousedown', bump, { passive: true });
     document.addEventListener('keydown', bump, { passive: true });
     document.addEventListener('wheel', bump, { passive: true });
     document.addEventListener('touchstart', bump, { passive: true });
 
-    // Visibility change is a strong signal — when the user switches
-    // away from the DDX window, treat as idle. (Chrome reports
-    // 'locked' here on some platforms; we conservatively report
-    // 'idle' since we can't distinguish.)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         this.transitionTo('idle');
@@ -67,10 +47,6 @@ export class IdleHandlers {
       }
     });
 
-    // Periodic check: every detectionInterval seconds, see if we've
-    // exceeded the threshold since last input. Not stored — the
-    // host lives for the whole DDX session and clearInterval is
-    // never needed.
     setInterval(() => this.tick(), 1000);
   }
 
@@ -92,8 +68,6 @@ export class IdleHandlers {
     this.deps.fanoutEvent('chrome.idle.onStateChanged', [state], 'idle');
   }
 
-  // --- chrome.idle.* RPC handlers ----
-
   queryState = async (
     _ctx: ExtensionContext,
     args: unknown[],
@@ -110,8 +84,6 @@ export class IdleHandlers {
   ): Promise<void> => {
     const seconds = args[0];
     if (typeof seconds !== 'number' || seconds < 15) return;
-    // Use the MINIMUM of all extension requests so all of them get
-    // updates as fast as the most demanding caller wants.
     if (this.detectionIntervalSec === 60 || seconds < this.detectionIntervalSec) {
       this.detectionIntervalSec = seconds;
     }

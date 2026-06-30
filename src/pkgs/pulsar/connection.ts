@@ -1,5 +1,3 @@
-// Direct (no signalling) Pulsar connection.
-// Vendored from @abndnce/pulsar-client.
 
 import {
 	KEEPALIVE_LABEL,
@@ -32,14 +30,11 @@ export async function connectDirect(
 ): Promise<PulsarClientConnection> {
 	const pc = new RTCPeerConnection();
 
-	// Mandated keepalive data channel (Pulsar spec)
 	const keepalive = pc.createDataChannel(KEEPALIVE_LABEL, { ordered: true });
 
 	const offer = await pc.createOffer();
 	await pc.setLocalDescription(offer);
 
-	// Craft the remote (server) SDP. Trailing empty line ensures the
-	// final \r\n terminator that Chrome's SDP parser requires.
 	const remoteSdp = [
 		'v=0',
 		'o=- 111 222 IN IP4 0.0.0.0',

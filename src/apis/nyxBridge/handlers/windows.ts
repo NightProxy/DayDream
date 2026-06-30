@@ -1,9 +1,3 @@
-// src/apis/nyxBridge/handlers/windows.ts
-//
-// V1: DDX is single-window. Methods return a synthetic window with
-// id=1 representing the host. `create` maps to creating tabs in the
-// existing window; `remove` is a no-op so extensions don't get errors
-// when calling cleanup paths.
 
 import { register } from './index';
 import { DDXError } from '../types';
@@ -29,7 +23,7 @@ register('windows.get', async (ctx, args: { windowId: number; populate?: boolean
 	if (typeof args === 'number') { id = args; populate = false; }
 	else if (Array.isArray(args)) { id = args[0]; populate = !!args[1]?.populate; }
 	else { id = args.windowId; populate = !!args.populate; }
-	if (id !== 1 && id !== -2 /* WINDOW_ID_CURRENT */) {
+	if (id !== 1 && id !== -2) {
 		throw new DDXError('not_supported', `window ${id} not found`);
 	}
 	return getCurrentWindow(ctx, populate);

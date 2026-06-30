@@ -1,4 +1,3 @@
-// Helpers for Chrome theme color math.
 
 export function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
@@ -70,7 +69,6 @@ export function base64Encode(bytes: Uint8Array): string {
 }
 
 export function deriveAccentPalette(mainRgb: string, _tint?: [number, number, number]): string[] {
-  // Generate 5 swatches by rotating hue +/- 30°, 60°
   const m = mainRgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!m) return [mainRgb];
   const r = parseInt(m[1], 10), g = parseInt(m[2], 10), b = parseInt(m[3], 10);

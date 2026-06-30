@@ -87,9 +87,6 @@ export class HistoryManager {
 	private storageLoaded: boolean = false;
 	private loadPromise: Promise<void> | null = null;
 
-	// Serialize all OPFS writes to /data/history.json. The underlying TFS uses
-	// OPFS sync access handles which throw EIO if two writes overlap on the
-	// same file. We coalesce save requests so at most one write is in flight.
 	private writeQueue: Promise<void> = Promise.resolve();
 	private pendingSave: boolean = false;
 	private pendingSessionsSave: boolean = false;
@@ -167,7 +164,6 @@ export class HistoryManager {
 	}
 
 	public async loadFromStorage(): Promise<void> {
-		// Dedupe concurrent load calls (multiple modules call loadFromStorage on init).
 		if (this.loadPromise) return this.loadPromise;
 		if (this.storageLoaded) return;
 
@@ -234,14 +230,11 @@ export class HistoryManager {
 	 */
 	private enqueueWrite(task: () => Promise<void>): Promise<void> {
 		const next = this.writeQueue.then(task, task);
-		// Swallow rejections on the chain so one failure doesn't poison the queue.
 		this.writeQueue = next.catch(() => {});
 		return next;
 	}
 
 	public async saveToStorage(): Promise<void> {
-		// Coalesce: if a save is already pending, just piggyback on it. The
-		// queued task always reads the latest in-memory state at execution time.
 		if (this.pendingSave) {
 			return this.writeQueue;
 		}
@@ -551,8 +544,6 @@ export class HistoryManager {
 				}
 			} catch {}
 
-			// Require a content match before applying tie-breaker bonuses.
-			// Otherwise frequently-visited entries pollute results for unrelated queries.
 			if (contentScore === 0) return;
 
 			let relevanceScore = contentScore;

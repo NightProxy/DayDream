@@ -1,6 +1,3 @@
-// Profile avatar rendering helpers.
-// Avatar can be: a single letter (default), a lucide icon, or an uploaded image.
-// Color can be: an explicit hex, or "auto" (derived deterministically from profile id).
 
 import type { ProfileAppearance } from "../../../apis/profiles/types";
 
@@ -37,8 +34,6 @@ export function resolveAppearance(id: string, appearance: ProfileAppearance | un
 }
 
 export function darkenColor(hex: string, amount = 0.45): string {
-  // Returns a darker variant for gradient endpoint.
-  // Expects #RRGGBB.
   if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -50,8 +45,8 @@ export function darkenColor(hex: string, amount = 0.45): string {
 }
 
 export interface AvatarRenderOpts {
-  size?: number; // px, default 32
-  fontSize?: number; // px, default proportional to size
+  size?: number;
+  fontSize?: number;
 }
 
 export function createAvatar(id: string, appearance: ProfileAppearance | undefined, opts: AvatarRenderOpts = {}): HTMLElement {
@@ -82,7 +77,6 @@ export function createAvatar(id: string, appearance: ProfileAppearance | undefin
     i.style.cssText = `width: ${Math.round(size * 0.55)}px; height: ${Math.round(size * 0.55)}px;`;
     el.appendChild(i);
   } else {
-    // letter
     el.textContent = (id.charAt(0) || "?").toUpperCase();
   }
   return el;

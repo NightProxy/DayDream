@@ -1,13 +1,3 @@
-// src/apis/nyxBridge/cdp.ts
-//
-// Host-side CDP request/response correlator. Each tab maps to one
-// per-frame agent (`{frameId, win}`). `send(tabId, method, params)`
-// JSON-stringifies a CDP envelope, hands it to the agent via the agent's
-// installed `__nyxBridgeReceive(frameId, payload)` function, and resolves
-// when a `cdp-out` envelope with the matching `id` arrives.
-//
-// Agent messages (`frame-ready`, `cdp-out`, `frame-gone`, `agent-error`)
-// flow in via `handleAgentMessage`, which the hookInstaller wires up.
 
 import { DDXError } from './types';
 import type { AgentMessage } from './frameTransport';
@@ -67,7 +57,6 @@ export class CdpHelper {
 	}
 
 	private dispatchEvent(frameId: string, method: string, params: unknown): void {
-		// Resolve frameId → tabId via byTab reverse lookup.
 		let matchedTab: TabId | null = null;
 		for (const [tabId, info] of this.byTab) {
 			if (info.frameId === frameId) {
@@ -85,7 +74,7 @@ export class CdpHelper {
 
 	handleAgentMessage(frameId: string, msg: AgentMessage, _win: Window): void {
 		void _win;
-		if (msg.kind === 'frame-ready') return; // Caller (NyxBridge) maps frameId → tabId.
+		if (msg.kind === 'frame-ready') return;
 		if (msg.kind === 'frame-gone') {
 			for (const [tabId, info] of this.byTab) {
 				if (info.frameId === frameId) this.byTab.delete(tabId);
@@ -95,7 +84,6 @@ export class CdpHelper {
 		if (msg.kind === 'cdp-out' && msg.payload) {
 			let parsed: any;
 			try { parsed = JSON.parse(msg.payload); } catch { return; }
-			// CDP responses have `id`; events have `method` without `id`.
 			if (typeof parsed.id === 'number') {
 				const p = this.pending.get(parsed.id);
 				if (!p) return;

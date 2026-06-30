@@ -1,8 +1,8 @@
 export interface ProfileAppearance {
   avatarType: "letter" | "icon" | "image";
-  avatarIcon?: string;       // lucide name when avatarType === 'icon'
-  avatarImage?: string;      // data URL when avatarType === 'image'
-  color: string;             // hex (e.g. "#cba6f7") or "auto" (derived from id hash)
+  avatarIcon?: string;
+  avatarImage?: string;
+  color: string;
 }
 
 export interface ProfileData {

@@ -1,6 +1,3 @@
-// src/core/helium/host/history/handlers.ts
-//
-// chrome.history.* handlers backed by the DDX HistoryManager singleton.
 
 import type { ExtensionContext } from '../../extfs/types';
 import { HistoryManager, type HistoryEntry } from '@apis/history';
