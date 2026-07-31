@@ -21,16 +21,20 @@ const OUT_DIR = resolve(ROOT, 'dist-tapp');
 
 function main(): void {
 	const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8'));
-	const manifest = buildManifest(pkg);
+	// Validate config; we don't need the returned object here — the
+	// runtime .tbconfig is written by the vite plugin, not us. We only
+	// need the pkg-name for the zip filename.
+	buildManifest(pkg);
+	const pkgName: string = pkg.terbium['pkg-name'];
 
-	// Verify prerequisites
+	// Verify prerequisites. boot.js is a single self-contained IIFE
+	// (downloads/island/settings inlined) per the rolldown config.
 	const requiredArtifacts = [
-		resolve(DIST, 'manifest.json'),
+		resolve(DIST, '.tbconfig'),
 		resolve(DIST, 'icon.png'),
 		resolve(DIST, 'index.html'),
-		resolve(DIST, 'terbium/boot.js'),
-		resolve(DIST, 'terbium/downloads.js'),
-		resolve(DIST, 'terbium/island.js')
+		resolve(DIST, 'sw.js'),
+		resolve(DIST, 'terbium/boot.js')
 	];
 	const missing = requiredArtifacts.filter(p => !existsSync(p));
 	if (missing.length > 0) {
@@ -38,10 +42,11 @@ function main(): void {
 		for (const p of missing) console.error('  -', p);
 		console.error(
 			'\nRun the prerequisites first:\n' +
-				'  1. pnpm run build              (main Daydream build)\n' +
-				'  2. vite build --mode tapp      (generates manifest, copies icon, injects boot.js)\n' +
+				'  1. pnpm run prebuild:all       (neutron, obscura, sw, controller, etc.)\n' +
+				'  2. vite build --mode tapp      (generates .tbconfig, copies icon, injects boot.js)\n' +
 				'  3. pnpm run terbium:build      (builds dist/terbium/*.js)\n' +
-				'Then re-run this script.'
+				'Then re-run this script.\n' +
+				'(The full chain is wrapped in `pnpm run build:tapp`.)'
 		);
 		process.exit(1);
 	}
@@ -50,7 +55,7 @@ function main(): void {
 	const fileMap = collectFiles(DIST);
 	const zipped = zipSync(fileMap, { level: 6 });
 
-	const zipName = `${manifest['pkg-name']}.TAPP.zip`;
+	const zipName = `${pkgName}.TAPP.zip`;
 	const zipPath = resolve(OUT_DIR, zipName);
 	writeFileSync(zipPath, zipped);
 	console.log(

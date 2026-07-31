@@ -1,4 +1,4 @@
-import { NightFS } from "./data/fs";
+import { getScopedNightFs } from "./data/scopedNightFs";
 import type { FSType } from "@terbiumos/tfs";
 
 interface LogEntry {
@@ -6,7 +6,11 @@ interface LogEntry {
   message: string;
 }
 
-const LOGS_DIR = "/data/logs";
+// Logs live under /app/logs/ in OPFS via a NightFS scoped to that subtree.
+// Because the scope has its own .TFS_STORE sidecar, logger writes cannot
+// race NightFS instances used by sw/settings, sw/cache, helium/extfs, or
+// per-profile buckets. Path names stay bare (`log-*.log`) inside the scope.
+const LOGS_DIR = "/";
 
 class Logger {
   store!: FSType;
@@ -16,11 +20,10 @@ class Logger {
 
   constructor() {
     this.sessionId = this.getSessionId();
-    this.currentLogPath = `${LOGS_DIR}/${this.sessionId}.log`;
-    const nfs = new NightFS();
+    this.currentLogPath = `${this.sessionId}.log`;
+    const nfs = getScopedNightFs("app/logs");
     this.ready = nfs.init.then(() => {
       this.store = nfs.core.fs;
-      return this.ensureLogsDir();
     });
   }
 
@@ -38,17 +41,6 @@ class Logger {
   generateSessionId() {
     const date = new Date();
     return `log-${date.toISOString()}`;
-  }
-
-  private async ensureLogsDir(): Promise<void> {
-    const exists = await new Promise<boolean>((resolve) => {
-      this.store.exists(LOGS_DIR, resolve);
-    });
-    if (!exists) {
-      await new Promise<void>((resolve, reject) => {
-        this.store.mkdir(LOGS_DIR, (err) => (err ? reject(err) : resolve()));
-      });
-    }
   }
 
   private parseLogText(text: string): LogEntry[] {
@@ -124,7 +116,7 @@ class Logger {
   }
 
   async getLog(id: string): Promise<LogEntry[] | null> {
-    const log = await this.readLogFile(`${LOGS_DIR}/${id}.log`);
+    const log = await this.readLogFile(`${id}.log`);
     return log.length > 0 ? log : null;
   }
 
@@ -152,7 +144,7 @@ class Logger {
     }
 
     log[index].message = newMessage;
-    await this.writeLogFile(`${LOGS_DIR}/${id}.log`, log);
+    await this.writeLogFile(`${id}.log`, log);
   }
 
   async listLogFiles(): Promise<string[]> {
@@ -161,7 +153,7 @@ class Logger {
       this.store.readdir(LOGS_DIR, {}, (err, data) =>
         err ? reject(err) : resolve((data as string[]) || []),
       );
-    });
+    }).catch(() => [] as string[]);
     return files
       .filter((f) => f.endsWith(".log"))
       .map((f) => f.replace(".log", ""));
@@ -175,7 +167,7 @@ class Logger {
     for (const file of files) {
       const data = await new Promise<string>((resolve, reject) => {
         this.store.readFile(
-          `${LOGS_DIR}/${file}.log`,
+          `${file}.log`,
           "utf8",
           (err, content) => (err ? reject(err) : resolve(content as string)),
         );
@@ -202,7 +194,7 @@ class Logger {
     const files = await this.listLogFiles();
     for (const file of files) {
       await new Promise<void>((resolve, reject) => {
-        this.store.unlink(`${LOGS_DIR}/${file}.log`, (err) =>
+        this.store.unlink(`${file}.log`, (err) =>
           err ? reject(err) : resolve(),
         );
       });
@@ -213,7 +205,7 @@ class Logger {
   async deleteLog(id: string) {
     await this.ready;
     await new Promise<void>((resolve, reject) => {
-      this.store.unlink(`${LOGS_DIR}/${id}.log`, (err) =>
+      this.store.unlink(`${id}.log`, (err) =>
         err ? reject(err) : resolve(),
       );
     });

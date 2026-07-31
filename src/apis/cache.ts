@@ -25,12 +25,12 @@ interface CacheData {
   timestamp: number;
 }
 
-class CacheAPI {
+export class CacheAPI {
   private store: SettingsAPI;
   private initialized: boolean = false;
 
-  constructor() {
-    this.store = new SettingsAPI("/data/tabCache.json");
+  constructor(store: SettingsAPI = new SettingsAPI("/data/tabCache.json")) {
+    this.store = store;
   }
 
   async init(): Promise<void> {
@@ -39,27 +39,21 @@ class CacheAPI {
   }
 
   async saveTabs(tabs: TabCache[]): Promise<void> {
-    const existing = await this.getCache();
-    await this.store.setItem("session", {
-      ...existing,
+    await this.store.mergeItem("session", {
       tabs,
       timestamp: Date.now(),
     });
   }
 
   async saveGroups(groups: TabGroupCache[]): Promise<void> {
-    const existing = await this.getCache();
-    await this.store.setItem("session", {
-      ...existing,
+    await this.store.mergeItem("session", {
       groups,
       timestamp: Date.now(),
     });
   }
 
   async saveSession(data: Partial<CacheData>): Promise<void> {
-    const existing = await this.getCache();
-    await this.store.setItem("session", {
-      ...existing,
+    await this.store.mergeItem("session", {
       ...data,
       timestamp: Date.now(),
     });

@@ -15,8 +15,11 @@ function assertVersionMatch(
 }
 
 export function assertDependencyVersions() {
+	// Missing globals are warned-only (matches upstream ebd3c097). The
+	// hard `throw` is on actual version-mismatch — that's a real
+	// invariant violation; "not loaded yet" can happen in init races.
 	if (typeof $scramjet === "undefined") {
-		throw new Error(
+		console.error(
 			"@mercuryworkshop/scramjet is not loaded. Load scramjet before scramjet-utils."
 		);
 	}
@@ -28,7 +31,7 @@ export function assertDependencyVersions() {
 	);
 
 	if (typeof $scramjetController === "undefined") {
-		throw new Error(
+		console.error(
 			"@mercuryworkshop/scramjet-controller is not loaded. Load the controller before scramjet-utils."
 		);
 	}

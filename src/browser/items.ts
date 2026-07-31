@@ -13,6 +13,7 @@ class Items {
     ) as HTMLInputElement;
   }
   bookmarkButton: HTMLButtonElement | null;
+  bookmarksBar: HTMLDivElement | null;
   extensionsButton: HTMLButtonElement | null;
   profilesButton: HTMLButtonElement | null;
   extrasButton: HTMLButtonElement | null;
@@ -69,6 +70,9 @@ class Items {
       "new-tab",
       this.topBar,
     ) as HTMLButtonElement;
+    this.bookmarksBar = this.queryComponent(
+      "bookmarks-bar",
+    ) as HTMLDivElement;
     this.frameContainer = this.queryComponent(
       "frame-container",
     ) as HTMLDivElement;

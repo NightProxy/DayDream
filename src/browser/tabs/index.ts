@@ -39,7 +39,9 @@ import { SplitLayoutManager } from './splitLayout';
 import { TabClosedStack } from './closedTabStack';
 import { TabNavStack } from './navStack';
 import { AuxiliaryMenus } from './auxiliaryMenus';
+import { BookmarksBar } from '@browser/bookmarksBar';
 import { decodeIframeUrl, decodeProxiedUrl } from './urlDecoder';
+import { resolvePath } from '@utils/basepath';
 
 type DragItemKind = 'tab' | 'group';
 
@@ -101,6 +103,7 @@ class Tabs implements TabsInterface {
 	closedTabStack: TabClosedStack;
 	navStack: TabNavStack;
 	auxiliaryMenus: AuxiliaryMenus;
+	bookmarksBar?: BookmarksBar;
 	nightmarePlugins?: any;
 	closeAllTabsInGroup?: (groupId: string) => Promise<void>;
 
@@ -173,6 +176,46 @@ class Tabs implements TabsInterface {
 
 	private async initBookmarkManager() {
 		await this.bookmarkModule.init();
+
+		// Mounted after init() so loadFromStorage() has already run and the
+		// first render shows real data instead of an empty strip. Shares the
+		// same BookmarkManager instance as the star button and omnibox, so
+		// its addListener subscription picks up every create/update/delete.
+		this.bookmarksBar = new BookmarksBar({
+			bookmarkManager: this.bookmarkManager,
+			navigateActiveFrame: (url: string) => this.navigateBookmarkActiveFrame(url),
+			settings: this.settings,
+			logger: this.logger
+		});
+		this.bookmarksBar.init(this.items.bookmarksBar);
+		this.bookmarksBar.setActiveUrl(
+			this.activeTabId ? this.getTabById(this.activeTabId)?.url ?? '' : ''
+		);
+	}
+
+	private async navigateBookmarkActiveFrame(url: string): Promise<boolean> {
+		const activeIframe = this.items.frameContainer?.querySelector(
+			'iframe.active'
+		) as HTMLIFrameElement | null;
+		if (!activeIframe) {
+			throw new Error('No active iframe found for bookmark navigation');
+		}
+
+		if (
+			url.startsWith(resolvePath('internal/')) ||
+			this.proto.isRegisteredProtocol(url)
+		) {
+			await this.proto.navigate(url);
+			return true;
+		}
+
+		await this.proxy.redirect(
+			this.swConfig,
+			this.proxySetting,
+			url,
+			activeIframe
+		);
+		return true;
 	}
 
 	get tabEls() {
@@ -512,7 +555,10 @@ class Tabs implements TabsInterface {
 		if (!tab) return;
 		if (typeof data.title === 'string') tab.title = data.title;
 		if (typeof data.favicon !== 'undefined') tab.favicon = data.favicon;
-		if (typeof data.url === 'string') tab.url = data.url;
+		if (typeof data.url === 'string') {
+			tab.url = data.url;
+			if (tabId === this.activeTabId) this.bookmarksBar?.setActiveUrl(data.url);
+		}
 	};
 
 	createTab = async (url: string) => this.lifecycleModule.createTab(url);
@@ -551,6 +597,7 @@ class Tabs implements TabsInterface {
 
 	selectTab = async (tabId: string) => {
 		this.activeTabId = tabId;
+		this.bookmarksBar?.setActiveUrl(this.getTabById(tabId)?.url ?? '');
 		return this.lifecycleModule.selectTab(tabId);
 	};
 

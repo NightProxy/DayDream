@@ -244,7 +244,6 @@ div[data-component='tab-bar'] {
 	flex: 1 1 auto;
 	min-width: 0;
 	width: 100%;
-	max-width: 100%;
 	overflow-x: scroll;
 	overflow-y: overlay !important;
 	white-space: nowrap;
@@ -258,4 +257,108 @@ div[data-component='tab-bar'] {
 
 div[data-component='utility-bar'] {
 	z-index: 99;
+}
+
+// Tab iframes inside the frame-container are stacked; only those with
+// .active (the focused frame) or .split-visible (the non-focused half
+// of a split pair) are shown. Selecting a tab toggles these classes.
+//
+// Scoped to `[data-tab-id]` so the rule does NOT match nested iframes
+// like the devtools panel iframe (which lives inside the same subtree
+// and would otherwise inherit display:none).
+div[data-component='frame-container'] iframe[data-tab-id] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	display: none;
+}
+
+div[data-component='frame-container'] iframe[data-tab-id].active,
+div[data-component='frame-container'] iframe[data-tab-id].split-visible {
+	display: block;
+}
+
+// Legacy split contract: some code paths set data-split-mode on the
+// frame-container itself rather than data-mode on .split-layout-center.
+// Both must work.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--main {
+	display: none;
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-left {
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-right {
+	top: 0;
+	bottom: 0;
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Subtle focus ring around the focused split pane.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane[data-focused='true']::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	box-shadow: inset 0 0 0 1px var(--main, #a974de);
+	border-radius: 2px;
+	z-index: 4;
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-gutter[data-gutter='split'] {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--split-mid-pct) - (var(--gutter) / 2));
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+// Click-catcher overlays sit on top of the non-focused split pane and
+// intercept the first click so we can swap focus before iframe content
+// sees it. Transparent — only their pointer-event capture matters.
+div[data-component='frame-container'] .split-click-catcher {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+	background: transparent;
+	cursor: pointer;
+}
+
+div[data-component='frame-container'] .split-click-catcher[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container'] .split-click-catcher--left {
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container'] .split-click-catcher--right {
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Visual hint: faint dim on the non-focused side so the user can see
+// which pane will activate when they click.
+div[data-component='frame-container'] .split-click-catcher[data-shown='true'] {
+	background: rgba(0, 0, 0, 0.08);
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container']
+	.split-click-catcher[data-shown='true']:hover {
+	background: rgba(0, 0, 0, 0.04);
 }

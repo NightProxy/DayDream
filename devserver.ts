@@ -118,7 +118,7 @@ const bundleWatchers = [
 // ─────────────────────────────────────────────────────────────────────────
 // `file:` workspace packages (declared via `file:<path>` in package.json)
 // expose pre-built outputs through their own `exports` map — for example,
-// `neutron/package.json` points consumers at `./dist/index.js` and
+// `src/pkgs/neutron/package.json` points consumers at `./dist/index.js` and
 // `./dist/worker.js`, NOT at `./src/*.ts`. Rolldown's downstream watchers
 // (e.g. neutron-worker) walk THAT graph, so they only react when the
 // package's `dist/` is updated. Without a separate watcher, edits to
@@ -201,7 +201,7 @@ function watchAndRebuildTscPackage(name: string, packageDir: string): void {
 	tscWatchers.push({ name, process: child });
 }
 
-watchAndRebuildTscPackage('Neutron', './neutron');
+watchAndRebuildTscPackage('Neutron', './src/pkgs/neutron');
 
 let backendProcess: ChildProcess | null = null;
 

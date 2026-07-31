@@ -103,6 +103,20 @@ function renderMain(container: HTMLElement): void {
   }));
 
   section.appendChild(createRow({
+    icon: "book-marked",
+    label: "Bookmarks bar",
+    description: "Choose when the bookmarks bar is visible.",
+    right: { kind: "custom", element: makeBookmarksBarVisibilitySelect() },
+    noHover: true,
+    searchUnit: {
+      id: "appearance/bookmarks-bar",
+      label: "Bookmarks bar",
+      sectionId: "appearance",
+      keywords: ["bookmarks", "bookmarks bar", "new tab", "show", "hide", "visibility"],
+    },
+  }));
+
+  section.appendChild(createRow({
     icon: "home",
     label: "Home page",
     description: "URL opened by the home button",
@@ -118,6 +132,57 @@ function renderMain(container: HTMLElement): void {
 
   container.appendChild(section);
   createIcons({ icons });
+}
+
+function makeBookmarksBarVisibilitySelect(): HTMLElement {
+  const select = document.createElement("select");
+  select.name = "bookmarksBarVisibility";
+  select.setAttribute("aria-label", "Bookmarks bar visibility");
+  select.className = "modal-input";
+  const options = [
+    { value: "newtab", label: "New tab only" },
+    { value: "always", label: "Always show" },
+    { value: "hidden", label: "Hidden" },
+  ];
+  for (const { value, label } of options) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+  }
+
+  const api = getSettingsAPI();
+  let value = "always";
+  select.disabled = true;
+  void (async () => {
+    try {
+      const stored = await api.getItem<string>("bookmarksBarVisibility");
+      if (options.some((option) => option.value === stored)) value = stored!;
+      select.value = value;
+    } catch (err) {
+      console.warn("[settings/appearance] bookmarks bar visibility load failed", err);
+    } finally {
+      select.disabled = false;
+    }
+  })();
+
+  select.addEventListener("change", async () => {
+    const nextValue = select.value;
+    select.disabled = true;
+    try {
+      await api.setItem("bookmarksBarVisibility", nextValue);
+      value = nextValue;
+      getEventsAPI().emit("bookmarks-bar:visibility-change", { visibility: value, persisted: true });
+    } catch (err) {
+      console.warn("[settings/appearance] bookmarks bar visibility save failed", err);
+      select.value = value;
+      showInlineNotice("Failed to save bookmarks bar visibility.", { kind: "error" });
+    } finally {
+      select.disabled = false;
+    }
+  });
+
+  return select;
 }
 
 function makeHomePageInput(): HTMLElement {

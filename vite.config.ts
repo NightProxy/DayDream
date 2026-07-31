@@ -185,7 +185,7 @@ export default defineConfig({
       compress: {
         arguments: true,
         booleans_as_integers: false,
-        drop_console: true,
+        drop_console: false,
         drop_debugger: true,
         ecma: 2020,
         hoist_funs: true,
@@ -196,12 +196,22 @@ export default defineConfig({
         keep_fargs: false,
         loops: true,
         passes: 3,
+        // console.warn/error are deliberately NOT listed here. Production
+        // was discarding its own error reporting, which is why the 13 boot
+        // exceptions in the Lighthouse runs were only visible under
+        // instrumentation. Keep warn/error; strip the noisy rest.
         pure_funcs: [
           "console.log",
           "console.info",
           "console.debug",
-          "console.warn",
-          "console.error",
+          "console.trace",
+          "console.dir",
+          "console.table",
+          "console.group",
+          "console.groupEnd",
+          "console.groupCollapsed",
+          "console.time",
+          "console.timeEnd",
         ],
         pure_getters: true,
         reduce_funcs: true,
@@ -241,17 +251,16 @@ export default defineConfig({
     rollupOptions: {
       input: pageRoutes(),
       output: {
-        entryFileNames: (chunkInfo) => {
-          const hash = Math.random().toString(36).substring(2, 12);
-          return `${hash}.js`;
-        },
+        // Content hashes, not Math.random(). Random names changed on every
+        // build, so each deploy cold-cached every returning user and two
+        // builds could never be diffed. Content hashes are already opaque,
+        // so nothing is lost if the original intent was obfuscation.
+        entryFileNames: "[hash].js",
         chunkFileNames: (chunk) => {
           if (chunk.name === "vendor-modules") {
-            const hash = Math.random().toString(36).substring(2, 10);
-            return `chunks/vendor-${hash}.js`;
+            return `chunks/vendor-[hash].js`;
           }
-          const hash = Math.random().toString(36).substring(2, 12);
-          return `chunks/${hash}.js`;
+          return `chunks/[hash].js`;
         },
         assetFileNames: (assetInfo) => {
           if (
@@ -260,9 +269,8 @@ export default defineConfig({
           ) {
             return `assets/${assetInfo.name}`;
           }
-          const hash = Math.random().toString(36).substring(2, 12);
           const ext = assetInfo.name?.split(".").pop();
-          return `assets/${hash}.${ext}`;
+          return `assets/[hash].${ext}`;
         },
         manualChunks(id) {
           if (!id.includes("node_modules")) return;

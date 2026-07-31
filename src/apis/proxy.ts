@@ -4,12 +4,18 @@ import { HostingAPI } from '@apis/platform/hosting';
 import { NetworkAPI } from '@apis/platform/network';
 import { SearchEngineRegistry, searchImpl } from '@apis/searchEngines';
 import { basePath, resolvePath } from '@utils/basepath';
-import LibcurlClient from '@mercuryworkshop/libcurl-transport';
-import EpoxyClient from '@mercuryworkshop/epoxy-transport';
-import PulsarClient from '@pkgs/pulsar';
+import type LibcurlClient from '@mercuryworkshop/libcurl-transport';
+import type PulsarClient from '@pkgs/pulsar';
 import { installEventsBridge } from '@apis/eventsBridge';
 import { installScriptInjector } from '@apis/scriptInjection';
 import { installDevToolsHook } from '@apis/devtools';
+import {
+	CachePluginManager,
+	installCachePluginManager
+} from '@apis/cachePlugins';
+// Imports kept intentionally while captcha install is commented out
+// below (see `void installCaptcha;` marker after the disabled block).
+import { installCaptcha, type CaptchaManager } from '@apis/captcha';
 import {
 	buildTransport,
 	resolveTransportConfig,
@@ -53,7 +59,6 @@ interface ProxyInterface {
 	checkServerWisp(): Promise<boolean>;
 	swapWispServer(url?: string): Promise<void>;
 	libcurl: LibcurlClient;
-	epoxy: EpoxyClient;
 	pulsar: PulsarClient;
 	controller: any;
 }
@@ -67,7 +72,6 @@ class Proxy implements ProxyInterface {
 	isStaticBuild: boolean = false;
 	initReady: Promise<void>;
 	libcurl!: LibcurlClient;
-	epoxy!: EpoxyClient;
 	pulsar!: PulsarClient;
 	controller: any;
 	private _searchEngines?: SearchEngineRegistry;
@@ -175,6 +179,20 @@ class Proxy implements ProxyInterface {
 				console.warn('[proxy] failed to install sitePermissions subsystem:', e);
 			}
 
+			// Installed AFTER downloads: both tap `fetch.preresponse` and
+			// run in registration order. The download plugin may consume
+			// the response body; the error plugin only reads the status.
+			try {
+				const { installErrorPageSubsystem } = await import(
+					'@browser/tabs/install'
+				);
+				await installErrorPageSubsystem(
+					this.controller as unknown as Parameters<typeof installErrorPageSubsystem>[0],
+				);
+			} catch (e) {
+				console.warn('[proxy] failed to install error page subsystem:', e);
+			}
+
 			try {
 				const { installNyxBridgeHook } = await import('./nyxBridge/hookInstaller');
 				const { NYX_ORIGINS_DEFAULT } = await import('./nyxBridge/handshake');
@@ -195,6 +213,61 @@ class Proxy implements ProxyInterface {
 			} catch (e) {
 				console.warn('[proxy] failed to install nyxBridge hook:', e);
 			}
+
+			// HTTP cache plugin manager. Wraps `controller.createFrame` and
+			// attaches one `HttpCachePlugin` per frame so every cacheable
+			// GET/HEAD is stored in CacheStorage and served back on revisit.
+			//
+			// This was disabled while blank pages were being debugged on
+			// proxied navigations. Root cause: `buildCacheKeyRequest` built
+			// the synthetic key with a hardcoded `GET` method, so a HEAD
+			// response (empty body) and a GET response for the same URL
+			// shared one entry — a document navigation could be served the
+			// HEAD entry's empty body. The key now includes the method.
+			// Buckets are also origin-scoped, so one origin's entries can
+			// never be served for another.
+			//
+			// See `src/apis/cachePlugins/` for the plugin code and
+			// `docs/superpowers/specs/2026-06-06-opfs-cache-plugin-system-design.md`
+			// for the design.
+			const cachePluginManager = (window as any).cachePlugins as
+				| CachePluginManager
+				| undefined;
+			if (cachePluginManager) {
+				// Wait for persisted policies to load before any frame
+				// can issue a fetch — otherwise the first request races
+				// the registry load and silently misses the cache.
+				await cachePluginManager.ready();
+				installCachePluginManager(this.controller, cachePluginManager);
+			} else {
+				console.warn(
+					'[proxy] window.cachePlugins not present; cache plugin manager not installed'
+				);
+			}
+
+			// Install the Night+ captcha plugin. Registers the in-iframe
+			// hook with `scriptInjectionRegistry` (every proxied page
+			// gets it before any page script runs), mounts the host-side
+			// page→host RPC bridge that gates solves on
+			// `checkNightPlusStatus()`, and installs the CF full-page
+			// block clearance watcher. See
+			// `docs/superpowers/specs/2026-06-07-night-plus-captcha-plugin-design.md`.
+			//
+			// TEMPORARILY DISABLED: the injected `hook.runtime.js` was
+			// filling the console with `[ddx-captcha-hook] port
+			// handshake failed:` on every proxied page load (see the
+			// dashboard-tab diagnosis session). Skipping install() so
+			// nothing gets registered with scriptInjectionRegistry and
+			// no page→host bridge is mounted. To re-enable, uncomment
+			// the block below.
+			//
+			// const captchaManager: CaptchaManager = installCaptcha({
+			// 	controller: this.controller,
+			// 	proxy: this
+			// });
+			// (window as { captcha?: CaptchaManager }).captcha = captchaManager;
+			void installCaptcha;
+			void ({} as CaptchaManager);
 		})();
 	}
 
@@ -360,6 +433,19 @@ class Proxy implements ProxyInterface {
 		};
 	}
 
+	/**
+	 * Strips leftover Scramjet path segments (controller id, frame id) that
+	 * remain when a URL is sliced at a shorter prefix than the one it was
+	 * encoded under. `controller.prefix` and the bare config prefix both omit
+	 * the frame-id segment, so slicing at their length leaves e.g.
+	 * `<frameId>/<token>`. A codec payload never contains `/`, so the final
+	 * segment is the token.
+	 */
+	private stripPrefixSegments(encoded: string): string {
+		const slash = encoded.lastIndexOf('/');
+		return slash === -1 ? encoded : encoded.slice(slash + 1);
+	}
+
 	encodeUrl(url: string): string {
 		if (!url) return url;
 		return this.getCodec().encode(url.toString());
@@ -388,6 +474,10 @@ class Proxy implements ProxyInterface {
 	 * Obscura sees an invalid Z85 string (length not a multiple of 5, or
 	 * non-Z85 characters) and throws. So we split those off, decode just the
 	 * encoded segment, then reattach.
+	 *
+	 * Slicing may also leave leftover Scramjet path segments (controller id,
+	 * frame id) when the URL was encoded under a longer prefix than the one we
+	 * sliced at, so `stripPrefixSegments` normalizes those away first.
 	 */
 	extractEncodedUrl(
 		target: HTMLIFrameElement | string,
@@ -400,6 +490,22 @@ class Proxy implements ProxyInterface {
 		if (element) {
 			url ??= element.src;
 			prefix ??= this.getPrefixByFrame(element) ?? undefined;
+		}
+
+		// Prefer a registered per-frame prefix that actually matches this
+		// URL. `controller.prefix` omits the frame-id segment, so slicing at
+		// its length leaves that segment glued to the front of the payload
+		// and the codec sees a corrupt string. Longest match wins so the
+		// frame prefix is preferred over the controller prefix it extends.
+		if (!prefix && url) {
+			const candidates = (this.controller?.frames ?? [])
+				.map((f: { prefix?: string }) => f?.prefix)
+				.filter(
+					(p: string | undefined): p is string =>
+						typeof p === 'string' && p.length > 0 && url.includes(p)
+				)
+				.sort((a: string, b: string) => b.length - a.length);
+			prefix = candidates[0];
 		}
 
 		if (!prefix) {
@@ -418,9 +524,11 @@ class Proxy implements ProxyInterface {
 		const hashPart = hashIdx === -1 ? '' : tail.slice(hashIdx);
 
 		const queryIdx = beforeHash.indexOf('?');
-		const encoded =
+		const rawEncoded =
 			queryIdx === -1 ? beforeHash : beforeHash.slice(0, queryIdx);
 		const queryPart = queryIdx === -1 ? '' : beforeHash.slice(queryIdx);
+
+		const encoded = this.stripPrefixSegments(rawEncoded);
 
 		const decoded = this.decodeUrl(encoded);
 		if (decoded === encoded) return decoded;
@@ -477,23 +585,6 @@ class Proxy implements ProxyInterface {
 		await this.setTransports();
 	}
 
-	async TransportMapping(): Promise<Record<any, any>> {
-		return {
-			epoxy: {
-				constructor: EpoxyClient,
-				opts: ['wisp']
-			},
-			libcurl: {
-				constructor: LibcurlClient,
-				opts: ['wisp', 'proxy']
-			},
-			pulsar: {
-				constructor: PulsarClient,
-				opts: ['host', 'port']
-			}
-		};
-	}
-
 	private async buildTransportConfig() {
 		const cfg = await resolveTransportConfig(this.settings, () => {
 			if (this.wispUrl) return this.wispUrl;
@@ -501,7 +592,7 @@ class Proxy implements ProxyInterface {
 			return `${proto}://${location.host}/wisp/`;
 		});
 
-		const built = buildTransport(cfg);
+		const built = await buildTransport(cfg);
 		this.activeTransport = built.kind;
 
 		const connectionOptions: Record<string, unknown> = {};
@@ -627,6 +718,17 @@ class Proxy implements ProxyInterface {
 			return frames[0].prefix;
 		}
 
+		// Scramjet's unrewriteUrl always slices at the per-frame prefix
+		// (controller.prefix + frameId + "/"). Encoding under the bare
+		// config prefix produces a URL whose payload gets truncated by the
+		// frame-id segment on the way back out, which makes a strict codec
+		// like Obscura reject it. There is no correct prefix to use here.
+		console.warn(
+			'[Proxy] resolveEncodingPrefix: no per-frame prefix available; ' +
+				'falling back to the base config prefix. URLs encoded with it ' +
+				'will not round-trip through unrewriteUrl.',
+			{ frameCount: frames?.length ?? 0 }
+		);
 		return swConfigSettings.config.prefix;
 	}
 

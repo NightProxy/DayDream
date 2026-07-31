@@ -14,18 +14,14 @@
 			})();
 		</script>
 		<script src="./assets/config.js" defer></script>
-		<script src="./obscura-init.js"></script>
+		<script src="./assets/obscura.iife.js" defer></script>
 		<script src="./assets/s.js" defer></script>
     <script src="./assets/api.js" defer></script>
+		<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+		<link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
+		<link rel="preload" as="image" href="./res/logo.png" fetchpriority="high" />
 		<link rel="icon" type="image/x-icon" href="./res/logo.png" />
-		<link
-			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-		/>
-		<link
-			rel="stylesheet"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
-		/>
+
 		<meta name="description" content="Your favorite Browser in a browser" />
 		<meta
 			name="keywords"
@@ -33,18 +29,19 @@
 		/>
 		<meta property="og:image" content="./res/logo.png" />
 
-		<script>
-			// Analytics
-			document.head.append(
-				Object.assign(document.createElement('script'), {
-					async: true,
-					src: 'https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z'
-				}),
-				Object.assign(document.createElement('script'), {
-					textContent:
-						"window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-BMERY7ZH6Z');"
-				})
-			);
+		<script type="module">
+			window.addEventListener('load', () => {
+				requestIdleCallback(() => {
+					const s = Object.assign(document.createElement('script'), {
+						async: true,
+						src: 'https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z'
+					});
+					document.head.appendChild(s);
+					window.dataLayer = window.dataLayer || [];
+					function gtag() { dataLayer.push(arguments); }
+					gtag('js', new Date()); gtag('config', 'G-BMERY7ZH6Z');
+				}, { timeout: 5000 });
+			});
 		</script>
 	</head>
 

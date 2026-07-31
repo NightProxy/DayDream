@@ -68,6 +68,24 @@ async function renderMain(container: HTMLElement): Promise<void> {
     }).element,
   );
 
+  section.appendChild(
+    createToggle({
+      id: "disableTabClose",
+      icon: "shield-alert",
+      label: "Anti-Tab Close",
+      description: "Prevent tabs from closing accidentally with beforeunload warning",
+      settingKey: "disableTabClose",
+      defaultValue: true,
+      writeMap: (value) => value.toString(),
+      searchUnit: {
+        id: "system/anti-tab-close",
+        label: "Anti-Tab Close",
+        sectionId: "system",
+        keywords: ["tab", "close", "beforeunload", "warning"],
+      },
+    }).element,
+  );
+
   container.appendChild(section);
 }
 

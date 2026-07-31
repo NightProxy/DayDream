@@ -1,4 +1,4 @@
-import { SettingsAPI } from '@apis/settings';
+import { ServiceWorkerSettings } from '@core/sw/settings';
 
 import {
 	primeJsonCache,
@@ -18,7 +18,6 @@ import {
 	createCorsPreflightResponse,
 	getErrorMessage,
 	isCfRequest,
-	isAdRequest,
 	isInternalRoute,
 	isJsonCacheRoute,
 	isResCacheRoute,
@@ -90,10 +89,10 @@ class DDXWorker {
 	 */
 	private transportCache: BuiltTransport | null = null;
 	private readonly wispManager: WispManager;
-	private readonly settings: SettingsAPI;
+	private readonly settings: ServiceWorkerSettings;
 
 	constructor() {
-		this.settings = new SettingsAPI();
+		this.settings = new ServiceWorkerSettings();
 		this.wispManager = new WispManager(this.settings);
 	}
 
@@ -113,7 +112,7 @@ class DDXWorker {
 			console.log(
 				`[DDXWorker] Building transport (kind=${cfg.kind}, sig changed)`
 			);
-			this.transportCache = buildTransport(cfg);
+			this.transportCache = await buildTransport(cfg);
 		}
 
 		return this.transportCache.instance;
@@ -221,15 +220,6 @@ class DDXWorker {
 		}
 	}
 
-	private async isAdBlockEnabled(): Promise<boolean> {
-		const adblockSetting = await this.settings.getItem<boolean>('adblock');
-		if (adblockSetting !== null) {
-			return adblockSetting;
-		}
-
-		return false;
-	}
-
 	async handleRequest(event: FetchEventLike): Promise<Response> {
 		const url = new URL(event.request.url);
 		const relativePath = stripBase(url.pathname);
@@ -251,12 +241,12 @@ class DDXWorker {
 			return new Response(null, { status: 204 });
 		}
 
-		if (
+		/*if (
 			(await this.isAdBlockEnabled()) &&
 			isAdRequest(event.request.url, event.request)
 		) {
 			return new Response(null, { status: 204 });
-		}
+		}*/
 
 		if (isInternalRoute(relativePath)) {
 			if (!/\.\w+$/.test(relativePath) && !relativePath.endsWith('/')) {
@@ -336,11 +326,33 @@ swSelf.addEventListener('install', () => {
 
 swSelf.addEventListener('activate', (event: ExtendableEventLike) => {
 	console.log('[DDXWorker] Activating...');
+	// Each step is independently wrapped so a failure in primeCache
+	// (e.g. corrupt OPFS state from a previous build's interrupted
+	// write) doesn't prevent claim() or ensureWisp() from running.
+	// SettingsAPI self-heals corrupt files on the NEXT read, so even if
+	// this activate falls through, subsequent fetches will recover.
 	event.waitUntil(
 		swSelf.clients
 			.claim()
-			.then(() => ddx.primeCache())
-			.then(() => ddx.ensureWisp())
+			.catch((err) => {
+				console.warn('[DDXWorker] clients.claim() failed:', err);
+			})
+			.then(() =>
+				ddx.primeCache().catch((err) => {
+					console.warn(
+						'[DDXWorker] primeCache failed (continuing):',
+						err
+					);
+				})
+			)
+			.then(() =>
+				ddx.ensureWisp().catch((err) => {
+					console.warn(
+						'[DDXWorker] ensureWisp failed (continuing):',
+						err
+					);
+				})
+			)
 	);
 });
 

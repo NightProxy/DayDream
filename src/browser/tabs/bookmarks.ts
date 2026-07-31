@@ -1,4 +1,4 @@
-import { createIcons, icons } from 'lucide';
+import { createIcons, Star } from 'lucide';
 import type { TabsInterface } from './types';
 import { decodeProxiedUrl } from './urlDecoder';
 
@@ -240,7 +240,7 @@ export class BookmarkManager {
 					'data-lucide',
 					isBookmarked ? 'star-filled' : 'star'
 				);
-				createIcons({ icons });
+				createIcons({ icons: { Star } });
 			}
 		}
 	}

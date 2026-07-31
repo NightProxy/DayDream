@@ -1,5 +1,5 @@
 
-import { createIcons, icons } from 'lucide';
+import { createIcons, Lock, Trash2, Settings, ChevronRight, MapPin, Bell, Camera, Mic, Music2, RefreshCw, Database, Send, Monitor, Clipboard, ClipboardPaste, MonitorUp, Cpu, Shield } from 'lucide';
 import type { PermissionGrant, PermissionState, SitePermissionsStore } from '@apis/sitePermissions';
 
 /** Friendly permission label table — same set used host-side. */
@@ -212,7 +212,7 @@ export class LockDropdown {
         textAlign: 'center',
       } satisfies Partial<CSSStyleDeclaration>);
       body.appendChild(empty);
-      createIcons({ icons });
+      createIcons({ icons: { Lock, Trash2, Settings, ChevronRight, MapPin, Bell, Camera, Mic, Music2, RefreshCw, Database, Send, Monitor, Clipboard, ClipboardPaste, MonitorUp, Cpu, Shield } });
       return;
     }
 
@@ -355,7 +355,7 @@ export class LockDropdown {
     });
     body.appendChild(settingsLink);
 
-    createIcons({ icons });
+      createIcons({ icons: { Lock, Trash2, Settings, ChevronRight, MapPin, Bell, Camera, Mic, Music2, RefreshCw, Database, Send, Monitor, Clipboard, ClipboardPaste, MonitorUp, Cpu, Shield } });
   }
 
   private section(title: string): { header: HTMLElement } {

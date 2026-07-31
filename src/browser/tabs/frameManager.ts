@@ -19,7 +19,22 @@ export class TabFrameManager {
 		tabId: string,
 		url: string,
 		placement: TabSplitPlacement = 'main',
-		opts?: { plugins?: unknown[] }
+		opts?: {
+			plugins?: unknown[];
+			/**
+			 * Synchronous hook invoked AFTER the iframe element exists and
+			 * the Scramjet frame handle has been attached, but BEFORE the
+			 * navigation starts (before `frame.go(url)` or `iframe.src=`).
+			 *
+			 * Needed by extension-hosted tabs (uBlock dashboard, options
+			 * pages): those tabs use `wireAuxiliaryViewChannel` to install
+			 * a handshake port, and the wiring must be in place before the
+			 * iframe loads or the load event fires without a listener and
+			 * the bootstrap channel promise never resolves. See
+			 * `TabLifecycle.createTab` for the caller side.
+			 */
+			onBeforeNavigate?: (iframe: HTMLIFrameElement) => void;
+		}
 	): Promise<{
 		iframe: HTMLIFrameElement;
 		frameId: string;
@@ -40,6 +55,13 @@ export class TabFrameManager {
 		const proxyHandle = hasPlugins
 			? await this.tabs.proxy.createFrame(iframe, { plugins: opts!.plugins! })
 			: await this.tabs.proxy.createFrame(iframe);
+
+		if (opts?.onBeforeNavigate) {
+			try { opts.onBeforeNavigate(iframe); }
+			catch (err) {
+				console.warn('[frameManager] onBeforeNavigate hook threw:', err);
+			}
+		}
 
 		if (hasPlugins) {
 			try {

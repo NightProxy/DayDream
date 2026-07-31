@@ -16,6 +16,31 @@ import {
 } from "@apis/bookmarks";
 import { Proxy } from "@apis/proxy";
 
+export async function navigateBookmark(url: string): Promise<void> {
+  const host = window.parent;
+  const activeFrame = host.document.querySelector<HTMLIFrameElement>(
+    "iframe.active",
+  );
+  let navigated = false;
+
+  try {
+    navigated =
+      (activeFrame &&
+        (await host.proxy?.navigateFrame(activeFrame, url))) ||
+      false;
+  } catch (error) {
+    console.warn("Failed to navigate active frame to bookmark:", error);
+  }
+
+  if (!navigated) {
+    try {
+      await host.tabs?.createTab(url);
+    } catch (error) {
+      console.error("Failed to open bookmark in a new tab:", error);
+    }
+  }
+}
+
 class BookmarkManagerUI {
   private bookmarkManager: BookmarkManager;
   private proxy: Proxy;
@@ -389,14 +414,9 @@ class BookmarkManagerUI {
         return;
       }
 
-      if (window.parent.tabs) {
-        window.parent.tabs.createTab(url);
-      }
+      await navigateBookmark(url);
     } catch (error) {
       console.error("Failed to navigate to bookmark:", error);
-      if (url && window.parent.tabs) {
-        window.parent.tabs.createTab(url);
-      }
     }
   }
 

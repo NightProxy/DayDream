@@ -166,7 +166,10 @@ export interface TabsInterface {
 			tabId: string,
 			url: string,
 			placement?: TabSplitPlacement,
-			opts?: { plugins?: unknown[] }
+			opts?: {
+				plugins?: unknown[];
+				onBeforeNavigate?: (iframe: HTMLIFrameElement) => void;
+			}
 		) => Promise<{
 			iframe: HTMLIFrameElement;
 			frameId: string;

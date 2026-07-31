@@ -1,10 +1,13 @@
-import { SettingsAPI } from '@apis/settings';
+interface WispSettings {
+	getItem<T>(key: string): Promise<T | null>;
+	setItem<T>(key: string, value: T): Promise<T>;
+}
 
 class WispManager {
-	private readonly settingsStore: SettingsAPI;
+	private readonly settingsStore: WispSettings;
 	private wispReady = false;
 
-	constructor(settingsStore: SettingsAPI) {
+	constructor(settingsStore: WispSettings) {
 		this.settingsStore = settingsStore;
 	}
 

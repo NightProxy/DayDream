@@ -2,13 +2,11 @@
  * DOM helpers for the per-tab devtools panel.
  *
  * Mounts a bottom-docked panel inside the tab's iframe parent. The
- * panel supports multiple sub-panels (a primary chii panel plus N
- * extension panels added via chrome.devtools.panels.create), with a
- * tab strip at the top that switches the visible iframe.
+ * panel hosts Chii beneath a compact header with a close control.
  *
  * Layout (top → bottom):
  *   [ resizeHandle ]
- *   [ tabStrip   ] — one tab per panel
+ *   [ header     ] — Chii label and close control
  *   [ iframes    ] — only the active panel's iframe is visible
  *
  * Backwards-compat: the `devtoolsIframe` accessor on PanelHandle
@@ -122,13 +120,33 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 	resizeHandle.style.flex = '0 0 4px';
 
 	const tabStrip = document.createElement('div');
-	tabStrip.className = 'devtools-tab-strip';
+	tabStrip.className = 'devtools-panel-header';
 	tabStrip.style.flex = '0 0 26px';
 	tabStrip.style.display = 'flex';
-	tabStrip.style.flexDirection = 'row';
+	tabStrip.style.alignItems = 'center';
+	tabStrip.style.justifyContent = 'space-between';
+	tabStrip.style.paddingLeft = '10px';
 	tabStrip.style.background = '#252525';
 	tabStrip.style.borderBottom = '1px solid #333';
-	tabStrip.style.overflow = 'hidden';
+	tabStrip.style.color = '#fff';
+	tabStrip.style.fontFamily = 'system-ui, sans-serif';
+	tabStrip.style.fontSize = '11px';
+	tabStrip.textContent = 'Chii';
+
+	const closeButton = document.createElement('button');
+	closeButton.className = 'devtools-panel-close';
+	closeButton.type = 'button';
+	closeButton.setAttribute('aria-label', 'Close DevTools');
+	closeButton.textContent = 'Close';
+	closeButton.style.height = '100%';
+	closeButton.style.padding = '0 10px';
+	closeButton.style.border = '0';
+	closeButton.style.borderLeft = '1px solid #333';
+	closeButton.style.background = 'transparent';
+	closeButton.style.color = '#bbb';
+	closeButton.style.cursor = 'pointer';
+	closeButton.addEventListener('click', () => unmountPanel(tab));
+	tabStrip.appendChild(closeButton);
 
 	const iframeStack = document.createElement('div');
 	iframeStack.className = 'devtools-iframe-stack';
@@ -153,14 +171,10 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 	parent.appendChild(container);
 
 	const chiiTabEl = document.createElement('div');
-	chiiTabEl.className = 'devtools-tab devtools-tab-chii';
-	chiiTabEl.textContent = 'Elements';
-	applyTabStyling(chiiTabEl, true);
-	tabStrip.appendChild(chiiTabEl);
 
 	const chiiEntry: PanelEntry = {
 		id: nextPanelId++,
-		title: 'Elements',
+		title: 'Chii',
 		iconUrl: '',
 		iframe: chiiIframe,
 		tab: chiiTabEl,
@@ -316,10 +330,6 @@ export function mountPanel(tab: TabLike, devtoolsUrl: string): PanelHandle {
 			}
 		},
 	};
-
-	chiiTabEl.addEventListener('click', () => {
-		handle.setActive(chiiEntry.id);
-	});
 
 	return handle;
 }

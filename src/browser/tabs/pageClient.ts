@@ -29,11 +29,11 @@ export class TabPageClient {
 
 	pageClient = (iframe: HTMLIFrameElement): void => {
 		this.setupWindowOpenInterceptor(iframe);
+		this.setupNamedTargetLinkInterceptor(iframe);
 		this.setupModifierClickInterceptor(iframe);
 		this.setupClickListener(iframe);
 		this.setupLinkContextBridge(iframe);
 		this.setupPageBackgroundContextBridge(iframe);
-		this.setupErrorPageRedirect(iframe);
 		this.setupNavigationTracking(iframe);
 		this.setupPhaseEvents(iframe);
 		this.setupKeyboardHandler(iframe);
@@ -416,14 +416,43 @@ export class TabPageClient {
 	 * tab UI instead of spawning a real top-level browser window.
 	 */
 	private setupWindowOpenInterceptor(iframe: HTMLIFrameElement): void {
-		if (!iframe.contentWindow) return;
+		try {
+			if (!iframe.contentWindow) return;
 
-		iframe.contentWindow.window.open = (
-			url?: string | URL
-		): Window | null => {
-			this.handleNewWindowNavigation(url);
-			return null;
+			iframe.contentWindow.window.open = (
+				url?: string | URL
+			): Window | null => {
+				this.handleNewWindowNavigation(url);
+				return null;
+			};
+		} catch (err) {
+			console.warn('[pageClient] window.open interceptor unavailable:', err);
+		}
+	}
+
+	private setupNamedTargetLinkInterceptor(iframe: HTMLIFrameElement): void {
+		if (!iframe.contentDocument) return;
+
+		const handler = (event: MouseEvent) => {
+			if (event.defaultPrevented || event.button !== 0) return;
+
+			const target = event.target as HTMLElement | null;
+			const anchor = target?.closest(
+				'a[href][target]'
+			) as HTMLAnchorElement | null;
+			if (!anchor) return;
+
+			const targetName = anchor.getAttribute('target')?.toLowerCase() ?? '';
+			if (targetName === '' || targetName === '_self' || targetName === '_parent' || targetName === '_top') {
+				return;
+			}
+
+			event.preventDefault();
+			event.stopPropagation();
+			this.handleNewWindowNavigation(anchor.href);
 		};
+
+		iframe.contentDocument.addEventListener('click', handler, true);
 	}
 
 	/**
@@ -511,7 +540,7 @@ export class TabPageClient {
 
 	private setupClickListener(iframe: HTMLIFrameElement): void {
 		iframe.contentWindow?.document.body.addEventListener('click', () => {
-			window.parent.eventsAPI.emit('ddx:page.clicked', null);
+			window.parent.eventsAPI?.emit?.('ddx:page.clicked', null);
 		});
 	}
 
@@ -658,26 +687,6 @@ export class TabPageClient {
 		});
 	}
 
-	private setupErrorPageRedirect(iframe: HTMLIFrameElement): void {
-		iframe.addEventListener('load', () => {
-			this.checkForErrorTrace(iframe);
-		});
-	}
-
-	private checkForErrorTrace(iframe: HTMLIFrameElement): void {
-		const currentUrl = iframe.src;
-
-		if (this.isErrorPage(currentUrl)) return;
-
-		const errorTrace = iframe.contentWindow?.document.getElementById(
-			'errorTrace'
-		) as HTMLTextAreaElement | null;
-
-		if (errorTrace?.value) {
-			this.redirectToErrorPage(iframe, errorTrace.value);
-		}
-	}
-
 	private setupKeyboardHandler(iframe: HTMLIFrameElement): void {
 		if (!iframe.contentWindow) return;
 
@@ -705,40 +714,4 @@ export class TabPageClient {
 		}
 	}
 
-	private isErrorPage(url: string): boolean {
-		try {
-			const internalUrl = this.tabs.proto.getInternalURL(url);
-			return (
-				internalUrl === 'ddx://error/' ||
-				url.includes('/internal/error/')
-			);
-		} catch {
-			return url.includes('/internal/error/');
-		}
-	}
-
-	private redirectToErrorPage(
-		iframe: HTMLIFrameElement,
-		errorMessage: string
-	): void {
-		const errorPageHandler = (): void => {
-			try {
-				const errorTextarea =
-					iframe.contentWindow?.document.getElementById(
-						'error-textarea'
-					) as HTMLTextAreaElement | null;
-
-				if (errorTextarea) {
-					errorTextarea.value = errorMessage;
-				}
-			} catch (err) {
-				console.error('Failed to populate error textarea:', err);
-			} finally {
-				iframe.removeEventListener('load', errorPageHandler);
-			}
-		};
-
-		iframe.addEventListener('load', errorPageHandler);
-		this.tabs.proto.navigate('error');
-	}
 }

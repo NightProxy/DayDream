@@ -546,6 +546,12 @@ export class Controller {
 				$controller$init: {
 					prefix: this.prefix,
 					id: this.id,
+					// Pass the Obscura IIFE source as a plain string so it
+					// survives structured-clone into the SW context. WASM-backed
+					// codec closures are not cloneable; the SW evals this string
+					// to re-initialize a local Obscura instance and derive
+					// working encode/decode functions from it.
+					obscuraSrc: OBSCURA_IIFE_SRC,
 				},
 			},
 			[channel.port2]

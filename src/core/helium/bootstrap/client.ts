@@ -333,6 +333,81 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   [['declarativeContent', 'onPageChanged', 'getRules'],    'chrome.declarativeContent.getRules'],
 ];
 
+/**
+ * Bind every function-valued property on `chrome` (and its nested
+ * namespaces) to its owning object, so extensions that destructure —
+ * `const { getURL } = chrome.runtime; getURL('foo')`, or pass a
+ * method reference like `something(chrome.tabs.query)` — don't hit
+ * `TypeError: Cannot read properties of undefined (reading 'ctx')`
+ * when `this` gets lost.
+ *
+ * Real Chrome's `chrome.*` methods are bindable this way (its API is
+ * exposed as plain objects with function-valued properties, not
+ * class instances). Our namespace classes make `this` matter, so we
+ * bind post-construction to close the gap. Called ONCE right after
+ * `new ChromeClass(ctx)`.
+ *
+ * Walks own+inherited props (getting past ES6 class methods, which
+ * live on the prototype), recurses into object-valued props up to
+ * `MAX_DEPTH` levels (covers `chrome.storage.local.get`,
+ * `chrome.action.onClicked.addListener`, and
+ * `chrome.declarativeContent.onPageChanged.addRules` — the deepest
+ * paths we ship). Idempotent: skips functions already tagged with
+ * `__heliumBound__`.
+ */
+function bindAllChromeMethods(root: unknown): void {
+  const MAX_DEPTH = 3;
+  const seen = new WeakSet<object>();
+  const bindOne = (obj: any, depth: number): void => {
+    if (obj === null || typeof obj !== 'object') return;
+    if (seen.has(obj)) return;
+    seen.add(obj);
+
+    // Walk both own and prototype-chain properties. Instance methods
+    // on ES6 classes live on the prototype; own descriptors cover
+    // fields assigned in the constructor (e.g. `public readonly
+    // onClicked = new ChromeEvent()`).
+    for (let proto: any = obj; proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
+      for (const key of Object.getOwnPropertyNames(proto)) {
+        if (key === 'constructor') continue;
+        let desc: PropertyDescriptor | undefined;
+        try {
+          desc = Object.getOwnPropertyDescriptor(proto, key);
+        } catch { continue; }
+        // Accessor properties: leave them alone. Reading them may
+        // throw or have side effects, and their getter/setter
+        // functions are usually intentional.
+        if (!desc || desc.get || desc.set) continue;
+
+        let val: unknown;
+        try { val = (obj as any)[key]; } catch { continue; }
+
+        if (typeof val === 'function') {
+          const fn = val as { __heliumBound__?: boolean };
+          if (fn.__heliumBound__ === true) continue;
+          try {
+            const bound = (val as (...a: unknown[]) => unknown).bind(obj) as unknown as ((...a: unknown[]) => unknown) & { __heliumBound__: boolean };
+            bound.__heliumBound__ = true;
+            // Prefer defining on the owning object so lookups short-
+            // circuit before hitting the prototype's unbound copy.
+            Object.defineProperty(obj, key, {
+              value: bound,
+              writable: true,
+              configurable: true,
+              enumerable: desc.enumerable ?? false,
+            });
+          } catch { /* frozen / non-configurable — skip */ }
+        } else if (typeof val === 'object' && val !== null && depth < MAX_DEPTH) {
+          bindOne(val, depth + 1);
+        }
+      }
+    }
+  };
+  try { bindOne(root, 0); } catch (err) {
+    console.warn('[helium/bootstrap] bindAllChromeMethods failed:', err);
+  }
+}
+
 (function main() {
   const meta = document.querySelector('meta[name="helium-ctx"]') as
     | HTMLMetaElement
@@ -357,6 +432,7 @@ const RPC_BINDINGS: Array<[string[], string]> = [
   if (ctx.inDevtools === true) {
     (chrome as any).devtools = new ChromeDevtools(ctx);
   }
+  bindAllChromeMethods(chrome);
   (globalThis as any).chrome = chrome;
 
   let resolveChannel!: (ch: ExtensionBridgeChannel) => void;
@@ -419,6 +495,63 @@ const RPC_BINDINGS: Array<[string[], string]> = [
       '[helium/bootstrap] could not install __helium_handshake_receive__:',
       err,
     );
+  }
+
+  // Popup / options auto-size signal.
+  //
+  // Chrome sizes extension popups to the popup document's own
+  // content, up to 800×600. We can't measure the popup DOM from the
+  // host frame (Scramjet serves it under a rewritten origin, so
+  // `iframe.contentDocument` reads throw SecurityError), so we
+  // measure here inside the extension realm and postMessage the
+  // dimensions upward. `popupHost.ts` listens for these messages,
+  // filters by `iframe.contentWindow` identity, and resizes the
+  // wrapper.
+  //
+  // We only install this in nested contexts (window.top !== window)
+  // — the background iframe is nested too but is 0×0 and hidden, so
+  // its size messages are silently dropped by popupHost's iframe
+  // filter. Cheaper than plumbing an `inPopup` flag through
+  // ExtensionContext and covers options_ui iframes for free.
+  try {
+    if (typeof window !== 'undefined' && window.top !== window && typeof ResizeObserver === 'function') {
+      let lastW = -1;
+      let lastH = -1;
+      const post = (): void => {
+        const el = document.documentElement;
+        if (!el) return;
+        const w = el.scrollWidth || el.clientWidth || 0;
+        const h = el.scrollHeight || el.clientHeight || 0;
+        if (w === lastW && h === lastH) return;
+        lastW = w;
+        lastH = h;
+        try {
+          window.parent.postMessage({ __helium_popup_size__: true, w, h }, '*');
+        } catch { /* cross-realm postMessage rejected — nothing to do */ }
+      };
+      const install = (): void => {
+        const el = document.documentElement;
+        if (!el) return;
+        try {
+          const ro = new ResizeObserver(() => { post(); });
+          ro.observe(el);
+          if (document.body) ro.observe(document.body);
+        } catch (err) {
+          console.warn('[helium/bootstrap] popup ResizeObserver install failed:', err);
+        }
+        // Fire once immediately so the host doesn't sit at
+        // POPUP_MIN_HEIGHT until the first layout-triggering
+        // mutation.
+        post();
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', install, { once: true });
+      } else {
+        install();
+      }
+    }
+  } catch (err) {
+    console.warn('[helium/bootstrap] popup size channel setup failed:', err);
   }
 })();
 
@@ -514,13 +647,34 @@ function installRpcBindings(
  * onMessage / onDisconnect fire normally (it's still a valid Port
  * object) but no real traffic flows. Extensions degrade gracefully.
  */
+/**
+ * Retry parameters for `makePort` connect RPCs.
+ *
+ * Common race: an auxiliary view (popup, options, dashboard) opens
+ * and its uBlock-style client immediately calls `chrome.runtime.
+ * connect(...)`, but the target BG isn't yet in the host's `spawned`
+ * map — its own iframe is still handshaking. The host's
+ * `bgInitiatedConnectRuntime` returns portId=-1 in that window, and
+ * without retries we'd fire `onDisconnect` on the client-side port,
+ * causing uBlock's `disconnectListener` to run `vAPI.shutdown.exec()`
+ * (nested-iframe branch). Every pending `messaging.send(...)` then
+ * resolves with `undefined`, and `cachePopupData(undefined)` leaves
+ * `popupData = {}` so the first `safePunycodeToUnicode(pageDomain)`
+ * crashes on `.split(undefined)` inside punycode.
+ *
+ * Delays are ~100 / 200 / 400 / 800ms — covers the observed spawn
+ * window for uBlock on a cold DDX start. Total wait ~1.5s worst case.
+ */
+const CONNECT_RETRY_DELAYS_MS = [100, 200, 400, 800];
+
 function installRuntimeConnect(
   chrome: any,
   channel: ExtensionBridgeChannel,
 ): void {
   const makePort = (
-    portIdPromise: Promise<number>,
+    portIdFactory: () => Promise<number>,
     name: string,
+    label: string,
   ): unknown => {
     const onMessage = makeBgEvent();
     const onDisconnect = makeBgEvent();
@@ -529,41 +683,70 @@ function installRuntimeConnect(
     const queuedSends: unknown[] = [];
 
     void (async () => {
-      try {
-        const portId = await portIdPromise;
-        if (typeof portId !== 'number' || portId < 0) {
+      // Retry loop: portId=-1 usually means the target BG hasn't
+      // finished spawning yet. Each attempt re-issues the RPC so the
+      // host revisits `getSpawned(targetExtId)`.
+      let portId = -1;
+      let lastErr: unknown = null;
+      const attempts = 1 + CONNECT_RETRY_DELAYS_MS.length;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          portId = await portIdFactory();
+        } catch (err) {
+          lastErr = err;
+          portId = -1;
+        }
+        if (typeof portId === 'number' && portId >= 0) break;
+        if (i < CONNECT_RETRY_DELAYS_MS.length) {
+          await new Promise((r) => setTimeout(r, CONNECT_RETRY_DELAYS_MS[i]!));
+        }
+      }
+
+      if (typeof portId !== 'number' || portId < 0) {
+        // Final failure. DO NOT fire onDisconnect here — uBlock and
+        // similar clients react by calling `vAPI.shutdown.exec()`
+        // (see `platform/common/vapi-client.js:disconnectListener`)
+        // which resolves all pending `messaging.send(...)` promises
+        // with undefined, and that undefined propagates into
+        // `cachePopupData` → empty popupData → downstream crashes.
+        //
+        // Instead: leave the port in the "resolving" state so
+        // `postMessage(...)` calls quietly queue and their reply
+        // Promises stay pending. That's a worse UX (the popup shows
+        // a loading state) than a real error, but it's contained —
+        // no cascading `undefined` values reach page code.
+        console.warn(
+          '[helium/runtime.connect]',
+          label,
+          'connect failed after retries; port left in pending state to avoid crashing the client. lastErr=',
+          lastErr,
+        );
+        return;
+      }
+
+      resolvedPortId = portId;
+      bgPorts.set(portId, {
+        portId, name, sender: { id: chrome.runtime.id },
+        channel,
+        disconnected: false,
+        _receiveMessage(msg: unknown) {
+          if (disconnected) return;
+          onMessage._dispatch([msg]);
+        },
+        _hostClosed() {
+          if (disconnected) return;
           disconnected = true;
           onDisconnect._dispatch([]);
-          return;
-        }
-        resolvedPortId = portId;
-        bgPorts.set(portId, {
-          portId, name, sender: { id: chrome.runtime.id },
-          channel,
-          disconnected: false,
-          _receiveMessage(msg: unknown) {
-            if (disconnected) return;
-            onMessage._dispatch([msg]);
-          },
-          _hostClosed() {
-            if (disconnected) return;
-            disconnected = true;
-            onDisconnect._dispatch([]);
-          },
-          postMessage() { /* never called externally */ },
-          disconnect() { /* never called externally */ },
-          onMessage,
-          onDisconnect,
-        } as unknown as BgPort);
-        for (const msg of queuedSends) {
-          channel.sendEvent('chrome.runtime.port-msg-bg-to-cs', [{ portId, message: msg }]);
-        }
-        queuedSends.length = 0;
-      } catch (err) {
-        console.warn('[helium/runtime.connect] host RPC failed:', err);
-        disconnected = true;
-        onDisconnect._dispatch([]);
+        },
+        postMessage() { /* never called externally */ },
+        disconnect() { /* never called externally */ },
+        onMessage,
+        onDisconnect,
+      } as unknown as BgPort);
+      for (const msg of queuedSends) {
+        channel.sendEvent('chrome.runtime.port-msg-bg-to-cs', [{ portId, message: msg }]);
       }
+      queuedSends.length = 0;
     })();
 
     return {
@@ -605,13 +788,14 @@ function installRuntimeConnect(
       connectInfo = args[0] as typeof connectInfo;
     }
     const name = connectInfo?.name ?? '';
-    const portIdPromise = (async (): Promise<number> => {
+    const targetExtId = extId ?? chrome.runtime.id;
+    const factory = async (): Promise<number> => {
       const r = await channel.request('__helium_bg_connect_runtime__', {
-        args: [{ targetExtId: extId ?? chrome.runtime.id, name }],
+        args: [{ targetExtId, name }],
       });
       return (r as { portId?: number })?.portId ?? -1;
-    })();
-    return makePort(portIdPromise, name);
+    };
+    return makePort(factory, name, `runtime.connect(${targetExtId}, "${name}")`);
   };
 
   if (chrome.tabs) {
@@ -619,13 +803,13 @@ function installRuntimeConnect(
       const tabId = typeof args[0] === 'number' ? args[0] : -1;
       const connectInfo = args[1] as { name?: string; frameId?: number } | undefined;
       const name = connectInfo?.name ?? '';
-      const portIdPromise = (async (): Promise<number> => {
+      const factory = async (): Promise<number> => {
         const r = await channel.request('__helium_bg_connect_tab__', {
           args: [{ tabId, name, frameId: connectInfo?.frameId }],
         });
         return (r as { portId?: number })?.portId ?? -1;
-      })();
-      return makePort(portIdPromise, name);
+      };
+      return makePort(factory, name, `tabs.connect(${tabId}, "${name}")`);
     };
   }
 }

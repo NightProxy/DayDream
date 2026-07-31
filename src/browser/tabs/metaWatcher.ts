@@ -6,6 +6,7 @@ export class TabMetaWatcher {
 	private currentActiveTabId: string | null = null;
 	private historyManager: any = null;
 	private metaWatchers: Map<string, MutationObserver> = new Map();
+	private historyDebounce = new Map<string, ReturnType<typeof setTimeout>>();
 
 	constructor(tabs: TabsInterface) {
 		this.tabs = tabs;
@@ -156,12 +157,7 @@ export class TabMetaWatcher {
 					!window.protocols?.isRegisteredProtocol(currentUrl) &&
 					!currentUrl.includes('/internal/')
 				) {
-					await this.historyManager.addEntry({
-						title: pageTitle,
-						url: currentUrl,
-						favicon: faviconUrl,
-						tabId: tabId
-					});
+					this.debouncedHistoryWrite(tabId, currentUrl, pageTitle);
 				}
 			} catch (error) {
 				console.warn('Failed to add entry to browsing history:', error);
@@ -308,6 +304,32 @@ export class TabMetaWatcher {
 
 		return null;
 	};
+
+	private debouncedHistoryWrite(tabId: string, url: string, title: string): void {
+		const key = `${tabId}:${url}`;
+		const existing = this.historyDebounce.get(key);
+		if (existing) clearTimeout(existing);
+		this.historyDebounce.set(
+			key,
+			setTimeout(() => {
+				this.historyDebounce.delete(key);
+				this.historyManager?.addEntry({ url, title });
+			}, 300),
+		);
+	}
+
+	flushHistory(tabId: string): void {
+		for (const [key, timer] of this.historyDebounce) {
+			if (key.startsWith(`${tabId}:`)) {
+				clearTimeout(timer);
+				this.historyDebounce.delete(key);
+				const url = key.slice(tabId.length + 1);
+				const tab = this.tabs.getTabById(tabId);
+				const title = (tab as any)?.title ?? url;
+				this.historyManager?.addEntry({ url, title });
+			}
+		}
+	}
 
 	private clearFavicon = (
 		faviconEl: HTMLImageElement,

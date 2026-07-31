@@ -33,6 +33,7 @@ const libcurlPath = path.dirname(
 // inject.js — the same three artifacts the prebuilt package shipped,
 // just with our local modifications baked in.
 const sjControllerPath = path.resolve("src/core/SJ/controller/dist");
+const obscuraIifePath = path.resolve("src/pkgs/Obscura/dist");
 const copyMap = {
   scramjet: {
     path: scramjetPath,
@@ -48,21 +49,6 @@ const copyMap = {
     files: ["libcurl.wasm"],
     dest: routePaths.libcurl,
   },
-  // Background image + logo the NightLogin modal fetches at runtime
-  // as `${assetUrl}/bg_alt.jpeg` and `${assetUrl}/nightlogo.png`.
-  // We pass `assetUrl: ""` so the modal resolves them against the served
-  // origin root — these copies put them there.
-  //
-  // Other assets shipped in @nightnetwork/night-auth/dist/login (bg.png,
-  // bg_alt_2.png, nightplus*.png, vite.svg) are only used by the package's
-  // demo `index.html` and are NOT referenced by night-login.umd.js or
-  // night-login.cdn.js, so we skip copying them. (Saves ~12 MB.)
-  //
-  // The UMD/ESM JavaScript bundles and CSS are NO LONGER copied: night-auth
-  // 1.2.3 ships proper ESM entry points (`exports["."].import`), so DDX
-  // imports the modal directly via `import NightLogin from "@nightnetwork/
-  // night-auth"`. Vite bundles it like any other npm dep. (See
-  // src/pages/newtab/index.tsx:setupNightPlusButton.)
   auth: {
     path: authPath,
     files: ["nightlogo.png", "bg_alt.jpeg"],
@@ -106,6 +92,11 @@ const copyMap = {
   sjController: {
     path: sjControllerPath,
     files: ["api.js", "sw.js", "inject.js"],
+    dest: routePaths.scramjet,
+  },
+  obscuraIife: {
+    path: obscuraIifePath,
+    files: ["obscura.iife.js"],
     dest: routePaths.scramjet,
   },
   devtoolsAgent: {

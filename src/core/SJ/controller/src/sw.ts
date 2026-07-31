@@ -138,6 +138,20 @@ addEventListener("message", (e) => {
 	if (typeof e.data.$controller$init != "object") return;
 	const init = e.data.$controller$init;
 
+	// Re-initialize Obscura in the SW context from the IIFE source sent by
+	// the page controller. WASM-backed codec closures cannot survive
+	// structured-clone, so the controller serializes the full IIFE as a
+	// string and we eval it here. After eval, globalThis.__obscura is
+	// available with working encode/decode backed by WASM.
+	if (typeof init.obscuraSrc === "string" && init.obscuraSrc.length > 0) {
+		try {
+			// eslint-disable-next-line no-eval
+			(0, eval)(init.obscuraSrc);
+		} catch (err) {
+			console.warn("[scramjet-sw] Obscura init failed:", err);
+		}
+	}
+
 	const existing = tabs.findIndex((t) => t.id === init.id);
 	if (existing !== -1) {
 		tabs.splice(existing, 1);

@@ -51,7 +51,7 @@ function renderMain(container: HTMLElement) {
     description: "Transport, WISP server, remote proxy",
     right: { kind: "chevron" },
     onClick: () => { location.hash = "#privacy?subpage=network"; },
-    searchUnit: { id: "privacy/network", label: "Network", sectionId: "privacy", keywords: ["transport", "wisp", "proxy", "libcurl", "epoxy", "pulsar"] },
+    searchUnit: { id: "privacy/network", label: "Network", sectionId: "privacy", keywords: ["transport", "wisp", "proxy", "libcurl", "pulsar"] },
   }));
   section.appendChild(createRow({
     icon: "eye-off",
@@ -295,10 +295,9 @@ async function renderSitePermissionsList(
   await refresh();
 }
 
-type TransportId = "libcurl" | "epoxy" | "pulsar";
+type TransportId = "libcurl" | "pulsar";
 const TRANSPORTS: Array<{ id: TransportId; label: string }> = [
   { id: "libcurl", label: "Libcurl" },
-  { id: "epoxy", label: "Epoxy" },
   { id: "pulsar", label: "Pulsar" },
 ];
 

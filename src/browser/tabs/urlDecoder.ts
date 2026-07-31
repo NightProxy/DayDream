@@ -25,6 +25,27 @@
  *
  * Always returns a string; never throws.
  */
+const SCRAMJET_QP_KEYS = new Set([
+	'$rfp', '$rfs', '$module', '$tf', '$pf', '$iframe',
+	'$mode', '$cred', '$dest', '$io', '$fs', '$csr', '$fakedataurl',
+]);
+
+function stripScramjetParams(url: string): string {
+	try {
+		const u = new URL(url);
+		let changed = false;
+		for (const key of [...u.searchParams.keys()]) {
+			if (SCRAMJET_QP_KEYS.has(key)) {
+				u.searchParams.delete(key);
+				changed = true;
+			}
+		}
+		return changed ? u.toString() : url;
+	} catch {
+		return url;
+	}
+}
+
 export function decodeProxiedUrl(url: string, proxy?: any): string {
 	if (!url) return url;
 
@@ -48,7 +69,7 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 				url === activeIframe.src
 			) {
 				const decoded = resolvedProxy.extractEncodedUrl(activeIframe);
-				if (decoded) return decoded;
+				if (decoded) return stripScramjetParams(decoded);
 			}
 		} catch {
 			// fall through
@@ -63,7 +84,7 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 							frame.element,
 							{ url, prefix: frame.prefix }
 						);
-						if (decoded) return decoded;
+						if (decoded) return stripScramjetParams(decoded);
 					}
 				}
 			}
@@ -81,7 +102,7 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 					const path = new URL(url).pathname.replace(prefix, '');
 					if (resolvedProxy?.decodeUrl) {
 						const decoded = resolvedProxy.decodeUrl(path);
-						if (decoded) return decoded;
+						if (decoded) return stripScramjetParams(decoded);
 					}
 				}
 			}
@@ -89,7 +110,7 @@ export function decodeProxiedUrl(url: string, proxy?: any): string {
 			// fall through
 		}
 
-		return url;
+		return stripScramjetParams(url);
 	} catch (error) {
 		console.warn('[urlDecoder] Failed to decode proxied URL:', error);
 		return url;

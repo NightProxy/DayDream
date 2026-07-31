@@ -1,104 +1,133 @@
-import { NightFS } from "./data/fs";
-import type { FSType } from "@terbiumos/tfs";
+import { ResilientStorage } from './data/resilientStorage';
+
+export interface SettingsStorage {
+	getItem<T>(
+		filePath: string,
+		folderPath: string,
+		key: string
+	): Promise<T | null>;
+	setItem<T>(
+		filePath: string,
+		folderPath: string,
+		key: string,
+		value: T
+	): Promise<T>;
+	mergeItem<T extends Record<string, unknown>>(
+		filePath: string,
+		folderPath: string,
+		key: string,
+		value: T
+	): Promise<T>;
+	removeItem(
+		filePath: string,
+		folderPath: string,
+		key: string
+	): Promise<void>;
+	clear(filePath: string, folderPath: string): Promise<void>;
+	keys(filePath: string, folderPath: string): Promise<string[]>;
+}
+
+let resilientStorage: ResilientStorage | undefined;
+
+function getResilientStorage(): ResilientStorage {
+	resilientStorage ??= new ResilientStorage();
+	return resilientStorage;
+}
+
+const sharedStorage: SettingsStorage = {
+	getItem: (...args) => getResilientStorage().getItem(...args),
+	setItem: (...args) => getResilientStorage().setItem(...args),
+	mergeItem: (...args) => getResilientStorage().mergeItem(...args),
+	removeItem: (...args) => getResilientStorage().removeItem(...args),
+	clear: (...args) => getResilientStorage().clear(...args),
+	keys: (...args) => getResilientStorage().keys(...args)
+};
+
+export interface SettingsAPIOptions {
+	file?: string;
+	folder?: string;
+	storage?: SettingsStorage;
+	/**
+	 * Optional profile scope. Reserved for v3 profile routing; currently unused
+	 * by the shared storage facade but recorded so callers can begin passing it.
+	 */
+	profileId?: string;
+}
 
 class SettingsAPI {
-  nfs: NightFS;
-  storedFilePath: string;
-  storedFolderPath: string;
-  store!: FSType;
-  private ready: Promise<void>;
+	readonly storedFilePath: string;
+	readonly storedFolderPath: string;
+	readonly profileId: string | undefined;
+	private readonly storage: SettingsStorage;
 
-  constructor(
-    file2Store: string = "/data/settings.json",
-    folder2Store: string = "/data",
-  ) {
-    this.nfs = new NightFS();
-    this.storedFilePath = file2Store;
-    this.storedFolderPath = folder2Store;
-    this.ready = this.nfs.init.then(() => {
-      this.store = this.nfs.core.fs;
-      return this.ensureFile();
-    });
-  }
+	constructor(
+		file2Store: string | SettingsAPIOptions = '/data/settings.json',
+		folder2Store: string = '/data',
+		storage: SettingsStorage = sharedStorage,
+		profileId?: string
+	) {
+		if (typeof file2Store === 'object' && file2Store !== null) {
+			const opts = file2Store;
+			this.storedFilePath = opts.file ?? '/data/settings.json';
+			this.storedFolderPath = opts.folder ?? '/data';
+			this.storage = opts.storage ?? sharedStorage;
+			this.profileId = opts.profileId;
+		} else {
+			this.storedFilePath = file2Store;
+			this.storedFolderPath = folder2Store;
+			this.storage = storage;
+			this.profileId = profileId;
+		}
+	}
 
-  private async ensureFile(): Promise<void> {
-    const dataDirExists = await new Promise<boolean>((resolve) => {
-      this.store.exists(this.storedFolderPath, resolve);
-    });
+	async getItem<T = any>(key: string): Promise<T | null> {
+		return this.storage.getItem<T>(
+			this.storedFilePath,
+			this.storedFolderPath,
+			key
+		);
+	}
 
-    if (!dataDirExists) {
-      await new Promise<void>((resolve, reject) => {
-        this.store.mkdir(this.storedFolderPath, (err) =>
-          err ? reject(err) : resolve(),
-        );
-      });
-    }
+	async setItem(key: string, value: any): Promise<any> {
+		return this.storage.setItem(
+			this.storedFilePath,
+			this.storedFolderPath,
+			key,
+			value
+		);
+	}
 
-    const fileExists = await new Promise<boolean>((resolve) => {
-      this.store.exists(this.storedFilePath, resolve);
-    });
+	async mergeItem<T extends Record<string, unknown>>(
+		key: string,
+		value: T
+	): Promise<T> {
+		return this.storage.mergeItem(
+			this.storedFilePath,
+			this.storedFolderPath,
+			key,
+			value
+		);
+	}
 
-    if (!fileExists) {
-      await new Promise<void>((resolve, reject) => {
-        this.store.writeFile(this.storedFilePath, "{}", "utf8", (err) =>
-          err ? reject(err) : resolve(),
-        );
-      });
-    }
-  }
+	async removeItem(key: string): Promise<void> {
+		await this.storage.removeItem(
+			this.storedFilePath,
+			this.storedFolderPath,
+			key
+		);
+	}
 
-  private async readData(): Promise<Record<string, any>> {
-    await this.ready;
-    const data = await new Promise<string>((resolve, reject) => {
-      this.store.readFile(this.storedFilePath, "utf8", (err, content) =>
-        err ? reject(err) : resolve(content as string),
-      );
-    });
-    return JSON.parse(data);
-  }
+	async clearAllSettings(): Promise<void> {
+		await this.storage.clear(this.storedFilePath, this.storedFolderPath);
+	}
 
-  private async writeData(settings: Record<string, any>): Promise<void> {
-    await this.ready;
-    return new Promise<void>((resolve, reject) => {
-      this.store.writeFile(
-        this.storedFilePath,
-        JSON.stringify(settings),
-        "utf8",
-        (err) => (err ? reject(err) : resolve()),
-      );
-    });
-  }
+	async clear(): Promise<void> {
+		await this.clearAllSettings();
+	}
 
-  async getItem<T = any>(key: string): Promise<T | null> {
-    const settings = await this.readData();
-    return settings[key] ?? null;
-  }
-
-  async setItem(key: string, value: any): Promise<any> {
-    const settings = await this.readData();
-    settings[key] = value;
-    await this.writeData(settings);
-    return value;
-  }
-
-  async removeItem(key: string): Promise<void> {
-    const settings = await this.readData();
-    delete settings[key];
-    await this.writeData(settings);
-  }
-
-  async clearAllSettings(): Promise<void> {
-    await this.writeData({});
-  }
-
-  async clear(): Promise<void> {
-    await this.clearAllSettings();
-  }
-
-  async keys(): Promise<string[]> {
-    const settings = await this.readData();
-    return Object.keys(settings);
-  }
+	async keys(): Promise<string[]> {
+		return this.storage.keys(this.storedFilePath, this.storedFolderPath);
+	}
 }
 
 export { SettingsAPI };

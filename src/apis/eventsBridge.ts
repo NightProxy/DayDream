@@ -219,6 +219,10 @@ export function installEventsBridge(controller: any): void {
 	installed = true;
 }
 
+// ============================================================================
+// Page→host RPC primitive — RequestResponseChannel
+// ============================================================================
+
 /**
  * Page→host request/response channel built on `window.postMessage`.
  *
@@ -375,8 +379,18 @@ export class RequestResponseChannel {
 	}
 
 	private async onMessage(event: MessageEvent): Promise<void> {
+		// Ignore messages posted by the host to itself. Without this,
+		// any code running on the host page could spoof a request.
 		if (event.source === window) return;
 
+		// Unwrap scramjet's `$scramjet$messagetype` envelope if present.
+		// When a proxied page calls `window.parent.postMessage(...)`,
+		// scramjet's `Window.postMessage` proxy in the proxied realm
+		// wraps the message into `{$scramjet$messagetype, $scramjet$origin,
+		// $scramjet$data}` before posting. The host therefore sees the
+		// wrapped form, not the raw payload. We unwrap if we see the
+		// sentinel; otherwise the message is from a non-proxied source
+		// (internal pages, host code, tests) and we use it as-is.
 		const raw = event?.data as Record<string, unknown> | null | undefined;
 		if (!raw || typeof raw !== 'object') return;
 		const data =
@@ -416,11 +430,7 @@ export class RequestResponseChannel {
 		} catch (err) {
 			const message =
 				err instanceof Error ? err.message : String(err ?? 'unknown_error');
-			const code = (err as { code?: string } | null | undefined)?.code;
-			const errorPayload: Record<string, unknown> | string = code
-				? { code, message }
-				: message;
-			this.reply(event.source, { requestId, ok: false, error: errorPayload });
+			this.reply(event.source, { requestId, ok: false, error: message });
 		}
 	}
 
@@ -447,5 +457,11 @@ function defaultReplyTransport(
 	wrapped: Record<string, unknown>
 ): void {
 	if (!source) return;
+	// MessageEventSource is a union (Window | MessagePort | ServiceWorker).
+	// We're always replying to a Window in practice (iframes), so cast
+	// and pass '*' targetOrigin. May throw inside scramjet's wrapper on
+	// proxied pages — callers that need robustness should provide a
+	// custom `replyTransport` (see CaptchaBridge for the canonical
+	// example).
 	(source as Window).postMessage(wrapped, '*');
 }

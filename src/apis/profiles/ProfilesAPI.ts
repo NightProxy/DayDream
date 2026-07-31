@@ -1,309 +1,569 @@
-import { ProfileManager } from "./profileManager";
-import { StateManager } from "./stateManager";
-import { ExportManager } from "./exportManager";
-import type { ProfileData, ProfileExport, DatabaseExport, ProfileAppearance } from "./types";
+import { SettingsAPI } from "@apis/settings";
+import { createProfileStorage, type ProfileStorage } from "@apis/data/profileStorage";
+import { getProfileBroadcast, type ProfileBroadcast } from "@apis/data/profileBroadcast";
+import { ProfileRegistry } from "./registry";
+import { ProfileExtensionHost } from "./extensions";
+import { createProfileMetadata, touchProfileMetadata } from "./metadata";
 import {
-  getAllIDBData,
-  setIDBDataLegacy,
-  setIDBData,
-  clearAllIDB,
-} from "./storage/indexedDB";
+	parseArchive,
+	serializeArchive,
+	ARCHIVE_FORMAT,
+	ARCHIVE_VERSION,
+} from "./archive";
 import {
-  getAllCookies,
-  setCookies,
-  clearAllCookies,
-} from "./storage/cookies";
-import {
-  getAllLocalStorage,
-  setLocalStorage,
-  clearAllLocalStorage,
-} from "./storage/localStorage";
+	PROFILE_METADATA_FILE,
+	PROFILE_SETTINGS_FILE,
+} from "./constants";
+import type {
+	DatabaseExport,
+	ProfileAppearance,
+	ProfileArchiveV3,
+	ProfileData,
+	ProfileExport,
+	ProfileExtensionEntry,
+	ProfileMetadata,
+	ProfileSiteState,
+} from "./types";
+
+export interface ProfilesAPIOptions {
+	canExceedProfileLimit?: (() => boolean | Promise<boolean>) | null;
+	maxProfiles?: number;
+	storage?: ProfileStorage;
+	registry?: ProfileRegistry;
+	broadcast?: ProfileBroadcast;
+}
+
+type LegacyCtorArgs = [
+	(() => boolean | Promise<boolean>) | null | undefined,
+	number | undefined,
+];
 
 class ProfilesAPI {
-  private currentProfile: string | null;
-  private profileManager: ProfileManager;
-  private stateManager: StateManager;
-  private exportManager: ExportManager;
-  private changeListeners = new Set<() => void>();
-  public readonly initPromise: Promise<void>;
+	private readonly canExceed: (() => boolean | Promise<boolean>) | null;
+	private readonly maxProfiles: number;
+	private readonly registry: ProfileRegistry;
+	private readonly broadcast: ProfileBroadcast;
+	private readonly storagePromise: Promise<ProfileStorage>;
+	private readonly extensionHost: ProfileExtensionHost;
+	private activeProfileId: string | null = null;
+	private readonly changeListeners = new Set<() => void>();
+	public readonly initPromise: Promise<void>;
 
-  private notifyChange(): void {
-    for (const fn of this.changeListeners) {
-      try { fn(); } catch (e) { console.error("[ProfilesAPI] listener error", e); }
-    }
-  }
+	constructor(
+		optionsOrLegacy: ProfilesAPIOptions | LegacyCtorArgs[0] = null,
+		legacyMax: number = 3,
+	) {
+		let options: ProfilesAPIOptions;
+		if (
+			typeof optionsOrLegacy === "function" ||
+			optionsOrLegacy === null
+		) {
+			options = {
+				canExceedProfileLimit: optionsOrLegacy ?? null,
+				maxProfiles: legacyMax,
+			};
+		} else {
+			options = optionsOrLegacy;
+		}
+		this.canExceed = options.canExceedProfileLimit ?? null;
+		this.maxProfiles = options.maxProfiles ?? 3;
+		this.registry = options.registry ?? new ProfileRegistry();
+		this.broadcast = options.broadcast ?? getProfileBroadcast();
+		this.storagePromise = options.storage
+			? Promise.resolve(options.storage)
+			: createProfileStorage();
+		this.extensionHost = new ProfileExtensionHost(options.storage);
 
-  onChange(listener: () => void): () => void {
-    this.changeListeners.add(listener);
-    return () => { this.changeListeners.delete(listener); };
-  }
+		this.initPromise = this.initialize();
+		this.broadcast.subscribe((message) => {
+			if (message.type === "active-changed") {
+				this.activeProfileId = message.id;
+				this.notifyChange();
+			} else if (
+				message.type === "profile-created" ||
+				message.type === "profile-destroyed" ||
+				message.type === "profile-updated"
+			) {
+				this.registry.reset();
+				this.notifyChange();
+			}
+		});
+	}
 
-  constructor(
-    canExceedProfileLimit: (() => boolean | Promise<boolean>) | null = null,
-    maxProfiles: number = 3,
-  ) {
-    this.currentProfile = null;
-    this.profileManager = new ProfileManager(
-      canExceedProfileLimit,
-      maxProfiles,
-    );
-    this.stateManager = new StateManager();
-    this.exportManager = new ExportManager(() => this.currentProfile);
+	private async initialize(): Promise<void> {
+		try {
+			try {
+				const { runLegacyMigration } = await import("./legacyMigration");
+				await runLegacyMigration(this.registry);
+			} catch (error) {
+				console.warn("[ProfilesAPI] legacy migration failed:", error);
+			}
+			this.activeProfileId = await this.registry.getActiveId();
+		} catch (error) {
+			console.error("[ProfilesAPI] initialize failed:", error);
+		}
+	}
 
-    this.initPromise = this.initializeCurrentProfile();
-  }
+	onChange(listener: () => void): () => void {
+		this.changeListeners.add(listener);
+		return () => {
+			this.changeListeners.delete(listener);
+		};
+	}
 
-  private async initializeCurrentProfile(): Promise<void> {
-    try {
-      const profileStore = this.profileManager.getStore();
-      const savedProfile = await profileStore.getItem("__current_profile__");
-      console.log(
-        "[ProfilesAPI] Initializing from Profiles DB, saved profile:",
-        savedProfile,
-      );
+	private notifyChange(): void {
+		for (const fn of this.changeListeners) {
+			try {
+				fn();
+			} catch (error) {
+				console.error("[ProfilesAPI] listener error", error);
+			}
+		}
+	}
 
-      if (savedProfile && (await this.profileExists(savedProfile as string))) {
-        this.currentProfile = savedProfile as string;
+	// ---------------------------------------------------------------------
+	// v3 primary API
+	// ---------------------------------------------------------------------
 
-        const profileData = await this.getProfileData(savedProfile as string);
-        if (profileData) {
-          await this.stateManager.applyBrowserState(profileData);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to initialize current profile:", error);
-    }
-  }
+	async list(): Promise<ProfileMetadata[]> {
+		return this.registry.list();
+	}
 
-  private async saveCurrentProfileReference(): Promise<void> {
-    try {
-      const profileStore = this.profileManager.getStore();
-      if (this.currentProfile) {
-        console.log(
-          "[ProfilesAPI] Saving current profile to Profiles DB:",
-          this.currentProfile,
-        );
-        await profileStore.setItem("__current_profile__", this.currentProfile);
-      } else {
-        console.log("[ProfilesAPI] Removing current profile from Profiles DB");
-        await profileStore.removeItem("__current_profile__");
-      }
-    } catch (error) {
-      console.error("Failed to save current profile reference:", error);
-    }
-  }
+	async get(id: string): Promise<ProfileMetadata | null> {
+		return this.registry.get(id);
+	}
 
-  async createProfile(userID: string): Promise<boolean> {
-    const ok = await this.profileManager.createProfile(userID);
-    if (ok) this.notifyChange();
-    return ok;
-  }
+	getActiveId(): string | null {
+		return this.activeProfileId;
+	}
 
-  async createProfileWithCurrentData(userID: string): Promise<boolean> {
-    try {
-      const currentState = await this.stateManager.getCurrentBrowserState();
-      const result = await this.profileManager.createProfileWithData(
-        userID,
-        currentState,
-      );
+	async create(input: {
+		name: string;
+		id?: string;
+		appearance?: ProfileAppearance;
+	}): Promise<ProfileMetadata> {
+		if (!input?.name || typeof input.name !== "string") {
+			throw new Error("create requires a non-empty name");
+		}
+		const count = await this.registry.count();
+		if (count >= this.maxProfiles) {
+			const allowed = this.canExceed ? await this.canExceed() : false;
+			if (!allowed) {
+				throw new Error(
+					`Maximum number of profiles (${this.maxProfiles}) reached. Upgrade to Night+ for unlimited profiles.`,
+				);
+			}
+		}
+		let id = input.id ?? undefined;
+		if (id && (await this.registry.get(id))) {
+			id = undefined;
+		}
+		const metadata = createProfileMetadata({
+			name: input.name,
+			id,
+			appearance: input.appearance,
+			originalId: input.id && input.id !== id ? input.id : undefined,
+		});
+		await this.registry.upsert(metadata);
+		await this.writeMetadataFile(metadata);
+		this.broadcast.publish({ type: "profile-created", id: metadata.id });
+		this.notifyChange();
+		return metadata;
+	}
 
-      if (result) {
-        this.currentProfile = userID;
-        await this.saveCurrentProfileReference();
-        this.notifyChange();
-      }
+	async rename(id: string, name: string): Promise<ProfileMetadata> {
+		const existing = await this.registry.get(id);
+		if (!existing) throw new Error(`Profile ${id} does not exist`);
+		const updated = touchProfileMetadata(existing, { name });
+		await this.registry.upsert(updated);
+		await this.writeMetadataFile(updated);
+		this.broadcast.publish({ type: "profile-updated", id });
+		this.notifyChange();
+		return updated;
+	}
 
-      return result;
-    } catch (error) {
-      console.error("Failed to create profile with current data:", error);
-      return false;
-    }
-  }
+	async setAppearance(
+		id: string,
+		appearance: ProfileAppearance,
+	): Promise<ProfileMetadata> {
+		const existing = await this.registry.get(id);
+		if (!existing) throw new Error(`Profile ${id} does not exist`);
+		const updated = touchProfileMetadata(existing, { appearance });
+		await this.registry.upsert(updated);
+		await this.writeMetadataFile(updated);
+		this.broadcast.publish({ type: "profile-updated", id });
+		this.notifyChange();
+		return updated;
+	}
 
-  async deleteProfile(userID: string): Promise<boolean> {
-    const result = await this.profileManager.deleteProfile(
-      userID,
-      this.currentProfile,
-    );
+	async destroy(id: string): Promise<void> {
+		if (this.activeProfileId === id) {
+			throw new Error(
+				"Cannot destroy the active profile. Switch to another profile first.",
+			);
+		}
+		const removed = await this.registry.remove(id);
+		if (!removed) return;
+		const storage = await this.storagePromise;
+		await storage.destroyProfile(id).catch((error) => {
+			console.warn(`[ProfilesAPI] destroyProfile ${id} storage failed`, error);
+		});
+		this.broadcast.publish({ type: "profile-destroyed", id });
+		this.notifyChange();
+	}
 
-    if (result && this.currentProfile === userID) {
-      this.currentProfile = null;
-      await this.saveCurrentProfileReference();
-    }
+	async setActive(id: string): Promise<void> {
+		const metadata = await this.registry.get(id);
+		if (!metadata) throw new Error(`Profile ${id} does not exist`);
+		this.activeProfileId = id;
+		await this.registry.setActiveId(id);
+		this.broadcast.publish({ type: "active-changed", id });
+		this.notifyChange();
+	}
 
-    if (result) this.notifyChange();
-    return result;
-  }
+	async listExtensions(
+		profileId: string = this.activeProfileId ?? "",
+	): Promise<ProfileExtensionEntry[]> {
+		if (!profileId) return [];
+		return this.extensionHost.list(profileId);
+	}
 
-  async renameProfile(oldId: string, newId: string): Promise<boolean> {
-    const ok = await this.profileManager.renameProfile(oldId, newId);
-    if (ok) {
-      if (this.currentProfile === oldId) this.currentProfile = newId;
-      this.notifyChange();
-    }
-    return ok;
-  }
+	async installExtension(
+		profileId: string,
+		entry: Omit<ProfileExtensionEntry, "installedAt" | "updatedAt">,
+	): Promise<ProfileExtensionEntry> {
+		return this.extensionHost.install(profileId, entry);
+	}
 
-  async updateProfileAppearance(userID: string, appearance: ProfileAppearance): Promise<boolean> {
-    const ok = await this.profileManager.setAppearance(userID, appearance);
-    if (ok) this.notifyChange();
-    return ok;
-  }
+	async setExtensionEnabled(
+		profileId: string,
+		extensionId: string,
+		enabled: boolean,
+	): Promise<void> {
+		return this.extensionHost.setEnabled(profileId, extensionId, enabled);
+	}
 
-  async saveProfile(userID: string): Promise<boolean> {
-    console.log("[ProfilesAPI] Saving profile:", userID);
-    const currentState = await this.stateManager.getCurrentBrowserState();
-    console.log("[ProfilesAPI] Captured state:", {
-      cookiesCount: Object.keys(currentState.cookies || {}).length,
-      localStorageCount: Object.keys(currentState.localStorage || {}).length,
-      indexedDBCount: (currentState.indexedDB || []).length,
-      timestamp: currentState.timestamp,
-    });
-    const result = await this.profileManager.saveProfile(userID, currentState);
-    console.log("[ProfilesAPI] Save result:", result);
-    return result;
-  }
+	async uninstallExtension(
+		profileId: string,
+		extensionId: string,
+	): Promise<void> {
+		return this.extensionHost.uninstall(profileId, extensionId);
+	}
 
-  async switchProfile(
-    userID: string,
-    skipCurrentSave: boolean = false,
-  ): Promise<boolean> {
-    console.log("[ProfilesAPI] switchProfile called:", {
-      userID,
-      skipCurrentSave,
-      currentProfile: this.currentProfile,
-    });
+	async updateExtensionGrants(
+		profileId: string,
+		extensionId: string,
+		grants: string[],
+	): Promise<void> {
+		return this.extensionHost.updateGrants(profileId, extensionId, grants);
+	}
 
-    if (!userID || typeof userID !== "string") {
-      throw new Error("Invalid userID: must be a non-empty string");
-    }
+	settings(): SettingsAPI {
+		const profileId = this.activeProfileId;
+		if (!profileId) {
+			return new SettingsAPI();
+		}
+		return new SettingsAPI({
+			file: `/${PROFILE_SETTINGS_FILE}`,
+			folder: "/",
+			profileId,
+		});
+	}
 
-    const targetProfile = await this.profileManager.getProfileData(userID);
-    if (!targetProfile) {
-      throw new Error(`Profile ${userID} does not exist`);
-    }
+	async clearActiveData(): Promise<void> {
+		if (!this.activeProfileId) return;
+		const id = this.activeProfileId;
+		const storage = await this.storagePromise;
+		await storage.destroyProfile(id).catch((error) => {
+			console.warn(`[ProfilesAPI] clearActiveData ${id} failed`, error);
+		});
+		const metadata = await this.registry.get(id);
+		if (metadata) await this.writeMetadataFile(metadata);
+		this.broadcast.publish({ type: "profile-updated", id });
+		this.notifyChange();
+	}
 
-    if (this.currentProfile && !skipCurrentSave) {
-      console.log(
-        "[ProfilesAPI] Saving current profile before switch:",
-        this.currentProfile,
-      );
-      await this.saveProfile(this.currentProfile);
-    } else if (skipCurrentSave) {
-      console.log(
-        "[ProfilesAPI] Skipping save of current profile (skipCurrentSave=true)",
-      );
-    }
+	async export(id: string): Promise<ProfileArchiveV3> {
+		const metadata = await this.registry.get(id);
+		if (!metadata) throw new Error(`Profile ${id} does not exist`);
+		return {
+			format: ARCHIVE_FORMAT,
+			version: ARCHIVE_VERSION,
+			metadata,
+			files: {},
+			sites: {},
+		};
+	}
 
-    console.log("[ProfilesAPI] Applying target profile state:", userID);
-    await this.stateManager.applyBrowserState(targetProfile);
+	async exportToBlob(id: string): Promise<Blob> {
+		const archive = await this.export(id);
+		const json = serializeArchive(archive);
+		return new Blob([json], { type: "application/json" });
+	}
 
-    this.currentProfile = userID;
-    await this.saveCurrentProfileReference();
-    console.log(
-      "[ProfilesAPI] Switch complete, new current profile:",
-      this.currentProfile,
-    );
+	async import(
+		archive: ProfileArchiveV3,
+		opts: { rename?: string } = {},
+	): Promise<ProfileMetadata> {
+		const desiredName = opts.rename ?? archive.metadata.name;
+		let id: string | undefined = archive.metadata.id;
+		let originalId: string | undefined;
+		if (id && (await this.registry.get(id))) {
+			originalId = id;
+			id = undefined;
+		}
+		const metadata = createProfileMetadata({
+			name: desiredName,
+			id,
+			appearance: archive.metadata.appearance,
+			originalId: originalId ?? archive.metadata.originalId,
+		});
+		await this.registry.upsert(metadata);
+		await this.writeMetadataFile(metadata);
+		this.broadcast.publish({ type: "profile-created", id: metadata.id });
+		this.notifyChange();
+		return metadata;
+	}
 
-    this.notifyChange();
-    return true;
-  }
+	async importFromBlob(
+		blob: Blob,
+		opts: { rename?: string } = {},
+	): Promise<ProfileMetadata> {
+		const text = await blob.text();
+		const { archive } = parseArchive(text, opts.rename);
+		return this.import(archive, opts);
+	}
 
-  async listProfiles(): Promise<string[]> {
-    return await this.profileManager.listProfiles();
-  }
+	private async writeMetadataFile(metadata: ProfileMetadata): Promise<void> {
+		try {
+			const api = new SettingsAPI({
+				file: `/${PROFILE_METADATA_FILE}`,
+				folder: "/",
+				profileId: metadata.id,
+			});
+			await api.setItem("metadata", metadata);
+		} catch (error) {
+			console.warn(
+				`[ProfilesAPI] failed to persist profile.json for ${metadata.id}`,
+				error,
+			);
+		}
+	}
 
-  getCurrentProfile(): string | null {
-    return this.currentProfile;
-  }
+	// ---------------------------------------------------------------------
+	// v2 compatibility shims (call sites migrate incrementally)
+	// ---------------------------------------------------------------------
 
-  async profileExists(userID: string): Promise<boolean> {
-    return await this.profileManager.profileExists(userID);
-  }
+	/** @deprecated Use list(). */
+	async listProfiles(): Promise<string[]> {
+		const all = await this.registry.list();
+		return all.map((m) => m.id);
+	}
 
-  async getProfileData(userID: string): Promise<ProfileData | null> {
-    return await this.profileManager.getProfileData(userID);
-  }
+	/** @deprecated Use getActiveId(). */
+	getCurrentProfile(): string | null {
+		return this.activeProfileId;
+	}
 
-  async getCurrentBrowserState(): Promise<ProfileData> {
-    return await this.stateManager.getCurrentBrowserState();
-  }
+	/** @deprecated Use get(). */
+	async profileExists(userID: string): Promise<boolean> {
+		return (await this.registry.get(userID)) !== null;
+	}
 
-  async applyBrowserState(state: ProfileData): Promise<void> {
-    return await this.stateManager.applyBrowserState(state);
-  }
+	/** @deprecated Use get(). */
+	async getProfileData(userID: string): Promise<ProfileData | null> {
+		const meta = await this.registry.get(userID);
+		if (!meta) return null;
+		return {
+			cookies: {},
+			localStorage: {},
+			indexedDB: [],
+			version: 3,
+			timestamp: meta.updatedAt,
+			appearance: meta.appearance,
+		};
+	}
 
-  async clearCurrentProfileData(): Promise<boolean> {
-    return await this.stateManager.clearCurrentProfileData();
-  }
+	/** @deprecated Use create(). */
+	async createProfile(userID: string): Promise<boolean> {
+		await this.create({ name: userID, id: userID });
+		return true;
+	}
 
-  async flushStorageOperations(): Promise<void> {
-    return await this.stateManager.flushStorageOperations();
-  }
+	/** @deprecated Use create() + setActive(). */
+	async createProfileWithCurrentData(userID: string): Promise<boolean> {
+		const meta = await this.create({ name: userID, id: userID });
+		await this.setActive(meta.id);
+		return true;
+	}
 
-  emergencySaveProfile(userID: string): boolean {
-    return this.stateManager.emergencySaveProfile(userID);
-  }
+	/** @deprecated Use destroy(). */
+	async deleteProfile(userID: string): Promise<boolean> {
+		await this.destroy(userID);
+		return true;
+	}
 
-  async exportCurrentProfile(): Promise<ProfileExport> {
-    return await this.exportManager.exportCurrentProfile();
-  }
+	/** @deprecated Use rename(). */
+	async renameProfile(oldId: string, newId: string): Promise<boolean> {
+		const meta = await this.registry.get(oldId);
+		if (!meta) return false;
+		await this.rename(oldId, newId);
+		return true;
+	}
 
-  async downloadExport(filename: string | null = null): Promise<boolean> {
-    return await this.exportManager.downloadExport(filename);
-  }
+	/** @deprecated Use setAppearance(). */
+	async updateProfileAppearance(
+		userID: string,
+		appearance: ProfileAppearance,
+	): Promise<boolean> {
+		await this.setAppearance(userID, appearance);
+		return true;
+	}
 
-  encode(data: any): string {
-    return this.exportManager.encode(data);
-  }
+	/** @deprecated v3 stores per-profile data automatically; save is a no-op. */
+	async saveProfile(userID: string): Promise<boolean> {
+		const meta = await this.registry.get(userID);
+		if (!meta) return false;
+		return true;
+	}
 
-  decode(encodedData: string): any {
-    return this.exportManager.decode(encodedData);
-  }
+	/** @deprecated Use setActive(). */
+	async switchProfile(
+		userID: string,
+		_skipCurrentSave: boolean = false,
+	): Promise<boolean> {
+		await this.setActive(userID);
+		return true;
+	}
 
-  async exportIndexedDBs(): Promise<DatabaseExport[]> {
-    return await getAllIDBData();
-  }
+	/** @deprecated No-op in v3; live browser state is proxied per-profile. */
+	async getCurrentBrowserState(): Promise<ProfileData> {
+		return {
+			cookies: {},
+			localStorage: {},
+			indexedDB: [],
+			version: 3,
+			timestamp: Date.now(),
+		};
+	}
 
-  async setIDBDataLegacy(data: Record<string, any>): Promise<void> {
-    return await setIDBDataLegacy(data);
-  }
+	/** @deprecated No-op in v3. */
+	async applyBrowserState(_state: ProfileData): Promise<void> {
+		return;
+	}
 
-  async getAllCookies(): Promise<Record<string, string>> {
-    return await getAllCookies();
-  }
+	/** @deprecated Use clearActiveData(). */
+	async clearCurrentProfileData(): Promise<boolean> {
+		await this.clearActiveData();
+		return true;
+	}
 
-  async setCookies(cookies: Record<string, string>): Promise<void> {
-    return await setCookies(cookies);
-  }
+	/** @deprecated No-op in v3. */
+	async flushStorageOperations(): Promise<void> {
+		return;
+	}
 
-  async clearAllCookies(): Promise<void> {
-    return await clearAllCookies();
-  }
+	/** @deprecated No-op in v3; per-profile OPFS already isolates state. */
+	emergencySaveProfile(_userID: string): boolean {
+		return true;
+	}
 
-  async getAllLocalStorage(): Promise<Record<string, string>> {
-    return await getAllLocalStorage();
-  }
+	/** @deprecated Use export(). */
+	async exportCurrentProfile(): Promise<ProfileExport> {
+		const id = this.activeProfileId;
+		return {
+			profileId: id,
+			timestamp: new Date().toISOString(),
+			indexedDB: [],
+			localStorage: {},
+			cookies: {},
+		};
+	}
 
-  async setLocalStorage(data: Record<string, string>): Promise<void> {
-    return await setLocalStorage(data);
-  }
+	/** @deprecated Use exportToBlob() + your own download flow. */
+	async downloadExport(filename: string | null = null): Promise<boolean> {
+		const id = this.activeProfileId;
+		if (!id) return false;
+		const blob = await this.exportToBlob(id);
+		const url = URL.createObjectURL(blob);
+		try {
+			const link = document.createElement("a");
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			link.href = url;
+			link.download = filename ?? `profile-export-${id}-${timestamp}.json`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			return true;
+		} finally {
+			URL.revokeObjectURL(url);
+		}
+	}
 
-  async clearAllLocalStorage(): Promise<void> {
-    return await clearAllLocalStorage();
-  }
+	/** @deprecated Removed in v3; kept as identity stub. */
+	encode(data: any): string {
+		return JSON.stringify(data);
+	}
 
-  async getAllIDBData(): Promise<DatabaseExport[]> {
-    return await getAllIDBData();
-  }
+	/** @deprecated Removed in v3; kept as identity stub. */
+	decode(encodedData: string): any {
+		try {
+			return JSON.parse(encodedData);
+		} catch {
+			return null;
+		}
+	}
 
-  async setIDBData(databases: DatabaseExport[]): Promise<void> {
-    return await setIDBData(databases);
-  }
+	// The following v2 helpers touched the host stores directly. In v3 those
+	// are proxied per-profile; the shims are retained as no-ops so callers
+	// migrating in stages do not crash.
 
-  async clearAllIDB(): Promise<void> {
-    return await clearAllIDB();
-  }
+	/** @deprecated */
+	async exportIndexedDBs(): Promise<DatabaseExport[]> {
+		return [];
+	}
+	/** @deprecated */
+	async setIDBDataLegacy(_data: Record<string, any>): Promise<void> {}
+	/** @deprecated */
+	async getAllCookies(): Promise<Record<string, string>> {
+		return {};
+	}
+	/** @deprecated */
+	async setCookies(_cookies: Record<string, string>): Promise<void> {}
+	/** @deprecated */
+	async clearAllCookies(): Promise<void> {}
+	/** @deprecated */
+	async getAllLocalStorage(): Promise<Record<string, string>> {
+		return {};
+	}
+	/** @deprecated */
+	async setLocalStorage(_data: Record<string, string>): Promise<void> {}
+	/** @deprecated */
+	async clearAllLocalStorage(): Promise<void> {}
+	/** @deprecated */
+	async getAllIDBData(): Promise<DatabaseExport[]> {
+		return [];
+	}
+	/** @deprecated */
+	async setIDBData(_databases: DatabaseExport[]): Promise<void> {}
+	/** @deprecated */
+	async clearAllIDB(): Promise<void> {}
+
+	// Site-scoped helpers (v3): expose per-origin state for the active profile.
+	async getSiteState(
+		targetOrigin: string,
+		profileId: string = this.activeProfileId ?? "",
+	): Promise<ProfileSiteState | null> {
+		if (!profileId) return null;
+		const storage = await this.storagePromise;
+		try {
+			await storage.getOriginRoot(profileId, targetOrigin);
+			return {};
+		} catch (error) {
+			console.warn("[ProfilesAPI] getSiteState failed", error);
+			return null;
+		}
+	}
 }
 
 export { ProfilesAPI };

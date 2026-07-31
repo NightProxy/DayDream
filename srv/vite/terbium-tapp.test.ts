@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildManifest } from './terbium-tapp';
 
-describe('buildManifest', () => {
+describe('buildManifest (runtime .tbconfig)', () => {
   const pkg = {
     name: 'daydreamx',
     version: '3.0.0',
@@ -19,19 +19,23 @@ describe('buildManifest', () => {
     },
   };
 
-  it('uses package.json version as the manifest version', () => {
+  it('uses terbium.display-name as the title', () => {
     const m = buildManifest(pkg);
-    expect(m.version).toBe('3.0.0');
+    expect(m.title).toBe('Daydream');
   });
 
-  it('uses terbium.display-name as the manifest name', () => {
-    const m = buildManifest(pkg);
-    expect(m.name).toBe('Daydream');
+  it('falls back to package.json name when display-name is missing', () => {
+    const noDisplay = {
+      ...pkg,
+      terbium: { ...pkg.terbium, 'display-name': '' as unknown as string },
+    };
+    const m = buildManifest(noDisplay);
+    expect(m.title).toBe('daydreamx');
   });
 
-  it('uses terbium.pkg-name as the pkg-name', () => {
+  it('sets top-level icon to ./icon.png', () => {
     const m = buildManifest(pkg);
-    expect(m['pkg-name']).toBe('daydream');
+    expect(m.icon).toBe('./icon.png');
   });
 
   it('fills wmArgs.src with ./index.html', () => {
@@ -42,6 +46,11 @@ describe('buildManifest', () => {
   it('fills wmArgs.icon with ./icon.png', () => {
     const m = buildManifest(pkg);
     expect(m.wmArgs.icon).toBe('./icon.png');
+  });
+
+  it('derives wmArgs.app_id as com.tb.<pkg-name>', () => {
+    const m = buildManifest(pkg);
+    expect(m.wmArgs.app_id).toBe('com.tb.daydream');
   });
 
   it('throws if package.json.version is missing', () => {
@@ -68,5 +77,12 @@ describe('buildManifest', () => {
     expect(m.wmArgs.size).toEqual({ width: 1200, height: 800 });
     expect(m.wmArgs.single).toBe(false);
     expect(m.wmArgs.resizable).toBe(true);
+  });
+
+  it('produces only top-level title/icon/wmArgs (no tb-repo fields)', () => {
+    const m = buildManifest(pkg) as Record<string, unknown>;
+    // .tbconfig has 3 fields; tb-repo manifest fields like name, pkg-name,
+    // version, description, developer should NOT appear here.
+    expect(Object.keys(m).sort()).toEqual(['icon', 'title', 'wmArgs']);
   });
 });

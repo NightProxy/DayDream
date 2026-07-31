@@ -1,10 +1,14 @@
-import { NightFS } from '@apis/data/fs';
+import { getScopedNightFs } from '@apis/data/scopedNightFs';
 import type { FSType } from '@terbiumos/tfs';
 
 import { basePath } from '@core/shared/path';
 import { resolveInternalHtml } from '@core/sw/req';
 
-const CACHE_ROOT = '/cache';
+// The SW HTTP cache lives under /app/sw-cache/ in OPFS via a NightFS scoped
+// to that subtree. All cache paths inside this module are relative to that
+// scope root, so callers keep passing paths like '/foo/bar' which resolve
+// to '/app/sw-cache/foo/bar' physically.
+const CACHE_ROOT = '/';
 
 const fsState: {
 	store: FSType | null;
@@ -108,10 +112,9 @@ async function getStore(): Promise<FSType> {
 
 	if (!fsState.ready) {
 		fsState.ready = (async () => {
-			const nfs = new NightFS();
+			const nfs = getScopedNightFs('app/sw-cache');
 			await nfs.init;
 			const store = nfs.core.fs;
-			await ensureDir(store, CACHE_ROOT);
 			fsState.store = store;
 			return store;
 		})();

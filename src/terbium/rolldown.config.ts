@@ -6,32 +6,36 @@ const configDir = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(configDir, '../..');
 
 /**
- * Build the Terbium TAPP integration shims to `dist/terbium/`.
+ * Build the Terbium TAPP integration shims as a single self-contained
+ * `dist/terbium/boot.js`.
  *
- * - `boot.js` runs first in the TAPP HTML (injected by the
- *   `terbium-tapp` Vite plugin) and detects `window.parent.tb` to set
- *   up the Wisp override / SW handoff before Daydream's main bundle
- *   constructs `Proxy`.
- * - `downloads.js` registers a `DownloadProvider` that routes downloads
- *   through `tb.dialog.SaveFile` + `tb.fs.promises.writeFile`.
- * - `island.js` adds an App Island menu control.
+ * IIFE format because boot.js is injected as a classic <script> tag
+ * (not `type="module"`). A classic script with `export` statements is
+ * a SyntaxError, and `type="module"` is implicitly deferred which
+ * would break the "runs BEFORE Daydream's bundle" ordering invariant
+ * we need to set window.__ddxOverrideWisp before Proxy constructs.
  *
- * The plain `pnpm run build` step does NOT call this — only
- * `pnpm run build:tapp` runs it, after the main build, so the files
- * are present when the TAPP plugin zips `dist/`.
+ * `inlineDynamicImports: true` rolls boot.ts's runtime imports of
+ * `./downloads`, `./island`, and `@apis/settings` into the same
+ * bundle, so there's exactly one file the browser needs to load.
+ * This sidesteps the "dynamic import requires ESM target" problem
+ * (the dynamic imports are removed entirely at build time). Note:
+ * rolldown emits a deprecation warning for this flag in favour of
+ * `codeSplitting: false`, but as of rolldown 1.x both work; flip if
+ * the flag is removed.
+ *
+ * `name: '__terbiumBoot'` is the IIFE's global; we don't actually use
+ * it from outside, but rolldown emits a
+ * `[MISSING_NAME_OPTION_FOR_IIFE_EXPORT]` warning without it.
  */
 export default defineConfig({
-	input: {
-		boot: resolve(configDir, 'boot.ts'),
-		downloads: resolve(configDir, 'downloads.ts'),
-		island: resolve(configDir, 'island.ts')
-	},
+	input: resolve(configDir, 'boot.ts'),
 	platform: 'browser',
 	output: {
-		dir: resolve(ROOT, 'dist/terbium'),
-		format: 'esm',
-		entryFileNames: '[name].js',
-		chunkFileNames: 'chunks/[name]-[hash].js',
+		file: resolve(ROOT, 'dist/terbium/boot.js'),
+		format: 'iife',
+		name: '__terbiumBoot',
+		inlineDynamicImports: true,
 		minify: true
 	},
 	resolve: {

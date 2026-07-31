@@ -7,7 +7,7 @@
     "core:dev": "vite dev --host & tsx index.ts",
     "prebuild:all": "npm run neutron:build && npm run obscura:build && npm run obscura:bundle && npm run obscura:bundle:iife && npm run sw:build && npm run config:build && npm run controller:build && npm run helium-bootstrap:build && npm run neutron-worker:build && npm run mini-chrome:build && npm run devtools-agent:build && npm run devtools-worker-agent:build && npm run nyx-bridge:build && npm run nyx-bridge-agent:build && tsc -p tsconfig.build.json",
     "build": "npm run prebuild:all && vite build",
-    "neutron:build": "cd neutron && npm run build",
+    "neutron:build": "cd src/pkgs/neutron && npm run build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "start": "tsx index.ts",
@@ -33,6 +33,7 @@
     "build:tapp": "npm run prebuild:all && vite build --mode tapp && npm run terbium:build && npm run terbium:pack"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/draggabilly": "^2.1.6",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^24.5.2",
@@ -70,7 +71,6 @@
     "@fastify/helmet": "^13.0.1",
     "@fastify/static": "^8.2.0",
     "@jaames/iro": "^5.5.2",
-    "@mercuryworkshop/epoxy-transport": "^3.0.1",
     "@mercuryworkshop/libcurl-transport": "^2.0.5",
     "@mercuryworkshop/proxy-transports": "^1.0.2",
     "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/v2.0.67-alpha.2/mercuryworkshop-scramjet-2.0.67-alpha.2.tgz",
@@ -94,7 +94,7 @@
     "libcurl.js": "^0.7.4",
     "lightningcss": "^1.32.0",
     "lucide": "^0.483.0",
-    "neutron": "file:neutron",
+    "neutron": "file:src/pkgs/neutron",
     "ora": "^8.2.0",
     "rolldown": "^1.0.2",
     "sortablejs": "^1.15.6",
@@ -106,8 +106,16 @@
     "display-name": "Daydream",
     "developer": "Night Network",
     "wmArgs": {
-      "title": { "text": "Daydream", "weight": 600 },
-      "size": { "width": 1200, "height": 800, "minWidth": 800, "minHeight": 500 },
+      "title": {
+        "text": "Daydream",
+        "weight": 600
+      },
+      "size": {
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 500
+      },
       "single": false,
       "resizable": true,
       "snapable": true

@@ -151,23 +151,13 @@ export async function bootInTerbium(): Promise<void> {
     void notifyServiceWorker(bridge.wispUrl);
   }
 
-  // Dynamically import the rest of the integration so that standalone
-  // builds never even parse this code.
-  //
-  // `./downloads` and `./island` are created by later tasks (10 and 11).
-  // The paths are routed through variables (with `/* @vite-ignore */`)
-  // so that neither TypeScript nor Vite's static import analyzer try
-  // to resolve those modules until they exist; the surrounding try/catch
-  // swallows the runtime ModuleNotFound if a TAPP build ever ships
-  // boot.ts without them (it shouldn't, but defense in depth — boot.ts
-  // is the most critical file in the integration).
+  // Pull in the rest of the integration. These are statically imported
+  // so rolldown can inline them into the single boot.js IIFE bundle —
+  // see `src/terbium/rolldown.config.ts` for why we bundle as one file
+  // (classic-script ordering before Daydream's bundle).
   try {
-    const downloadsPath = './downloads';
-    const islandPath = './island';
-    const [{ installDownloads }, { installIsland }] = await Promise.all([
-      import(/* @vite-ignore */ downloadsPath),
-      import(/* @vite-ignore */ islandPath),
-    ]);
+    const { installDownloads } = await import('./downloads');
+    const { installIsland } = await import('./island');
     if (typeof installDownloads === 'function') {
       installDownloads(bridge.tb);
     } else {

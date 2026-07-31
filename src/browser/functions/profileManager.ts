@@ -5,7 +5,7 @@ import { Items } from "@browser/items";
 import { Protocols } from "@browser/protocols";
 import { Nightmare as UI } from "@pkgs/Nightmare";
 import { ModalUtilities } from "./modalUtilities";
-import { createIcons, icons } from "lucide";
+import { createIcons, UserPlus, Settings, Download, Save, ArrowRight, Trash2, Users, AlertCircle, Info, Upload, Trash, X } from "lucide";
 import { checkNightPlusStatus } from "@apis/nightplus";
 import { resolvePath } from "@utils/basepath";
 
@@ -783,7 +783,7 @@ export class ProfileManager implements ProfileManagerInterface {
           document.body.removeChild(dialog);
         }
       }, 200);
-      createIcons({ icons });
+      createIcons({ icons: { UserPlus, Settings, Download, Save, ArrowRight, Trash2, Users, AlertCircle, Info, Upload, Trash, X } });
     };
 
     input.addEventListener("focus", (e) => {
@@ -927,7 +927,7 @@ export class ProfileManager implements ProfileManagerInterface {
         "[ProfileManager] Dialog fully visible, button should be clickable",
       );
     }, 10);
-    createIcons({ icons });
+      createIcons({ icons: { UserPlus, Settings, Download, Save, ArrowRight, Trash2, Users, AlertCircle, Info, Upload, Trash, X } });
   }
 
   async createProfileWithPresetData(profileName: string): Promise<void> {
@@ -952,7 +952,7 @@ export class ProfileManager implements ProfileManagerInterface {
       await this.profiles.createProfile(profileName);
       await this.profiles.switchProfile(profileName, true);
     }
-    createIcons({ icons });
+      createIcons({ icons: { UserPlus, Settings, Download, Save, ArrowRight, Trash2, Users, AlertCircle, Info, Upload, Trash, X } });
   }
 
   async exportCurrentProfile(): Promise<void> {
@@ -1026,11 +1026,10 @@ export class ProfileManager implements ProfileManagerInterface {
       }
 
       console.log("[ProfileManager] Switching to profile:", profileId);
-      await this.profiles.switchProfile(profileId, true);
+      await this.profiles.setActive(profileId);
       console.log("[ProfileManager] Profile switch completed");
 
       this.logger.createLog(`Switched to profile: ${profileId}`);
-      await this.profiles.flushStorageOperations();
 
       this.nightmarePlugins.sidemenu.closeMenu();
       this.modalUtilities.showAlert(
@@ -1038,9 +1037,15 @@ export class ProfileManager implements ProfileManagerInterface {
         "success",
       );
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // v3: no forced reload. The active-reload listener in src/index.ts
+      // re-resolves storage roots, re-registers proxy transports, re-applies
+      // themes, and re-activates the per-profile extension host. Proxied
+      // iframes reload through the Scramjet controller.
+      try {
+        for (const tab of (window as any).tabs?.tabs ?? []) {
+          try { (window as any).tabs?.reloadTab?.(tab.id); } catch { /* per-tab */ }
+        }
+      } catch { /* tabs API not ready */ }
     } catch (error) {
       console.error("Failed to switch profile:", error);
       this.modalUtilities.showAlert(
@@ -1104,9 +1109,8 @@ export class ProfileManager implements ProfileManagerInterface {
     );
     if (confirmed) {
       try {
-        await this.profiles.deleteProfile(profileId);
+        await this.profiles.destroy(profileId);
         this.logger.createLog(`Deleted profile: ${profileId}`);
-        window.location.reload();
       } catch (error) {
         console.error("Failed to delete profile:", error);
         this.modalUtilities.showAlert(

@@ -220,7 +220,7 @@ export class MenuManager implements MenuInterface {
       fontWeight: "600",
       color: "#fff",
     } satisfies Partial<CSSStyleDeclaration>);
-    titleBar.textContent = "Extensions";
+    titleBar.textContent = "Extensions (Beta)";
     popover.appendChild(titleBar);
 
     const manageRow = document.createElement("button");

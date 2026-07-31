@@ -1,7 +1,14 @@
-import { NightFS } from '@apis/data/fs';
+import { getScopedNightFs } from '@apis/data/scopedNightFs';
 import type { FSType } from '@terbiumos/tfs';
 
 import { dirname, EXT_ROOT, INDEX_PATH, extPath } from './path';
+
+// Helium extfs mounts under /app/extensions/ in OPFS via a NightFS scoped
+// to that subtree. Paths inside this module (EXT_ROOT, INDEX_PATH, extPath)
+// are relative to the scope root, so '/extensions/<id>/<file>' resolves to
+// '/app/extensions/extensions/<id>/<file>' physically — a nested folder
+// name but a dedicated .TFS_STORE that no longer races the logger, the SW
+// settings/cache stores, or the per-profile buckets.
 import type { ExtensionIndex } from './types';
 
 const DBG_TAG = '[helium/extfs/dbg]';
@@ -334,7 +341,7 @@ export async function getStore(): Promise<FSType> {
   if (!fsState.ready) {
     dlog(`getStore: initializing NightFS + ensuring ${EXT_ROOT}`);
     fsState.ready = (async () => {
-      const nfs = new NightFS();
+      const nfs = getScopedNightFs('app/extensions');
       await nfs.init;
       const store = nfs.core.fs;
       try {

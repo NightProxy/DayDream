@@ -7,6 +7,12 @@
 aside[data-component='navbar'][stylemode='vertical'] {
 	width: 10rem;
 	position: relative;
+	// Matches the aside's Tailwind `p-2` (0.5rem). The tab scroll containers
+	// below trade this much negative margin for equal padding, which moves
+	// their overflow clip edge out to the sidebar wall without moving the
+	// tabs. Lets the active/group ::before chips reach the wall while the
+	// tabs keep their padding. See _tabs.scss for the consumers.
+	--v-tab-gutter: 0.5rem;
 }
 
 // Thin vertical separator line along the outer (left) edge of the sidebar.
@@ -44,6 +50,10 @@ aside[data-component='navbar'][stylemode='vertical']
 	[data-component='navbar-top'] {
 	display: flex;
 	flex-direction: row;
+}
+
+aside[data-component='navbar'][stylemode='vertical'][state='collapsed'] .tab {
+	margin-left: -4px;
 }
 
 aside[data-component='navbar'][stylemode='vertical']
@@ -140,6 +150,8 @@ aside[data-component='navbar'][stylemode='vertical']
 	min-height: 0;
 	height: auto;
 	flex: 1 1 auto;
+	margin-left: calc(-1 * var(--v-tab-gutter));
+	padding-left: var(--v-tab-gutter);
 }
 
 aside[data-component='navbar'][stylemode='vertical']
@@ -154,6 +166,8 @@ aside[data-component='navbar'][stylemode='vertical']
 	white-space: normal;
 	padding-bottom: 0;
 	margin-bottom: 0;
+	margin-left: calc(-1 * var(--v-tab-gutter));
+	padding-left: var(--v-tab-gutter);
 }
 
 aside[data-component='navbar'][stylemode='vertical']
@@ -191,6 +205,17 @@ aside[data-component='navbar'][stylemode='vertical']
 	gap: 0.45rem;
 }
 
+// The empty .tab-group-color div is a flex item (\`.tab * { display: flex }\`),
+// so the parent's gap applies on both sides of it and injects phantom space
+// before the favicon. In vertical mode the group color is drawn by the
+// .tab[stylemode='vertical']::before chip instead, so this div is redundant.
+aside[data-component='navbar'][stylemode='vertical']
+	[data-component='navbar-tab-space']
+	[data-component='tab']
+	.tab-group-color {
+	display: none;
+}
+
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	[data-component='navbar-tab-space']
 	[data-component='tab']
@@ -217,34 +242,37 @@ aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	[data-component='navbar-tab-space']
-	[data-component='tab'][state='pinned']
-	.tab-favicon {
-	width: 14px;
-	height: 14px;
-	min-width: 14px;
-	min-height: 14px;
-	opacity: 0.9;
+	[data-component='tab'] {
+		&[state='pinned'] .tab-favicon {
+			width: 14px;
+			height: 14px;
+			min-width: 14px;
+			min-height: 14px;
+			opacity: 0.9;
+			margin-left: var(--v-tab-gutter);
+		}
+		&:not([state='pinned']) .tab-favicon {
+			width: 15px;
+			height: 15px;
+			min-width: 15px;
+			min-height: 15px;
+			margin-left: var(--v-tab-gutter);
+		}
 }
 
-aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
-	[data-component='navbar-tab-space']
-	[data-component='tab']:not([state='pinned'])
-	.tab-favicon {
-	width: 15px;
-	height: 15px;
-	min-width: 15px;
-	min-height: 15px;
+*:not([stylemode='vertical']) .tab-content .tab-favicon {
+	margin-right: 4px;
 }
 
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']
 	.tab-pinned-divider {
 	width: 1px;
-	height: 2.45rem;
-	margin: 0.3rem 0 0.6rem;
+	height: 0.45rem;
 	background: color-mix(in oklab, var(--main) 72%, transparent);
 	box-shadow: 0 0 0 1px color-mix(in oklab, var(--main) 30%, transparent);
 	border-radius: 999px;
 	opacity: 0.9;
+	margin-left: 0.4rem;
 }
 
 aside[data-component='navbar'][stylemode='vertical'][state='collapsed']

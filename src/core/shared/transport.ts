@@ -4,64 +4,53 @@ import type {
 	RawHeaders,
 	TransferrableResponse
 } from '@mercuryworkshop/proxy-transports';
-import LibcurlClient from '@mercuryworkshop/libcurl-transport';
-import EpoxyClient from '@mercuryworkshop/epoxy-transport';
-import PulsarClient from '@pkgs/pulsar';
-import type { SettingsAPI } from '@apis/settings';
 
-export type TransportKind = 'libcurl' | 'epoxy' | 'pulsar';
+interface TransportSettings {
+	getItem<T>(key: string): Promise<T | null>;
+}
 
-/**
- * Normalized, serialisable description of how a transport should be
- * constructed. Two configs that JSON.stringify to the same value MUST
- * produce equivalent transport instances — the SW relies on this for
- * its caching.
- */
+export type TransportKind = 'libcurl' | 'pulsar';
+
 export interface TransportConfig {
 	kind: TransportKind;
-	/** WebSocket(WISP) URL. Required for libcurl/epoxy, ignored by pulsar. */
 	wisp?: string;
-	/** Optional upstream HTTP proxy. libcurl-only. */
 	proxy?: string;
-	/** Pulsar server host. Pulsar-only. */
 	host?: string;
-	/** Pulsar server UDP port. Pulsar-only. */
 	port?: number;
 }
 
 export interface BuiltTransport {
 	kind: TransportKind;
 	instance: ProxyTransport;
-	/** JSON-stringified `TransportConfig`, suitable for cache keys. */
 	signature: string;
 }
 
 type TransportCtor = new (opts: Record<string, unknown>) => ProxyTransport;
 
-const TRANSPORT_MAP: Record<
-	TransportKind,
-	{ ctor: TransportCtor; opts: readonly (keyof TransportConfig)[] }
-> = {
-	libcurl: {
-		ctor: LibcurlClient as unknown as TransportCtor,
-		opts: ['wisp', 'proxy']
-	},
-	epoxy: {
-		ctor: EpoxyClient as unknown as TransportCtor,
-		opts: ['wisp']
-	},
-	pulsar: {
-		ctor: PulsarClient as unknown as TransportCtor,
-		opts: ['host', 'port']
-	}
+const TRANSPORT_OPTS: Record<TransportKind, readonly (keyof TransportConfig)[]> = {
+	libcurl: ['wisp', 'proxy'],
+	pulsar: ['host', 'port']
 };
 
 const DEFAULT_KIND: TransportKind = 'libcurl';
 
+async function loadTransportCtor(kind: TransportKind): Promise<TransportCtor> {
+	switch (kind) {
+		case 'libcurl': {
+			const { default: LibcurlClient } = await import('@mercuryworkshop/libcurl-transport');
+			return LibcurlClient as unknown as TransportCtor;
+		}
+		case 'pulsar': {
+			const { default: PulsarClient } = await import('@pkgs/pulsar');
+			return PulsarClient as unknown as TransportCtor;
+		}
+	}
+}
+
 /**
  * Reads transport-related settings and produces a normalized
  * `TransportConfig`. Mirrors the resolution rules in
- * `Proxy.buildTransportConfig` (src/apis/proxy.ts:432) — same setting
+ * `Proxy.buildTransportConfig` (src/apis/proxy.ts) — same setting
  * names, same fallbacks, same ignored-string list for the proxy field.
  *
  * `defaultWisp` is invoked only when the `wisp` setting is missing AND
@@ -70,12 +59,12 @@ const DEFAULT_KIND: TransportKind = 'libcurl';
  * page may want to probe the server, the SW may just synthesise one).
  */
 export async function resolveTransportConfig(
-	settings: SettingsAPI,
+	settings: TransportSettings,
 	defaultWisp: () => string | Promise<string>
 ): Promise<TransportConfig> {
 	const requestedRaw = await settings.getItem<string>('transports');
 	const kind: TransportKind =
-		requestedRaw === 'epoxy' || requestedRaw === 'pulsar'
+		requestedRaw === 'pulsar'
 			? requestedRaw
 			: DEFAULT_KIND;
 
@@ -112,21 +101,22 @@ export async function resolveTransportConfig(
 }
 
 /**
- * Constructs a transport instance from a normalized config. Pure — does
- * not read settings, does not perform IO. The returned `signature` is a
- * stable JSON encoding of the input config and is safe to use as a cache
- * key.
+ * Constructs a transport instance from a normalized config.
+ * Lazily imports the transport library so the bundle is not inflated
+ * until the transport is actually needed (first proxied navigation).
  */
-export function buildTransport(cfg: TransportConfig): BuiltTransport {
-	const entry = TRANSPORT_MAP[cfg.kind] ?? TRANSPORT_MAP[DEFAULT_KIND];
+export async function buildTransport(cfg: TransportConfig): Promise<BuiltTransport> {
+	const kind: TransportKind = cfg.kind in TRANSPORT_OPTS ? cfg.kind : DEFAULT_KIND;
+	const ctor = await loadTransportCtor(kind);
+	const opts = TRANSPORT_OPTS[kind];
 
 	const ctorOpts: Record<string, unknown> = {};
-	for (const key of entry.opts) {
+	for (const key of opts) {
 		const value = cfg[key];
 		if (value !== undefined) ctorOpts[key] = value;
 	}
 
-	const instance = new entry.ctor(ctorOpts);
+	const instance = new ctor(ctorOpts);
 	return {
 		kind: cfg.kind,
 		instance,
@@ -223,17 +213,6 @@ export interface TransportFetchInit {
 	maxRedirects?: number;
 }
 
-/**
- * Performs a request through a constructed transport, manually following
- * HTTP redirects and normalising the response into a real `Response`.
- *
- * Mirrors the behavior of `Proxy.fetch` (src/apis/proxy.ts:747-894):
- *   - `transport.init()` is invoked if the transport isn't `ready`
- *   - same redirect status set (301/302/303/307/308), same default cap
- *   - response body, status, statusText preserved verbatim
- *   - response headers reconstructed from whatever shape the transport
- *     returned them in (Headers / array / plain object)
- */
 export async function transportFetch(
 	transport: ProxyTransport,
 	url: string | URL,

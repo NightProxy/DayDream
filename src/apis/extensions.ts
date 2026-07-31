@@ -95,6 +95,9 @@ import { installWebRequestHook } from '@core/helium/host/webRequest';
 import { openExtensionPopup } from '@browser/extensions/popupHost';
 import { ReadingListManager } from '@apis/readingList';
 import { getDdxGroupId, hashGroupId } from '@apis/nyxBridge/tabResolver';
+import { DDX_CHROME_BASELINE, isSupportedMinimumChromeVersion } from './extensions/versionGate';
+import { sanitizeTabsForExtension } from './extensions/tabPermissions';
+import { attachExtensionHandshakeWhenReady } from './extensions/handshake';
 
 const CONTAINER_ID = '__helium_extensions__';
 const SEND_MESSAGE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -156,7 +159,7 @@ const HANDLER_PERMISSIONS: Record<string, string | null> = {
   'chrome.tabs.insertCSS':                           'tabs',
   'chrome.tabs.removeCSS':                           'tabs',
 
-  'chrome.tabs.query':           'tabs',
+  'chrome.tabs.query':           null,
   'chrome.tabs.get':             'tabs',
   'chrome.tabs.getCurrent':      'tabs',
   'chrome.tabs.create':          'tabs',
@@ -950,9 +953,7 @@ export class ExtensionManager {
 
     const minVer = (unpacked.manifest as { minimum_chrome_version?: string }).minimum_chrome_version;
     if (typeof minVer === 'string') {
-      const major = Number.parseInt(minVer.split('.')[0] ?? '0', 10);
-      const DDX_CHROME_BASELINE = 120;
-      if (Number.isFinite(major) && major > DDX_CHROME_BASELINE) {
+      if (!isSupportedMinimumChromeVersion(minVer)) {
         throw new Error(
           `Extension requires Chrome ${minVer} or newer (DDX baseline: ${DDX_CHROME_BASELINE}). Install rejected.`,
         );
@@ -1759,7 +1760,9 @@ export class ExtensionManager {
     channel.setEventHandler((method, args) => {
       if (method === 'chrome.runtime.port-msg-bg-to-cs') {
         const info = args[0] as { portId: number; message: unknown };
-        this.portRouter?.forwardBgToCs(info.portId, info.message);
+        // Pass `channel` as the sourceChannel so PortRouter can decide
+        // which peer to route to for runtime-flavor ports (popup↔BG).
+        this.portRouter?.forwardBgToCs(info.portId, info.message, channel);
         return;
       }
       if (method === 'chrome.runtime.port-close-bg-initiated') {
@@ -1805,23 +1808,8 @@ export class ExtensionManager {
     iframe: HTMLIFrameElement,
     extPort: MessagePort,
   ): void {
-    const tryHandshake = (): boolean => {
-      const win = iframe.contentWindow;
-      if (!win) return false;
-      try {
-        const receive = (
-          win as unknown as {
-            __helium_handshake_receive__?: (port: MessagePort) => void;
-          }
-        ).__helium_handshake_receive__;
-        if (typeof receive !== 'function') {
-          console.warn(
-            `[ExtensionManager] attachHandshakeWhenReady: bootstrap not yet installed for ${ctx.id}` +
-              ` (no __helium_handshake_receive__) — iframe will not boot. Is the HTML being served through HeliumExtensionPlugin?`,
-          );
-          return false;
-        }
-        receive(extPort);
+    attachExtensionHandshakeWhenReady(ctx.id, iframe, extPort, {
+      onSuccess: () => {
         try {
           this.observeNestedIframes(ctx, iframe);
         } catch (err) {
@@ -1830,33 +1818,8 @@ export class ExtensionManager {
             err,
           );
         }
-        return true;
-      } catch (err) {
-        console.warn(
-          `[ExtensionManager] handshake call failed for ${ctx.id}:`,
-          err,
-        );
-        return false;
-      }
-    };
-
-    try {
-      const doc = iframe.contentDocument;
-      if (doc && doc.readyState === 'complete') {
-        if (tryHandshake()) return;
-      }
-    } catch {
-      // Cross-origin SecurityError shouldn't happen for our extension
-      // origin, but if it does we fall through to the load listener.
-    }
-
-    iframe.addEventListener(
-      'load',
-      () => {
-        tryHandshake();
       },
-      { once: true },
-    );
+    });
   }
 
   /**
@@ -2133,10 +2096,18 @@ export class ExtensionManager {
     channel.registerHandler('__helium_bg_connect_runtime__', async (req) => {
       const opts = (req.args?.[0] ?? {}) as { targetExtId?: string; name?: string };
       if (!this.portRouter) return { portId: -1 };
+      // Pass the initiator's channel so the router can route return
+      // traffic (BG→popup, etc.) back to us rather than losing it.
+      // Fixes uBlock Origin popup: its popup.js does
+      // `chrome.runtime.connect(...)` then `port.postMessage({...})`
+      // and awaits the BG's `callback(popupData)` — without this the
+      // BG's response `port.postMessage` was dropped into the host
+      // window and the popup never got its data.
       const portId = this.portRouter.bgInitiatedConnectRuntime(
         ctx.id,
         opts.targetExtId ?? ctx.id,
         opts.name ?? '',
+        channel,
       );
       return { portId };
     });
@@ -2327,7 +2298,15 @@ export class ExtensionManager {
           throw new Error('chrome.tabs.removeCSS requires code or file');
         },
 
-      'chrome.tabs.query':           (ctx, args) => t(this.tabsHandlers).query(ctx, args),
+      'chrome.tabs.query':           async (ctx, args) => {
+        const tabs = await t(this.tabsHandlers).query(ctx, args);
+        if (!Array.isArray(tabs)) return [];
+        return sanitizeTabsForExtension(
+          tabs,
+          ctx.manifest,
+          (tabId) => this.hasActiveTabGrant(ctx.id, tabId),
+        );
+      },
       'chrome.tabs.get':             (ctx, args) => t(this.tabsHandlers).get(ctx, args),
       'chrome.tabs.getCurrent':      (ctx, args) => t(this.tabsHandlers).getCurrent(ctx, args),
       'chrome.tabs.create':          (ctx, args) => t(this.tabsHandlers).create(ctx, args),

@@ -1,5 +1,5 @@
 import { Nightmare } from "@pkgs/Nightmare";
-import { createIcons, icons } from "lucide";
+import { createIcons, FolderHeart, History, Download, Puzzle, Joystick, Brain, Music, Sparkles, MessageSquare, Settings, Users, Plus, PanelLeft, ArrowLeft, RotateCw, ArrowRight, House, Lock, Star, Menu, EyeOff, Maximize, Bookmark, Dices, SquareMousePointer } from "lucide";
 import { resolvePath } from "@utils/basepath";
 
 class Render {
@@ -26,7 +26,11 @@ class Render {
         [
           this.ui.createElement(
             "div",
-            { class: "flex flex-col gap-2", "data-component": "navbar-top" },
+            {
+              class: "flex flex-col gap-2",
+              role: "list",
+              "data-component": "navbar-top",
+            },
             [
               this.ui.createElement("li", {}, [
                 this.ui.createElement(
@@ -35,6 +39,7 @@ class Render {
                     href: "/",
                     class:
                       "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/90 hover:bg-[var(--white-05)]",
+                    "aria-label": "DaydreamX Home",
                     "data-tooltip": "DaydreamX Home",
                     "data-side": "right",
                     "data-align": "center",
@@ -106,6 +111,7 @@ class Render {
             {
               class: "flex flex-col flex-1 justify-center gap-2",
               id: "extensions-sidebar",
+              role: "list",
               "data-component": "navbar-middle",
             },
             [
@@ -115,6 +121,7 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Bookmarks",
                     "data-tooltip": "Bookmarks",
                     "data-side": "right",
                     "data-align": "center",
@@ -137,6 +144,7 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "History",
                     "data-tooltip": "History",
                     "data-side": "right",
                     "data-align": "center",
@@ -159,6 +167,7 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Downloads",
                     "data-tooltip": "Downloads",
                     "data-side": "right",
                     "data-align": "center",
@@ -182,6 +191,7 @@ class Render {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
                     "data-component": "extensions",
+                    "aria-label": "Extensions",
                     "data-tooltip": "Extensions",
                     "data-side": "right",
                     "data-align": "center",
@@ -201,6 +211,7 @@ class Render {
                   {
                     class:
                       "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Games",
                     "data-tooltip": "Games",
                     "data-side": "right",
                     "data-align": "center",
@@ -223,6 +234,7 @@ class Render {
                   {
                     class:
                       "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "AI",
                     "data-tooltip": "AI",
                     "data-side": "right",
                     "data-align": "center",
@@ -245,11 +257,12 @@ class Render {
                   {
                     class:
                       "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Music",
                     "data-tooltip": "Music",
                     "data-side": "right",
                     "data-align": "center",
                     onclick: async () => {
-                      await window.tabs.createTab("ddx://music/");
+                      await window.tabs.createTab("https://open.spotify.com/");
                     },
                   },
                   [
@@ -265,7 +278,11 @@ class Render {
           ),
           this.ui.createElement(
             "div",
-            { class: "flex flex-col gap-2", "data-component": "navbar-bottom" },
+            {
+              class: "flex flex-col gap-2",
+              role: "list",
+              "data-component": "navbar-bottom",
+            },
             [
               this.ui.createElement("li", { class: "self-center" }, [
                 this.ui.createElement(
@@ -273,6 +290,7 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "What's New",
                     "data-tooltip": "What's New",
                     "data-side": "right",
                     "data-align": "center",
@@ -295,6 +313,7 @@ class Render {
                   {
                     class:
                       "relative flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Discord",
                     "data-tooltip": "Discord",
                     "data-side": "right",
                     "data-align": "center",
@@ -319,6 +338,7 @@ class Render {
                   {
                     class:
                       "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text)]/80 hover:bg-[var(--white-05)]",
+                    "aria-label": "Settings",
                     "data-tooltip": "Settings",
                     "data-side": "right",
                     "data-align": "center",
@@ -974,19 +994,19 @@ class Render {
           this.ui.createElement(
             "div",
             {
-              class: "flex-1 min-h-0 w-full bg-[var(--bg-2)]",
-              "data-component": "frame-container",
-              style:
-                "border: none; outline: none; will-change: filter, transform, opacity;",
+              "data-component": "bookmarks-bar",
+              "data-shown": "true",
+              "data-empty": "true",
             },
             [],
           ),
           this.ui.createElement(
             "div",
             {
-              "data-component": "download-shelf",
+              class: "flex-1 min-h-0 w-full bg-[var(--bg-2)]",
+              "data-component": "frame-container",
               style:
-                "display:none; width:100%; flex-shrink:0; border-top:1px solid var(--white-08); background:var(--bg-1); z-index:11;",
+                "border: none; outline: none; will-change: filter, transform, opacity;",
             },
             [],
           ),
@@ -1000,12 +1020,21 @@ class Render {
             },
             [],
           ),
+          this.ui.createElement(
+            "div",
+            {
+              "data-component": "download-shelf",
+              style:
+                "display:none; width:100%; flex-shrink:0; border-top:1px solid var(--white-08); background:var(--bg-1); z-index:11;",
+            },
+            [],
+          ),
         ],
       ),
     ]);
 
     this.container.appendChild(UI);
-    createIcons({ icons });
+    createIcons({ icons: { FolderHeart, History, Download, Puzzle, Joystick, Brain, Music, Sparkles, MessageSquare, Settings, Users, Plus, PanelLeft, ArrowLeft, RotateCw, ArrowRight, House, Lock, Star, Menu, EyeOff, Maximize, Bookmark, Dices, SquareMousePointer } });
   }
 }
 

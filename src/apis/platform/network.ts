@@ -1,6 +1,5 @@
 import * as networkTypes from "@apis/platform/types";
 import { SettingsAPI } from "@apis/settings";
-import { Hostlist, Pathlist } from "./hosting.hostlist";
 
 class NetworkAPI {
   private settings = new SettingsAPI();
@@ -34,7 +33,7 @@ class NetworkAPI {
   }
 
   genBaseServerURL(): string {
-    const domainList = Hostlist;
+    const domainList = ["nightwisp.me"];
     const cloudflareDomains = domainList.map(
       (domain: string) => `${domain}.cdn.cloudflare.net/`,
     );
@@ -46,14 +45,6 @@ class NetworkAPI {
       .substring(0, 32);
 
     return `${randomSubdomain}.${cloudflareDomains[Math.floor(Math.random() * cloudflareDomains.length)]}`;
-  }
-
-  listVPNPaths(): string[] {
-    return Pathlist.map((item: any) => item.path);
-  }
-
-  listVPNLocations(): string[] {
-    return Pathlist.map((item: any) => item.location);
   }
 
   async wsPing(

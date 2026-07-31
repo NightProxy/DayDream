@@ -1,8 +1,7 @@
 
 export const NYX_ORIGINS_DEFAULT: readonly string[] = [
 	'https://nyx.night-x.com',
-	'https://nyx.ampscat.dev',
-	'https://proper-roll-pleasant-seq.trycloudflare.com'
+	'https://nyxai.me'
 ];
 
 /**

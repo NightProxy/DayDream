@@ -6,7 +6,7 @@ import { SidePanel } from './sidePanel';
 import { RightClickMenu } from './rightClickMenu';
 import { NotificationManager } from './notifications';
 import { PermissionPrompt } from './permissionPrompt';
-import { createIcons, icons } from 'lucide';
+import { createIcons } from 'lucide';
 
 class Nightmare implements NightmareUI {
 	contextMenu: ContextMenu | null = null;
@@ -121,7 +121,7 @@ class Nightmare implements NightmareUI {
 	}
 
 	createIcons() {
-		createIcons({ icons });
+		createIcons({ icons: {} });
 	}
 }
 

@@ -1,4 +1,4 @@
-import { createIcons, icons } from 'lucide';
+import { createIcons, X } from 'lucide';
 import type { TabsInterface, TabData } from './types';
 import { decodeProxiedUrl } from './urlDecoder';
 
@@ -39,6 +39,38 @@ export class TabLifecycle {
 	private async resolveExtensionOverride(
 		url: string,
 	): Promise<{ extId: string; url: string } | null> {
+		// Path A: direct navigation to an extension-hosted page.
+		//
+		// Any URL whose host is `<extId>.ddx` is served synchronously
+		// by HeliumExtensionPlugin from OPFS/TFS. Without the plugin,
+		// the normal proxy tries to actually fetch `<extId>.ddx` over
+		// the network — Curl-in-WASM immediately fails with an SSL
+		// connect error and the HTML never loads, so the bootstrap
+		// never installs and the iframe stays blank. Every path that
+		// opens an extension page in a tab hits this: uBlock's
+		// dashboard/options, `chrome.tabs.create({url: extURL})`,
+		// user middle-click on an extension-hosted link, restoring a
+		// session tab whose URL is an extension page, etc.
+		//
+		// We match the extId against the running-extensions map — an
+		// unknown id (e.g. from a stale session) falls through to
+		// normal proxy handling rather than us minting a useless
+		// plugin for a non-running extension.
+		const directMatch = url.match(/^https?:\/\/([a-z0-9-]+)\.ddx(?:\/|$)/i);
+		if (directMatch) {
+			const extId = directMatch[1].toLowerCase();
+			const mgr = (window as { extensions?: { getRunningContext?: (id: string) => unknown } }).extensions;
+			if (mgr?.getRunningContext?.(extId)) {
+				return { extId, url };
+			}
+			return null;
+		}
+
+		// Path B: `chrome_url_overrides` for newtab/bookmarks/history.
+		//
+		// Extensions can replace those internal DDX pages with their
+		// own; we look up which extension is registered as the active
+		// override and resolve to its page.
 		const overrides = (window as { extensionUrlOverrides?: UrlOverridesLike }).extensionUrlOverrides;
 		if (!overrides) return null;
 
@@ -135,17 +167,30 @@ export class TabLifecycle {
 			if (plugin) plugins.push(plugin);
 		}
 
+		// If this tab is hosting an extension page, wire the auxiliary
+		// channel BEFORE navigation starts. `wireAuxiliaryViewChannel`
+		// installs a `load` listener that hands the bootstrap its
+		// MessagePort — if we call it after the iframe has already
+		// finished loading (which happens fast for locally-served
+		// HeliumExtensionPlugin content), the listener fires against a
+		// past event and the bootstrap's channel promise never
+		// resolves, so every chrome.* async call hangs forever. That
+		// was manifesting as uBlock's dashboard polling
+		// `readyToFilter` forever and OOMing.
 		const managedFrame = await this.tabs.frameManager!.createManagedFrame(
 			id,
 			overrideAbsoluteUrl ?? url,
 			'main',
-			plugins.length > 0 ? { plugins } : undefined,
+			plugins.length > 0
+				? {
+					plugins,
+					onBeforeNavigate: overrideExtId
+						? (iframe) => this.wireExtensionChannel(overrideExtId!, iframe, id)
+						: undefined,
+				}
+				: undefined,
 		);
 		const iframe = managedFrame.iframe;
-
-		if (overrideExtId && plugins.length > 0) {
-			this.wireExtensionChannel(overrideExtId, iframe, id);
-		}
 
 		console.log(
 			'[TabLifecycle] Created iframe:',
@@ -166,13 +211,14 @@ export class TabLifecycle {
 			[
 				this.tabs.ui.createElement(
 					'div',
-					{ class: 'tab-content flex gap-1 items-center' },
+					{ class: 'tab-content' },
 					[
 						this.tabs.ui.createElement('div', {
 							class: 'tab-group-color'
 						}),
 						this.tabs.ui.createElement('img', {
-							class: 'tab-favicon max-w-4 max-h-4'
+							class: 'tab-favicon max-w-4 max-h-4',
+							alt: ''
 						}),
 						this.tabs.ui.createElement(
 							'div',
@@ -186,7 +232,8 @@ export class TabLifecycle {
 							'button',
 							{
 								class: 'tab-close',
-								id: `close-${id}`
+								id: `close-${id}`,
+								'aria-label': 'Close tab'
 							},
 							[
 								this.tabs.ui.createElement(
@@ -300,7 +347,7 @@ export class TabLifecycle {
 			id,
 			mainPane ?? this.tabs.items.frameContainer!
 		);
-		createIcons({ icons });
+		createIcons({ icons: { X } });
 
 		const tabData: TabData = {
 			id,

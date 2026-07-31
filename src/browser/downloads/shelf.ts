@@ -4,7 +4,7 @@ import type {
   DownloadItem,
   DownloadsManager,
 } from '@apis/downloads';
-import { createIcons, icons } from 'lucide';
+import { createIcons, List, X, AlertTriangle, FileDown, Pause, Download } from 'lucide';
 
 const MAX_VISIBLE_CARDS = 12;
 
@@ -118,7 +118,7 @@ export class DownloadShelf {
     right.appendChild(closeBtn);
 
     this.slot.appendChild(right);
-    createIcons({ icons });
+    createIcons({ icons: { List, X, AlertTriangle, FileDown, Pause, Download } });
   }
 
   /** Subscribe to the manager's change events. */
@@ -314,7 +314,7 @@ export class DownloadShelf {
     }
     el.appendChild(body);
 
-    createIcons({ icons });
+    createIcons({ icons: { List, X, AlertTriangle, FileDown, Pause, Download } });
   }
 
   private removeCard(id: number): void {

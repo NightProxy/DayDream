@@ -14,6 +14,30 @@ interface HostPort {
   targetExtId: string;
   targetSpawned: SpawnedRef;
   closed: boolean;
+  /**
+   * Kind marker. Determines message routing:
+   *
+   * - `cs-initiated`: Content script called `chrome.runtime.connect`.
+   *   Owner is a CS Window (in a proxied iframe), target is a
+   *   Helium-managed extension realm. Messages: CS window uses
+   *   window.postMessage (relayed via ContentScriptRelay); target
+   *   receives via its channel's `chrome.runtime.port-msg` event.
+   *
+   * - `bg-to-cs`: BG called `chrome.tabs.connect`. Owner is a CS
+   *   iframe.contentWindow (real window we can postMessage to), target
+   *   is BG. Messages: BG uses its channel's
+   *   `chrome.runtime.port-msg-bg-to-cs` event; forwarded to CS via
+   *   window.postMessage. Reverse via CS window → relay handler.
+   *
+   * - `runtime`: Extension realm (BG, popup, options, offscreen) called
+   *   `chrome.runtime.connect`. BOTH sides are Helium-managed channels
+   *   (there is no CS Window in this shape). Messages route via
+   *   `chrome.runtime.port-msg` on the OTHER side's channel. Requires
+   *   `initiatorChannel` to be populated so we know where to reply.
+   */
+  kind: 'cs-initiated' | 'bg-to-cs' | 'runtime';
+  /** Set for `kind: 'runtime'` — the channel of the connect() caller. */
+  initiatorChannel?: { sendEvent: (m: string, a: unknown[]) => void };
 }
 
 const MAX_PORTS_PER_EXT = 1024;
@@ -88,7 +112,7 @@ export class PortRouter {
     const portId = this.nextPortId++;
     const port: HostPort = {
       portId, ownerExtId, ownerWindow: source, ownerScriptKey: scriptKey,
-      targetExtId, targetSpawned, closed: false,
+      targetExtId, targetSpawned, closed: false, kind: 'cs-initiated',
     };
     this.ports.set(portId, port);
 
@@ -125,6 +149,20 @@ export class PortRouter {
     this.ports.delete(portId);
     this.decExt(port.ownerExtId);
 
+    if (port.kind === 'runtime') {
+      // Notify both Helium-managed peers via their channels. No CS
+      // Window in this shape.
+      try {
+        port.targetSpawned.channel.sendEvent('chrome.runtime.port-close', [{ portId }]);
+      } catch { /* ignore */ }
+      if (port.initiatorChannel) {
+        try {
+          port.initiatorChannel.sendEvent('chrome.runtime.port-close', [{ portId }]);
+        } catch { /* ignore */ }
+      }
+      return;
+    }
+
     try {
       port.ownerWindow.postMessage({ __helium_cs__: 'port-close', portId }, '*');
     } catch { /* ignore */ }
@@ -141,10 +179,55 @@ export class PortRouter {
     }
   }
 
-  /** Forward a BG-originated port message to the CS window. */
-  forwardBgToCs(portId: number, message: unknown): void {
+  /**
+   * Forward a port message that arrived on some Helium channel to the
+   * peer side of the port.
+   *
+   * The `sourceChannel` is the channel that emitted the port-msg-bg-to-cs
+   * event we're forwarding. It matters only for `kind: 'runtime'` ports
+   * (popup↔BG, options↔BG, BG↔BG), where BOTH sides are Helium channels
+   * and we must send to whichever side is NOT the source. For
+   * `kind: 'bg-to-cs'` (target is a real CS Window) the routing is
+   * always the same direction — postMessage into `ownerWindow` — and
+   * `sourceChannel` is ignored.
+   *
+   * `kind: 'cs-initiated'` never appears here: CS→BG messages arrive as
+   * window.postMessage on the ContentScriptRelay, not as channel events,
+   * and are handled by `handleMsg`.
+   */
+  forwardBgToCs(
+    portId: number,
+    message: unknown,
+    sourceChannel?: { sendEvent: (m: string, a: unknown[]) => void },
+  ): void {
     const port = this.ports.get(portId);
     if (!port || port.closed) return;
+
+    if (port.kind === 'runtime') {
+      // Route to the OTHER side. If we know both channels, prefer
+      // sending to whichever isn't the source. If sourceChannel wasn't
+      // passed (older call site), fall back to the target — matches
+      // the popup→BG direction which is the common case.
+      const peer = sourceChannel === port.targetSpawned.channel
+        ? port.initiatorChannel
+        : port.targetSpawned.channel;
+      if (!peer) {
+        // No known peer channel — happens if bgInitiatedConnectRuntime
+        // was called without initiatorChannel and we're now trying to
+        // route BG→initiator. Drop with a warning rather than posting
+        // into the host window where nothing listens.
+        console.warn('[port] forwardBgToCs: runtime-port peer channel unknown, dropping message', { portId });
+        return;
+      }
+      try {
+        peer.sendEvent('chrome.runtime.port-msg', [{ portId, message }]);
+      } catch (err) {
+        console.warn('[port] forwardBgToCs: runtime peer sendEvent failed', err);
+      }
+      return;
+    }
+
+    // bg-to-cs: target is a real CS window we can postMessage to.
     try {
       port.ownerWindow.postMessage({ __helium_cs__: 'port-msg', portId, message }, '*');
     } catch { /* ignore */ }
@@ -192,6 +275,7 @@ export class PortRouter {
       targetExtId: initiatorExtId,
       targetSpawned: { ctx: { id: initiatorExtId } as unknown as SpawnedRef['ctx'], entry: {} as SpawnedRef['entry'], channel: initiatorChannel as unknown as SpawnedRef['channel'] },
       closed: false,
+      kind: 'bg-to-cs',
     };
     this.ports.set(portId, port);
     void frameId;
@@ -230,6 +314,7 @@ export class PortRouter {
     initiatorExtId: string,
     targetExtId: string,
     name: string,
+    initiatorChannel?: { sendEvent: (m: string, a: unknown[]) => void },
   ): number {
     if (this.incExt(initiatorExtId) > MAX_PORTS_PER_EXT) {
       this.decExt(initiatorExtId);
@@ -257,13 +342,20 @@ export class PortRouter {
       targetExtId,
       targetSpawned,
       closed: false,
+      kind: 'runtime',
+      initiatorChannel,
     };
     this.ports.set(portId, port);
     try {
+      const initiatorOrigin = `https://${initiatorExtId}.ddx`;
       targetSpawned.channel.sendEvent('chrome.runtime.onConnect-port', [{
         portId,
         name,
-        sender: { id: initiatorExtId },
+        sender: {
+          id: initiatorExtId,
+          origin: initiatorOrigin,
+          url: `${initiatorOrigin}/`,
+        },
         external: initiatorExtId !== targetExtId,
       }]);
     } catch (err) {

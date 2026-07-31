@@ -49,4 +49,19 @@ describe('panel helpers', () => {
 		const b = mountPanel(tab, '/x.html');
 		expect(b.container).toBe(a.container);
 	});
+
+	it('mounts a Chii header with a close button that unmounts the panel', () => {
+		const tab = makeFakeTab();
+		const handle = mountPanel(tab, '/x.html');
+		tab.devtoolsPanel = handle;
+
+		expect(handle.container.querySelector('.devtools-panel-header')?.textContent).toContain('Chii');
+		expect(handle.container.textContent).not.toContain('Elements');
+		expect(handle.container.querySelectorAll('iframe')).toHaveLength(1);
+		expect(handle.container.querySelector('.devtools-tab-strip')).toBeNull();
+
+		(handle.container.querySelector('.devtools-panel-close') as HTMLButtonElement).click();
+		expect(handle.container.isConnected).toBe(false);
+		expect(tab.devtoolsPanel).toBeUndefined();
+	});
 });

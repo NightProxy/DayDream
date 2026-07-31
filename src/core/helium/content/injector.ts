@@ -2,7 +2,9 @@
  * Per-extension content-script registration into the existing
  * scriptInjectionRegistry. Translates manifest content_scripts +
  * dynamic registrations (chrome.scripting.registerContentScripts)
- * into one ScriptInjectionEntry per (rule × file).
+ * into ScriptInjectionEntry records. CSS files stay per-file; JS files
+ * from one manifest rule are grouped into one ordered execution so
+ * same-rule globals match Chrome's shared isolated-world behaviour.
  *
  * The mini-chrome runtime IIFE is registered once globally on first
  * use (any extension's first install) so every Helium-instrumented
@@ -113,12 +115,21 @@ async function registerOneRule(
     });
   }
 
+  const jsBodies: string[] = [];
   for (let i = 0; i < jsFiles.length; i++) {
-    const bytes = await readExtensionFile(extId, jsFiles[i]!);
+    const rel = jsFiles[i]!;
+    const bytes = await readExtensionFile(extId, rel);
     if (!bytes) continue;
-    const scriptKey = `${extId}:${ruleKey}:js${i}:${runAt}:${world}`;
+    jsBodies.push(
+      `\n;/* helium content script: ${rel.replace(/\*\//g, '* /')} */\n` +
+      new TextDecoder().decode(bytes),
+    );
+  }
+
+  if (jsBodies.length > 0) {
+    const scriptKey = `${extId}:${ruleKey}:js:${runAt}:${world}`;
     scriptInjectionRegistry.register({
-      id: `helium-content-${extId}-${ruleKey}-js-${i}`,
+      id: `helium-content-${extId}-${ruleKey}-js`,
       match: (url: URL) => compiled.matches(url, url.href === 'about:blank'),
       scripts: [
         {
@@ -126,7 +137,7 @@ async function registerOneRule(
           code: buildJsWrapper({
             extId,
             ctx,
-            scriptBody: new TextDecoder().decode(bytes),
+            scriptBody: jsBodies.join('\n'),
             runAt,
             world,
             topFrameOnly: compiled.topFrameOnly,

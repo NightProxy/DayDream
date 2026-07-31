@@ -105,20 +105,58 @@ export class SiteDataManager {
   }
 
   /**
-   * Bump the per-host cache epoch and (best-effort) invalidate any
-   * Scramjet HTTP cache entries for that host. Returns true on
-   * success.
+   * Delete the origin's cached responses, bump its cache-buster epoch,
+   * and (best-effort) poke any legacy in-memory plugin cache.
+   *
+   * This actually removes entries now rather than only tagging the
+   * origin stale: buckets are origin-scoped, so every entry whose
+   * stored host matches is dropped across all DDX cache buckets.
    */
   async clearCache(originOrHost: string): Promise<boolean> {
     const host = this.normalizeHost(originOrHost);
     if (!host) return false;
     const prior = this.cacheEpochByHost.get(host) ?? 0;
     this.cacheEpochByHost.set(host, prior + 1);
+
+    try {
+      const mgr = (window as { cachePlugins?: { bustForHost?: (h: string) => Promise<number> } }).cachePlugins;
+      if (mgr?.bustForHost) {
+        await mgr.bustForHost(host);
+      }
+    } catch (err) {
+      console.warn('[SiteDataManager] cache bust failed:', err);
+    }
+
     try {
       const cachePlugin = (window as { __scramjetHttpCache?: { clearForHost?: (h: string) => void } }).__scramjetHttpCache;
       cachePlugin?.clearForHost?.(host);
     } catch { /* swallow */ }
     return true;
+  }
+
+  /**
+   * Cache footprint for one origin: entry count and approximate bytes.
+   * Used by the lock dropdown's "Site data" section. Returns zeroes
+   * when the cache manager isn't mounted.
+   */
+  async getCacheInfo(originOrHost: string): Promise<{ entries: number; bytes: number }> {
+    const host = this.normalizeHost(originOrHost);
+    if (!host) return { entries: 0, bytes: 0 };
+    try {
+      const mgr = (window as {
+        cachePlugins?: {
+          list?: (opts?: { host?: string }) => Promise<Array<{ bytes: number }>>;
+        };
+      }).cachePlugins;
+      if (!mgr?.list) return { entries: 0, bytes: 0 };
+      const entries = await mgr.list({ host });
+      let bytes = 0;
+      for (const e of entries) bytes += e.bytes;
+      return { entries: entries.length, bytes };
+    } catch (err) {
+      console.warn('[SiteDataManager] getCacheInfo failed:', err);
+      return { entries: 0, bytes: 0 };
+    }
   }
 
   /**

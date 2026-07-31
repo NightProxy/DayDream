@@ -24,7 +24,6 @@ export class Neutron {
   private readonly hostCtx: NeutronHandlerContext;
 
   private terminated = false;
-  private exitCode = 0;
   private resolveExit: (code: number) => void = () => {};
   private nextRequestId = 0;
   private static nextPid = 1;
@@ -135,7 +134,6 @@ export class Neutron {
   async terminate(code = 0): Promise<void> {
     if (this.terminated) return;
     this.terminated = true;
-    this.exitCode = code;
     this.worker.removeEventListener('message', this.handleMessage);
     this.worker.removeEventListener('error', this.handleError);
     if (this.ownsWorker) this.worker.terminate();
@@ -237,7 +235,6 @@ export class Neutron {
     this.pendingRequests.clear();
     if (!this.terminated) {
       this.terminated = true;
-      this.exitCode = 1;
       if (this.ownsWorker) this.worker.terminate();
       this.resolveExit(1);
     }

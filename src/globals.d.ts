@@ -4,6 +4,8 @@ import type * as ScramjetControllerGlobal from '@mercuryworkshop/scramjet-contro
 import type { SearchEngineRegistry } from '@apis/searchEngines';
 import type { CommandRegistry } from '@apis/commands';
 import type { Omnibox } from '@browser/omnibox';
+import type { CachePluginManager } from '@apis/cachePlugins';
+import type { CaptchaManager } from '@apis/captcha';
 
 declare global {
 	const $scramjet: typeof ScramjetGlobal;
@@ -27,6 +29,14 @@ declare global {
 		commands: CommandRegistry;
 		omnibox: Omnibox;
 		cache: CacheAPI;
+		// New host-side HTTP cache management — distinct from `cache`
+		// (which is the legacy tab session cache in `src/apis/cache.ts`).
+		// See `src/apis/cachePlugins/` and the spec at
+		// `docs/superpowers/specs/2026-06-06-opfs-cache-plugin-system-design.md`.
+		cachePlugins: CachePluginManager;
+		// Night+ captcha plugin manager — see `src/apis/captcha/` and
+		// `docs/superpowers/specs/2026-06-07-night-plus-captcha-plugin-design.md`.
+		captcha: CaptchaManager;
 		eventsAPI: EventSystem;
 		extensions: ExtensionsAPI;
 		proxy: Proxy;

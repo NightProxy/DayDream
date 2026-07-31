@@ -146,7 +146,7 @@ DayDream can also be packaged as a self-contained [Terbium](https://github.com/T
 pnpm run build:tapp
 ```
 
-This produces `dist-tapp/daydream.TAPP.zip` containing the full Daydream build, a generated `manifest.json`, the app icon (copied from `public/res/logo.png`), and the Terbium integration shims under `terbium/`.
+This produces `dist-tapp/daydream.TAPP.zip` containing the full Daydream build, a generated `.tbconfig` (Terbium's runtime app config), the app icon (copied from `public/res/logo.png`), and the Terbium integration shims under `terbium/`.
 
 To install the TAPP inside a running Terbium instance, extract the zip into Terbium's filesystem and call from the Terbium console:
 
@@ -161,7 +161,9 @@ await tb.launcher.addApp({
 
 The standalone `pnpm run build` is unaffected — TAPP-specific build steps only run when the `build:tapp` script is invoked.
 
-TAPP-specific configuration (display name, window size, package name) lives under the `terbium` key in `package.json` and is the source of truth for the generated manifest. The app version is always read from the standard `package.json` `version` field.
+TAPP-specific configuration (display name, window size, package name) lives under the `terbium` key in `package.json` and is the source of truth for the generated `.tbconfig`. The `app_id` is derived as `com.tb.<pkg-name>`.
+
+> Note: `.tbconfig` is the **runtime** config inside the TAPP zip — what Terbium reads on install. It is distinct from the tb-repo *catalog* `manifest.json` (which lives in `TerbiumOS/tb-repo` and points to a hosted `pkg-download` URL). Producing a tb-repo entry for catalog submission is out of scope for this build.
 
 ## Contributing
 
