@@ -1,0 +1,17 @@
+[package]
+name = "obscura"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+z85 = "3"
+percent-encoding = "2"
+# `zlib-rs` (pure-Rust zlib port) rather than the miniz_oxide backend: the
+# codec needs raw deflate with a preset dictionary, and `set_dictionary` is
+# only available on flate2's zlib backends. Still compiles to wasm.
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }

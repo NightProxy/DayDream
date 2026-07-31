@@ -1,0 +1,31 @@
+
+import type { ExtensionContext } from '../../extfs/types';
+
+export interface ManifestRuleset {
+  id: string;
+  path: string;
+  enabled: boolean;
+}
+
+export function parseManifestRulesets(ctx: ExtensionContext): ManifestRuleset[] {
+  const m = ctx.manifest as {
+    declarative_net_request?: {
+      rule_resources?: Array<{ id?: unknown; path?: unknown; enabled?: unknown }>;
+    };
+  };
+  const list = m.declarative_net_request?.rule_resources;
+  if (!Array.isArray(list)) return [];
+  const out: ManifestRuleset[] = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    const id = typeof entry.id === 'string' ? entry.id : null;
+    const path = typeof entry.path === 'string' ? entry.path : null;
+    if (!id || !path) continue;
+    out.push({
+      id,
+      path,
+      enabled: entry.enabled === true,
+    });
+  }
+  return out;
+}

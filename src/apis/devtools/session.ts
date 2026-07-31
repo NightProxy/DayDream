@@ -1,0 +1,244 @@
+/**
+ * Per-tab devtools session.
+ */
+
+import { CdpMultiplexer } from './multiplexer';
+import { decodeEnvelope, DEVTOOLS_HOST_TAG } from './frameTransport';
+import {
+	mountPanel,
+	unmountPanel,
+	type AddPanelOpts,
+	type PanelEntry,
+	type PanelHandle,
+} from './panel';
+import type { DevtoolsBridgeMessage, DevtoolsMessage } from './types';
+
+interface TabLike {
+	id: string;
+	iframe: HTMLIFrameElement;
+	devtoolsPanel?: PanelHandle | undefined;
+}
+
+interface SessionOpts {
+	tabId: string;
+	tabData: TabLike;
+	devtoolsHostUrl: string;
+	onClose: () => void;
+}
+
+const VALID_INNER_KINDS = new Set([
+	'frame-ready',
+	'frame-gone',
+	'cdp-out',
+	'cdp-in',
+	'agent-error',
+]);
+
+function decodeUnwrapped(raw: unknown): DevtoolsMessage | null {
+	if (!raw || typeof raw !== 'object') return null;
+	const d = raw as Record<string, unknown>;
+	if (d[DEVTOOLS_HOST_TAG] !== true) return null;
+	const kind = d.kind;
+	if (typeof kind !== 'string' || !VALID_INNER_KINDS.has(kind)) return null;
+	return raw as DevtoolsMessage;
+}
+
+export class DevToolsSession {
+	readonly tabId: string;
+	private tabData: TabLike;
+	private multiplexer: CdpMultiplexer;
+	private panel: PanelHandle;
+	private windowsByFrameId = new Map<string, Window>();
+	private attachedWindows = new Set<Window>();
+	private destroyed = false;
+	private hostMessageListener: (ev: MessageEvent) => void;
+
+	private extensionPanels = new Map<string, Set<number>>();
+
+	constructor(opts: SessionOpts) {
+		this.tabId = opts.tabId;
+		this.tabData = opts.tabData;
+		this.panel = mountPanel(opts.tabData, opts.devtoolsHostUrl);
+		opts.tabData.devtoolsPanel = this.panel;
+
+		this.multiplexer = new CdpMultiplexer({
+			postToDevTools: (cdpJson) => this.sendToDevtoolsIframe(cdpJson),
+		});
+
+		this.hostMessageListener = (ev) => this.onHostMessage(ev);
+		window.addEventListener('message', this.hostMessageListener);
+	}
+
+	/**
+	 * Add an extension panel to this session's PanelHandle. Returns
+	 * the resulting PanelEntry (caller reads .id for the chrome
+	 * devtools panelId).
+	 */
+	addExtensionPanel(opts: AddPanelOpts): PanelEntry {
+		const entry = this.panel.addPanel(opts);
+		let set = this.extensionPanels.get(opts.extId);
+		if (!set) {
+			set = new Set();
+			this.extensionPanels.set(opts.extId, set);
+		}
+		set.add(entry.id);
+		return entry;
+	}
+
+	/** Remove every extension panel registered for `extId`. */
+	removeExtensionPanels(extId: string): void {
+		this.panel.removePanelsByExtId(extId);
+		this.extensionPanels.delete(extId);
+	}
+
+	/** Public access for the host devtools handlers. */
+	getPanel(): PanelHandle {
+		return this.panel;
+	}
+
+	/** Public access to the multiplexer for inspectedWindow.eval routing. */
+	getMultiplexer(): CdpMultiplexer {
+		return this.multiplexer;
+	}
+
+	show(): void {
+		if (this.destroyed) return;
+		this.panel.container.style.display = 'flex';
+		this.panel.isActive = true;
+	}
+
+	hide(): void {
+		if (this.destroyed) return;
+		this.panel.container.style.display = 'none';
+		this.panel.isActive = false;
+	}
+
+	destroy(): void {
+		if (this.destroyed) return;
+		this.destroyed = true;
+		try {
+			window.removeEventListener('message', this.hostMessageListener);
+		} catch {
+			// ignore
+		}
+		this.extensionPanels.clear();
+		unmountPanel(this.tabData);
+		this.windowsByFrameId.clear();
+		this.attachedWindows.clear();
+	}
+
+	attachProxiedWindow(win: Window): void {
+		this.attachedWindows.add(win);
+	}
+
+	detachProxiedWindow(win: Window): void {
+		this.attachedWindows.delete(win);
+		for (const [frameId, w] of this.windowsByFrameId) {
+			if (w === win) {
+				this.windowsByFrameId.delete(frameId);
+				this.multiplexer.detachFrame(frameId);
+			}
+		}
+	}
+
+	private sendToDevtoolsIframe(cdpJson: string): void {
+		const target = this.panel.devtoolsIframe.contentWindow;
+		if (!target) return;
+		const msg: DevtoolsBridgeMessage = {
+			kind: 'cdp-to-devtools',
+			payload: cdpJson,
+		};
+		try {
+			target.postMessage(msg, '*');
+		} catch {
+			// ignore
+		}
+	}
+
+	private onHostMessage(ev: MessageEvent): void {
+		if (this.destroyed) return;
+
+		if (ev.source === this.panel.devtoolsIframe.contentWindow) {
+			const d = ev.data as DevtoolsBridgeMessage | undefined;
+			if (!d || typeof d !== 'object') return;
+			if (d.kind === 'devtools-ready') {
+				console.log('[ddx-devtools] devtools iframe ready');
+				return;
+			}
+			if (
+				d.kind === 'cdp-from-devtools' &&
+				typeof d.payload === 'string'
+			) {
+				console.log(
+					'[ddx-devtools] DT->host CDP',
+					d.payload.slice(0, 200)
+				);
+				this.multiplexer.receiveFromDevTools(d.payload);
+			}
+			return;
+		}
+
+		if (ev.source && this.attachedWindows.has(ev.source as Window)) {
+			let decoded = decodeEnvelope(ev.data) ?? decodeUnwrapped(ev.data);
+			if (!decoded) {
+				return;
+			}
+			console.log('[ddx-devtools] agent->host', decoded.kind, (decoded as any).frameId);
+			this.handleAgentMessage(decoded, ev.source as Window);
+		}
+	}
+
+	private handleAgentMessage(msg: DevtoolsMessage, win: Window): void {
+		switch (msg.kind) {
+			case 'frame-ready': {
+				this.windowsByFrameId.set(msg.frameId, win);
+				this.multiplexer.attachFrame({
+					frameId: msg.frameId,
+					parentFrameId: msg.parentFrameId,
+					url: msg.url,
+					title: msg.title,
+					postToFrame: (cdpJson) =>
+						this.sendCdpToAgent(win, msg.frameId, cdpJson),
+				});
+				return;
+			}
+			case 'frame-gone': {
+				this.multiplexer.detachFrame(msg.frameId);
+				this.windowsByFrameId.delete(msg.frameId);
+				return;
+			}
+			case 'cdp-out': {
+				this.multiplexer.receiveFromFrame(msg.frameId, msg.payload);
+				return;
+			}
+			case 'agent-error': {
+				console.warn(
+					'[devtools] agent error from frame',
+					msg.frameId,
+					msg.message
+				);
+				return;
+			}
+			default:
+				return;
+		}
+	}
+
+	private sendCdpToAgent(
+		win: Window,
+		frameId: string,
+		cdpJson: string
+	): void {
+		try {
+			const recv = (win as unknown as {
+				__ddxDevtoolsReceive?: (frameId: string, payload: string) => void;
+			}).__ddxDevtoolsReceive;
+			if (typeof recv !== 'function') {
+				return;
+			}
+			recv(frameId, cdpJson);
+		} catch (err) {
+			console.warn('[ddx-devtools] sendCdpToAgent failed:', err);
+		}
+	}
+}

@@ -1,0 +1,364 @@
+// Top-level browser chrome layout: browser container, frame container,
+// top bar, tab bar, utility bar, menu popup.
+
+#browser-container {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	width: 100vw;
+	position: fixed;
+	right: 0;
+	background-color: var(--background-color, var(--bg-2));
+}
+
+#menu-popup {
+	transform-origin: top right;
+	overflow: visible;
+	z-index: 99999999999 !important;
+	padding: 4px 7px;
+	border-radius: 6px;
+	font-size: 12px;
+	line-height: 1;
+	color: var(--text);
+	background: var(--tooltip-bg);
+	backdrop-filter: blur(0.5rem);
+	border: 1px solid var(--tooltip-border);
+	box-shadow: inset 0 0 4px 3px var(--tooltip-inset);
+	white-space: nowrap;
+}
+
+#menu-popup > ul > li {
+	border-radius: 4px;
+}
+
+#menu-popup * {
+	z-index: 9999 !important;
+	position: relative;
+}
+
+.w-full.border-b .flex.h-12 {
+	overflow: visible;
+}
+
+// Split-screen layout: absolute-positioned panes inside frame-container.
+// CSS variables drive pane sizes; splitLayout.ts writes them imperatively.
+// Defaults are set so a stock single-tab setup looks like the legacy
+// behavior (one fullscreen iframe).
+div[data-component='frame-container'] {
+	position: relative;
+	overflow: hidden;
+	--sp-left: 0px;
+	--sp-right: 0px;
+	--devtools-height: 0px;
+	--split-mid-pct: 50%;
+	--gutter: 4px;
+}
+
+// Any iframe directly inside the frame-container fills it. This is a
+// safety net for boot-time races where an iframe gets attached before
+// splitLayout.mount() runs.
+div[data-component='frame-container'] > iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	display: block;
+}
+
+// Panes — base. Default to filling the parent so the most common case
+// (single main pane, no splits) is correct without needing more-specific
+// rules to also fire.
+div[data-component='frame-container'] .split-pane {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	background: var(--bg-2);
+}
+
+div[data-component='frame-container'] .split-pane[data-shown='false'] {
+	display: none;
+}
+
+// Iframes inside any pane fill the pane.
+div[data-component='frame-container'] .split-pane > iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	display: block;
+}
+
+// The center wrapper holds main/split-left/split-right/devtools. It's
+// positioned between the two sidepanels.
+div[data-component='frame-container'] .split-layout-center {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: var(--sp-left);
+	right: var(--sp-right);
+	overflow: hidden;
+}
+
+// Sidepanels — pinned to the edges of frame-container.
+div[data-component='frame-container'] .split-pane--sidepanel-left {
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: var(--sp-left);
+}
+div[data-component='frame-container'] .split-pane--sidepanel-right {
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: var(--sp-right);
+}
+
+// Main / split panes inside the center wrapper. Heights stop above the
+// devtools strip when devtools is present.
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--main {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: 0;
+	right: 0;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--split-left,
+div[data-component='frame-container']
+	.split-layout-center[data-mode='main']
+	.split-pane--split-right {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--main {
+	display: none;
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--split-left {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container']
+	.split-layout-center[data-mode='split']
+	.split-pane--split-right {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+div[data-component='frame-container'] .split-pane--devtools {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: var(--devtools-height);
+}
+
+// Gutters.
+div[data-component='frame-container'] .split-gutter {
+	position: absolute;
+	background: var(--white-08, rgba(255, 255, 255, 0.08));
+	z-index: 5;
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container'] .split-gutter:hover,
+div[data-component='frame-container'] .split-gutter:active {
+	background: var(--white-20, rgba(255, 255, 255, 0.2));
+}
+
+div[data-component='frame-container'] .split-gutter[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container'] .split-gutter--vertical {
+	top: 0;
+	bottom: 0;
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+div[data-component='frame-container'] .split-gutter--horizontal {
+	left: 0;
+	right: 0;
+	height: var(--gutter);
+	cursor: ns-resize;
+}
+
+div[data-component='frame-container']
+	> .split-gutter[data-gutter='gutter-sidepanel-left'] {
+	left: calc(var(--sp-left) - (var(--gutter) / 2));
+}
+
+div[data-component='frame-container']
+	> .split-gutter[data-gutter='gutter-sidepanel-right'] {
+	right: calc(var(--sp-right) - (var(--gutter) / 2));
+}
+
+div[data-component='frame-container']
+	.split-layout-center
+	> .split-gutter[data-gutter='gutter-split'] {
+	top: 0;
+	bottom: var(--devtools-height);
+	left: calc(var(--split-mid-pct) - (var(--gutter) / 2));
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+div[data-component='frame-container']
+	.split-layout-center
+	> .split-gutter[data-gutter='gutter-devtools'] {
+	left: 0;
+	right: 0;
+	bottom: var(--devtools-height);
+	height: var(--gutter);
+	cursor: ns-resize;
+}
+
+div[data-component='top-bar'] {
+	display: flex;
+	min-width: 0;
+}
+
+div[data-component='tab-bar-container'] {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	overflow-y: hidden;
+	z-index: 999;
+}
+
+div[data-component='tab-bar'] {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
+	overflow-x: scroll;
+	overflow-y: overlay !important;
+	white-space: nowrap;
+	box-sizing: border-box;
+	align-items: flex-start;
+	width: 0;
+	z-index: 999;
+	padding-bottom: var(--scrollbar-size);
+	margin-bottom: calc(-1 * var(--scrollbar-size));
+}
+
+div[data-component='utility-bar'] {
+	z-index: 99;
+}
+
+// Tab iframes inside the frame-container are stacked; only those with
+// .active (the focused frame) or .split-visible (the non-focused half
+// of a split pair) are shown. Selecting a tab toggles these classes.
+//
+// Scoped to `[data-tab-id]` so the rule does NOT match nested iframes
+// like the devtools panel iframe (which lives inside the same subtree
+// and would otherwise inherit display:none).
+div[data-component='frame-container'] iframe[data-tab-id] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	display: none;
+}
+
+div[data-component='frame-container'] iframe[data-tab-id].active,
+div[data-component='frame-container'] iframe[data-tab-id].split-visible {
+	display: block;
+}
+
+// Legacy split contract: some code paths set data-split-mode on the
+// frame-container itself rather than data-mode on .split-layout-center.
+// Both must work.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--main {
+	display: none;
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-left {
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane--split-right {
+	top: 0;
+	bottom: 0;
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Subtle focus ring around the focused split pane.
+div[data-component='frame-container'][data-split-mode='split']
+	.split-pane[data-focused='true']::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	box-shadow: inset 0 0 0 1px var(--main, #a974de);
+	border-radius: 2px;
+	z-index: 4;
+}
+
+div[data-component='frame-container'][data-split-mode='split']
+	.split-gutter[data-gutter='split'] {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--split-mid-pct) - (var(--gutter) / 2));
+	width: var(--gutter);
+	cursor: ew-resize;
+}
+
+// Click-catcher overlays sit on top of the non-focused split pane and
+// intercept the first click so we can swap focus before iframe content
+// sees it. Transparent — only their pointer-event capture matters.
+div[data-component='frame-container'] .split-click-catcher {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+	background: transparent;
+	cursor: pointer;
+}
+
+div[data-component='frame-container'] .split-click-catcher[data-shown='false'] {
+	display: none;
+}
+
+div[data-component='frame-container'] .split-click-catcher--left {
+	left: 0;
+	right: calc(100% - var(--split-mid-pct));
+}
+
+div[data-component='frame-container'] .split-click-catcher--right {
+	left: var(--split-mid-pct);
+	right: 0;
+}
+
+// Visual hint: faint dim on the non-focused side so the user can see
+// which pane will activate when they click.
+div[data-component='frame-container'] .split-click-catcher[data-shown='true'] {
+	background: rgba(0, 0, 0, 0.08);
+	transition: background 120ms ease;
+}
+
+div[data-component='frame-container']
+	.split-click-catcher[data-shown='true']:hover {
+	background: rgba(0, 0, 0, 0.04);
+}

@@ -1,47 +1,52 @@
 <!doctype html>
 
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DayDream X</title>
-    <script>
-      self.__ddxBase = (function () {
-        var p = location.pathname;
-        var i = p.indexOf("/internal/");
-        if (i !== -1) return p.substring(0, i + 1);
-        return new URL("./", location.href).pathname;
-      })();
-    </script>
-    <script src="./data/bundle.js" defer></script>
-    <script src="./data/config.js" defer></script>
-    <script src="./assets/config.js" defer></script>
-    <script src="./assets/all.js" defer></script>
-    <link rel="icon" type="image/x-icon" href="./res/logo.png" />
-    <meta name="description" content="Your favorite Browser in a browser" />
-    <meta
-      name="keywords"
-      content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
-    />
-    <meta property="og:image" content="./res/logo.png" />
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>DayDream X</title>
+		<script>
+			self.__ddxBase = (function () {
+				var p = location.pathname;
+				var i = p.indexOf('/internal/');
+				if (i !== -1) return p.substring(0, i + 1);
+				return new URL('./', location.href).pathname;
+			})();
+		</script>
+		<script src="./assets/config.js" defer></script>
+		<script src="./assets/obscura.iife.js" defer></script>
+		<script src="./assets/s.js" defer></script>
+    <script src="./assets/api.js" defer></script>
+		<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+		<link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
+		<link rel="preload" as="image" href="./res/logo.png" fetchpriority="high" />
+		<link rel="icon" type="image/x-icon" href="./res/logo.png" />
 
-    <script>
-      // Analytics
-      document.head.append(
-        Object.assign(document.createElement("script"), {
-          async: true,
-          src: "https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z",
-        }),
-        Object.assign(document.createElement("script"), {
-          textContent:
-            "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-BMERY7ZH6Z');",
-        }),
-      );
-    </script>
-  </head>
+		<meta name="description" content="Your favorite Browser in a browser" />
+		<meta
+			name="keywords"
+			content="Daydream, Daydream Browser, Daydream Browser, Daydream Browser, Daydream Security Browser"
+		/>
+		<meta property="og:image" content="./res/logo.png" />
 
-  <body class="bg-[var(--background-color)] text-[var(--text-color)]">
-    <div id="browser-container"></div>
-    <script type="module" src="/src/js/index.ts" defer></script>
-  </body>
+		<script type="module">
+			window.addEventListener('load', () => {
+				requestIdleCallback(() => {
+					const s = Object.assign(document.createElement('script'), {
+						async: true,
+						src: 'https://www.googletagmanager.com/gtag/js?id=G-BMERY7ZH6Z'
+					});
+					document.head.appendChild(s);
+					window.dataLayer = window.dataLayer || [];
+					function gtag() { dataLayer.push(arguments); }
+					gtag('js', new Date()); gtag('config', 'G-BMERY7ZH6Z');
+				}, { timeout: 5000 });
+			});
+		</script>
+	</head>
+
+	<body class="bg-[var(--background-color)] text-[var(--text-color)]">
+		<div id="browser-container"></div>
+		<script type="module" src="/src/index.ts" defer></script>
+	</body>
 </html>

@@ -123,12 +123,17 @@ export function fontObfuscationPlugin() {
           visibleChars.length = inputChars.length;
         }
 
-        const baseFont: any = await new Promise((resolve, reject) => {
-          (opentype as any).load(fontConfig.path, (err: any, font: any) => {
-            if (err) reject(err);
-            else resolve(font);
-          });
-        });
+        // opentype.js >=1.3.x removed the callback-style `load()` and replaced
+        // it with a deprecation no-op (logs but never resolves), which would
+        // hang rolldown's renderChunk phase indefinitely until the worker is
+        // killed with `oneshot canceled`. Use the synchronous parse() instead.
+        // See: https://github.com/opentypejs/opentype.js/issues/675
+        const fontBuffer = fs.readFileSync(fontConfig.path);
+        const fontArrayBuffer = fontBuffer.buffer.slice(
+          fontBuffer.byteOffset,
+          fontBuffer.byteOffset + fontBuffer.byteLength,
+        );
+        const baseFont: any = (opentype as any).parse(fontArrayBuffer);
 
         const notdefGlyph = new opentype.Glyph({
           name: ".notdef",

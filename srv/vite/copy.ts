@@ -1,29 +1,17 @@
-//@ts-ignore
-import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
-import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
-import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
-import { refluxPath } from "@nightnetwork/reflux";
 //@ts-ignore
-import { enigmaPath } from "@nightnetwork/enigma/path";
-import { baremuxPath as bmworkerPath } from "@nightnetwork/bm-plusworker/path";
+import {tfsPath} from "@terbiumos/tfs";
 import path from "path";
 
 export const routePaths = {
-  epoxy: "epoxy",
   scramjet: "assets",
   libcurl: "libcurl",
-  baremux: "baremux",
-  uv: "data",
-  reflux: "reflux",
-  enigma: "enigma",
   auth: "",
-  bmworker: "bmworker",
   plusClient: "plus",
   eruda: "core/i/eruda",
   chii: "core/i/chii",
-  localforage: "core/localforage",
+  tfs: "core/fs",
+  sw: "",
 };
 
 const authPath = path.resolve(
@@ -34,85 +22,42 @@ const plusClientPath = path.resolve(
 );
 const erudaPath = path.resolve("node_modules/eruda");
 const chiiPath = path.resolve("node_modules/chii/public");
-const localforagePath = path.resolve("node_modules/localforage/dist");
+const swPath = path.resolve("src/core/sw/dist");
+const sjConfigPath = path.resolve("src/core/SJ/config/dist");
+const libcurlPath = path.dirname(
+  path.resolve("node_modules/libcurl.js/libcurl.wasm"),
+);
+// Local controller is built from src/core/SJ/controller/src by the
+// `npm run controller:build` step (also wired into `npm run build`).
+// Outputs land in src/core/SJ/controller/dist as api.js / sw.js /
+// inject.js — the same three artifacts the prebuilt package shipped,
+// just with our local modifications baked in.
+const sjControllerPath = path.resolve("src/core/SJ/controller/dist");
+const obscuraIifePath = path.resolve("src/pkgs/Obscura/dist");
 const copyMap = {
-  epoxy: {
-    path: epoxyPath,
-    files: ["*"],
-    dest: routePaths.epoxy,
-  },
-  uv: {
-    path: uvPath,
-    files: [
-      { name: "uv.bundle.js", rename: "bundle.js" },
-      { name: "uv.handler.js", rename: "handler.js" },
-      { name: "uv.client.js", rename: "client.js" },
-      { name: "uv.sw.js", rename: "worker.js" },
-    ],
-    dest: routePaths.uv,
-  },
   scramjet: {
     path: scramjetPath,
     files: [
-      { name: "scramjet.all.js", rename: "all.js" },
-      { name: "scramjet.sync.js", rename: "sync.js" },
-      { name: "scramjet.wasm.wasm", rename: "wasm.wasm" },
+      { name: "scramjet.js", rename: "s.js" },
+      { name: "scramjet.wasm", rename: "s.wasm" },
+      { name: "scramjet_bundled.js", rename: "bundled.js" },
     ],
     dest: routePaths.scramjet,
   },
   libcurl: {
     path: libcurlPath,
-    files: ["*"],
+    files: ["libcurl.wasm"],
     dest: routePaths.libcurl,
-  },
-  baremux: {
-    path: baremuxPath,
-    files: ["*"],
-    dest: routePaths.baremux,
-  },
-  reflux: {
-    path: refluxPath,
-    files: ["*"],
-    dest: routePaths.reflux,
-  },
-  enigma: {
-    path: enigmaPath,
-    files: ["*"],
-    dest: routePaths.enigma,
   },
   auth: {
     path: authPath,
-    files: [
-      "assets/nightloginflow.css",
-      "night-login-frame.umd.js",
-      "night-login.umd.js",
-      "night-login.es.js.map",
-      "vite.svg",
-      "nightlogo.png",
-      "nightloginflow.css",
-      "bg_alt.jpeg",
-      "nightplus.png",
-      "nightplusheader.png",
-      "nightplus_icon.png",
-      "night-login-frame.es.js",
-      "night-login.umd.js.map",
-      "night-login-frame.es.js.map",
-      "night-login-frame.umd.js.map",
-      "night-login.es.js",
-      "bg.png",
-      "bg_alt_2.png",
-    ],
+    files: ["nightlogo.png", "bg_alt.jpeg"],
     dest: routePaths.auth,
   },
   plusClient: {
     path: plusClientPath,
     files: ["*"],
     dest: routePaths.plusClient,
-  },
-  bmworker: {
-    path: bmworkerPath,
-    files: ["*"],
-    dest: routePaths.bmworker,
   },
   eruda: {
     path: erudaPath,
@@ -124,10 +69,55 @@ const copyMap = {
     files: ["*"],
     dest: routePaths.chii,
   },
-  localforage: {
-    path: localforagePath,
+  devtoolsFrontend: {
+    path: path.resolve("src/apis/devtools/frontend"),
+    files: ["ddx_chii_host.html", "ddx_websocket_shim.js"],
+    dest: routePaths.chii + "/front_end",
+  },
+  tfs: {
+    path: tfsPath,
     files: ["*"],
-    dest: routePaths.localforage,
+    dest: routePaths.tfs,
+  },
+  sw: {
+    path: swPath,
+    files: ["*"],
+    dest: routePaths.sw,
+  },
+  sjConfig: {
+    path: sjConfigPath,
+    files: ["*"],
+    dest: routePaths.scramjet,
+  },
+  sjController: {
+    path: sjControllerPath,
+    files: ["api.js", "sw.js", "inject.js"],
+    dest: routePaths.scramjet,
+  },
+  obscuraIife: {
+    path: obscuraIifePath,
+    files: ["obscura.iife.js"],
+    dest: routePaths.scramjet,
+  },
+  devtoolsAgent: {
+    path: path.resolve("src/apis/devtools/agent/dist"),
+    files: ["devtools-agent.js"],
+    dest: routePaths.scramjet,
+  },
+  devtoolsWorkerAgent: {
+    path: path.resolve("src/apis/devtools/worker-agent/dist"),
+    files: ["devtools-worker-agent.js"],
+    dest: routePaths.scramjet,
+  },
+  nyxBridgeClient: {
+    path: path.resolve("src/apis/nyxBridge/client/dist"),
+    files: ["nyx-bridge-client.js"],
+    dest: routePaths.scramjet,
+  },
+  nyxBridgeAgent: {
+    path: path.resolve("src/apis/nyxBridge/agent/dist"),
+    files: ["nyx-bridge-agent.js"],
+    dest: routePaths.scramjet,
   },
 };
 

@@ -1,0 +1,30 @@
+// Scrollbar styling. Firefox uses scrollbar-width;
+// Chromium-derived browsers use ::-webkit-scrollbar pseudo-elements.
+
+main {
+	&::-webkit-scrollbar { width: 4px; }
+	&::-webkit-scrollbar-track { background: transparent; }
+	&::-webkit-scrollbar-thumb {
+		background: var(--main);
+		border-radius: 3px;
+		opacity: 0.5;
+	}
+}
+
+@supports selector(::-webkit-scrollbar) {
+	div[data-component='tab-bar'] {
+		&::-webkit-scrollbar { height: 8px; }
+		&::-webkit-scrollbar-track { background: transparent; }
+		&::-webkit-scrollbar-thumb {
+			background: var(--scrollbar-thumb) !important;
+			border-radius: 9999px !important;
+		}
+	}
+}
+
+@-moz-document url-prefix() {
+	div[data-component='tab-bar'] {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+	}
+}

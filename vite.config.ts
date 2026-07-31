@@ -2,8 +2,24 @@ import { defineConfig } from "vite";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, writeFileSync, existsSync } from "fs";
+const __sjScramjetVersion: string = JSON.parse(
+  readFileSync(
+    "node_modules/@mercuryworkshop/scramjet/package.json",
+    "utf-8"
+  )
+).version;
+// The local controller (src/core/SJ/controller/) is not published; its
+// version is hardcoded in src/core/SJ/controller/src/version.ts. If the
+// upstream npm package happens to be installed, we read from there for
+// `CONTROLLER_EXPECTED_VERSION` (consumed only by utils/, which is not
+// currently imported by app code). Otherwise we fall back to "0.0.0",
+// which is fine because the consumer is dead code.
+const __sjControllerVersion: string = (() => {
+  const p = "node_modules/@mercuryworkshop/scramjet-controller/package.json";
+  if (!existsSync(p)) return "0.0.0";
+  return JSON.parse(readFileSync(p, "utf-8")).version;
+})();
 import { minify } from "terser";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
 import vitePluginBundleObfuscator from "vite-plugin-bundle-obfuscator";
@@ -15,21 +31,25 @@ import { obfuscationConfig } from "./srv/vite/obfusc-config";
 import { minifyConfig } from "./srv/vite/minify-config";
 import { allowedHosts } from "./srv/vite/hosts";
 import { svgWrapperPlugin } from "./srv/vite/svg";
+import { relocatePagesPlugin } from "./srv/vite/relocate-pages";
+import { terbiumTappPlugin } from "./srv/vite/terbium-tapp";
 
 export default defineConfig({
   base: "./",
+  define: {
+    SCRAMJET_EXPECTED_VERSION: JSON.stringify(__sjScramjetVersion),
+    CONTROLLER_EXPECTED_VERSION: JSON.stringify(__sjControllerVersion),
+  },
   plugins: [
     tailwindcss(),
-    tsconfigPaths({
-      ignoreConfigErrors: true,
-      projects: ["./tsconfig.json"],
-    }),
     prettyUrlsPlugin(),
     fontObfuscationPlugin(),
     viteStaticCopy(copyRoutes()),
     ViteMinifyPlugin(minifyConfig),
-    vitePluginBundleObfuscator(obfuscationConfig as any),
+    //vitePluginBundleObfuscator(obfuscationConfig as any),
+    relocatePagesPlugin(),
     svgWrapperPlugin(),
+    terbiumTappPlugin(),
     {
       name: "strip-console-and-debugger",
       enforce: "post",
@@ -114,15 +134,31 @@ export default defineConfig({
     },
   ],
   appType: "mpa",
+  optimizeDeps: {
+    // Don't try to pre-bundle anything from the Helium sub-package.
+    exclude: ["@pkgs/Helium", "src/pkgs/Helium"],
+  },
   server: {
     allowedHosts: allowedHosts,
+    // Cross-origin isolation: required for SharedArrayBuffer + Atomics
+    // (Scramjet, Neutron content-script isolation, helium ISOLATED world).
+    // Production (Fastify + @fastify/helmet) already sets these; dev must
+    // do it explicitly or content scripts fall back to pseudo-iso with a
+    // console warning at boot.
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
     watch: {
       ignored: [
         "**/concepting/**",
         "**/plus-backend/**",
         "**/.github/**",
         "**/hostlist.uo*",
+        "**/src/pkgs/Helium/**",
       ],
+      // Belt-and-suspenders: also tell chokidar to ignore Helium entirely.
+      // (some Vite versions key off this even when `ignored` is set above)
     },
     proxy: {
       "/api": {
@@ -148,31 +184,54 @@ export default defineConfig({
     terserOptions: {
       compress: {
         arguments: true,
-        drop_console: true,
+        booleans_as_integers: false,
+        drop_console: false,
         drop_debugger: true,
-        hoist_funs: false,
-        hoist_props: false,
+        ecma: 2020,
+        hoist_funs: true,
+        hoist_props: true,
         hoist_vars: false,
-        inline: 1,
+        inline: 2,
         join_vars: true,
+        keep_fargs: false,
         loops: true,
-        passes: 1,
+        passes: 3,
+        // console.warn/error are deliberately NOT listed here. Production
+        // was discarding its own error reporting, which is why the 13 boot
+        // exceptions in the Lighthouse runs were only visible under
+        // instrumentation. Keep warn/error; strip the noisy rest.
         pure_funcs: [
           "console.log",
           "console.info",
           "console.debug",
-          "console.warn",
-          "console.error",
+          "console.trace",
+          "console.dir",
+          "console.table",
+          "console.group",
+          "console.groupEnd",
+          "console.groupCollapsed",
+          "console.time",
+          "console.timeEnd",
         ],
-        reduce_vars: false,
+        pure_getters: true,
+        reduce_funcs: true,
+        reduce_vars: true,
         sequences: true,
-        side_effects: false,
+        side_effects: true,
         switches: true,
+        toplevel: true,
         top_retain: [],
-        typeofs: false,
+        typeofs: true,
         unsafe: false,
+        // unsafe_arrows: true rewrites `function(){}` → `()=>{}` globally.
+        // That breaks any code that uses `new` on the rewritten function.
+        // libcurl.js (Emscripten output) does exactly this:
+        //   FS.FSStream = function(){};
+        //   FS.FSStream.prototype = {...};
+        //   new FS.FSStream(...)  // ← TypeError if rewritten to arrow
+        // Keep this off so Emscripten-style constructor patterns survive.
         unsafe_arrows: false,
-        unsafe_methods: false,
+        unsafe_methods: true,
         unsafe_proto: false,
         unused: true,
       },
@@ -184,6 +243,7 @@ export default defineConfig({
       format: {
         comments: false,
         beautify: false,
+        ecma: 2020,
         preserve_annotations: false,
       },
       maxWorkers: 4,
@@ -191,19 +251,17 @@ export default defineConfig({
     rollupOptions: {
       input: pageRoutes(),
       output: {
-        entryFileNames: (chunkInfo) => {
-          const hash = Math.random().toString(36).substring(2, 12);
-          return `${hash}.js`;
-        },
+        // Content hashes, not Math.random(). Random names changed on every
+        // build, so each deploy cold-cached every returning user and two
+        // builds could never be diffed. Content hashes are already opaque,
+        // so nothing is lost if the original intent was obfuscation.
+        entryFileNames: "[hash].js",
         chunkFileNames: (chunk) => {
           if (chunk.name === "vendor-modules") {
-            const hash = Math.random().toString(36).substring(2, 10);
-            return `chunks/vendor-${hash}.js`;
+            return `chunks/vendor-[hash].js`;
           }
-          const hash = Math.random().toString(36).substring(2, 12);
-          return `chunks/${hash}.js`;
+          return `chunks/[hash].js`;
         },
-        experimentalMinChunkSize: 50000,
         assetFileNames: (assetInfo) => {
           if (
             assetInfo.name?.endsWith(".woff2") ||
@@ -211,12 +269,41 @@ export default defineConfig({
           ) {
             return `assets/${assetInfo.name}`;
           }
-          const hash = Math.random().toString(36).substring(2, 12);
           const ext = assetInfo.name?.split(".").pop();
-          return `assets/${hash}.${ext}`;
+          return `assets/[hash].${ext}`;
         },
         manualChunks(id) {
-          if (id.includes("node_modules")) return "vendor-modules";
+          if (!id.includes("node_modules")) return;
+          // Heaviest singletons get their own chunks so the main entry
+          // doesn't have to wait for them and they cache independently.
+          if (id.includes("@mercuryworkshop/libcurl-transport"))
+            return "vendor-libcurl";
+          if (id.includes("@mercuryworkshop/epoxy-transport"))
+            return "vendor-epoxy";
+          if (
+            id.includes("@mercuryworkshop/scramjet") ||
+            id.includes("@mercuryworkshop/wisp-js") ||
+            id.includes("@mercuryworkshop/proxy-transports")
+          )
+            return "vendor-scramjet";
+          if (id.includes("node_modules/chii") || id.includes("node_modules/chobitsu"))
+            return "vendor-chii";
+          if (id.includes("node_modules/eruda")) return "vendor-eruda";
+          if (id.includes("@dnd-kit")) return "vendor-dnd";
+          if (id.includes("@jaames/iro")) return "vendor-iro";
+          if (id.includes("@nightnetwork")) return "vendor-night";
+          if (
+            id.includes("node_modules/react") ||
+            id.includes("node_modules/scheduler") ||
+            id.includes("node_modules/react-dom")
+          )
+            return "vendor-react";
+          if (id.includes("node_modules/lucide")) return "vendor-lucide";
+          if (id.includes("@terbiumos/tfs")) return "vendor-tfs";
+          if (id.includes("libcurl.js")) return "vendor-libcurljs";
+          if (id.includes("fflate")) return "vendor-fflate";
+          if (id.includes("basecoat-css")) return "vendor-basecoat";
+          return "vendor";
         },
       },
     },
@@ -248,11 +335,9 @@ export default defineConfig({
         return result;
       },
     },
+    transformer: "lightningcss",
   },
-  define: {
-    __OBFUSCATION_SEED__: JSON.stringify(
-      Math.random().toString(36).substring(2),
-    ),
-    __BUILD_TIME__: JSON.stringify(Date.now()),
+  resolve: {
+    tsconfigPaths: true,
   },
 });

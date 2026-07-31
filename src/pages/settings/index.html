@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings</title>
+  <script>
+    self.__ddxBase = (function () {
+      var p = location.pathname;
+      var i = p.indexOf("/internal/");
+      if (i !== -1) return p.substring(0, i + 1);
+      return new URL("./", location.href).pathname;
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="../../res/logo.png" />
+  <meta property="og:image" content="../../res/logo.png" />
+  <link rel="preload" href="/src/css/pages/settings.scss" as="style" onload="this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/src/css/pages/settings.scss" /></noscript>
+  <link rel="stylesheet" href="/src/css/internal.scss" />
+  <script type="module" src="/src/pages/settings/index.tsx" defer></script>
+</head>
+<body>
+  <div class="settings-shell">
+    <aside class="settings-rail" id="settings-rail">
+      <h1 class="rail-title">Settings</h1>
+      <nav class="rail-nav" id="rail-nav">
+        <!-- Rail items injected by index.tsx -->
+      </nav>
+    </aside>
+    <main class="settings-main">
+      <div class="settings-search-bar" id="search-bar-wrap">
+        <div class="search-input-wrap">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="settings-search-input" placeholder="Search settings" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="settings-content" id="settings-content">
+        <!-- Section content injected by sections/*.ts -->
+      </div>
+    </main>
+  </div>
+</body>
+</html>
